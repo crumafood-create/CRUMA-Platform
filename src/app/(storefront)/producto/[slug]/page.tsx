@@ -44,6 +44,10 @@ export async function generateMetadata({
 
     description:
       product.description || undefined
+
+    <RecommendedProducts
+  title="También te puede interesar"
+/>
   };
 }
 

@@ -19,6 +19,9 @@ from '@/domains/catalog/components/product-price';
 import { PageContainer }
 from '@/shared/layouts/page-container';
 
+import { RecommendedProducts }
+from '@/domains/ai/components/recommended-products';
+
 interface Props {
 
   params: Promise<{

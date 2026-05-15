@@ -16,9 +16,35 @@ export function DashboardShell({
 
       <aside className="w-64 border-r p-6">
 
-        Sidebar
+  <nav className="space-y-4">
 
-      </aside>
+    <Link href="/admin">
+
+      Dashboard
+
+    </Link>
+
+    <Link href="/admin/pedidos">
+
+      Pedidos
+
+    </Link>
+
+    <Link href="/admin/pagos">
+
+      Pagos
+
+    </Link>
+
+    <Link href="/admin/inventario">
+
+      Inventario
+
+    </Link>
+
+  </nav>
+
+</aside>
 
       <div className="flex-1">
 

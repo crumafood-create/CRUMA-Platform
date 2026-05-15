@@ -25,7 +25,10 @@ export default async function ManufacturingPage() {
         </h1>
 
       </div>
-
+      
+<ProductionMetrics
+  totalOrders={orders.length}
+/>
       <ProductionOrdersTable
         orders={orders}
       />

@@ -1,6 +1,9 @@
 import type { InventoryLevel }
 from '../types/inventory-level.type';
 
+import { LowStockAlert }
+from './low-stock-alert';
+
 interface Props {
 
   inventory: InventoryLevel[];

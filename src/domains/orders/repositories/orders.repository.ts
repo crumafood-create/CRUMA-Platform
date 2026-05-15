@@ -33,3 +33,35 @@ export async function getOrders() {
 
   return data.map(orderDto);
 }
+
+export async function getOrderById(
+  id: string
+) {
+
+  const supabase = await createClient();
+
+  const { data, error } =
+    await supabase
+
+      .from('orders')
+
+      .select(`
+        id,
+        status,
+        payment_status,
+        total_amount,
+        created_at,
+        full_name,
+        phone
+      `)
+
+      .eq('id', id)
+
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return orderDto(data);
+}

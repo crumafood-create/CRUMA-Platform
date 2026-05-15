@@ -30,3 +30,25 @@ export async function getDashboardKpis() {
       data.average_order_value || 0
   };
 }
+
+export async function getSalesChart() {
+
+  const supabase = await createClient();
+
+  const { data, error } =
+    await supabase
+
+      .from('dashboard_sales_daily')
+
+      .select('*')
+
+      .order('day', {
+        ascending: true
+      });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}

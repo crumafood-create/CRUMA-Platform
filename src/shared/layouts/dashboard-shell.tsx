@@ -1,6 +1,9 @@
 import type { ReactNode }
 from 'react';
 
+import { AdminNavbar }
+from '@/shared/components/admin-navbar';
+
 export function DashboardShell({
   children
 }: {
@@ -17,11 +20,17 @@ export function DashboardShell({
 
       </aside>
 
-      <main className="flex-1 p-8">
+      <div className="flex-1">
 
-        {children}
+        <AdminNavbar />
 
-      </main>
+        <main className="p-8">
+
+          {children}
+
+        </main>
+
+      </div>
 
     </div>
   );

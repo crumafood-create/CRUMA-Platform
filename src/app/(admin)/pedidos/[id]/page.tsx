@@ -8,6 +8,9 @@ interface Props {
   }>;
 }
 
+import { ApprovePaymentButton }
+from '@/domains/orders/components/approve-payment-button';
+
 export default async function OrderDetailPage({
   params
 }: Props) {

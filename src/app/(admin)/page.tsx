@@ -1,22 +1,11 @@
-import { redirect } from 'next/navigation';
-
-import { getUser }
-from '@/domains/auth/services/get-user';
-
-export default async function AdminPage() {
-
-  const user = await getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
+export default function AdminDashboardPage() {
 
   return (
 
     <main>
 
       <h1>
-        Admin Dashboard
+        Dashboard
       </h1>
 
     </main>

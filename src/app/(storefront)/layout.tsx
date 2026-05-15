@@ -1,4 +1,8 @@
-import type { ReactNode } from 'react';
+import type { ReactNode }
+from 'react';
+
+import { StoreNavbar }
+from '@/shared/components/store-navbar';
 
 export default function StorefrontLayout({
   children
@@ -10,17 +14,13 @@ export default function StorefrontLayout({
 
     <div>
 
-      <header>
-        Navbar
-      </header>
+      <StoreNavbar />
 
       <main>
-        {children}
-      </main>
 
-      <footer>
-        Footer
-      </footer>
+        {children}
+
+      </main>
 
     </div>
   );

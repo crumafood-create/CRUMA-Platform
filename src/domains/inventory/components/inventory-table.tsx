@@ -70,13 +70,21 @@ export function InventoryTable({
 
                 {item.warehouse_id}
 
-              </td>
-
               <td className="p-4">
 
-                {item.available_quantity}
+  <div className="flex items-center gap-2">
 
-              </td>
+    {item.available_quantity}
+
+    <LowStockAlert
+      quantity={
+        item.available_quantity
+      }
+    />
+
+  </div>
+
+</td>
 
               <td className="p-4">
 

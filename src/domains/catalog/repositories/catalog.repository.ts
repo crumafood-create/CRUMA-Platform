@@ -13,14 +13,17 @@ export async function getProducts() {
     .from('products')
 
     .select(`
-      id,
-      slug,
-      name,
-      description,
-      image_url,
-      is_active,
-      created_at
-    `)
+  id,
+  slug,
+  name,
+  description,
+  image_url,
+  retail_price,
+  wholesale_price,
+  stock_quantity,
+  is_active,
+  created_at
+`)
 
     .eq('is_active', true)
 

@@ -1,3 +1,6 @@
+import Link
+from 'next/link';
+
 interface Props {
 
   params: Promise<{
@@ -28,6 +31,14 @@ export default async function OrderPage({
         {id}
 
       </p>
+
+      <Link
+        href={`/pedido/${id}/pago`}
+      >
+
+        Subir comprobante
+
+      </Link>
 
     </main>
   );

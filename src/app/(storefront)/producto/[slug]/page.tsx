@@ -1,3 +1,6 @@
+import type { Metadata }
+from 'next';
+
 import { notFound }
 from 'next/navigation';
 
@@ -18,6 +21,24 @@ interface Props {
   params: Promise<{
     slug: string;
   }>;
+}
+export async function generateMetadata({
+  params
+}: Props): Promise<Metadata> {
+
+  const { slug } = await params;
+
+  const product = await fetchProduct(
+    slug
+  );
+
+  return {
+
+    title: product.name,
+
+    description:
+      product.description || undefined
+  };
 }
 
 export default async function ProductPage({

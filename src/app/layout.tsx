@@ -8,6 +8,16 @@ const inter = Inter({
   subsets: ['latin']
 });
 
+export const metadata = {
+
+  manifest: '/manifest.json',
+
+  title: 'Crumafood',
+
+  description:
+    'ERP Ecommerce Platform'
+};
+
 export const metadata: Metadata = {
   title: {
     default: 'Crumafood',

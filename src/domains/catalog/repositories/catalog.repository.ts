@@ -34,3 +34,34 @@ export async function getProducts() {
 
   return data.map(productDto);
 }
+
+export async function getProductBySlug(
+  slug: string
+) {
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+
+    .from('products')
+
+    .select(`
+      id,
+      slug,
+      name,
+      description,
+      image_url,
+      is_active,
+      created_at
+    `)
+
+    .eq('slug', slug)
+
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return productDto(data);
+}

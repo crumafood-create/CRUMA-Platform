@@ -22,6 +22,13 @@ export function StoreNavbar() {
           <Link href="/catalogo">
 
             Catálogo
+  
+            <Link href="/ai">
+
+  AI Search
+
+</Link>
+            /catalogo
 
           </Link>
 

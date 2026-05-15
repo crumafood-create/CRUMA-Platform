@@ -37,4 +37,5 @@ export async function approvePaymentAction(
     orderId
   }
 );
+  .eq('id', orderId);
 }

@@ -1,3 +1,9 @@
+import { notFound }
+from 'next/navigation';
+
+import { fetchProduct }
+from '@/domains/catalog/services/catalog.service';
+
 interface Props {
 
   params: Promise<{
@@ -11,14 +17,25 @@ export default async function ProductPage({
 
   const { slug } = await params;
 
-  return (
+  try {
 
-    <main>
+    const product = await fetchProduct(
+      slug
+    );
 
-      <h1>
-        {slug}
-      </h1>
+    return (
 
-    </main>
-  );
+      <main>
+
+        <h1>
+          {product.name}
+        </h1>
+
+      </main>
+    );
+
+  } catch {
+
+    notFound();
+  }
 }

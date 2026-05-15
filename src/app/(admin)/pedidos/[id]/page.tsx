@@ -47,6 +47,10 @@ export default async function OrderDetailPage({
           {' '}
           {order.payment_status}
         </p>
+        
+        <ApprovePaymentButton
+  orderId={order.id}
+/>
 
       </div>
 

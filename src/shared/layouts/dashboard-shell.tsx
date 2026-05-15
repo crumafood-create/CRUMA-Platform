@@ -48,6 +48,13 @@ export function DashboardShell({
 </Link>
     /admin/inventario
 
+    <Link href="/admin/produccion">
+
+  Producción
+
+</Link>
+    /admin/inventario
+
   </nav>
 
 </aside>

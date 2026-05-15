@@ -1,21 +1,24 @@
 import { fetchProducts }
 from '@/domains/catalog/services/catalog.service';
 
+import { ProductCard }
+from '@/domains/catalog/components/product-card';
+
 export default async function CatalogPage() {
 
   const products = await fetchProducts();
 
   return (
 
-    <main>
+    <main className="grid gap-4">
 
-      <h1>
-        Catálogo
-      </h1>
+      {products.map(product => (
 
-      <pre>
-        {JSON.stringify(products, null, 2)}
-      </pre>
+        <ProductCard
+          key={product.id}
+          product={product}
+        />
+      ))}
 
     </main>
   );

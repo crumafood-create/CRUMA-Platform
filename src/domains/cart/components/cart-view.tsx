@@ -89,11 +89,15 @@ export function CartView() {
 
         </p>
 
-        <Button>
+        <Link href="/checkout">
 
-          Checkout
+  <Button>
 
-        </Button>
+    Checkout
+
+  </Button>
+
+</Link>
 
         <Button
           variant="outline"

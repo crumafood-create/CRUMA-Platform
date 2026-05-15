@@ -6,6 +6,9 @@ from 'next/cache';
 import { createClient }
 from '@/infrastructure/supabase/server';
 
+import { logger }
+from '@/lib/logger';
+
 export async function approvePaymentAction(
   orderId: string
 ) {
@@ -28,4 +31,10 @@ export async function approvePaymentAction(
   revalidatePath(
     `/admin/pedidos/${orderId}`
   );
+  logger.info(
+  'Payment approved',
+  {
+    orderId
+  }
+);
 }

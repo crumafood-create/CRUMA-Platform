@@ -17,15 +17,19 @@ export default function StorefrontLayout({
 
     <div>
 
-      <StoreNavbar />
+  <StoreNavbar />
 
-      <MobileNavbar />
+  <main>
+
+    {children}
+
+  </main>
+
+  <MobileNavbar />
 
       <main>
 
-        {children}
-
-      </main>
+</div>
 
     </div>
   );

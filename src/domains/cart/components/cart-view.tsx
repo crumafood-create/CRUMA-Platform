@@ -1,5 +1,8 @@
 'use client';
 
+import Link
+from 'next/link';
+
 import { useCartStore }
 from '../store/cart.store';
 

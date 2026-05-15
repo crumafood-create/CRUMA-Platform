@@ -1,6 +1,6 @@
 src/app/
 
-├── layout.tsx
+├── 
 ├── 
 ├── loading.tsx
 ├── error.tsx

@@ -4,6 +4,9 @@ from '@/domains/logistics/services/logistics.service';
 import { DeliveriesTable }
 from '@/domains/logistics/components/deliveries-table';
 
+import { DeliveryMetrics }
+from '@/domains/logistics/components/delivery-metrics';
+
 export default async function LogisticsPage() {
 
   const deliveries =

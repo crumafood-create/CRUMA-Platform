@@ -4,6 +4,9 @@ from 'next';
 import { notFound }
 from 'next/navigation';
 
+import { AddToCartButton }
+from '@/domains/cart/components/add-to-cart-button';
+
 import { fetchProduct }
 from '@/domains/catalog/services/catalog.service';
 

@@ -1,8 +1,11 @@
 import { fetchProducts }
 from '@/domains/catalog/services/catalog.service';
 
-import { ProductCard }
-from '@/domains/catalog/components/product-card';
+import { ProductGrid }
+from '@/domains/catalog/components/product-grid';
+
+import { PageContainer }
+from '@/shared/layouts/page-container';
 
 export default async function CatalogPage() {
 
@@ -10,16 +13,22 @@ export default async function CatalogPage() {
 
   return (
 
-    <main className="grid gap-4">
+    <PageContainer>
 
-      {products.map(product => (
+      <div className="mb-8">
 
-        <ProductCard
-          key={product.id}
-          product={product}
-        />
-      ))}
+        <h1 className="text-4xl font-bold">
 
-    </main>
+          Catálogo
+
+        </h1>
+
+      </div>
+
+      <ProductGrid
+        products={products}
+      />
+
+    </PageContainer>
   );
 }

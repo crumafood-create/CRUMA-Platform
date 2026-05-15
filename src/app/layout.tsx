@@ -10,12 +10,22 @@ const inter = Inter({
 
 export const metadata = {
 
-  manifest: '/manifest.json',
+  metadataBase: new URL(
+    'https://crumafood.com'
+  ),
 
-  title: 'Crumafood',
+  title: {
+
+    default: 'Crumafood',
+
+    template:
+      '%s | Crumafood'
+  },
 
   description:
-    'ERP Ecommerce Platform'
+    'ERP Ecommerce Platform',
+
+  manifest: '/manifest.json'
 };
 
 export const metadata: Metadata = {

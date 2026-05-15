@@ -4,6 +4,9 @@ from 'react';
 import { StoreNavbar }
 from '@/shared/components/store-navbar';
 
+import { MobileNavbar }
+from '@/shared/components/mobile-navbar';
+
 export default function StorefrontLayout({
   children
 }: {
@@ -15,6 +18,8 @@ export default function StorefrontLayout({
     <div>
 
       <StoreNavbar />
+
+      <MobileNavbar />
 
       <main>
 

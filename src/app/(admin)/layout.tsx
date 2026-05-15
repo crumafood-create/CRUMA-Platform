@@ -1,9 +1,14 @@
-import type { ReactNode } from 'react';
+import type { ReactNode }
+from 'react';
 
-import { redirect } from 'next/navigation';
+import { redirect }
+from 'next/navigation';
 
 import { getUser }
 from '@/domains/auth/services/get-user';
+
+import { DashboardShell }
+from '@/shared/layouts/dashboard-shell';
 
 export default async function AdminLayout({
   children
@@ -19,16 +24,10 @@ export default async function AdminLayout({
 
   return (
 
-    <div>
+    <DashboardShell>
 
-      <aside>
-        Sidebar
-      </aside>
+      {children}
 
-      <main>
-        {children}
-      </main>
-
-    </div>
+    </DashboardShell>
   );
 }

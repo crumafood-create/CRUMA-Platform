@@ -7,6 +7,8 @@ from '../types/order.type';
 import { OrderStatusBadge }
 from './order-status-badge';
 
+import { ResponsiveTableWrapper }
+from '@/shared/components/responsive-table-wrapper';
 interface Props {
 
   orders: Order[];
@@ -88,6 +90,18 @@ export function OrdersTable({
                     order.payment_status
                   }
                 />
+
+                <ResponsiveTableWrapper>
+
+  <div className="overflow-hidden rounded-2xl border">
+
+    <table>
+
+    </table>
+
+  </div>
+
+</ResponsiveTableWrapper>
 
               </td>
 

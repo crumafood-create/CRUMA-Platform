@@ -41,6 +41,11 @@ export function DashboardShell({
       Inventario
 
     </Link>
+    <Link href="/admin/analytics">
+
+  Analytics
+
+</Link>
 
   </nav>
 

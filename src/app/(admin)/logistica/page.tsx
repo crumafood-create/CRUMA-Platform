@@ -26,6 +26,12 @@ export default async function LogisticsPage() {
 
       </div>
 
+      <DeliveryMetrics
+  totalDeliveries={
+    deliveries.length
+  }
+/>
+
       <DeliveriesTable
         deliveries={deliveries}
       />

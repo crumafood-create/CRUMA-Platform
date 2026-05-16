@@ -101,6 +101,13 @@ export function DashboardShell({
 
 /admin/marketing
 
+<Link href="/admin/hr">
+
+  HR
+
+</Link>
+
+/admin/finance
 
   </nav>
 

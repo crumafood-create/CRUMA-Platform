@@ -109,6 +109,15 @@ export function DashboardShell({
 
 /admin/finance
 
+<Link href="/admin/dms">
+
+  DMS
+
+</Link>
+
+/admin/hr
+
+
   </nav>
 
 </aside>

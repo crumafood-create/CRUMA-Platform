@@ -1,4 +1,3 @@
-ts
 import type { Campaign }
 from '../types/campaign.type';
 

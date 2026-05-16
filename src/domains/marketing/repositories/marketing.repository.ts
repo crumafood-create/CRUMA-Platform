@@ -1,4 +1,3 @@
-ts
 import { createClient }
 from '@/infrastructure/supabase/server';
 

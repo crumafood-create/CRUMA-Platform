@@ -76,7 +76,15 @@ export function DashboardShell({
 </Link>
 
     /admin/tenants
-    
+
+<Link href="/admin/crm">
+
+  CRM
+
+</Link>
+
+/admin/b2b
+
   </nav>
 
 </aside>

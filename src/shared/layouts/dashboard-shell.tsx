@@ -93,6 +93,15 @@ export function DashboardShell({
 
 /admin/crm
 
+<Link href="/admin/finance">
+
+  Finanzas
+
+</Link>
+
+/admin/marketing
+
+
   </nav>
 
 </aside>

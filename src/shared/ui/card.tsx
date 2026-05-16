@@ -1,25 +1,34 @@
-import { cn }
-from '@/lib/utils';
+tsx
+import type { ReactNode }
+from 'react';
 
-import type {
-  HTMLAttributes
-} from 'react';
+interface Props {
+
+  children: ReactNode;
+
+  className?: string;
+}
 
 export function Card({
-  className,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
+  children,
+  className = ''
+}: Props) {
 
   return (
 
     <div
-      className={cn(
+      className={`
+        rounded-2xl
+        border
+        bg-white
+        p-6
+        shadow-sm
+        ${className}
+      `}
+    >
 
-        'rounded-2xl border bg-white p-6 shadow-sm',
+      {children}
 
-        className
-      )}
-      {...props}
-    />
+    </div>
   );
 }

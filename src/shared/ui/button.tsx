@@ -1,4 +1,3 @@
-tsx
 import type { ButtonHTMLAttributes }
 from 'react';
 

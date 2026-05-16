@@ -141,7 +141,15 @@ export function DashboardShell({
 
 /admin/qa
 
+<Link href="/admin/super-admin">
+
+  Super Admin
+
+</Link>
+
+/admin/bi
     
+
   </nav>
 
 </aside>

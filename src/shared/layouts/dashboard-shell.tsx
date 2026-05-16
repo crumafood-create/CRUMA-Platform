@@ -124,7 +124,15 @@ export function DashboardShell({
 </Link>
 
 /admin/dms
-    
+
+<Link href="/admin/qa">
+
+  QA
+
+</Link>
+
+/admin/procurement
+
 
   </nav>
 

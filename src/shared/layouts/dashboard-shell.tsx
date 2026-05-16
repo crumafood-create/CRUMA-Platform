@@ -133,7 +133,15 @@ export function DashboardShell({
 
 /admin/procurement
 
+<Link href="/admin/bi">
 
+  Executive BI
+
+</Link>
+
+/admin/qa
+
+    
   </nav>
 
 </aside>

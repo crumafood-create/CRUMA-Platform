@@ -68,6 +68,14 @@ export function DashboardShell({
 </Link>/
     
     admin/logistica
+
+    <Link href="/admin/b2b">
+
+  B2B
+
+</Link>
+
+    /admin/tenants
     
   </nav>
 

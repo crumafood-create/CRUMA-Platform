@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getExecutiveSummary }
 from '../repositories/bi.repository';
 

@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getDeliveries }
 from '../repositories/logistics.repository';
 

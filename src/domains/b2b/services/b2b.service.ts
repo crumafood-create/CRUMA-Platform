@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getB2BCustomers }
 from '../repositories/b2b.repository';
 

@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getTenants }
 from '../repositories/tenant.repository';
 

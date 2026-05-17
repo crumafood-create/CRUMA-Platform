@@ -1,0 +1,5 @@
+export const APP_NAME =
+  'Crumafood';
+
+export const APP_VERSION =
+  '1.0.0';

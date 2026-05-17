@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getEmployees }
 from '../repositories/hr.repository';
 

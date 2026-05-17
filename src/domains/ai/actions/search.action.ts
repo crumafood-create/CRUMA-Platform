@@ -1,5 +1,7 @@
 'use server';
 
+import 'server-only';
+
 import { semanticSearch }
 from '../services/ai.service';
 

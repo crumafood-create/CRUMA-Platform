@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getCustomerProfiles }
 from '../repositories/crm.repository';
 

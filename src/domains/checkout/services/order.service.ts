@@ -1,3 +1,5 @@
+import 'server-only';
+
 export interface CreateOrderItem {
 
   product_id: string;

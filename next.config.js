@@ -4,6 +4,22 @@ const nextConfig = {
 
   reactStrictMode: true,
 
+  compress: true,
+
+  typedRoutes: true,
+
+  images: {
+
+  formats: [
+    'image/avif',
+    'image/webp'
+  ]
+},
+
+  poweredByHeader: false,
+
+
+
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb'

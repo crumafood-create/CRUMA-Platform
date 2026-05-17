@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { searchProductsSemantic }
 from '../repositories/ai.repository';
 

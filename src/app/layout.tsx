@@ -8,26 +8,6 @@ const inter = Inter({
   subsets: ['latin']
 });
 
-export const metadata = {
-
-  metadataBase: new URL(
-    'https://crumafood.com'
-  ),
-
-  title: {
-
-    default: 'Crumafood',
-
-    template:
-      '%s | Crumafood'
-  },
-
-  description:
-    'ERP Ecommerce Platform',
-
-  manifest: '/manifest.json'
-};
-
 export const metadata: Metadata = {
   title: {
     default: 'Crumafood',

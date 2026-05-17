@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getDocuments }
 from '../repositories/dms.repository';
 

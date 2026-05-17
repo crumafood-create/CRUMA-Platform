@@ -1,3 +1,5 @@
+import 'server-only';
+
 export function getTierDiscount(
   tier: string
 ) {

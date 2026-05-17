@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getGlobalUsers }
 from '../repositories/super-admin.repository';
 

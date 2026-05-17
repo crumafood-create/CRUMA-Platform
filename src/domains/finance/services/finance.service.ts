@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getInvoices }
 from '../repositories/finance.repository';
 

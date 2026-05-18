@@ -6,7 +6,7 @@ export default function Loading() {
   return (
 
     <LoadingState
-      message="Cargando logistica..."
+      message="Cargando logística..."
     />
   );
 }

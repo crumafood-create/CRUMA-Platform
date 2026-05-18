@@ -13,7 +13,17 @@ from '@/shared/layouts/dashboard-shell';
 export default async function AdminLayout({
   children
 }: {
+  interface Props {
+
   children: ReactNode;
+
+  modal: ReactNode;
+
+  analytics: ReactNode;
+
+  activity: ReactNode;
+}
+                                          
 }) {
 
   const user = await getUser();

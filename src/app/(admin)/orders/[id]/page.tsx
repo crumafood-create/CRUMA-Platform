@@ -1,6 +1,3 @@
-import { fetchOrder }
-from '@/domains/orders/services/orders.service';
-
 interface Props {
 
   params: Promise<{
@@ -8,52 +5,19 @@ interface Props {
   }>;
 }
 
-import { ApprovePaymentButton }
-from '@/domains/orders/components/approve-payment-button';
-
-export default async function OrderDetailPage({
+export default async function Page({
   params
 }: Props) {
 
-  const { id } = await params;
-
-  const order = await fetchOrder(id);
+  const { id } =
+    await params;
 
   return (
 
-    <main className="space-y-6">
+    <div>
 
-      <h1 className="text-4xl font-bold">
+      Pedido #{id}
 
-        Pedido
-      </h1>
-
-      <div className="rounded-2xl border p-6">
-
-        <p>
-          Cliente:
-          {' '}
-          {order.full_name}
-        </p>
-
-        <p>
-          Estado:
-          {' '}
-          {order.status}
-        </p>
-
-        <p>
-          Pago:
-          {' '}
-          {order.payment_status}
-        </p>
-        
-        <ApprovePaymentButton
-  orderId={order.id}
-/>
-
-      </div>
-
-    </main>
+    </div>
   );
 }

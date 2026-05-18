@@ -10,6 +10,37 @@ from '@/domains/auth/services/get-user';
 import { DashboardShell }
 from '@/shared/layouts/dashboard-shell';
 
+export default function Layout({
+
+  children,
+
+  modal,
+
+  analytics,
+
+  activity
+
+}: Props) {
+
+  return (
+
+    <div className="space-y-6">
+
+      {children}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+
+        {analytics}
+
+        {activity}
+
+      </div>
+
+      {modal}
+
+    </div>
+  );
+}
 export default async function AdminLayout({
   children
 }: {

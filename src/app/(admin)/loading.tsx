@@ -1,15 +1,12 @@
-export default function AdminLoading() {
+import { LoadingState }
+from '@/shared/ui/loading-state';
+
+export default function Loading() {
 
   return (
 
-    <main className="flex min-h-screen items-center justify-center">
-
-      <p>
-
-        Cargando admin...
-
-      </p>
-
-    </main>
+    <LoadingState
+      message="Cargando dashboard..."
+    />
   );
 }

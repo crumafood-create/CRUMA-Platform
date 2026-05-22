@@ -2,10 +2,18 @@
 
 import type { ReactNode } from 'react';
 
+import { ThemeProvider } from './theme-provider';
+
+interface AppProviderProps {
+  children: ReactNode;
+}
+
 export function AppProvider({
   children,
-}: {
-  children: ReactNode;
-}) {
-  return <>{children}</>;
+}: AppProviderProps) {
+  return (
+    <ThemeProvider>
+      {children}
+    </ThemeProvider>
+  );
 }

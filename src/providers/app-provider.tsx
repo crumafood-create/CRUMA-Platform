@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { ThemeProvider } from './theme-provider';
 import { QueryProvider } from './query-provider';
+import { ToastProvider } from './toast-provider';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -16,6 +17,8 @@ export function AppProvider({
     <ThemeProvider>
       <QueryProvider>
         {children}
+
+        <ToastProvider />
       </QueryProvider>
     </ThemeProvider>
   );

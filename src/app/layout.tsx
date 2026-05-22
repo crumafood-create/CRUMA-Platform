@@ -1,40 +1,33 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { AppProvider } from '@/providers/app-provider';
-import { RealtimeProvider } from '@/domains/realtime/providers/realtime-provider';
+import type { ReactNode } from 'react';
 
 const inter = Inter({
-  subsets: ['latin']
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
   title: {
     default: 'Crumafood',
-    template: '%s | Crumafood'
+    template: '%s | Crumafood',
   },
   description: 'Tequeños, empanadas y productos congelados artesanales.',
   metadataBase: new URL('https://crumafood.com.mx'),
   robots: {
     index: true,
-    follow: true
-  }
+    follow: true,
+  },
 };
 
 export default function RootLayout({
-  children
+  children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <html lang="es">
-      <body className={inter.className}>
-        <AppProvider>
-          <RealtimeProvider>
-            {children}
-          </RealtimeProvider>
-        </AppProvider>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

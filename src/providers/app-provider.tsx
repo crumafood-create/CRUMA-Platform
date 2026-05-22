@@ -1,13 +1,25 @@
 'use client';
 
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ThemeProvider } from './theme-provider';
+import { QueryProvider } from './query-provider';
 
-import { useState } from 'react';
+interface AppProviderProps {
+  children: ReactNode;
+}
+
+export function AppProvider({
+  children,
+}: AppProviderProps) {
+  return (
+    <ThemeProvider>
+      <QueryProvider>
+        {children}
+      </QueryProvider>
+    </ThemeProvider>
+  );
+}
 
 interface QueryProviderProps {
   children: React.ReactNode;

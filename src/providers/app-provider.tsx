@@ -1,19 +1,39 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 
-import { ThemeProvider } from './theme-provider';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-interface AppProviderProps {
-  children: ReactNode;
+import { useState } from 'react';
+
+interface QueryProviderProps {
+  children: React.ReactNode;
 }
 
-export function AppProvider({
+export function QueryProvider({
   children,
-}: AppProviderProps) {
+}: QueryProviderProps) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 1000 * 60,
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  );
+
   return (
-    <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
       {children}
-    </ThemeProvider>
+
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }

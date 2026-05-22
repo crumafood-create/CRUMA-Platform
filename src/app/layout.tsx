@@ -1,7 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { Inter } from 'next/font/google';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -12,12 +12,8 @@ export const metadata: Metadata = {
     default: 'Crumafood',
     template: '%s | Crumafood',
   },
-  description: 'Tequeños, empanadas y productos congelados artesanales.',
-  metadataBase: new URL('https://crumafood.com.mx'),
-  robots: {
-    index: true,
-    follow: true,
-  },
+  description:
+    'Tequeños, empanadas y productos congelados artesanales.',
 };
 
 export default function RootLayout({
@@ -27,7 +23,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {children}
+      </body>
     </html>
   );
 }

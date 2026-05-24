@@ -28,6 +28,10 @@ export default function RootLayout({
   <body suppressHydrationWarning>
     
     metadataBase: new URL('https://crumafood.com.mx'),
+    viewport: {
+  width: 'device-width',
+  initialScale: 1,
+},
     
     <body
   className={inter.className}

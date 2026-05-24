@@ -1,36 +1,24 @@
-import type { ReactNode }
-from 'react';
+import type { ReactNode } from 'react';
 
-import { StoreNavbar }
-from '@/shared/components/store-navbar';
+import { StorefrontNavbar } from './_components/navigation/storefront-navbar';
+import { MobileMenu } from './_components/navigation/mobile-menu';
 
-import { MobileNavbar }
-from '@/shared/components/mobile-navbar';
+interface StorefrontLayoutProps {
+  children: ReactNode;
+}
 
 export default function StorefrontLayout({
-  children
-}: {
-  children: ReactNode;
-}) {
-
+  children,
+}: StorefrontLayoutProps) {
   return (
-
-    <div>
-
-  <StoreNavbar />
-
-  <main>
-
-    {children}
-
-  </main>
-
-  <MobileNavbar />
+    <div className="min-h-screen">
+      <StorefrontNavbar />
 
       <main>
+        {children}
+      </main>
 
-</div>
-
+      <MobileMenu />
     </div>
   );
 }

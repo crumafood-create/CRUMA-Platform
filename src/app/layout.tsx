@@ -26,7 +26,10 @@ export default function RootLayout({
   return (
     <html lang="es">
   <body suppressHydrationWarning>
-      <body
+    
+    metadataBase: new URL('https://crumafood.com.mx'),
+    
+    <body
   className={inter.className}
   suppressHydrationWarning
 >

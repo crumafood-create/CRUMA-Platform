@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 
-import { ThemeProvider } from './theme-provider';
 import { QueryProvider } from './query-provider';
+import { ThemeProvider } from './theme-provider';
 import { ToastProvider } from './toast-provider';
 
 interface AppProviderProps {
@@ -21,34 +21,5 @@ export function AppProvider({
         <ToastProvider />
       </QueryProvider>
     </ThemeProvider>
-  );
-}
-
-interface QueryProviderProps {
-  children: React.ReactNode;
-}
-
-export function QueryProvider({
-  children,
-}: QueryProviderProps) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 1000 * 60,
-            retry: 1,
-            refetchOnWindowFocus: false,
-          },
-        },
-      })
-  );
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
   );
 }

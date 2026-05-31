@@ -1,36 +1,40 @@
-interface Props {
-
-  title: string;
-
-  description?: string;
-}
+import { PageHeaderProps } from './page-header.types';
 
 export function PageHeader({
-
   title,
-  description
-
-}: Props) {
-
+  description,
+  breadcrumbs,
+  actions,
+  className,
+}: PageHeaderProps) {
   return (
+    <header
+      className={[
+        'flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <div>
+        {breadcrumbs}
 
-    <div>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight">
+          {title}
+        </h1>
 
-      <h1 className="text-4xl font-bold tracking-tight">
+        {description && (
+          <p className="mt-2 text-muted-foreground">
+            {description}
+          </p>
+        )}
+      </div>
 
-        {title}
-
-      </h1>
-
-      {description && (
-
-        <p className="mt-2 text-gray-500">
-
-          {description}
-
-        </p>
+      {actions && (
+        <div className="flex items-center gap-2">
+          {actions}
+        </div>
       )}
-
-    </div>
+    </header>
   );
 }

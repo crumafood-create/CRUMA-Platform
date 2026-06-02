@@ -14,7 +14,7 @@ export default function Error({
   return (
     <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-6">
       <h2 className="text-xl font-semibold">
-        Error en Negocio a Negocio 
+        Error en B2B
       </h2>
 
       <p className="text-center text-sm text-muted-foreground">

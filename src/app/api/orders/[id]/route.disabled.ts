@@ -2,7 +2,7 @@ import { NextResponse }
 from 'next/server';
 
 import { createClient }
-from '@/infrastructure/supabase/server';
+from '@/infrastructure/integrations/supabase/server';
 
 interface Props {
 

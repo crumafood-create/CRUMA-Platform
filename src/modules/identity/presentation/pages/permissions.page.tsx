@@ -5,7 +5,7 @@ import {
   SectionCard,
 } from '@/shared/ui/layout';
 
-import { Button } from '@/shared/ui/buttons';
+import { Button } from '@/shared/ui/primitives/button';
 
 import {
   IdentityLayout,

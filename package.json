@@ -26,6 +26,8 @@
 
     "zod": "^3.24.2",
 
+    "@hookform/resolvers": "^3.10.0"
+    
     "react-hook-form": "^7.54.2",
 
     "lucide-react": "^0.511.0",

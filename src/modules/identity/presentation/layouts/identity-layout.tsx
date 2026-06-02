@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import {
   ContentGrid,
@@ -10,15 +10,15 @@ import {
   IdentitySidebar,
 } from '../navigation';
 
-interface Props {
+interface IdentityLayoutProps {
   children: ReactNode;
 }
 
 export function IdentityLayout({
   children,
-}: Props) {
+}: IdentityLayoutProps) {
   return (
-    <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+    <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
       <IdentitySidebar />
 
       <ContentGrid>

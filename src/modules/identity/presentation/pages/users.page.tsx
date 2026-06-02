@@ -1,20 +1,15 @@
 'use client';
 
 import {
-  ContentGrid,
   PageHeader,
   SectionCard,
 } from '@/shared/ui/layout';
 
-import {
-  IdentityLayout,
-} from '../layouts';
-
-import {
-  IdentityLayout,
-} from '../layouts';
-
 import { Button } from '@/shared/ui/buttons';
+
+import {
+  IdentityLayout,
+} from '../layouts';
 
 import {
   UserFilters,
@@ -32,7 +27,7 @@ export function UsersPage() {
   } = useUsers();
 
   return (
-    <ContentGrid>
+    <IdentityLayout>
       <PageHeader
         title="Usuarios"
         description="Administra usuarios, roles y accesos"
@@ -71,36 +66,6 @@ export function UsersPage() {
           loading={isLoading}
         />
       </SectionCard>
-    </ContentGrid>
-  <IdentityLayout>
-    ...
-  </IdentityLayout>
-    return (
-  <IdentityLayout>
-    <PageHeader
-      title="Usuarios"
-      description="Administra usuarios, roles y accesos"
-      actions={
-        <Button>
-          Nuevo Usuario
-        </Button>
-      }
-    />
-
-    <SectionCard>
-      <UserFilters />
-    </SectionCard>
-
-    <SectionCard
-      title="Usuarios"
-      description="Listado de usuarios registrados"
-    >
-      <UserTable
-        data={users}
-        loading={isLoading}
-      />
-    </SectionCard>
-  </IdentityLayout>
-);
-
+    </IdentityLayout>
+  );
 }

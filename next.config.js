@@ -2,7 +2,7 @@
 
 const nextConfig = {
   output: 'standalone',
-  
+
   reactStrictMode: true,
 
   compress: true,
@@ -25,10 +25,9 @@ const nextConfig = {
 
     remotePatterns: [
       {
-        {
-  protocol: 'https',
-  hostname: '*.supabase.co'
-      }
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
     ],
   },
 
@@ -50,8 +49,7 @@ const nextConfig = {
 
           {
             key: 'Referrer-Policy',
-            value:
-              'strict-origin-when-cross-origin',
+            value: 'strict-origin-when-cross-origin',
           },
         ],
       },

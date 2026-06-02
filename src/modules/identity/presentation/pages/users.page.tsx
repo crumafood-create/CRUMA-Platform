@@ -10,6 +10,10 @@ import {
   IdentityLayout,
 } from '../layouts';
 
+import {
+  IdentityLayout,
+} from '../layouts';
+
 import { Button } from '@/shared/ui/buttons';
 
 import {
@@ -71,5 +75,32 @@ export function UsersPage() {
   <IdentityLayout>
     ...
   </IdentityLayout>
+    return (
+  <IdentityLayout>
+    <PageHeader
+      title="Usuarios"
+      description="Administra usuarios, roles y accesos"
+      actions={
+        <Button>
+          Nuevo Usuario
+        </Button>
+      }
+    />
+
+    <SectionCard>
+      <UserFilters />
+    </SectionCard>
+
+    <SectionCard
+      title="Usuarios"
+      description="Listado de usuarios registrados"
+    >
+      <UserTable
+        data={users}
+        loading={isLoading}
+      />
+    </SectionCard>
+  </IdentityLayout>
+);
 
 }

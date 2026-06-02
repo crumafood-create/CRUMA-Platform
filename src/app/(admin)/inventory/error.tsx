@@ -1,38 +1,32 @@
 'use client';
 
-interface Props {
-
-  error: Error;
-
+type ErrorProps = {
+  error: Error & { digest?: string };
   reset: () => void;
-}
+};
 
 export default function Error({
   error,
-  reset
-}: Props) {
+  reset,
+}: ErrorProps) {
+  console.error(error);
 
   return (
-
-    <div className="rounded-2xl border bg-white p-8">
-
+    <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-6">
       <h2 className="text-xl font-semibold">
-
-        Algo salió mal
+        Error en Inventario 
       </h2>
 
-      <p className="mt-2 text-sm text-gray-500">
-
-        {error.message}
+      <p className="text-center text-sm text-muted-foreground">
+        Ocurrió un error inesperado.
       </p>
 
       <button
-        onClick={reset}
-        className="mt-4 rounded-xl bg-black px-4 py-2 text-white"
+        onClick={() => reset()}
+        className="rounded-md border px-4 py-2"
       >
         Reintentar
       </button>
-
     </div>
   );
 }

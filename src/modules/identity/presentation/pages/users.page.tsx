@@ -6,6 +6,10 @@ import {
   SectionCard,
 } from '@/shared/ui/layout';
 
+import {
+  IdentityLayout,
+} from '../layouts';
+
 import { Button } from '@/shared/ui/buttons';
 
 import {
@@ -64,5 +68,8 @@ export function UsersPage() {
         />
       </SectionCard>
     </ContentGrid>
-  );
+  <IdentityLayout>
+    ...
+  </IdentityLayout>
+
 }

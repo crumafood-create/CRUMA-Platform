@@ -9,9 +9,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/shared/ui/overlay';
+} from '@/shared/ui/overlays';
 
-import { Button } from '@/shared/ui/buttons';
+import { Button } from '@/shared/ui/primitives/button';
 
 import {
   MoreHorizontal,

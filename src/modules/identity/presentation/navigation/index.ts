@@ -1,1 +1,1 @@
-
+export * from './identity-sidebar';

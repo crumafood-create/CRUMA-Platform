@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+import type { CookieOptions } from '@supabase/ssr';
 
 import { NextResponse } from 'next/server';
 
@@ -26,7 +26,13 @@ export async function updateSession(
           return request.cookies.getAll();
         },
 
-        setAll(cookiesToSet) {
+        setAll(
+  cookiesToSet: {
+    name: string;
+    value: string;
+    options: CookieOptions;
+  }[]
+) {
 
           cookiesToSet.forEach(
             ({ name, value, options }) =>

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import StorefrontNavbar from './_components/navigation/storefront-navbar';
 
-import { MobileMenu } from './_components/navigation/mobile-menu';
+import MobileMenu from './_components/navigation/mobile-menu';
 
 interface StorefrontLayoutProps {
   children: ReactNode;

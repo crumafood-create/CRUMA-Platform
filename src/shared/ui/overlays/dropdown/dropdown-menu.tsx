@@ -24,10 +24,10 @@ export function DropdownMenuContent({
   return <div>{children}</div>;
 }
 
-export function Item DropdownMenu({
+export function DropdownMenuItem({
   children,
 }: {
   children: ReactNode;
 }) {
   return <div>{children}</div>;
-}
+                                    }

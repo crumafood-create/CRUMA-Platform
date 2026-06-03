@@ -1,8 +1,3 @@
-export default function Page() {
-
-  return (
-    <div>
-      Inventory Module
-    </div>
-  );
+export default function WarehousesPage() {
+  return <div>Warehouses</div>;
 }

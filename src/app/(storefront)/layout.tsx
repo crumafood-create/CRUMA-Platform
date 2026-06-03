@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
-import { StorefrontNavbar } from './_components/navigation/storefront-navbar';
+import StorefrontNavbar from './_components/navigation/storefront-navbar';
+
 import { MobileMenu } from './_components/navigation/mobile-menu';
 
 interface StorefrontLayoutProps {

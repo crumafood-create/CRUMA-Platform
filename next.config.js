@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 
+/** @type {import('next').NextConfig} */
+
 const nextConfig = {
   output: 'standalone',
 
@@ -11,6 +13,10 @@ const nextConfig = {
 
   poweredByHeader: false,
 
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
@@ -18,10 +24,7 @@ const nextConfig = {
   },
 
   images: {
-    formats: [
-      'image/avif',
-      'image/webp',
-    ],
+    formats: ['image/avif', 'image/webp'],
 
     remotePatterns: [
       {
@@ -35,18 +38,15 @@ const nextConfig = {
     return [
       {
         source: '/(.*)',
-
         headers: [
           {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
-
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
           },
-
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',

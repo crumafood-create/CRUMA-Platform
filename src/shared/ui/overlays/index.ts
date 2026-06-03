@@ -3,4 +3,4 @@ export {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from '.dropdown/dropdown-menu';
+} from './dropdown/dropdown-menu';

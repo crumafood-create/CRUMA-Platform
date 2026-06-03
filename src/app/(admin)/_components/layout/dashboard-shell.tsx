@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export function DashboardShell({
   children,
 }: {
@@ -5,8 +7,7 @@ export function DashboardShell({
 }) {
   return (
     <div>
-      <AdminSidebar />
-      <main>{children}</main>
+      {children}
     </div>
   );
 }

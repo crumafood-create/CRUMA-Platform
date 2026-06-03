@@ -1,31 +1,13 @@
-import Link from 'next/link';
-
-export function StorefrontNavbar() {
+export default function StorefrontNavbarPage() {
   return (
-    <header className="border-b">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+    <main className="space-y-6">
+      <h1 className="text-4xl font-bold">
+        Storefront Navbar
+      </h1>
 
-        <Link href="/">
-          <h2>Crumafood</h2>
-        </Link>
-
-        <nav className="flex items-center gap-4">
-
-          <Link href="/catalogo">
-            Catálogo
-          </Link>
-
-          <Link href="/ai">
-            AI Search
-          </Link>
-
-          <Link href="/carrito">
-            Carrito
-          </Link>
-
-        </nav>
-
+      <div className="rounded-2xl border p-6">
+        Sistema activo
       </div>
-    </header>
+    </main>
   );
 }

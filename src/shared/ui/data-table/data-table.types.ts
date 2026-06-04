@@ -1,5 +1,5 @@
 export interface DataTableProps {
-  columns?: any[];
-  data?: any[];
-  loading?: boolean;
+  columns?: any[] | undefined;
+  data?: any[] | undefined;
+  loading?: boolean | undefined;
 }

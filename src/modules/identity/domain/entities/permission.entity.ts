@@ -1,4 +1,4 @@
-export class Tenant {
+export class Permission {
   constructor(
     public id: string,
     public name: string

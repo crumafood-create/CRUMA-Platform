@@ -3,7 +3,6 @@ import type {
   HTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
-  SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
 
@@ -15,8 +14,43 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea {...props} />;
 }
 
-export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} />;
+type SelectProps = {
+  value?: string;
+  onValueChange?: (value: string) => void;
+  children?: React.ReactNode;
+};
+
+export function FormInput(props: any) {
+  return <Input {...props} />;
+}
+
+export function FormSelect(props: any) {
+  return <Select {...props} />;
+}
+
+export function FormSwitch(props: any) {
+  return <input type="checkbox" {...props} />;
+}
+
+export function FormSubmit(props: any) {
+  return <button type="submit" {...props} />;
+}
+
+export function Select({
+  value,
+  onValueChange,
+  children,
+}: SelectProps) {
+  return (
+    <select
+      value={value}
+      onChange={(e) =>
+        onValueChange?.(e.target.value)
+      }
+    >
+      {children}
+    </select>
+  );
 }
 
 export function SelectTrigger({
@@ -35,16 +69,16 @@ export function SelectContent({
 
 export function SelectItem({
   children,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
-  return <div {...props}>{children}</div>;
+  value,
+}: {
+  children?: ReactNode;
+  value?: string;
+}) {
+  return <option value={value}>{children}</option>;
 }
 
-export function SelectValue({
-  children,
-  ...props
-}: HTMLAttributes<HTMLSpanElement>) {
-  return <span {...props}>{children}</span>;
+export function SelectValue() {
+  return null;
 }
 
 export function Form({

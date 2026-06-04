@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 import { TimelineProps } from './timeline.types'
-import { TimelineItem } from './timeline-item'
+import { TimelineEntry } from './timeline-item';
 
 export function Timeline({
   items,
@@ -15,11 +15,11 @@ export function Timeline({
       )}
     >
       {items.map((item, index) => (
-        <TimelineItem
-          key={item.id}
-          item={item}
-          isLast={index === items.length - 1}
-        />
+        <TimelineEntry
+  key={item.id}
+  item={item}
+  isLast={...}
+/>
       ))}
     </div>
   )

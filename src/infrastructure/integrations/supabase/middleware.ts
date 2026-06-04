@@ -1,3 +1,5 @@
+import { createServerClient } from '@supabase/ssr';
+
 import type { CookieOptions } from '@supabase/ssr';
 
 import { NextResponse } from 'next/server';

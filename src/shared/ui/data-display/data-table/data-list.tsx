@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-import { DataListItem } from './data-list-item'
+import { DataListRow } from './data-list-item';
 import { DataListProps } from './data-list.types'
 
 export function DataList({

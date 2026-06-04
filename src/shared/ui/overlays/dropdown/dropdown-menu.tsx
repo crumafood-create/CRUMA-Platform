@@ -10,10 +10,12 @@ export function DropdownMenu({
 
 export function DropdownMenuTrigger({
   children,
+  asChild,
 }: {
-  children: ReactNode;
+  children?: React.ReactNode;
+  asChild?: boolean;
 }) {
-  return <div>{children}</div>;
+  return <>{children}</>;
 }
 
 export function DropdownMenuContent({

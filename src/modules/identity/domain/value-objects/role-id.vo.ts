@@ -13,7 +13,7 @@ export class RoleId {
     return this.value;
   }
 
-  equals(other: RoletId): boolean {
+  equals(other: RoleId): boolean {
     return this.value === other.value;
   }
 }

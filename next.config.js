@@ -9,7 +9,7 @@ const nextConfig = {
 
   compress: true,
 
-  typedRoutes: true,
+  typedRoutes: false,
 
   poweredByHeader: false,
 

@@ -1,35 +1,45 @@
 import type { ReactNode } from 'react';
 
-export function DropdownMenu({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return <div>{children}</div>;
+export function DropdownMenu(props: any) {
+  return <div>{props.children}</div>;
 }
 
-export function DropdownMenuTrigger({
-  children,
-  asChild,
-}: {
-  children?: React.ReactNode;
-  asChild?: boolean;
-}) {
-  return <>{children}</>;
+export function DropdownMenuTrigger(props: any) {
+  return <>{props.children}</>;
 }
 
-export function DropdownMenuContent({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return <div>{children}</div>;
+export function DropdownMenuContent(props: any) {
+  return <div>{props.children}</div>;
 }
 
-export function DropdownMenuItem({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return <div>{children}</div>;
-                                    }
+export function DropdownMenuItem(props: any) {
+  return <div>{props.children}</div>;
+}
+
+export function DropdownMenuLabel(props: any) {
+  return <div>{props.children}</div>;
+}
+
+export function DropdownMenuSeparator(props: any) {
+  return <hr />;
+}
+
+export function DropdownMenuGroup(props: any) {
+  return <div>{props.children}</div>;
+}
+
+export function DropdownMenuPortal(props: any) {
+  return <>{props.children}</>;
+}
+
+export function DropdownMenuSub(props: any) {
+  return <div>{props.children}</div>;
+}
+
+export function DropdownMenuSubTrigger(props: any) {
+  return <div>{props.children}</div>;
+}
+
+export function DropdownMenuSubContent(props: any) {
+  return <div>{props.children}</div>;
+}

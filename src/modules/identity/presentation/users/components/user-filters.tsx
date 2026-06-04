@@ -75,9 +75,7 @@ export function UserFilters({
 
       <Select
         value={role}
-        onValueChange={
-          onRoleChange
-        }
+        onValueChange={onRoleChange}
       >
         <SelectTrigger
           className="w-full md:w-56"
@@ -103,9 +101,7 @@ export function UserFilters({
 
       <Select
         value={status}
-        onValueChange={
-          onStatusChange
-        }
+        onValueChange={onStatusChange}
       >
         <SelectTrigger
           className="w-full md:w-56"

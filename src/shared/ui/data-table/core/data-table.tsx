@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 
-interface DataTableProps {
-  data?: any[];
-  columns?: any[];
-  loading?: boolean;
+export interface DataTableProps {
+  data?: any[] | undefined;
+  columns?: any[] | undefined;
+  loading?: boolean | undefined;
   children?: ReactNode;
 }
 

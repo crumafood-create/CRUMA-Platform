@@ -1,10 +1,10 @@
-import { ActivityItem as ActivityItemType } from './activity-feed.types'
+import { ActivityItem as ActivityItemType } from './activity-feed.types';
 
 interface Props {
-  item: ActivityItemType
+  item: ActivityItemType;
 }
 
-export function ActivityItem({
+export function ActivityFeedItem({
   item,
 }: Props) {
   return (
@@ -31,5 +31,5 @@ export function ActivityItem({
         </span>
       </div>
     </div>
-  )
-          }
+  );
+}

@@ -1,4 +1,4 @@
-export class TenantId {
+export class RoleId {
   private readonly value: string;
 
   constructor(value: string) {
@@ -13,7 +13,7 @@ export class TenantId {
     return this.value;
   }
 
-  equals(other: TenantId): boolean {
+  equals(other: RoletId): boolean {
     return this.value === other.value;
   }
 }

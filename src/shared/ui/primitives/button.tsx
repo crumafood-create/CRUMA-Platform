@@ -1,22 +1,41 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  ReactNode,
+} from 'react';
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement>;
+export type ButtonProps =
+  ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?:
+      | 'default'
+      | 'ghost'
+      | 'outline'
+      | 'secondary'
+      | 'destructive';
+
+    size?:
+      | 'default'
+      | 'sm'
+      | 'lg'
+      | 'icon';
+
+    children?: ReactNode;
+  };
 
 export function Button({
   children,
+  variant,
+  size,
   ...props
-}: Props) {
+}: ButtonProps) {
   return (
-    <button {...props}>
+    <button
+      data-variant={variant}
+      data-size={size}
+      {...props}
+    >
       {children}
     </button>
   );
 }
 
-
-
-
-
-
-
-
+export default Button;

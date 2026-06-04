@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
-import { ActivityItem } from './activity-item'
-import { ActivityFeedProps } from './activity-feed.types'
+import { ActivityFeedItem } from './activity-item';
+import { ActivityFeedProps } from './activity-feed.types';
 
 export function ActivityFeed({
   items,
@@ -22,12 +22,12 @@ export function ActivityFeed({
 
       <div className="divide-y">
         {items.map((item) => (
-          <ActivityItem
+          <ActivityFeedItem
             key={item.id}
             item={item}
           />
         ))}
       </div>
     </div>
-  )
+  );
 }

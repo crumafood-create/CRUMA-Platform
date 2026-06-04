@@ -16,11 +16,11 @@ export function DataList({
     >
       <div className="divide-y">
         {items.map((item) => (
-          <DataListItem
-            key={item.id}
-            item={item}
-          />
-        ))}
+  <DataListRow
+    key={item.id}
+    item={item}
+  />
+))}
       </div>
     </div>
   )

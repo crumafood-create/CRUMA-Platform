@@ -1,10 +1,10 @@
-import { DataListItem as Item } from './data-list.types'
+import { DataListItem as Item } from './data-list.types';
 
 interface Props {
-  item: Item
+  item: Item;
 }
 
-export function DataListItem({
+export function DataListRow({
   item,
 }: Props) {
   return (
@@ -33,5 +33,5 @@ export function DataListItem({
         </span>
       )}
     </div>
-  )
+  );
 }

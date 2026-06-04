@@ -3,7 +3,7 @@ export class RoleId {
 
   constructor(value: string) {
     if (!value?.trim()) {
-      throw new Error('TenantId is required');
+      throw new Error('PermissionId is required');
     }
 
     this.value = value.trim();

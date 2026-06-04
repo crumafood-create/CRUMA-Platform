@@ -15,9 +15,9 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 }
 
 type SelectProps = {
-  value?: string;
-  onValueChange?: (value: string) => void;
-  children?: React.ReactNode;
+  value?: any;
+  onValueChange?: any;
+  children?: ReactNode;
 };
 
 export function FormInput(props: any) {
@@ -43,7 +43,7 @@ export function Select({
 }: SelectProps) {
   return (
     <select
-      value={value}
+      value={value ?? ''}
       onChange={(e) =>
         onValueChange?.(e.target.value)
       }

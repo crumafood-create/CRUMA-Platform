@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 interface DataTableProps {
   data?: any[];
   columns?: any[];
+  loading?: boolean;
   children?: ReactNode;
 }
 

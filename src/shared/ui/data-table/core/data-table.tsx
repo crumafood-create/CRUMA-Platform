@@ -7,7 +7,7 @@ export interface DataTableProps {
   children?: ReactNode;
 }
 
-export function DataTable({
+export interface DataTableProps ({
   children,
 }: DataTableProps) {
   return (

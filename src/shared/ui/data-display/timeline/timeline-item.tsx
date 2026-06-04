@@ -1,12 +1,11 @@
-import { TimelineItem as TimelineItemType } from './timeline.types'
+import { TimelineItem as TimelineItemType } from './timeline.types';
 
 interface Props {
-  item: TimelineItemType
-
-  isLast?: boolean
+  item: TimelineItemType;
+  isLast?: boolean;
 }
 
-export function TimelineItem({
+export function TimelineEntry({
   item,
   isLast = false,
 }: Props) {
@@ -42,5 +41,5 @@ export function TimelineItem({
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 
-export interface DataTableProps {
+interface DataTableProps {
   data?: any[] | undefined;
   columns?: any[] | undefined;
   loading?: boolean | undefined;
   children?: ReactNode;
 }
 
-export interface DataTableProps ({
+export function DataTable({
   children,
 }: DataTableProps) {
   return (

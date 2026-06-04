@@ -50,19 +50,17 @@ export function FormSubmit(props: any) {
   );
 }
 
-export function Select({
-  value,
-  onValueChange,
-  children,
-}: SelectProps) {
+export function Select(props: any) {
   return (
     <select
-      value={value ?? ''}
+      value={props.value ?? ''}
       onChange={(e) =>
-        onValueChange?.(e.target.value)
+        props.onValueChange?.(
+          e.target.value
+        )
       }
     >
-      {children}
+      {props.children}
     </select>
   );
 }

@@ -77,8 +77,18 @@ export function SelectItem({
   return <option value={value}>{children}</option>;
 }
 
-export function SelectValue() {
-  return null;
+export function SelectValue({
+  placeholder,
+  children,
+}: {
+  placeholder?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <span>
+      {children ?? placeholder}
+    </span>
+  );
 }
 
 export function Form({

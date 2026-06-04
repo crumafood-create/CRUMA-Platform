@@ -91,11 +91,18 @@ export function SelectValue({
   );
 }
 
-export function Form({
-  children,
-  ...props
-}: HTMLAttributes<HTMLFormElement>) {
-  return <form {...props}>{children}</form>;
+export function Form(props: any) {
+  const {
+    children,
+    form,
+    ...rest
+  } = props;
+
+  return (
+    <form {...rest}>
+      {children}
+    </form>
+  );
 }
 
 export function FormField({

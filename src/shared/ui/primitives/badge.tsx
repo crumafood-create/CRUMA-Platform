@@ -1,11 +1,30 @@
-import type { HTMLAttributes } from 'react';
+import type {
+  HTMLAttributes,
+  ReactNode,
+} from 'react';
+
+export interface BadgeProps
+  extends HTMLAttributes<HTMLSpanElement> {
+  children?: ReactNode;
+
+  variant?:
+    | 'success'
+    | 'secondary'
+    | 'warning'
+    | 'destructive'
+    | 'outline';
+}
 
 export function Badge({
   children,
+  variant,
   ...props
-}: HTMLAttributes<HTMLSpanElement>) {
+}: BadgeProps) {
   return (
-    <span {...props}>
+    <span
+      data-variant={variant}
+      {...props}
+    >
       {children}
     </span>
   );

@@ -11,5 +11,12 @@ export default function AdminLayout({
   analytics: ReactNode;
   modal: ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {activity}
+      {analytics}
+      {modal}
+    </>
+  );
 }

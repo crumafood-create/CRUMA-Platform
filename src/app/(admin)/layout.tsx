@@ -6,10 +6,10 @@ export default function AdminLayout({
   analytics,
   modal,
 }: {
-  children: ReactNode;
-  activity: ReactNode;
-  analytics: ReactNode;
-  modal: ReactNode;
+  children: React.ReactNode;
+  activity: React.ReactNode;
+  analytics: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   return (
     <>

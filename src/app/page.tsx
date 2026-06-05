@@ -1,21 +1,17 @@
-'use client';
+import { ExecutiveThreadList } from '@/components/executive-thread/executive-thread-list';
 
-import { toast } from 'sonner';
-
-import { redirect } from 'next/navigation';
-
-export default function Home() {
-  redirect('/login');
-}
+import { getExecutiveThread } from '@/core/executive-thread/thread-service';
 
 export default function HomePage() {
+  const items = getExecutiveThread();
+
   return (
-    <main className="p-10">
-      <button
-        onClick={() => toast.success('Crumafood iniciado')}
-      >
-        Probar toast
-      </button>
+    <main className="max-w-4xl mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-6">
+        Centro de Mando
+      </h1>
+
+      <ExecutiveThreadList items={items} />
     </main>
   );
 }

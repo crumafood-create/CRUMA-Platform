@@ -23,6 +23,22 @@ export default async function ProductsPage() {
     redirect('/dashboard');
   }
 
+  const { data: products } =
+  await supabase
+    .from('products')
+    .select('*')
+    .order('name');
+
+  <h1 className="text-3xl font-bold mb-6">
+  Productos
+</h1>
+
+{products?.map(product => (
+  <div key={product.id}>
+    {product.name}
+  </div>
+))}
+
   return (
     <div>
       <h1>Productos</h1>

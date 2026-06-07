@@ -1,11 +1,17 @@
-import type { ReactNode } from 'react';
-
-interface AdminLayoutProps {
-  children: ReactNode;
-}
-
 export default function AdminLayout({
   children,
-}: AdminLayoutProps) {
-  return children;
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-h-screen">
+      <aside>
+        Menú Admin
+      </aside>
+
+      <main>
+        {children}
+      </main>
+    </div>
+  );
 }

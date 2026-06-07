@@ -1,18 +1,30 @@
-import { updateSession } from '@/infrastructure/integrations/supabase/middleware';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-import type { NextRequest } from 'next/server';
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next();
 
-export async function middleware(
-  request: NextRequest
-) {
+  const hasSession =
+    request.cookies.get("sb-access-token");
 
-  return await updateSession(request);
+  const isProtected =
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/users") ||
+    request.nextUrl.pathname.startsWith("/products");
+
+  if (isProtected && !hasSession) {
+    return NextResponse.redirect(
+      new URL("/login", request.url)
+    );
+  }
+
+  return response;
 }
 
 export const config = {
-
   matcher: [
-
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'
-  ]
+    "/dashboard/:path*",
+    "/users/:path*",
+    "/products/:path*",
+  ],
 };

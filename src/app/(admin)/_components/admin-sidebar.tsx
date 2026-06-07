@@ -1,17 +1,25 @@
-import AdminSidebar from './_components/admin-sidebar';
+import Link from 'next/link';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminSidebar() {
   return (
-    <div className="min-h-screen flex">
-      <AdminSidebar />
+    <aside className="w-64 border-r bg-white p-6">
+      <h2 className="text-xl font-bold mb-6">
+        CRUMA Platform
+      </h2>
 
-      <main className="flex-1 p-8">
-        {children}
-      </main>
-    </div>
+      <nav className="flex flex-col gap-3">
+        <Link href="/dashboard">
+          Dashboard
+        </Link>
+
+        <Link href="/users">
+          Usuarios
+        </Link>
+
+        <Link href="/products">
+          Productos
+        </Link>
+      </nav>
+    </aside>
   );
 }

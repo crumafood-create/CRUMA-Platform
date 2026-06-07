@@ -1,20 +1,37 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+import { updateSession } from '@/infrastructure/integrations/supabase/middleware';
+
+export async function middleware(
+  request: NextRequest
+) {
+  const response = await updateSession(request);
+
+  const protectedRoutes = [
+    '/dashboard',
+    '/users',
+    '/products',
+  ];
+
+  const isProtected = protectedRoutes.some(
+    route =>
+      request.nextUrl.pathname === route ||
+      request.nextUrl.pathname.startsWith(`${route}/`)
+  );
+
+  if (!isProtected) {
+    return response;
+  }
 
   const hasSession =
-    request.cookies.get("sb-access-token");
+    request.cookies.get('sb-access-token') ||
+    request.cookies.get(
+      'supabase-auth-token'
+    );
 
-  const isProtected =
-    request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/users") ||
-    request.nextUrl.pathname.startsWith("/products");
-
-  if (isProtected && !hasSession) {
+  if (!hasSession) {
     return NextResponse.redirect(
-      new URL("/login", request.url)
+      new URL('/login', request.url)
     );
   }
 
@@ -23,8 +40,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/users/:path*",
-    "/products/:path*",
+    '/dashboard/:path*',
+    '/users/:path*',
+    '/products/:path*',
   ],
 };

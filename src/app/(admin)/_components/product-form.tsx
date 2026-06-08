@@ -12,10 +12,15 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ action }: ProductFormProps) {
-  const [slug, setSlug]           = useState('');
-  const [slugEdited, setSlugEdited] = useState(false);
+  const [slug, setSlug] =
+  useState('');
+
+const [slugEdited, setSlugEdited] =
+  useState(false);
+
 const [internalCode, setInternalCode] =
   useState('');
+  
   function handleNameChange(
   e: React.ChangeEvent<HTMLInputElement>
 ) {

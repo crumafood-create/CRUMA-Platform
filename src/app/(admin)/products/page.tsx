@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 import { getUserRole } from '@/lib/auth/get-user-role';
@@ -28,7 +29,12 @@ export default async function ProductsPage() {
 
   return (
     <main className="space-y-6">
-      <h1 className="text-4xl font-bold">Productos</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-4xl font-bold">Productos</h1>
+        <Link href="/products/new" className="rounded-lg border px-4 py-2">
+          Nuevo Producto
+        </Link>
+      </div>
 
       <div className="rounded-2xl border p-6">
         {products?.length ? (

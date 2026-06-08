@@ -8,6 +8,13 @@ import {
 
 interface Props {
   action: (formData: FormData) => Promise<void>;
+
+  initialValues?: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    status?: string;
+  };
 }
 
 export function CategoryForm({

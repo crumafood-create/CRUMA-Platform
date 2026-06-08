@@ -40,36 +40,7 @@ const [internalCode, setInternalCode] =
     setSlug(e.target.value);
     setSlugEdited(true); // a partir de aquí el slug es manual
   }
-function toInternalCode(text: string): string {
-  const replacements: Record<string, string> = {
-    tequeños: 'TEQ',
-    tequenos: 'TEQ',
 
-    empanadas: 'EMP',
-    empanada: 'EMP',
-
-    tradicionales: 'TRAD',
-    tradicional: 'TRAD',
-
-    party: 'PARTY',
-
-    queso: 'QUESO',
-    guayaba: 'GUAQ',
-    pizza: 'PIZZA',
-    chocolate: 'CHOCO',
-
-    crudos: 'CRU',
-    crudo: 'CRU',
-  };
-
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .split(/\s+/)
-    .map(word => replacements[word] || word.toUpperCase())
-    .join('-');
-}
   return (
     <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
 

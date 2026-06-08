@@ -5,6 +5,55 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
+export async function updateProduct(
+  productId: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const { error } = await supabase
+    .from('products')
+    .update({
+      name: formData.get('name'),
+      slug: formData.get('slug'),
+      internal_code: formData.get('internal_code'),
+      short_description:
+        formData.get('short_description'),
+      description:
+        formData.get('description'),
+      image_url:
+        formData.get('image_url'),
+      image_alt:
+        formData.get('image_alt'),
+      seo_title:
+        formData.get('seo_title'),
+      seo_description:
+        formData.get('seo_description'),
+      status:
+        formData.get('status'),
+      is_featured:
+        formData.get('is_featured') === 'on',
+      updated_at: new Date(),
+    })
+    .eq('id', productId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/products');
+
+  redirect('/products');
+}
+
 export async function createProduct(formData: FormData) {
   const supabase = await createClient();
 

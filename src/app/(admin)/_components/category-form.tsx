@@ -22,7 +22,9 @@ export function CategoryForm({
   initialValues,
 }: Props) {
   const [slug, setSlug] =
-    useState('');
+  useState(
+    initialValues?.slug ?? ''
+  );
 
   return (
     <form
@@ -35,17 +37,17 @@ export function CategoryForm({
         </label>
 
         <input
-          name="name"
-          required
-          onChange={e =>
-            setSlug(
-              toSlug(
-                e.target.value
-              )
-            )
-          }
-          className="w-full rounded border p-3"
-        />
+  name="name"
+  required
+  defaultValue={
+    initialValues?.name
+  }
+  onChange={e =>
+    setSlug(
+      toSlug(e.target.value)
+    )
+  }
+/>
       </div>
 
       <div>

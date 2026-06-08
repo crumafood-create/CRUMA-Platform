@@ -51,65 +51,75 @@ export function CategoryForm({
       </div>
 
       <div>
-        <label>
-          Slug
-        </label>
+  <label className="mb-2 block font-medium">
+    Nombre
+  </label>
 
-        <input
-          name="slug"
-          required
-          value={slug}
-          onChange={e =>
-            setSlug(
-              e.target.value
-            )
-          }
-          className="w-full rounded border p-3"
-        />
-      </div>
+  <input
+    name="name"
+    required
+    defaultValue={
+      initialValues?.name
+    }
+    onChange={e =>
+      setSlug(
+        toSlug(e.target.value)
+      )
+    }
+    className="w-full rounded border p-3"
+  />
+</div>
 
-      <div>
-        <label>
-          Descripción
-        </label>
+<div>
+  <label className="mb-2 block font-medium">
+    Slug
+  </label>
 
-        <select
-  name="status"
-  defaultValue={
-    initialValues?.status ??
-    'active'
-  }
->
-      </div>
+  <input
+    name="slug"
+    required
+    value={slug}
+    onChange={e =>
+      setSlug(e.target.value)
+    }
+    className="w-full rounded border p-3"
+  />
+</div>
 
-      <div>
-        <label>
-          Estado
-        </label>
+<div>
+  <label className="mb-2 block font-medium">
+    Descripción
+  </label>
 
-        <select
-  name="status"
-  defaultValue={
-    initialValues?.status ??
-    'active'
-  }
->
-          <option value="active">
-            Activo
-          </option>
+  <textarea
+    name="description"
+    rows={3}
+    defaultValue={
+      initialValues?.description
+    }
+    className="w-full rounded border p-3"
+  />
+</div>
 
-          <option value="inactive">
-            Inactivo
-          </option>
-        </select>
-      </div>
+<div>
+  <label className="mb-2 block font-medium">
+    Estado
+  </label>
 
-      <button
-        type="submit"
-        className="rounded border px-6 py-2"
-      >
-        Guardar
-      </button>
-    </form>
-  );
-}
+  <select
+    name="status"
+    defaultValue={
+      initialValues?.status ??
+      'active'
+    }
+    className="w-full rounded border p-3"
+  >
+    <option value="active">
+      Activo
+    </option>
+
+    <option value="inactive">
+      Inactivo
+    </option>
+  </select>
+</div>

@@ -110,12 +110,18 @@ export async function deleteProduct(
 ) {
   const supabase = await createClient();
 
-  await supabase
+  const { error } = await supabase
     .from('products')
     .update({
       deleted_at: new Date(),
     })
     .eq('id', productId);
 
+  if (error) {
+    throw new Error(error.message);
+  }
+
   revalidatePath('/products');
+
+  redirect('/products');
 }

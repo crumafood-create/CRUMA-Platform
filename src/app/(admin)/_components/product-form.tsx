@@ -13,8 +13,6 @@ function toSlug(text: string): string {
     .replace(/\s+/g, '-');           // espacios → guiones
 }
 
-const [internalCode, setInternalCode] =
-  useState('');
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
 }
@@ -22,7 +20,8 @@ interface ProductFormProps {
 export function ProductForm({ action }: ProductFormProps) {
   const [slug, setSlug]           = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
-
+const [internalCode, setInternalCode] =
+  useState('');
   function handleNameChange(
   e: React.ChangeEvent<HTMLInputElement>
 ) {

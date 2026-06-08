@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { createProduct } from '../actions';
+
 export default function NewProductPage() {
   return (
     <main className="max-w-4xl space-y-6">
@@ -16,7 +18,10 @@ export default function NewProductPage() {
         </Link>
       </div>
 
-      <form className="space-y-6 rounded-2xl border p-6">
+      <form
+  action={createProduct}
+  className="space-y-6 rounded-2xl border p-6"
+>
         {/* Nombre */}
         <div className="space-y-2">
           <label

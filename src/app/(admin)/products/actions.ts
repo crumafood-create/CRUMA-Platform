@@ -104,3 +104,18 @@ export async function createProduct(formData: FormData) {
   revalidatePath('/products');
   redirect('/products');
 }
+
+export async function deleteProduct(
+  productId: string
+) {
+  const supabase = await createClient();
+
+  await supabase
+    .from('products')
+    .update({
+      deleted_at: new Date(),
+    })
+    .eq('id', productId);
+
+  revalidatePath('/products');
+}

@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 
+import {
+  toSlug,
+  toInternalCode,
+} from '@/modules/inventory/application/utils/product-code';
+
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
 }

@@ -36,7 +36,11 @@ interface ProductFormProps {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function ProductForm({ action, initialValues }: ProductFormProps) {
+export function ProductForm({
+  action,
+  initialValues,
+  categories,
+}: ProductFormProps) {
   const [slug, setSlug]             = useState(initialValues?.slug ?? '');
   const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
   const [internalCode, setInternalCode] = useState(initialValues?.internal_code ?? '');
@@ -61,6 +65,39 @@ export function ProductForm({ action, initialValues }: ProductFormProps) {
   return (
     <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
 
+      <section className="space-y-4">
+  <h2 className="text-xl font-semibold">
+    Clasificación
+  </h2>
+
+  <div>
+    <label className="mb-2 block font-medium">
+      Categoría
+    </label>
+
+    <select
+      name="category_id"
+      defaultValue={
+        initialValues?.category_id ?? ''
+      }
+      className="w-full rounded-lg border p-3"
+    >
+      <option value="">
+        Seleccionar categoría
+      </option>
+
+      {categories?.map((category) => (
+        <option
+          key={category.id}
+          value={category.id}
+        >
+          {category.name}
+        </option>
+      ))}
+    </select>
+  </div>
+</section>
+      
       {/* INFORMACIÓN GENERAL */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Información General</h2>

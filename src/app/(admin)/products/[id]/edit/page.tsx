@@ -7,7 +7,7 @@ import { ProductForm } from '@/app/(admin)/_components/product-form';
 import {
   updateProduct,
   deleteProduct,
-} from '../../../actions';
+} from '../../actions';
 
 export default async function EditProductPage({
   params,

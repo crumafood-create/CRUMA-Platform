@@ -73,11 +73,13 @@ export function CategoryForm({
           Descripción
         </label>
 
-        <textarea
-          name="description"
-          rows={3}
-          className="w-full rounded border p-3"
-        />
+        <select
+  name="status"
+  defaultValue={
+    initialValues?.status ??
+    'active'
+  }
+>
       </div>
 
       <div>
@@ -86,10 +88,12 @@ export function CategoryForm({
         </label>
 
         <select
-          name="status"
-          defaultValue="active"
-          className="w-full rounded border p-3"
-        >
+  name="status"
+  defaultValue={
+    initialValues?.status ??
+    'active'
+  }
+>
           <option value="active">
             Activo
           </option>

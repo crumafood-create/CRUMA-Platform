@@ -25,6 +25,24 @@ interface ProductFormProps {
   };
 }
 
+const [slug, setSlug] = useState(
+  initialValues?.slug ?? ''
+);
+
+const [internalCode, setInternalCode] =
+  useState(
+    initialValues?.internal_code ?? ''
+  );
+
+defaultValue={initialValues?.name}
+
+<textarea
+  name="description"
+  defaultValue={
+    initialValues?.description
+  }
+/>
+
 export function ProductForm({ action }: ProductFormProps) {
   const [slug, setSlug] =
   useState('');

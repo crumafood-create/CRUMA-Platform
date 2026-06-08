@@ -19,6 +19,7 @@ interface Props {
 
 export function CategoryForm({
   action,
+  initialValues,
 }: Props) {
   const [slug, setSlug] =
     useState('');

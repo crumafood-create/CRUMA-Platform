@@ -6,6 +6,21 @@ import { ProductForm } from '@/app/(admin)/_components/product-form';
 
 import { updateProduct } from '../../../actions';
 
+export async function deleteProduct(
+  productId: string
+) {
+  const supabase = await createClient();
+
+  await supabase
+    .from('products')
+    .update({
+      deleted_at: new Date(),
+    })
+    .eq('id', productId);
+
+  revalidatePath('/products');
+}
+
 export default async function EditProductPage({
   params,
 }: {
@@ -39,6 +54,20 @@ export default async function EditProductPage({
           product.id
         )}
       />
+
+      <form
+  action={deleteProduct.bind(
+    null,
+    product.id
+  )}
+>
+  <button
+    type="submit"
+    className="rounded border px-3 py-1"
+  >
+    Eliminar
+  </button>
+</form>
     </main>
   );
 }

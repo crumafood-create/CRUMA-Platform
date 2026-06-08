@@ -7,9 +7,10 @@ import {
   toInternalCode,
 } from '@/modules/inventory/application/utils/product-code';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
-
   initialValues?: {
     name?: string;
     slug?: string;
@@ -25,51 +26,28 @@ interface ProductFormProps {
   };
 }
 
-const [slug, setSlug] = useState(
-  initialValues?.slug ?? ''
-);
+// ─── Component ───────────────────────────────────────────────────────────────
 
-const [internalCode, setInternalCode] =
-  useState(
-    initialValues?.internal_code ?? ''
-  );
+export function ProductForm({ action, initialValues }: ProductFormProps) {
+  const [slug, setSlug]             = useState(initialValues?.slug ?? '');
+  const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
+  const [internalCode, setInternalCode] = useState(initialValues?.internal_code ?? '');
+  const [codeEdited, setCodeEdited]     = useState(!!initialValues?.internal_code);
 
-defaultValue={initialValues?.name}
-
-<textarea
-  name="description"
-  defaultValue={
-    initialValues?.description
-  }
-/>
-
-export function ProductForm({ action }: ProductFormProps) {
-  const [slug, setSlug] =
-  useState('');
-
-const [slugEdited, setSlugEdited] =
-  useState(false);
-
-const [internalCode, setInternalCode] =
-  useState('');
-  
-  function handleNameChange(
-  e: React.ChangeEvent<HTMLInputElement>
-) {
-  const value = e.target.value;
-
-  if (!slugEdited) {
-    setSlug(toSlug(value));
-  }
-
-  setInternalCode(
-    toInternalCode(value)
-  );
+  function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+    if (!slugEdited) setSlug(toSlug(value));
+    if (!codeEdited) setInternalCode(toInternalCode(value));
   }
 
   function handleSlugChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSlug(e.target.value);
-    setSlugEdited(true); // a partir de aquí el slug es manual
+    setSlugEdited(true);
+  }
+
+  function handleInternalCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setInternalCode(e.target.value);
+    setCodeEdited(true);
   }
 
   return (
@@ -85,6 +63,7 @@ const [internalCode, setInternalCode] =
             <input
               name="name"
               required
+              defaultValue={initialValues?.name}
               onChange={handleNameChange}
               className="w-full rounded-lg border p-3"
               placeholder="Tequeños Tradicionales Queso"
@@ -94,14 +73,12 @@ const [internalCode, setInternalCode] =
           <div>
             <label className="mb-2 block font-medium">Código Interno</label>
             <input
-  name="internal_code"
-  value={internalCode}
-  onChange={e =>
-    setInternalCode(e.target.value)
-  }
-  className="w-full rounded-lg border p-3"
-  placeholder="TEQ-TRAD-QUESO"
-/>
+              name="internal_code"
+              value={internalCode}
+              onChange={handleInternalCodeChange}
+              className="w-full rounded-lg border p-3"
+              placeholder="TEQ-TRAD-QUESO"
+            />
           </div>
 
           <div className="md:col-span-2">
@@ -115,7 +92,7 @@ const [internalCode, setInternalCode] =
               placeholder="tequenos-tradicionales-queso"
             />
             <p className="mt-1 text-xs text-gray-400">
-              Se genera solo desde el nombre. Puedes editarlo manualmente.
+              Se genera desde el nombre. Puedes editarlo manualmente.
             </p>
           </div>
 
@@ -124,6 +101,7 @@ const [internalCode, setInternalCode] =
             <textarea
               name="short_description"
               rows={2}
+              defaultValue={initialValues?.short_description}
               className="w-full rounded-lg border p-3"
             />
           </div>
@@ -133,6 +111,7 @@ const [internalCode, setInternalCode] =
             <textarea
               name="description"
               rows={5}
+              defaultValue={initialValues?.description}
               className="w-full rounded-lg border p-3"
             />
           </div>
@@ -146,12 +125,20 @@ const [internalCode, setInternalCode] =
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-2 block font-medium">URL Imagen</label>
-            <input name="image_url" className="w-full rounded-lg border p-3" />
+            <input
+              name="image_url"
+              defaultValue={initialValues?.image_url}
+              className="w-full rounded-lg border p-3"
+            />
           </div>
 
           <div>
             <label className="mb-2 block font-medium">Texto alternativo</label>
-            <input name="image_alt" className="w-full rounded-lg border p-3" />
+            <input
+              name="image_alt"
+              defaultValue={initialValues?.image_alt}
+              className="w-full rounded-lg border p-3"
+            />
           </div>
         </div>
       </section>
@@ -163,7 +150,11 @@ const [internalCode, setInternalCode] =
         <div className="grid gap-4">
           <div>
             <label className="mb-2 block font-medium">SEO Title</label>
-            <input name="seo_title" className="w-full rounded-lg border p-3" />
+            <input
+              name="seo_title"
+              defaultValue={initialValues?.seo_title}
+              className="w-full rounded-lg border p-3"
+            />
           </div>
 
           <div>
@@ -171,6 +162,7 @@ const [internalCode, setInternalCode] =
             <textarea
               name="seo_description"
               rows={3}
+              defaultValue={initialValues?.seo_description}
               className="w-full rounded-lg border p-3"
             />
           </div>
@@ -186,7 +178,7 @@ const [internalCode, setInternalCode] =
             <label className="mb-2 block font-medium">Estado</label>
             <select
               name="status"
-              defaultValue="active"
+              defaultValue={initialValues?.status ?? 'active'}
               className="w-full rounded-lg border p-3"
             >
               <option value="active">Activo</option>
@@ -196,7 +188,11 @@ const [internalCode, setInternalCode] =
           </div>
 
           <div className="flex items-center gap-3 pt-9">
-            <input type="checkbox" name="is_featured" />
+            <input
+              type="checkbox"
+              name="is_featured"
+              defaultChecked={initialValues?.is_featured}
+            />
             <span>Producto destacado</span>
           </div>
         </div>
@@ -212,4 +208,4 @@ const [internalCode, setInternalCode] =
       </div>
     </form>
   );
-      }
+}

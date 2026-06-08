@@ -13,6 +13,8 @@ function toSlug(text: string): string {
     .replace(/\s+/g, '-');           // espacios → guiones
 }
 
+const [internalCode, setInternalCode] =
+  useState('');
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
 }
@@ -21,16 +23,54 @@ export function ProductForm({ action }: ProductFormProps) {
   const [slug, setSlug]           = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
 
-  function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
-    // Solo auto-genera el slug si el usuario no lo ha editado a mano
-    if (!slugEdited) setSlug(toSlug(e.target.value));
+  function handleNameChange(
+  e: React.ChangeEvent<HTMLInputElement>
+) {
+  const value = e.target.value;
+
+  if (!slugEdited) {
+    setSlug(toSlug(value));
+  }
+
+  setInternalCode(
+    toInternalCode(value)
+  );
   }
 
   function handleSlugChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSlug(e.target.value);
     setSlugEdited(true); // a partir de aquí el slug es manual
   }
+function toInternalCode(text: string): string {
+  const replacements: Record<string, string> = {
+    tequeños: 'TEQ',
+    tequenos: 'TEQ',
 
+    empanadas: 'EMP',
+    empanada: 'EMP',
+
+    tradicionales: 'TRAD',
+    tradicional: 'TRAD',
+
+    party: 'PARTY',
+
+    queso: 'QUESO',
+    guayaba: 'GUAQ',
+    pizza: 'PIZZA',
+    chocolate: 'CHOCO',
+
+    crudos: 'CRU',
+    crudo: 'CRU',
+  };
+
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/\s+/)
+    .map(word => replacements[word] || word.toUpperCase())
+    .join('-');
+}
   return (
     <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
 
@@ -53,10 +93,14 @@ export function ProductForm({ action }: ProductFormProps) {
           <div>
             <label className="mb-2 block font-medium">Código Interno</label>
             <input
-              name="internal_code"
-              className="w-full rounded-lg border p-3"
-              placeholder="TEQ-TRAD-QUESO"
-            />
+  name="internal_code"
+  value={internalCode}
+  onChange={e =>
+    setInternalCode(e.target.value)
+  }
+  className="w-full rounded-lg border p-3"
+  placeholder="TEQ-TRAD-QUESO"
+/>
           </div>
 
           <div className="md:col-span-2">

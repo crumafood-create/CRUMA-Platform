@@ -7,7 +7,7 @@ import { CategoryForm } from '@/app/(admin)/_components/category-form';
 import {
   updateCategory,
   deleteCategory,
-} from '../../../actions';
+} from '../../actions';
 
 export default async function EditCategoryPage({
   params,

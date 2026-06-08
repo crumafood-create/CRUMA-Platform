@@ -19,6 +19,10 @@ export default function AdminSidebar() {
         <Link href="/products">
           Productos
         </Link>
+
+        <Link href="/categories">
+  Categorías
+</Link>
       </nav>
     </aside>
   );

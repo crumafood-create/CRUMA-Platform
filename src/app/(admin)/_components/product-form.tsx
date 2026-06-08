@@ -2,17 +2,6 @@
 
 import { useState } from 'react';
 
-// Fuera del componente — función pura, fácil de testear
-function toSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // elimina tildes: á→a, é→e
-    .replace(/[^a-z0-9\s-]/g, '')   // solo letras, números, guiones
-    .trim()
-    .replace(/\s+/g, '-');           // espacios → guiones
-}
-
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
 }

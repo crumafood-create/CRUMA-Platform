@@ -4,7 +4,10 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 import { ProductForm } from '@/app/(admin)/_components/product-form';
 
-import { updateProduct } from '../../../actions';
+import {
+  updateProduct,
+  deleteProduct,
+} from '../../../actions';
 
 export default async function EditProductPage({
   params,
@@ -41,18 +44,18 @@ export default async function EditProductPage({
       />
 
       <form
-  action={deleteProduct.bind(
-    null,
-    product.id
-  )}
->
-  <button
-    type="submit"
-    className="rounded border px-3 py-1"
-  >
-    Eliminar
-  </button>
-</form>
+        action={deleteProduct.bind(
+          null,
+          product.id
+        )}
+      >
+        <button
+          type="submit"
+          className="rounded border px-3 py-1"
+        >
+          Eliminar
+        </button>
+      </form>
     </main>
   );
 }

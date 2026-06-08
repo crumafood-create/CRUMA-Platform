@@ -11,6 +11,12 @@ import {
 
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
+
+  categories?: {
+    id: string;
+    name: string;
+  }[];
+
   initialValues?: {
     name?: string;
     slug?: string;
@@ -23,6 +29,8 @@ interface ProductFormProps {
     seo_description?: string;
     status?: string;
     is_featured?: boolean;
+
+    category_id?: string;
   };
 }
 

@@ -35,22 +35,8 @@ export function CategoryForm({
         <label>
           Nombre
         </label>
-
-        <input
-  name="name"
-  required
-  defaultValue={
-    initialValues?.name
-  }
-  onChange={e =>
-    setSlug(
-      toSlug(e.target.value)
-    )
-  }
-/>
       </div>
 
-      <div>
   <label className="mb-2 block font-medium">
     Nombre
   </label>

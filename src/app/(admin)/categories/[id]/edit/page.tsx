@@ -2,8 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-import { CategoryForm }
-from '@/app/(admin)/_components/category-form';
+import { CategoryForm } from '@/app/(admin)/_components/category-form';
 
 import {
   updateCategory,
@@ -19,14 +18,14 @@ export default async function EditCategoryPage({
 
   const supabase = await createClient();
 
-  const { data: category } =
+  const { data: category, error } =
     await supabase
       .from('categories')
       .select('*')
       .eq('id', id)
       .single();
 
-  if (!category) {
+  if (error || !category) {
     notFound();
   }
 
@@ -37,7 +36,14 @@ export default async function EditCategoryPage({
       </h1>
 
       <CategoryForm
-        initialValues={category}
+        initialValues={{
+          name: category.name,
+          slug: category.slug,
+          description:
+            category.description ?? '',
+          status:
+            category.status ?? 'active',
+        }}
         action={updateCategory.bind(
           null,
           category.id
@@ -52,7 +58,7 @@ export default async function EditCategoryPage({
       >
         <button
           type="submit"
-          className="rounded border px-4 py-2"
+          className="rounded border border-red-300 px-4 py-2"
         >
           Eliminar Categoría
         </button>

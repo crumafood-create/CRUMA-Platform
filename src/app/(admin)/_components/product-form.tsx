@@ -9,6 +9,20 @@ import {
 
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
+
+  initialValues?: {
+    name?: string;
+    slug?: string;
+    internal_code?: string;
+    short_description?: string;
+    description?: string;
+    image_url?: string;
+    image_alt?: string;
+    seo_title?: string;
+    seo_description?: string;
+    status?: string;
+    is_featured?: boolean;
+  };
 }
 
 export function ProductForm({ action }: ProductFormProps) {

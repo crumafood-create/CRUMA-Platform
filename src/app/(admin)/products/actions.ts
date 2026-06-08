@@ -86,6 +86,10 @@ export async function createProduct(formData: FormData) {
     name,
     slug,
     internal_code,
+    
+    category_id:
+  formData.get('category_id') || null,
+    
     short_description,
     description,
     image_url,
@@ -94,6 +98,7 @@ export async function createProduct(formData: FormData) {
     seo_description,
     status,
     is_featured,
+  
   });
 
   if (error) {

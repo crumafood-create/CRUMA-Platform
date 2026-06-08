@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
+import { redirect } from 'next/navigation';
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 import { getUserRole } from '@/lib/auth/get-user-role';
 
@@ -20,6 +20,38 @@ export default async function ProductsPage() {
   if (role !== 'admin' && role !== 'manager') {
     redirect('/dashboard');
   }
+
+  {products.map((product) => (
+  <div
+    key={product.id}
+    className="rounded-xl border p-4"
+  >
+    <div className="font-semibold">
+      {product.name}
+    </div>
+
+    <div className="text-sm text-gray-500">
+      {product.internal_code}
+    </div>
+
+    <div className="text-sm text-gray-500">
+      {product.slug}
+    </div>
+
+    <div className="text-sm text-gray-500">
+      {product.status}
+    </div>
+
+    <div className="mt-4 flex gap-2">
+      <Link
+        href={`/products/${product.id}/edit`}
+        className="rounded border px-3 py-1"
+      >
+        Editar
+      </Link>
+    </div>
+  </div>
+))}
 
   const { data: products } = await supabase
     .from('products')

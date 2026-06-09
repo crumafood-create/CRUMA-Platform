@@ -35,6 +35,10 @@ export async function updateProduct(
       flavor_id:
        formData.get('flavor_id') || null,
 
+      min_stock:
+       Number(
+       formData.get('min_stock')) || 0,
+
       preparation_type_id:
         formData.get('preparation_type_id') || null,
       

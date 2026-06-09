@@ -29,6 +29,13 @@ export default async function EditProductPage({
     notFound();
   }
 
+  const { data: categories } =
+  await supabase
+    .from('categories')
+    .select('id, name')
+    .is('deleted_at', null)
+    .order('name');
+  
   return (
     <main className="max-w-5xl space-y-6">
       <h1 className="text-4xl font-bold">
@@ -36,12 +43,13 @@ export default async function EditProductPage({
       </h1>
 
       <ProductForm
-        initialValues={product}
-        action={updateProduct.bind(
-          null,
-          product.id
-        )}
-      />
+  initialValues={product}
+  categories={categories ?? []}
+  action={updateProduct.bind(
+    null,
+    product.id
+  )}
+/>
 
       <form
         action={deleteProduct.bind(

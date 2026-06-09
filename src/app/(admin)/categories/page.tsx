@@ -5,12 +5,17 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 export default async function CategoriesPage() {
   const supabase = await createClient();
 
-  const { data: categories } =
-    await supabase
-      .from('categories')
-      .select('*')
-      .is('deleted_at', null)
-      .order('name');
+  const {
+  data: categories,
+  error,
+} = await supabase
+  .from('categories')
+  .select('*')
+  .order('name');
+
+if (error) {
+  console.error(error);
+}
 
   return (
     <main className="space-y-6">

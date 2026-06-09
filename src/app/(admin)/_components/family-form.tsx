@@ -43,7 +43,7 @@ export function FamilyForm({
         <select
           name="category_id"
           defaultValue={
-            initialValues?.category_id
+  initialValues?.category_id ?? ''
           }
           className="w-full rounded border p-3"
           required

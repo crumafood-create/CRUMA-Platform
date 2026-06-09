@@ -121,6 +121,7 @@ export async function createProduct(formData: FormData) {
     seo_description,
     status,
     is_featured,
+    min_stock,
   
   });
 

@@ -4,16 +4,16 @@ import { useState } from 'react';
 
 import { toSlug } from '@/modules/inventory/application/utils/product-code';
 
-interface FamilyFormProps {
+interface FlavorFormProps {
   action: (formData: FormData) => Promise<void>;
 
-  categories: {
+  families: {
     id: string;
     name: string;
   }[];
 
   initialValues?: {
-    category_id?: string;
+    family_id?: string;
     name?: string;
     slug?: string;
     description?: string;
@@ -37,27 +37,27 @@ export function FlavorForm({
     >
       <div>
         <label className="mb-2 block font-medium">
-          Categoría
+          Familia
         </label>
 
         <select
           name="family_id"
           defaultValue={
-            initialValues?.category_id
+            initialValues?.family_id ?? ''
           }
           className="w-full rounded border p-3"
           required
         >
           <option value="">
-            Selecciona categoría
+            Selecciona familia
           </option>
 
-          {categories.map(families => (
+          {families.map((family) => (
             <option
-              key={category.id}
-              value={category.id}
+              key={family.id}
+              value={family.id}
             >
-              {category.name}
+              {family.name}
             </option>
           ))}
         </select>
@@ -72,7 +72,7 @@ export function FlavorForm({
           name="name"
           required
           defaultValue={initialValues?.name}
-          onChange={e =>
+          onChange={(e) =>
             setSlug(
               toSlug(e.target.value)
             )
@@ -90,7 +90,7 @@ export function FlavorForm({
           name="slug"
           required
           value={slug}
-          onChange={e =>
+          onChange={(e) =>
             setSlug(e.target.value)
           }
           className="w-full rounded border p-3"

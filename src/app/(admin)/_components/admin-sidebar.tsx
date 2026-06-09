@@ -38,6 +38,14 @@ export default function AdminSidebar() {
 <Link href="/inventory-locations">
   Ubicaciones
 </Link>
+
+<Link href="/inventory">
+  Inventario
+</Link>
+
+<Link href="/inventory/alerts">
+  Alertas
+</Link>
       </nav>
     </aside>
   );

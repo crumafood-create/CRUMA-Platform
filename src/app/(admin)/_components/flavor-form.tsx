@@ -21,11 +21,11 @@ interface FamilyFormProps {
   };
 }
 
-export function FamilyForm({
+export function FlavorForm({
   action,
-  categories,
+  families,
   initialValues,
-}: FamilyFormProps) {
+}: FlavorFormProps) {
   const [slug, setSlug] = useState(
     initialValues?.slug ?? ''
   );

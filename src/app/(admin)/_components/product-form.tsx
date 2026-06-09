@@ -31,7 +31,6 @@ interface ProductFormProps {
     status?: string;
     is_featured?: boolean;
 
-    category_id?: string;
   };
 }
 

@@ -58,6 +58,9 @@ export function ProductForm({
   action,
   initialValues,
   categories,
+  families,
+  flavors,
+  preparationTypes,
 }: ProductFormProps) {
   const [slug, setSlug]             = useState(initialValues?.slug ?? '');
   const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
@@ -88,98 +91,116 @@ export function ProductForm({
     Clasificación
   </h2>
 
-  <div>
-    <label className="mb-2 block font-medium">
-      Categoría
-    </label>
+  <div className="grid gap-4 md:grid-cols-2">
+    <div>
+      <label className="mb-2 block font-medium">
+        Categoría
+      </label>
 
-    <select
-      name="category_id"
-      defaultValue={
-        initialValues?.category_id ?? ''
-      }
-      className="w-full rounded-lg border p-3"
-    >
-      <option value="">
-        Seleccionar categoría
-      </option>
-
-      {categories?.map((category) => (
-        <option
-          key={category.id}
-          value={category.id}
-        >
-          {category.name}
+      <select
+        name="category_id"
+        defaultValue={
+          initialValues?.category_id ?? ''
+        }
+        className="w-full rounded-lg border p-3"
+      >
+        <option value="">
+          Seleccionar categoría
         </option>
-      ))}
-    </select>
+
+        {categories?.map((category) => (
+          <option
+            key={category.id}
+            value={category.id}
+          >
+            {category.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div>
+      <label className="mb-2 block font-medium">
+        Familia
+      </label>
+
+      <select
+        name="family_id"
+        defaultValue={
+          initialValues?.family_id ?? ''
+        }
+        className="w-full rounded-lg border p-3"
+      >
+        <option value="">
+          Seleccionar familia
+        </option>
+
+        {families?.map((family) => (
+          <option
+            key={family.id}
+            value={family.id}
+          >
+            {family.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div>
+      <label className="mb-2 block font-medium">
+        Sabor
+      </label>
+
+      <select
+        name="flavor_id"
+        defaultValue={
+          initialValues?.flavor_id ?? ''
+        }
+        className="w-full rounded-lg border p-3"
+      >
+        <option value="">
+          Seleccionar sabor
+        </option>
+
+        {flavors?.map((flavor) => (
+          <option
+            key={flavor.id}
+            value={flavor.id}
+          >
+            {flavor.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div>
+      <label className="mb-2 block font-medium">
+        Tipo Preparación
+      </label>
+
+      <select
+        name="preparation_type_id"
+        defaultValue={
+          initialValues?.preparation_type_id ?? ''
+        }
+        className="w-full rounded-lg border p-3"
+      >
+        <option value="">
+          Seleccionar tipo
+        </option>
+
+        {preparationTypes?.map((type) => (
+          <option
+            key={type.id}
+            value={type.id}
+          >
+            {type.name}
+          </option>
+        ))}
+      </select>
+    </div>
   </div>
 </section>
-      
-      {/* INFORMACIÓN GENERAL */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Información General</h2>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-2 block font-medium">Nombre *</label>
-            <input
-              name="name"
-              required
-              defaultValue={initialValues?.name}
-              onChange={handleNameChange}
-              className="w-full rounded-lg border p-3"
-              placeholder="Tequeños Tradicionales Queso"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block font-medium">Código Interno</label>
-            <input
-              name="internal_code"
-              value={internalCode}
-              onChange={handleInternalCodeChange}
-              className="w-full rounded-lg border p-3"
-              placeholder="TEQ-TRAD-QUESO"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 block font-medium">Slug *</label>
-            <input
-              name="slug"
-              required
-              value={slug}
-              onChange={handleSlugChange}
-              className="w-full rounded-lg border p-3"
-              placeholder="tequenos-tradicionales-queso"
-            />
-            <p className="mt-1 text-xs text-gray-400">
-              Se genera desde el nombre. Puedes editarlo manualmente.
-            </p>
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 block font-medium">Descripción corta</label>
-            <textarea
-              name="short_description"
-              rows={2}
-              defaultValue={initialValues?.short_description}
-              className="w-full rounded-lg border p-3"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 block font-medium">Descripción completa</label>
-            <textarea
-              name="description"
-              rows={5}
-              defaultValue={initialValues?.description}
-              className="w-full rounded-lg border p-3"
-            />
-          </div>
-        </div>
-      </section>
 
       {/* IMAGEN */}
       <section className="space-y-4">

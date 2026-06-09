@@ -111,4 +111,4 @@ export function InventoryLocationForm({
       </button>
     </form>
   );
-          }
+}

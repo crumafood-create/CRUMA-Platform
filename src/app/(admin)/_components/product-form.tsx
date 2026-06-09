@@ -9,47 +9,34 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface SelectOption {
+  id: string;
+  name: string;
+}
+
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
-
-  categories?: {
-    id: string;
-    name: string;
-  }[];
-
-  families?: {
-  id: string;
-  name: string;
-}[];
-
-flavors?: {
-  id: string;
-  name: string;
-}[];
-
-preparationTypes?: {
-  id: string;
-  name: string;
-}[];
-
+  categories?:       SelectOption[];
+  families?:         SelectOption[];
+  flavors?:          SelectOption[];
+  preparationTypes?: SelectOption[];
   initialValues?: {
-    name?: string;
-    slug?: string;
-    internal_code?: string;
-    category_id?: string;
-    family_id?: string;
-    flavor_id?: string;
+    name?:                string;
+    slug?:                string;
+    internal_code?:       string;
+    category_id?:         string;
+    family_id?:           string;
+    flavor_id?:           string;
     preparation_type_id?: string;
-    short_description?: string;
-    description?: string;
-    image_url?: string;
-    image_alt?: string;
-    seo_title?: string;
-    seo_description?: string;
-    status?: string;
-    is_featured?: boolean;
-    min_stock?: number;
-
+    short_description?:   string;
+    description?:         string;
+    image_url?:           string;
+    image_alt?:           string;
+    seo_title?:           string;
+    seo_description?:     string;
+    status?:              string;
+    is_featured?:         boolean;
+    min_stock?:           number;
   };
 }
 
@@ -63,8 +50,8 @@ export function ProductForm({
   flavors,
   preparationTypes,
 }: ProductFormProps) {
-  const [slug, setSlug]             = useState(initialValues?.slug ?? '');
-  const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
+  const [slug, setSlug]                 = useState(initialValues?.slug ?? '');
+  const [slugEdited, setSlugEdited]     = useState(!!initialValues?.slug);
   const [internalCode, setInternalCode] = useState(initialValues?.internal_code ?? '');
   const [codeEdited, setCodeEdited]     = useState(!!initialValues?.internal_code);
 
@@ -87,121 +74,141 @@ export function ProductForm({
   return (
     <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
 
+      {/* INFORMACIÓN GENERAL */}
       <section className="space-y-4">
-  <h2 className="text-xl font-semibold">
-    Clasificación
-  </h2>
+        <h2 className="text-xl font-semibold">Información General</h2>
 
-  <div className="grid gap-4 md:grid-cols-2">
-    <div>
-      <label className="mb-2 block font-medium">
-        Categoría
-      </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block font-medium">Nombre *</label>
+            <input
+              name="name"
+              required
+              defaultValue={initialValues?.name}
+              onChange={handleNameChange}
+              className="w-full rounded-lg border p-3"
+              placeholder="Tequeños Tradicionales Queso"
+            />
+          </div>
 
-      <select
-        name="category_id"
-        defaultValue={
-          initialValues?.category_id ?? ''
-        }
-        className="w-full rounded-lg border p-3"
-      >
-        <option value="">
-          Seleccionar categoría
-        </option>
+          <div>
+            <label className="mb-2 block font-medium">Código Interno</label>
+            <input
+              name="internal_code"
+              value={internalCode}
+              onChange={handleInternalCodeChange}
+              className="w-full rounded-lg border p-3"
+              placeholder="TEQ-TRAD-QUESO"
+            />
+          </div>
 
-        {categories?.map((category) => (
-          <option
-            key={category.id}
-            value={category.id}
-          >
-            {category.name}
-          </option>
-        ))}
-      </select>
-    </div>
+          <div className="md:col-span-2">
+            <label className="mb-2 block font-medium">Slug *</label>
+            <input
+              name="slug"
+              required
+              value={slug}
+              onChange={handleSlugChange}
+              className="w-full rounded-lg border p-3"
+              placeholder="tequenos-tradicionales-queso"
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Se genera desde el nombre. Puedes editarlo manualmente.
+            </p>
+          </div>
 
-    <div>
-      <label className="mb-2 block font-medium">
-        Familia
-      </label>
+          <div className="md:col-span-2">
+            <label className="mb-2 block font-medium">Descripción corta</label>
+            <textarea
+              name="short_description"
+              rows={2}
+              defaultValue={initialValues?.short_description}
+              className="w-full rounded-lg border p-3"
+            />
+          </div>
 
-      <select
-        name="family_id"
-        defaultValue={
-          initialValues?.family_id ?? ''
-        }
-        className="w-full rounded-lg border p-3"
-      >
-        <option value="">
-          Seleccionar familia
-        </option>
+          <div className="md:col-span-2">
+            <label className="mb-2 block font-medium">Descripción completa</label>
+            <textarea
+              name="description"
+              rows={5}
+              defaultValue={initialValues?.description}
+              className="w-full rounded-lg border p-3"
+            />
+          </div>
+        </div>
+      </section>
 
-        {families?.map((family) => (
-          <option
-            key={family.id}
-            value={family.id}
-          >
-            {family.name}
-          </option>
-        ))}
-      </select>
-    </div>
+      {/* CLASIFICACIÓN */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Clasificación</h2>
 
-    <div>
-      <label className="mb-2 block font-medium">
-        Sabor
-      </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block font-medium">Categoría</label>
+            <select
+              name="category_id"
+              defaultValue={initialValues?.category_id ?? ''}
+              className="w-full rounded-lg border p-3"
+            >
+              <option value="">Seleccionar categoría</option>
+              {categories?.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <select
-        name="flavor_id"
-        defaultValue={
-          initialValues?.flavor_id ?? ''
-        }
-        className="w-full rounded-lg border p-3"
-      >
-        <option value="">
-          Seleccionar sabor
-        </option>
+          <div>
+            <label className="mb-2 block font-medium">Familia</label>
+            <select
+              name="family_id"
+              defaultValue={initialValues?.family_id ?? ''}
+              className="w-full rounded-lg border p-3"
+            >
+              <option value="">Seleccionar familia</option>
+              {families?.map((family) => (
+                <option key={family.id} value={family.id}>
+                  {family.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {flavors?.map((flavor) => (
-          <option
-            key={flavor.id}
-            value={flavor.id}
-          >
-            {flavor.name}
-          </option>
-        ))}
-      </select>
-    </div>
+          <div>
+            <label className="mb-2 block font-medium">Sabor</label>
+            <select
+              name="flavor_id"
+              defaultValue={initialValues?.flavor_id ?? ''}
+              className="w-full rounded-lg border p-3"
+            >
+              <option value="">Seleccionar sabor</option>
+              {flavors?.map((flavor) => (
+                <option key={flavor.id} value={flavor.id}>
+                  {flavor.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-    <div>
-      <label className="mb-2 block font-medium">
-        Tipo Preparación
-      </label>
-
-      <select
-        name="preparation_type_id"
-        defaultValue={
-          initialValues?.preparation_type_id ?? ''
-        }
-        className="w-full rounded-lg border p-3"
-      >
-        <option value="">
-          Seleccionar tipo
-        </option>
-
-        {preparationTypes?.map((type) => (
-          <option
-            key={type.id}
-            value={type.id}
-          >
-            {type.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  </div>
-</section>
+          <div>
+            <label className="mb-2 block font-medium">Tipo Preparación</label>
+            <select
+              name="preparation_type_id"
+              defaultValue={initialValues?.preparation_type_id ?? ''}
+              className="w-full rounded-lg border p-3"
+            >
+              <option value="">Seleccionar tipo</option>
+              {preparationTypes?.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
 
       {/* IMAGEN */}
       <section className="space-y-4">
@@ -272,7 +279,18 @@ export function ProductForm({
             </select>
           </div>
 
-          <div className="flex items-center gap-3 pt-9">
+          <div>
+            <label className="mb-2 block font-medium">Stock Mínimo</label>
+            <input
+              type="number"
+              name="min_stock"
+              min={0}
+              defaultValue={initialValues?.min_stock ?? 0}
+              className="w-full rounded-lg border p-3"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
             <input
               type="checkbox"
               name="is_featured"
@@ -293,4 +311,4 @@ export function ProductForm({
       </div>
     </form>
   );
-}
+            }

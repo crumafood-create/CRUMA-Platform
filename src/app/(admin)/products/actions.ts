@@ -94,7 +94,8 @@ export async function createProduct(formData: FormData) {
   const seo_description = formData.get('seo_description')?.toString().trim() || null;
   const status = formData.get('status')?.toString().trim() || 'active';
   const is_featured = formData.get('is_featured') === 'on';
-
+  const min_stock = Number(formData.get('min_stock')) || 0;
+  
   const { error } = await supabase.from('products').insert({
     name,
     slug,

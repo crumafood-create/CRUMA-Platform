@@ -1,18 +1,40 @@
 import Link from 'next/link';
-import { createProduct } from '../actions';
+
+import { createClient } from '@/infrastructure/integrations/supabase/server';
+
 import { ProductForm } from '../../_components/product-form';
 
-export default function NewProductPage() {
+import { createProduct } from '../actions';
+
+export default async function NewProductPage() {
+  const supabase = await createClient();
+
+  const { data: categories } =
+    await supabase
+      .from('categories')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name');
+
   return (
     <main className="max-w-5xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold">Nuevo Producto</h1>
-        <Link href="/products" className="rounded-lg border px-4 py-2">
+        <h1 className="text-4xl font-bold">
+          Nuevo Producto
+        </h1>
+
+        <Link
+          href="/products"
+          className="rounded-lg border px-4 py-2"
+        >
           Volver
         </Link>
       </div>
 
-      <ProductForm action={createProduct} />
+      <ProductForm
+        action={createProduct}
+        categories={categories ?? []}
+      />
     </main>
   );
 }

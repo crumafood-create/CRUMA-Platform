@@ -17,11 +17,29 @@ interface ProductFormProps {
     name: string;
   }[];
 
+  families?: {
+  id: string;
+  name: string;
+}[];
+
+flavors?: {
+  id: string;
+  name: string;
+}[];
+
+preparationTypes?: {
+  id: string;
+  name: string;
+}[];
+
   initialValues?: {
     name?: string;
     slug?: string;
     internal_code?: string;
     category_id?: string;
+    family_id?: string;
+    flavor_id?: string;
+    preparation_type_id?: string;
     short_description?: string;
     description?: string;
     image_url?: string;

@@ -21,6 +21,7 @@ interface ProductFormProps {
     name?: string;
     slug?: string;
     internal_code?: string;
+    category_id?: string;
     short_description?: string;
     description?: string;
     image_url?: string;

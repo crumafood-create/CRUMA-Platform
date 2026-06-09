@@ -25,6 +25,10 @@ export async function updateProduct(
       name: formData.get('name'),
       slug: formData.get('slug'),
       internal_code: formData.get('internal_code'),
+
+      category_id:
+    formData.get('category_id') || null,
+      
       short_description:
         formData.get('short_description'),
       description:

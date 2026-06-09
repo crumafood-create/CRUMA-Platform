@@ -23,6 +23,10 @@ export default function AdminSidebar() {
         <Link href="/categories">
   Categorías
 </Link>
+
+      <Link href="/families">
+  Familias
+</Link>
       </nav>
     </aside>
   );

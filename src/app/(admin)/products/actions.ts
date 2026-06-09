@@ -102,6 +102,15 @@ export async function createProduct(formData: FormData) {
     
     category_id:
   formData.get('category_id') || null,
+
+    family_id:
+  formData.get('family_id') || null,
+
+    flavor_id:
+  formData.get('flavor_id') || null,
+
+    preparation_type_id:
+  formData.get('preparation_type_id') || null,
     
     short_description,
     description,

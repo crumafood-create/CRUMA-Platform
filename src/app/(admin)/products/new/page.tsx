@@ -16,6 +16,27 @@ export default async function NewProductPage() {
       .is('deleted_at', null)
       .order('name');
 
+  const { data: families } =
+    await supabase
+      .from('families')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name');
+
+  const { data: flavors } =
+    await supabase
+      .from('flavors')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name');
+
+  const { data: preparationTypes } =
+    await supabase
+      .from('preparation_types')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name');
+
   return (
     <main className="max-w-5xl space-y-6">
       <div className="flex items-center justify-between">
@@ -34,6 +55,11 @@ export default async function NewProductPage() {
       <ProductForm
         action={createProduct}
         categories={categories ?? []}
+        families={families ?? []}
+        flavors={flavors ?? []}
+        preparationTypes={
+          preparationTypes ?? []
+        }
       />
     </main>
   );

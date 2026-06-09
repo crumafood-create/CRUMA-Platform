@@ -108,6 +108,14 @@ export default async function ProductsPage() {
                   >
                     Editar
                   </Link>
+
+                  <Link
+                    href={`/products/${product.id}/inventory`}
+                    className="rounded border px-3 py-1"
+                  >
+                    Kardex
+                  </Link>
+                  
                 </div>
               </div>
             ))}

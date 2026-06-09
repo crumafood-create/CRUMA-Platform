@@ -31,6 +31,13 @@ export default function AdminSidebar() {
         <Link href="/flavors">
   Sabores
 </Link>
+        <Link href="/inventory">
+  Inventario
+</Link>
+
+<Link href="/inventory-locations">
+  Ubicaciones
+</Link>
       </nav>
     </aside>
   );

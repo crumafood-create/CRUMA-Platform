@@ -27,6 +27,10 @@ export default function AdminSidebar() {
       <Link href="/families">
   Familias
 </Link>
+
+        <Link href="/flavors">
+  Sabores
+</Link>
       </nav>
     </aside>
   );

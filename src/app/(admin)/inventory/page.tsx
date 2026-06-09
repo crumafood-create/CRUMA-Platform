@@ -5,75 +5,108 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 export default async function InventoryPage() {
   const supabase = await createClient();
 
-  const { data: stock } =
-    await supabase
-      .from('inventory_stock')
-      .select(`
-        *,
-        products (
-          name,
-          internal_code
-        ),
-        inventory_locations (
-          name
-        )
-      `)
-      .order('updated_at', {
-        ascending: false,
-      });
+  const { data } = await supabase
+    .from('inventory_movements')
+    .select(`
+      quantity,
+      movement_type,
+      products (
+        id,
+        name
+      ),
+      inventory_locations (
+        id,
+        name
+      )
+    `);
+
+  const inventoryMap = new Map();
+
+  data?.forEach((movement: any) => {
+    const productName =
+      movement.products?.name;
+
+    const locationName =
+      movement.inventory_locations?.name;
+
+    const key =
+      `${productName}-${locationName}`;
+
+    const current =
+      inventoryMap.get(key) ?? 0;
+
+    const qty =
+      movement.movement_type === 'entry'
+        ? movement.quantity
+        : -movement.quantity;
+
+    inventoryMap.set(
+      key,
+      current + qty
+    );
+  });
+
+  const inventory =
+    Array.from(
+      inventoryMap.entries()
+    ).map(([key, stock]) => {
+      const [
+        product,
+        location,
+      ] = key.split('-');
+
+      return {
+        product,
+        location,
+        stock,
+      };
+    });
 
   return (
     <main className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold">
-          Inventario
-        </h1>
+      <h1 className="text-4xl font-bold">
+        Inventario Actual
+      </h1>
 
-        <Link
-          href="/inventory/new"
-          className="rounded border px-4 py-2"
-        >
-          Nuevo Movimiento
-        </Link>
-      </div>
+      <div className="rounded-2xl border overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b bg-gray-50">
+              <th className="p-3 text-left">
+                Producto
+              </th>
 
-      <div className="rounded-2xl border p-6">
-        {stock?.length ? (
-          <div className="space-y-3">
-            {stock.map(item => (
-              <div
-                key={item.id}
-                className="rounded-xl border p-4"
+              <th className="p-3 text-left">
+                Ubicación
+              </th>
+
+              <th className="p-3 text-left">
+                Stock
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {inventory.map(row => (
+              <tr
+                key={`${row.product}-${row.location}`}
+                className="border-b"
               >
-                <div className="font-semibold">
-                  {item.products?.name}
-                </div>
+                <td className="p-3">
+                  {row.product}
+                </td>
 
-                <div className="text-sm text-gray-500">
-                  Código:
-                  {' '}
-                  {item.products?.internal_code}
-                </div>
+                <td className="p-3">
+                  {row.location}
+                </td>
 
-                <div className="text-sm text-gray-500">
-                  Ubicación:
-                  {' '}
-                  {item.inventory_locations?.name}
-                </div>
-
-                <div className="mt-2 text-lg font-bold">
-                  Existencia:
-                  {' '}
-                  {item.quantity}
-                </div>
-              </div>
+                <td className="p-3 font-semibold">
+                  {row.stock}
+                </td>
+              </tr>
             ))}
-          </div>
-        ) : (
-          <p>
-            No hay existencias registradas.
-          </p>
-        )}
+          </tbody>
+        </table>
       </div>
     </main>
   );

@@ -30,12 +30,33 @@ export default async function EditProductPage({
   }
 
   const { data: categories } =
-  await supabase
-    .from('categories')
-    .select('id, name')
-    .is('deleted_at', null)
-    .order('name');
-  
+    await supabase
+      .from('categories')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name');
+
+  const { data: families } =
+    await supabase
+      .from('families')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name');
+
+  const { data: flavors } =
+    await supabase
+      .from('flavors')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name');
+
+  const { data: preparationTypes } =
+    await supabase
+      .from('preparation_types')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name');
+
   return (
     <main className="max-w-5xl space-y-6">
       <h1 className="text-4xl font-bold">
@@ -43,13 +64,18 @@ export default async function EditProductPage({
       </h1>
 
       <ProductForm
-  initialValues={product}
-  categories={categories ?? []}
-  action={updateProduct.bind(
-    null,
-    product.id
-  )}
-/>
+        initialValues={product}
+        categories={categories ?? []}
+        families={families ?? []}
+        flavors={flavors ?? []}
+        preparationTypes={
+          preparationTypes ?? []
+        }
+        action={updateProduct.bind(
+          null,
+          product.id
+        )}
+      />
 
       <form
         action={deleteProduct.bind(

@@ -48,6 +48,7 @@ preparationTypes?: {
     seo_description?: string;
     status?: string;
     is_featured?: boolean;
+    min_stock?: number;
 
   };
 }

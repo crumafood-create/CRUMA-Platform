@@ -2,30 +2,24 @@ import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-import {
-  InventoryMovementForm,
-} from '@/app/(admin)/_components/inventory-movement-form';
+import { InventoryMovementForm } from '@/app/(admin)/_components/inventory-movement-form';
 
-import {
-  createInventoryMovement,
-} from '../actions';
+import { createInventoryMovement } from '../actions';
 
 export default async function NewInventoryMovementPage() {
   const supabase = await createClient();
 
-  const { data: products } =
-    await supabase
-      .from('products')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name');
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, name')
+    .is('deleted_at', null)
+    .order('name');
 
-  const { data: locations } =
-    await supabase
-      .from('inventory_locations')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name');
+  const { data: warehouses } = await supabase
+    .from('warehouses')
+    .select('id, name')
+    .eq('is_active', true)
+    .order('name');
 
   return (
     <main className="space-y-6">
@@ -45,7 +39,7 @@ export default async function NewInventoryMovementPage() {
       <InventoryMovementForm
         action={createInventoryMovement}
         products={products ?? []}
-        locations={locations ?? []}
+        warehouses={warehouses ?? []}
       />
     </main>
   );

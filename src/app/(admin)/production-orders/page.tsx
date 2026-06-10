@@ -65,8 +65,13 @@ export default async function ProductionOrdersPage() {
                   href={`/production-orders/${order.id}`}
                   className="mt-2 inline-block rounded border px-3 py-1"
                 >
-                  Abrir
-                </Link>
+                  <Link
+                  href={`/production-orders/${order.id}`}
+                  className="mt-2 inline-block rounded border px-3 py-1"
+                >
+                   Ver Producción
+                 </Link>
+    
               </div>
             ))}
           </div>

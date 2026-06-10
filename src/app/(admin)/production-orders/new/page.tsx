@@ -10,13 +10,14 @@ export default async function NewProductionOrderPage() {
   const supabase = await createClient();
 
   const { data: recipes } =
-    await supabase
-      .from('recipes')
-      .select(`
-        id,
-        products (
-          name
-        )
+  await supabase
+    .from('recipes')
+    .select(`
+      id,
+      product_id,
+      products!recipes_product_id_fkey (
+        name
+      )
       `);
 
   return (

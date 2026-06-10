@@ -40,3 +40,23 @@ export async function createProductionOrder(
     '/production-orders'
   );
 }
+export async function startProductionOrder(
+  orderId: string
+) {
+  const supabase = await createClient();
+
+  const { error } =
+    await supabase
+      .from('production_orders')
+      .update({
+        status: 'in_progress',
+        updated_at: new Date(),
+      })
+      .eq('id', orderId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/production-orders');
+}

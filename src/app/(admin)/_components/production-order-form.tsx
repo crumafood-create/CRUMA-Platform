@@ -38,13 +38,13 @@ export function ProductionOrderForm({
           </option>
 
           {recipes.map(recipe => (
-            <option
-              key={recipe.id}
-              value={recipe.id}
-            >
-              {recipe.products.name}
-            </option>
-          ))}
+  <option
+    key={recipe.id}
+    value={recipe.id}
+  >
+    {recipe.products?.name}
+  </option>
+))}
         </select>
       </div>
 

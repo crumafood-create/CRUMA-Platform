@@ -112,7 +112,22 @@ const enough =
                     Fórmula: {item.quantity}
                   </div>
                   <div className="font-semibold">Requerido: {required}</div>
-                </div>
+                  <div>
+  Disponible: {available}
+</div>
+
+<div
+  className={
+    enough
+      ? 'text-green-600'
+      : 'text-red-600'
+  }
+>
+  {enough
+    ? 'Stock suficiente'
+    : 'Stock insuficiente'}
+</div>
+          
               );
             })}
           </div>

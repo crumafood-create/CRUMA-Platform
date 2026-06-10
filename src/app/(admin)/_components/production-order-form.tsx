@@ -7,9 +7,10 @@ interface Props {
 
   recipes: {
     id: string;
+
     products: {
       name: string;
-    };
+    } | null;
   }[];
 }
 

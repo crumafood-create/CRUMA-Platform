@@ -83,7 +83,27 @@ export default async function ProductionOrderPage({
           <div className="space-y-3">
             {ingredients.map((item) => {
               const required =
-                Number(item.quantity) * Number(order.quantity);
+  Number(item.quantity) *
+  Number(order.quantity);
+
+const { data: stock } =
+  await supabase
+    .from('inventory_stock')
+    .select('quantity')
+    .eq(
+      'product_id',
+      item.ingredient_id
+    );
+
+const available =
+  stock?.reduce(
+    (sum, row) =>
+      sum + Number(row.quantity),
+    0
+  ) ?? 0;
+
+const enough =
+  available >= required;
 
               return (
                 <div key={item.id} className="rounded border p-3">

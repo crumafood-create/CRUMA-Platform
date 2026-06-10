@@ -2,6 +2,43 @@ import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
+import {
+  startProductionOrder,
+  completeProductionOrder,
+} from '../actions';
+
+<div className="flex gap-3">
+  {order.status === 'draft' && (
+    <form
+      action={startProductionOrder.bind(
+        null,
+        order.id
+      )}
+    >
+      <button
+        className="rounded border px-4 py-2"
+      >
+        Iniciar Producción
+      </button>
+    </form>
+  )}
+
+  {order.status === 'in_progress' && (
+    <form
+      action={completeProductionOrder.bind(
+        null,
+        order.id
+      )}
+    >
+      <button
+        className="rounded border px-4 py-2"
+      >
+        Finalizar Producción
+      </button>
+    </form>
+  )}
+</div>
+
 export default async function ProductionOrderPage({
   params,
 }: {

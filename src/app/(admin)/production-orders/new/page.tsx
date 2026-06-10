@@ -10,15 +10,23 @@ export default async function NewProductionOrderPage() {
   const supabase = await createClient();
 
   const { data: recipes } =
-  await supabase
-    .from('recipes')
-    .select(`
-      id,
-      product_id,
-      products!recipes_product_id_fkey (
-        name
-      )
+    await supabase
+      .from('recipes')
+      .select(`
+        id,
+        product_id,
+        products:products!recipes_product_id_fkey (
+          name
+        )
       `);
+
+  const recipesData =
+    (recipes ?? []).map(recipe => ({
+      id: recipe.id,
+      products: Array.isArray(recipe.products)
+        ? recipe.products[0] ?? null
+        : recipe.products,
+    }));
 
   return (
     <main className="space-y-6">
@@ -36,10 +44,8 @@ export default async function NewProductionOrderPage() {
       </div>
 
       <ProductionOrderForm
-        action={
-          createProductionOrder
-        }
-        recipes={recipes ?? []}
+        action={createProductionOrder}
+        recipes={recipesData}
       />
     </main>
   );

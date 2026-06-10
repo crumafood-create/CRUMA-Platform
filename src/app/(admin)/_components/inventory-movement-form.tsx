@@ -8,7 +8,7 @@ interface Props {
     name: string;
   }[];
 
-  locations: {
+  warehouses: {
     id: string;
     name: string;
   }[];
@@ -17,7 +17,7 @@ interface Props {
 export function InventoryMovementForm({
   action,
   products,
-  locations,
+  warehouses,
 }: Props) {
   return (
     <form
@@ -38,7 +38,7 @@ export function InventoryMovementForm({
             Seleccionar producto
           </option>
 
-          {products.map(product => (
+          {products.map((product) => (
             <option
               key={product.id}
               value={product.id}
@@ -51,24 +51,24 @@ export function InventoryMovementForm({
 
       <div>
         <label className="mb-2 block font-medium">
-          Ubicación
+          Almacén
         </label>
 
         <select
-          name="location_id"
+          name="warehouse_id"
           required
           className="w-full rounded border p-3"
         >
           <option value="">
-            Seleccionar ubicación
+            Seleccionar almacén
           </option>
 
-          {locations.map(location => (
+          {warehouses.map((warehouse) => (
             <option
-              key={location.id}
-              value={location.id}
+              key={warehouse.id}
+              value={warehouse.id}
             >
-              {location.name}
+              {warehouse.name}
             </option>
           ))}
         </select>
@@ -84,17 +84,9 @@ export function InventoryMovementForm({
           required
           className="w-full rounded border p-3"
         >
-          <option value="entry">
-            Entrada
-          </option>
-
-          <option value="exit">
-            Salida
-          </option>
-
-          <option value="adjustment">
-            Ajuste
-          </option>
+          <option value="entry">Entrada</option>
+          <option value="exit">Salida</option>
+          <option value="adjustment">Ajuste</option>
         </select>
       </div>
 
@@ -105,7 +97,7 @@ export function InventoryMovementForm({
 
         <input
           type="number"
-          step="0.01"
+          step="1"
           min="0"
           required
           name="quantity"

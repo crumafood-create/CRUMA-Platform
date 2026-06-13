@@ -73,11 +73,11 @@ export default async function InventoryPage() {
                   className="border-b"
                 >
                   <td className="p-3">
-                    {item.products?.internal_code}
+                    {item.products?.[0]?.internal_code}
                   </td>
 
                   <td className="p-3">
-                    {item.products?.name}
+                    {item.products?.[0]?.name}
                   </td>
 
                   <td className="p-3 font-semibold">

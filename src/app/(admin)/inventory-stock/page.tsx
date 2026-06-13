@@ -29,11 +29,11 @@ export default async function InventoryStockPage() {
                 className="rounded border p-4"
               >
                 <div className="font-semibold">
-                  {item.products?.name}
+                  {item.products?.[0]?.name}
                 </div>
 
                 <div className="text-sm text-gray-500">
-                  {item.products?.internal_code}
+                  {item.products?.[0]?.internal_code}
                 </div>
 
                 <div className="mt-2 font-bold">

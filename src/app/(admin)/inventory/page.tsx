@@ -69,7 +69,7 @@ export default async function InventoryPage() {
             ) : (
               inventory.map((item: any) => (
                 <tr
-                  key={item.products?.[0]?.id ?? crypto.randomUUID()}
+                  key={`${item.products?.[0]?.id}-${item.quantity}`}
                   className="border-b"
                 >
                   <td className="p-3">

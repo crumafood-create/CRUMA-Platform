@@ -5,7 +5,7 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 export default async function InventoryPage() {
   const supabase = await createClient();
 
-  const { data: inventory = [], error } = await supabase
+  const { data: inventory, error } = await supabase
     .from('inventory_stock')
     .select(`
       quantity,
@@ -22,6 +22,8 @@ export default async function InventoryPage() {
   if (error) {
     throw new Error(error.message);
   }
+
+  const inventoryRows = inventory ?? [];
 
   return (
     <main className="space-y-6">
@@ -57,7 +59,7 @@ export default async function InventoryPage() {
           </thead>
 
           <tbody>
-            {inventory.length === 0 ? (
+            {inventoryRows.length === 0 ? (
               <tr>
                 <td
                   colSpan={3}
@@ -67,21 +69,26 @@ export default async function InventoryPage() {
                 </td>
               </tr>
             ) : (
-              inventory.map((item: any) => (
+              inventoryRows.map((item: any, index: number) => (
                 <tr
-                  key={`${item.products?.[0]?.id}-${item.quantity}`}
+                  key={
+                    item.products?.[0]?.id ??
+                    `inventory-${index}`
+                  }
                   className="border-b"
                 >
                   <td className="p-3">
-                    {item.products?.[0]?.internal_code}
+                    {item.products?.[0]?.internal_code ??
+                      '-'}
                   </td>
 
                   <td className="p-3">
-                    {item.products?.[0]?.name}
+                    {item.products?.[0]?.name ??
+                      'Producto sin nombre'}
                   </td>
 
                   <td className="p-3 font-semibold">
-                    {item.quantity}
+                    {item.quantity ?? 0}
                   </td>
                 </tr>
               ))

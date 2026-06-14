@@ -5,25 +5,45 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 export default async function InventoryPage() {
   const supabase = await createClient();
 
-  const { data: inventory, error } = await supabase
+  const { data: stock, error: stockError } = await supabase
     .from('inventory_stock')
-    .select(`
-      quantity,
-      products (
-        id,
-        name,
-        internal_code
-      )
-    `)
+    .select('*')
     .order('quantity', {
       ascending: false,
     });
 
-  if (error) {
-    throw new Error(error.message);
+  if (stockError) {
+    throw new Error(stockError.message);
   }
 
-  const inventoryRows = inventory ?? [];
+  const productIds =
+    stock?.map((row) => row.product_id) ?? [];
+
+  const { data: products, error: productsError } =
+    await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        internal_code
+      `)
+      .in('id', productIds);
+
+  if (productsError) {
+    throw new Error(productsError.message);
+  }
+
+  const productMap = new Map(
+    (products ?? []).map((product) => [
+      product.id,
+      product,
+    ]),
+  );
+
+  const inventoryRows = (stock ?? []).map((row) => ({
+    quantity: row.quantity,
+    product: productMap.get(row.product_id),
+  }));
 
   return (
     <main className="space-y-6">
@@ -69,26 +89,22 @@ export default async function InventoryPage() {
                 </td>
               </tr>
             ) : (
-              inventoryRows.map((item: any, index: number) => (
+              inventoryRows.map((item, index) => (
                 <tr
-                  key={
-                    item.products?.[0]?.id ??
-                    `inventory-${index}`
-                  }
+                  key={item.product?.id ?? index}
                   className="border-b"
                 >
                   <td className="p-3">
-                    {item.products?.[0]?.internal_code ??
-                      '-'}
+                    {item.product?.internal_code ?? '-'}
                   </td>
 
                   <td className="p-3">
-                    {item.products?.[0]?.name ??
+                    {item.product?.name ??
                       'Producto sin nombre'}
                   </td>
 
                   <td className="p-3 font-semibold">
-                    {item.quantity ?? 0}
+                    {item.quantity}
                   </td>
                 </tr>
               ))

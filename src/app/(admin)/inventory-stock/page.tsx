@@ -3,16 +3,46 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 export default async function InventoryStockPage() {
   const supabase = await createClient();
 
-  const { data: stock } =
+  const { data: stock, error: stockError } =
     await supabase
       .from('inventory_stock')
+      .select('*')
+      .order('quantity', {
+        ascending: false,
+      });
+
+  if (stockError) {
+    throw new Error(stockError.message);
+  }
+
+  const productIds =
+    stock?.map((row) => row.product_id) ?? [];
+
+  const { data: products, error: productsError } =
+    await supabase
+      .from('products')
       .select(`
-        quantity,
-        products (
-          name,
-          internal_code
-        )
-      `);
+        id,
+        name,
+        internal_code
+      `)
+      .in('id', productIds);
+
+  if (productsError) {
+    throw new Error(productsError.message);
+  }
+
+  const productMap = new Map(
+    (products ?? []).map((product) => [
+      product.id,
+      product,
+    ]),
+  );
+
+  const rows = (stock ?? []).map((row) => ({
+    quantity: row.quantity,
+    product: productMap.get(row.product_id),
+  }));
 
   return (
     <main className="space-y-6">
@@ -21,25 +51,23 @@ export default async function InventoryStockPage() {
       </h1>
 
       <div className="rounded-2xl border p-6">
-        {stock?.length ? (
+        {rows.length > 0 ? (
           <div className="space-y-3">
-            {stock.map((item, index) => (
+            {rows.map((item, index) => (
               <div
-                key={index}
+                key={item.product?.id ?? index}
                 className="rounded border p-4"
               >
                 <div className="font-semibold">
-                  {item.products?.[0]?.name}
+                  {item.product?.name}
                 </div>
 
                 <div className="text-sm text-gray-500">
-                  {item.products?.[0]?.internal_code}
+                  {item.product?.internal_code}
                 </div>
 
                 <div className="mt-2 font-bold">
-                  Stock:
-                  {' '}
-                  {item.quantity}
+                  Stock: {item.quantity}
                 </div>
               </div>
             ))}

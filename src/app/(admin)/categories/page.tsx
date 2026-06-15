@@ -6,23 +6,29 @@ export default async function CategoriesPage() {
   const supabase = await createClient();
 
   const {
-  data: families,
-  error,
-} = await supabase
-  .from('families')
-  .select('*')
-  .is('deleted_at', null)
-  .order('name');
+    data: categories,
+    error,
+  } = await supabase
+    .from('categories')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name');
 
-console.log(error);
+  if (error) {
+    console.error(error);
 
-if (error) {
-  return (
-    <pre>
-      {JSON.stringify(error, null, 2)}
-    </pre>
-  );
-}
+    return (
+      <main className="p-6">
+        <h1 className="text-2xl font-bold text-red-600">
+          Error al cargar categorías
+        </h1>
+
+        <pre className="mt-4 rounded border p-4 text-sm">
+          {JSON.stringify(error, null, 2)}
+        </pre>
+      </main>
+    );
+  }
 
   return (
     <main className="space-y-6">
@@ -53,6 +59,19 @@ if (error) {
 
                 <div className="text-sm text-gray-500">
                   {category.slug}
+                </div>
+
+                {category.description && (
+                  <div className="text-sm text-gray-500 mt-1">
+                    {category.description}
+                  </div>
+                )}
+
+                <div className="text-sm text-gray-500 mt-1">
+                  Estado:{' '}
+                  {category.is_active
+                    ? 'Activo'
+                    : 'Inactivo'}
                 </div>
 
                 <Link

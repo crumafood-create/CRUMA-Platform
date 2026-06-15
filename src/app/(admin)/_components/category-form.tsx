@@ -10,11 +10,11 @@ interface Props {
   action: (formData: FormData) => Promise<void>;
 
   initialValues?: {
-    name?: string;
-    slug?: string;
-    description?: string;
-    status?: string;
-  };
+  name?: string;
+  slug?: string;
+  description?: string;
+  is_active?: boolean;
+};
 }
 
 export function CategoryForm({
@@ -80,27 +80,28 @@ export function CategoryForm({
       </div>
 
       <div>
-        <label className="mb-2 block font-medium">
-          Estado
-        </label>
+  <label className="mb-2 block font-medium">
+    Estado
+  </label>
 
-        <select
-          name="status"
-          defaultValue={
-            initialValues?.status ??
-            'active'
-          }
-          className="w-full rounded border p-3"
-        >
-          <option value="active">
-            Activo
-          </option>
+  <select
+    name="is_active"
+    defaultValue={
+      initialValues?.is_active
+        ? 'true'
+        : 'false'
+    }
+    className="w-full rounded border p-3"
+  >
+    <option value="true">
+      Activo
+    </option>
 
-          <option value="inactive">
-            Inactivo
-          </option>
-        </select>
-      </div>
+    <option value="false">
+      Inactivo
+    </option>
+  </select>
+</div>
 
       <button
         type="submit"

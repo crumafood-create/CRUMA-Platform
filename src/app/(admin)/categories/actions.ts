@@ -20,7 +20,11 @@ export async function createCategory(
   });
 
   if (error) {
-    throw new Error(error.message);
+  console.error('CATEGORY ERROR:', error);
+
+  throw new Error(
+    JSON.stringify(error, null, 2)
+  );
   }
 
   revalidatePath('/categories');

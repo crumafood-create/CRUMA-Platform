@@ -36,19 +36,17 @@ export default async function EditCategoryPage({
       </h1>
 
       <CategoryForm
-        initialValues={{
-          name: category.name,
-          slug: category.slug,
-          description:
-            category.description ?? '',
-          status:
-            category.status ?? 'active',
-        }}
-        action={updateCategory.bind(
-          null,
-          category.id
-        )}
-      />
+  initialValues={{
+    name: category.name,
+    slug: category.slug,
+    description: category.description ?? '',
+    is_active: category.is_active ?? true,
+  }}
+  action={updateCategory.bind(
+    null,
+    category.id
+  )}
+/>
 
       <form
         action={deleteCategory.bind(

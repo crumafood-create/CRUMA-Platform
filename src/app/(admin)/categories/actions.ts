@@ -10,17 +10,14 @@ export async function createCategory(
 ) {
   const supabase = await createClient();
 
-  const { error } =
-    await supabase
-      .from('categories')
-      .insert({
-        name: formData.get('name'),
-        slug: formData.get('slug'),
-        description:
-          formData.get('description'),
-        status:
-          formData.get('status'),
-      });
+  const { error } = await supabase
+  .from('categories')
+  .insert({
+    name: formData.get('name'),
+    slug: formData.get('slug'),
+    description: formData.get('description'),
+    is_active: true,
+  });
 
   if (error) {
     throw new Error(error.message);
@@ -38,16 +35,14 @@ export async function updateCategory(
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from('categories')
-    .update({
-      name: formData.get('name'),
-      slug: formData.get('slug'),
-      description:
-        formData.get('description'),
-      status:
-        formData.get('status'),
-      updated_at: new Date(),
-    })
+  .from('categories')
+  .update({
+    name: formData.get('name'),
+    slug: formData.get('slug'),
+    description: formData.get('description'),
+    is_active: formData.get('is_active') === 'true',
+    updated_at: new Date().toISOString(),
+  })
     .eq('id', categoryId);
 
   if (error) {

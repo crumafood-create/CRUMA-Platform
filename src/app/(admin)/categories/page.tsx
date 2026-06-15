@@ -6,15 +6,22 @@ export default async function CategoriesPage() {
   const supabase = await createClient();
 
   const {
-  data: categories,
+  data: families,
   error,
 } = await supabase
-  .from('categories')
+  .from('families')
   .select('*')
+  .is('deleted_at', null)
   .order('name');
 
+console.log(error);
+
 if (error) {
-  console.error(error);
+  return (
+    <pre>
+      {JSON.stringify(error, null, 2)}
+    </pre>
+  );
 }
 
   return (

@@ -5,12 +5,20 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 export default async function FamiliesPage() {
   const supabase = await createClient();
 
-  const { data: families } =
+  const { data: families, error } =
     await supabase
       .from('families')
-      .select('*, categories(name)')
+      .select('*')
       .is('deleted_at', null)
       .order('name');
+
+  if (error) {
+    return (
+      <pre>
+        {JSON.stringify(error, null, 2)}
+      </pre>
+    );
+  }
 
   return (
     <main className="space-y-6">
@@ -41,12 +49,6 @@ export default async function FamiliesPage() {
 
                 <div className="text-sm text-gray-500">
                   {family.slug}
-                </div>
-
-                <div className="text-sm text-gray-500">
-                  Categoría:
-                  {' '}
-                  {family.categories?.name}
                 </div>
 
                 <Link

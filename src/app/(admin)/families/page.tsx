@@ -8,12 +8,7 @@ export default async function FamiliesPage() {
   const { data: families } =
     await supabase
       .from('families')
-      .select(`
-        *,
-        categories (
-          name
-        )
-      `)
+      .select('*, categories(name)')
       .is('deleted_at', null)
       .order('name');
 

@@ -5,31 +5,41 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-export async function createCategory(
+export async function createFamily(
   formData: FormData
 ) {
   const supabase = await createClient();
 
-  const { error } = await supabase
-  .from('categories')
-  .insert({
+  console.log({
+    category_id: formData.get('category_id'),
     name: formData.get('name'),
     slug: formData.get('slug'),
     description: formData.get('description'),
-    is_active: true,
+    is_active: formData.get('is_active'),
   });
 
-  if (error) {
-  console.error('CATEGORY ERROR:', error);
+  const { data, error } =
+    await supabase
+      .from('families')
+      .insert({
+        category_id: formData.get('category_id'),
+        name: formData.get('name'),
+        slug: formData.get('slug'),
+        description: formData.get('description'),
+        is_active:
+          formData.get('is_active') === 'true',
+      })
+      .select();
 
-  throw new Error(
-    JSON.stringify(error, null, 2)
-  );
+  console.log('DATA', data);
+  console.log('ERROR', error);
+
+  if (error) {
+    throw new Error(error.message);
   }
 
-  revalidatePath('/categories');
-
-  redirect('/categories');
+  revalidatePath('/families');
+  redirect('/families');
 }
 
 export async function updateCategory(

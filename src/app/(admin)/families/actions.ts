@@ -8,25 +8,34 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 export async function createFamily(
   formData: FormData
 ) {
+  console.log(
+    'FORM DATA',
+    Object.fromEntries(formData.entries())
+  );
+
   const supabase = await createClient();
+
+  const payload = {
+    category_id: formData.get('category_id'),
+    name: formData.get('name'),
+    slug: formData.get('slug'),
+    description: formData.get('description'),
+    is_active:
+      formData.get('is_active') === 'true',
+  };
+
+  console.log('PAYLOAD', payload);
 
   const { error } = await supabase
     .from('families')
-    .insert({
-      category_id: formData.get('category_id'),
-      name: formData.get('name'),
-      slug: formData.get('slug'),
-      description: formData.get('description'),
-      is_active:
-        formData.get('is_active') === 'true',
-    });
+    .insert(payload);
 
   if (error) {
+    console.error(error);
     throw new Error(error.message);
   }
 
   revalidatePath('/families');
-
   redirect('/families');
 }
 

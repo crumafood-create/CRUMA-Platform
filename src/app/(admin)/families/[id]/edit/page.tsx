@@ -30,10 +30,11 @@ export default async function EditFamilyPage({
   }
 
   const { data: categories } =
-    await supabase
-      .from('categories')
-      .select('id,name')
-      .order('name');
+  await supabase
+    .from('categories')
+    .select('id,name')
+    .is('deleted_at', null)
+    .order('name');
 
   return (
     <main className="space-y-6">

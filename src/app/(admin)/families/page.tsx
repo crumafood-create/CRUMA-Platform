@@ -5,25 +5,27 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 export default async function FamiliesPage() {
   const supabase = await createClient();
 
-  const { data: families, error } =
-  await supabase
+  const { data: families, error } = await supabase
     .from('families')
     .select('*')
     .is('deleted_at', null)
     .order('name');
 
-return (
-  <pre>
-    {JSON.stringify(
-      {
-        families,
-        error,
-      },
-      null,
-      2
-    )}
-  </pre>
-);
+  if (error) {
+    return (
+      <main className="space-y-6">
+        <h1 className="text-4xl font-bold">Familias</h1>
+
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+          <p className="text-red-700">
+            Error loading families: {error.message}
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const familyList = families ?? [];
 
   return (
     <main className="space-y-6">
@@ -41,9 +43,9 @@ return (
       </div>
 
       <div className="rounded-2xl border p-6">
-        {families?.length ? (
+        {familyList.length > 0 ? (
           <div className="space-y-3">
-            {families.map(family => (
+            {familyList.map((family) => (
               <div
                 key={family.id}
                 className="rounded border p-4"

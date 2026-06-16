@@ -5,41 +5,27 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-export async function createFamily(
+export async function createCategory(
   formData: FormData
 ) {
   const supabase = await createClient();
 
-  console.log({
-    category_id: formData.get('category_id'),
-    name: formData.get('name'),
-    slug: formData.get('slug'),
-    description: formData.get('description'),
-    is_active: formData.get('is_active'),
-  });
-
-  const { data, error } =
-    await supabase
-      .from('families')
-      .insert({
-        category_id: formData.get('category_id'),
-        name: formData.get('name'),
-        slug: formData.get('slug'),
-        description: formData.get('description'),
-        is_active:
-          formData.get('is_active') === 'true',
-      })
-      .select();
-
-  console.log('DATA', data);
-  console.log('ERROR', error);
+  const { error } = await supabase
+    .from('categories')
+    .insert({
+      name: formData.get('name'),
+      slug: formData.get('slug'),
+      description: formData.get('description'),
+      is_active:
+        formData.get('is_active') === 'true',
+    });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  revalidatePath('/families');
-  redirect('/families');
+  revalidatePath('/categories');
+  redirect('/categories');
 }
 
 export async function updateCategory(
@@ -49,14 +35,16 @@ export async function updateCategory(
   const supabase = await createClient();
 
   const { error } = await supabase
-  .from('categories')
-  .update({
-    name: formData.get('name'),
-    slug: formData.get('slug'),
-    description: formData.get('description'),
-    is_active: formData.get('is_active') === 'true',
-    updated_at: new Date().toISOString(),
-  })
+    .from('categories')
+    .update({
+      name: formData.get('name'),
+      slug: formData.get('slug'),
+      description: formData.get('description'),
+      is_active:
+        formData.get('is_active') === 'true',
+      updated_at:
+        new Date().toISOString(),
+    })
     .eq('id', categoryId);
 
   if (error) {
@@ -64,7 +52,6 @@ export async function updateCategory(
   }
 
   revalidatePath('/categories');
-
   redirect('/categories');
 }
 
@@ -76,7 +63,8 @@ export async function deleteCategory(
   const { error } = await supabase
     .from('categories')
     .update({
-      deleted_at: new Date(),
+      deleted_at:
+        new Date().toISOString(),
     })
     .eq('id', categoryId);
 
@@ -85,7 +73,5 @@ export async function deleteCategory(
   }
 
   revalidatePath('/categories');
-
   redirect('/categories');
 }
-

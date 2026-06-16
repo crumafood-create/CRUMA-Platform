@@ -6,19 +6,24 @@ export default async function FamiliesPage() {
   const supabase = await createClient();
 
   const { data: families, error } =
-    await supabase
-      .from('families')
-      .select('*')
-      .is('deleted_at', null)
-      .order('name');
+  await supabase
+    .from('families')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name');
 
-  if (error) {
-    return (
-      <pre>
-        {JSON.stringify(error, null, 2)}
-      </pre>
-    );
-  }
+return (
+  <pre>
+    {JSON.stringify(
+      {
+        families,
+        error,
+      },
+      null,
+      2
+    )}
+  </pre>
+);
 
   return (
     <main className="space-y-6">

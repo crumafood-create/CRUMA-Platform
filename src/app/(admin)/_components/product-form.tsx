@@ -73,6 +73,13 @@ export function ProductForm({
     setCodeEdited(true);
   }
 
+  const filteredFamilies =
+  families?.filter(
+    family =>
+      family.category_id ===
+      selectedCategory
+  ) ?? [];
+
   return (
     <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
 

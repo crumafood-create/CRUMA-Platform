@@ -107,7 +107,8 @@ export function ProductForm({
     setCodeEdited(true);
   }
 
-  function handleCategoryChange(
+  
+    function handleCategoryChange(
   e: React.ChangeEvent<HTMLSelectElement>
 ) {
   const categoryId = e.target.value;
@@ -127,7 +128,8 @@ export function ProductForm({
       generateInternalCode(productName)
     );
   }
-  }
+    }
+  
 
   // ─── Render ────────────────────────────────────────────────────────────────
 

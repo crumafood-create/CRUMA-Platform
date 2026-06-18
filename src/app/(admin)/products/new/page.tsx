@@ -37,6 +37,13 @@ export default async function NewProductPage() {
       .is('deleted_at', null)
       .order('name');
 
+  const { data: unitsOfMeasure } =
+  await supabase
+    .from('units_of_measure')
+    .select('id, name, code')
+    .eq('is_active', true)
+    .order('name');
+
   return (
     <main className="max-w-5xl space-y-6">
       <div className="flex items-center justify-between">
@@ -53,14 +60,13 @@ export default async function NewProductPage() {
       </div>
 
       <ProductForm
-        action={createProduct}
-        categories={categories ?? []}
-        families={families ?? []}
-        flavors={flavors ?? []}
-        preparationTypes={
-          preparationTypes ?? []
-        }
-      />
+  action={createProduct}
+  categories={categories ?? []}
+  families={families ?? []}
+  flavors={flavors ?? []}
+  preparationTypes={preparationTypes ?? []}
+  unitsOfMeasure={unitsOfMeasure ?? []}
+/>
     </main>
   );
 }

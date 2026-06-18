@@ -101,7 +101,7 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">Código Interno</label>
+            <label className="mb-2 block font-medium">Código Interno *</label>
             <input
               name="internal_code"
               required

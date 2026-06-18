@@ -32,7 +32,7 @@ export default async function EditProductPage({
   const { data: categories } =
     await supabase
       .from('categories')
-      .select('id, name')
+      .select('id, name, code_prefix')
       .is('deleted_at', null)
       .order('name');
 

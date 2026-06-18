@@ -14,12 +14,18 @@ interface SelectOption {
   code_prefix?: string;
 }
 
+interface UnitOfMeasure {
+  id: string;
+  name: string;
+  code: string;
+}
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
   categories?: SelectOption[];
   families?: SelectOption[];
   flavors?: SelectOption[];
   preparationTypes?: SelectOption[];
+  unitsOfMeasure?: UnitOfMeasure[];
   initialValues?: {
     name?: string;
     slug?: string;

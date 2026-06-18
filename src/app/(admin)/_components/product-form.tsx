@@ -65,6 +65,27 @@ export function ProductForm({
     (family) => family.category_id === selectedCategory
   ) ?? [];
 
+  function generateInternalCode(name: string) {
+  const category = categories?.find(
+    c => c.id === selectedCategory
+  );
+
+  const prefix =
+    category?.code_prefix ?? 'PRD';
+
+  const code =
+    name
+      .toUpperCase()
+      .replace(/[^A-Z0-9 ]/g, '')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(word => word.substring(0, 3))
+      .join('-');
+
+  return `${prefix}-${code}`;
+  }
+
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {

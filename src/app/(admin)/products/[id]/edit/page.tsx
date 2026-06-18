@@ -53,7 +53,7 @@ export default async function EditProductPage({
   const { data: preparationTypes } =
     await supabase
       .from('preparation_types')
-      .select('id, name')
+      .select('id, name, category_id')
       .is('deleted_at', null)
       .order('name');
 

@@ -70,8 +70,11 @@ export function ProductForm({
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
     if (!slugEdited) setSlug(toSlug(value));
-    if (!codeEdited) setInternalCode(toInternalCode(value));
-  }
+    if (!codeEdited) {
+  setInternalCode(
+    generateInternalCode(value)
+  );
+    }
 
   function handleSlugChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSlug(e.target.value);
@@ -83,9 +86,26 @@ export function ProductForm({
     setCodeEdited(true);
   }
 
-  function handleCategoryChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    setSelectedCategory(e.target.value);
-    setSelectedFamily(''); // resetear familia al cambiar categoría
+  function handleCategoryChange(
+  e: React.ChangeEvent<HTMLSelectElement>
+) {
+  const categoryId = e.target.value;
+
+  setSelectedCategory(categoryId);
+  setSelectedFamily('');
+
+  if (!codeEdited) {
+    const productName =
+      (
+        document.querySelector(
+          'input[name="name"]'
+        ) as HTMLInputElement
+      )?.value ?? '';
+
+    setInternalCode(
+      generateInternalCode(productName)
+    );
+  }
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -342,4 +362,4 @@ export function ProductForm({
       </div>
     </form>
   );
-      }
+}

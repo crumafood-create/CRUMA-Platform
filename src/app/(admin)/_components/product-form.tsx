@@ -56,6 +56,12 @@ export function ProductForm({
   const [internalCode, setInternalCode]     = useState(initialValues?.internal_code ?? '');
   const [codeEdited, setCodeEdited]         = useState(!!initialValues?.internal_code);
   const [selectedCategory, setSelectedCategory] = useState(initialValues?.category_id ?? '');
+  const categoryPrefixes: Record<string, string> = {
+  'Materias Primas': 'MP',
+  'Tequeños': 'PT',
+  'Empaques': 'EMP',
+  'Consumibles': 'CON',
+};
   const [selectedFamily, setSelectedFamily]     = useState(initialValues?.family_id ?? '');
 
   // ─── Derived ───────────────────────────────────────────────────────────────
@@ -69,7 +75,8 @@ export function ProductForm({
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
     if (!slugEdited) setSlug(toSlug(value));
-    if (!codeEdited) setInternalCode(toInternalCode(value));
+    if (!codeEdited) { setInternalCode( generateInternalCode( value, selectedCategoryName));
+  }
   }
 
   function handleSlugChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -85,6 +92,25 @@ export function ProductForm({
   function handleCategoryChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setSelectedCategory(e.target.value);
     setSelectedFamily(''); // resetear familia al cambiar categoría
+  }
+
+  function generateInternalCode(
+  name: string,
+  categoryName?: string
+) {
+  if (!name) return '';
+
+  const prefix =
+    categoryPrefixes[
+      categoryName ?? ''
+    ] ?? 'PRD';
+
+    const selectedCategoryName =
+  categories?.find(
+    category =>
+      category.id === selectedCategory
+  )?.name;
+  return `${prefix}-${toInternalCode(name)}`;
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────

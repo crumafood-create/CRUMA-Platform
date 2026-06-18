@@ -1,8 +1,6 @@
-import { UnitOfMeasureForm }
-from '@/app/(admin)/_components/unit-of-measure-form';
+import { UnitOfMeasureForm } from '@/app/(admin)/_components/unit-of-measure-form';
 
-import { createUnitOfMeasure }
-from '../actions';
+import { createUnitOfMeasure } from '../actions';
 
 export default function NewUnitPage() {
   return (

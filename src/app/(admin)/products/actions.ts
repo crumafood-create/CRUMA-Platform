@@ -25,43 +25,26 @@ export async function updateProduct(
       name: formData.get('name'),
       slug: formData.get('slug'),
       internal_code: formData.get('internal_code'),
-
-      category_id:
-    formData.get('category_id') || null,
-
-      family_id:
-       formData.get('family_id') || null,
-
-      flavor_id:
-       formData.get('flavor_id') || null,
-
-      min_stock:
-       Number(
-       formData.get('min_stock')) || 0,
-
+      category_id: formData.get('category_id') || null,
+      family_id: formData.get('family_id') || null,
+      flavor_id: formData.get('flavor_id') || null,
       preparation_type_id:
         formData.get('preparation_type_id') || null,
-
       unit_of_measure_id:
-  formData.get('unit_of_measure_id') || null,
-      
+        formData.get('unit_of_measure_id') || null,
+      min_stock:
+        Number(formData.get('min_stock')) || 0,
       short_description:
-        formData.get('short_description'),
-      description:
-        formData.get('description'),
-      image_url:
-        formData.get('image_url'),
-      image_alt:
-        formData.get('image_alt'),
-      seo_title:
-        formData.get('seo_title'),
+        formData.get('short_description') || null,
+      description: formData.get('description') || null,
+      image_url: formData.get('image_url') || null,
+      image_alt: formData.get('image_alt') || null,
+      seo_title: formData.get('seo_title') || null,
       seo_description:
-        formData.get('seo_description'),
-      status:
-        formData.get('status'),
-      is_featured:
-        formData.get('is_featured') === 'on',
-      updated_at: new Date(),
+        formData.get('seo_description') || null,
+      status: formData.get('status'),
+      is_featured: formData.get('is_featured') === 'on',
+      updated_at: new Date().toISOString(),
     })
     .eq('id', productId);
 
@@ -70,7 +53,6 @@ export async function updateProduct(
   }
 
   revalidatePath('/products');
-
   redirect('/products');
 }
 
@@ -92,37 +74,38 @@ export async function createProduct(formData: FormData) {
     throw new Error('Nombre y slug son obligatorios');
   }
 
-  const internal_code = formData.get('internal_code')?.toString().trim() || null;
-  const short_description = formData.get('short_description')?.toString().trim() || null;
-  const description = formData.get('description')?.toString().trim() || null;
-  const image_url = formData.get('image_url')?.toString().trim() || null;
-  const image_alt = formData.get('image_alt')?.toString().trim() || null;
-  const seo_title = formData.get('seo_title')?.toString().trim() || null;
-  const seo_description = formData.get('seo_description')?.toString().trim() || null;
-  const status = formData.get('status')?.toString().trim() || 'active';
+  const internal_code =
+    formData.get('internal_code')?.toString().trim() || null;
+  const short_description =
+    formData.get('short_description')?.toString().trim() ||
+    null;
+  const description =
+    formData.get('description')?.toString().trim() || null;
+  const image_url =
+    formData.get('image_url')?.toString().trim() || null;
+  const image_alt =
+    formData.get('image_alt')?.toString().trim() || null;
+  const seo_title =
+    formData.get('seo_title')?.toString().trim() || null;
+  const seo_description =
+    formData.get('seo_description')?.toString().trim() ||
+    null;
+  const status =
+    formData.get('status')?.toString().trim() || 'active';
   const is_featured = formData.get('is_featured') === 'on';
   const min_stock = Number(formData.get('min_stock')) || 0;
-  
+
   const { error } = await supabase.from('products').insert({
     name,
     slug,
     internal_code,
-    
-    category_id:
-  formData.get('category_id') || null,
-
-    family_id:
-  formData.get('family_id') || null,
-
-    flavor_id:
-  formData.get('flavor_id') || null,
-
+    category_id: formData.get('category_id') || null,
+    family_id: formData.get('family_id') || null,
+    flavor_id: formData.get('flavor_id') || null,
     preparation_type_id:
-  formData.get('preparation_type_id') || null,
-
+      formData.get('preparation_type_id') || null,
     unit_of_measure_id:
-  formData.get('unit_of_measure_id') || null,
-    
+      formData.get('unit_of_measure_id') || null,
     short_description,
     description,
     image_url,
@@ -132,7 +115,6 @@ export async function createProduct(formData: FormData) {
     status,
     is_featured,
     min_stock,
-  
   });
 
   if (error) {
@@ -152,7 +134,7 @@ export async function deleteProduct(
   const { error } = await supabase
     .from('products')
     .update({
-      deleted_at: new Date(),
+      deleted_at: new Date().toISOString(),
     })
     .eq('id', productId);
 
@@ -161,6 +143,5 @@ export async function deleteProduct(
   }
 
   revalidatePath('/products');
-
   redirect('/products');
 }

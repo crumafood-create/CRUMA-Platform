@@ -55,6 +55,7 @@ export function ProductForm({
   const [slugEdited, setSlugEdited]     = useState(!!initialValues?.slug);
   const [internalCode, setInternalCode] = useState(initialValues?.internal_code ?? '');
   const [selectedCategory, setSelectedCategory] = useState(initialValues?.category_id ?? '');
+  const [selectedFamily, setSelectedFamily] = useState(initialValues?.family_id ?? '');
   const [codeEdited, setCodeEdited]     = useState(!!initialValues?.internal_code);
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {

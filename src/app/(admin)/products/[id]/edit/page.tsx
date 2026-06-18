@@ -57,6 +57,13 @@ export default async function EditProductPage({
       .is('deleted_at', null)
       .order('name');
 
+  const { data: unitsOfMeasure } =
+  await supabase
+    .from('units_of_measure')
+    .select('id, name, code')
+    .eq('is_active', true)
+    .order('name');
+
   return (
     <main className="max-w-5xl space-y-6">
       <h1 className="text-4xl font-bold">
@@ -68,9 +75,8 @@ export default async function EditProductPage({
         categories={categories ?? []}
         families={families ?? []}
         flavors={flavors ?? []}
-        preparationTypes={
-          preparationTypes ?? []
-        }
+        preparationTypes={preparationTypes ?? []}
+        unitsOfMeasure={unitsOfMeasure ?? []}
         action={updateProduct.bind(
           null,
           product.id

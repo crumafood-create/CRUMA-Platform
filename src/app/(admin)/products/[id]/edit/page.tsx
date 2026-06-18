@@ -37,11 +37,11 @@ export default async function EditProductPage({
       .order('name');
 
   const { data: families } =
-    await supabase
-      .from('families')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name');
+  await supabase
+    .from('families')
+    .select('id, name, category_id')
+    .is('deleted_at', null)
+    .order('name');
 
   const { data: flavors } =
     await supabase

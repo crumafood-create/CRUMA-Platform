@@ -12,6 +12,7 @@ import {
 interface SelectOption {
   id: string;
   name: string;
+  category_id?: string;
 }
 
 interface ProductFormProps {
@@ -53,6 +54,7 @@ export function ProductForm({
   const [slug, setSlug]                 = useState(initialValues?.slug ?? '');
   const [slugEdited, setSlugEdited]     = useState(!!initialValues?.slug);
   const [internalCode, setInternalCode] = useState(initialValues?.internal_code ?? '');
+  const [selectedCategory, setSelectedCategory] = useState(initialValues?.category_id ?? '');
   const [codeEdited, setCodeEdited]     = useState(!!initialValues?.internal_code);
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {

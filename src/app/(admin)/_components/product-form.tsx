@@ -43,6 +43,7 @@ interface ProductFormProps {
     status?: string;
     is_featured?: boolean;
     min_stock?: number;
+    unit_of_measure_id?: string;
   };
 }
 

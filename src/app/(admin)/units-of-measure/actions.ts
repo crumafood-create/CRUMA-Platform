@@ -1,7 +1,7 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
@@ -15,8 +15,7 @@ export async function createUnitOfMeasure(
     .insert({
       name: formData.get('name'),
       code: formData.get('code'),
-      is_active:
-        formData.get('is_active') === 'true',
+      is_active: formData.get('is_active') === 'true',
     });
 
   if (error) {
@@ -24,7 +23,6 @@ export async function createUnitOfMeasure(
   }
 
   revalidatePath('/units-of-measure');
-
   redirect('/units-of-measure');
 }
 
@@ -39,10 +37,8 @@ export async function updateUnitOfMeasure(
     .update({
       name: formData.get('name'),
       code: formData.get('code'),
-      is_active:
-        formData.get('is_active') === 'true',
-      updated_at:
-        new Date().toISOString(),
+      is_active: formData.get('is_active') === 'true',
+      updated_at: new Date().toISOString(),
     })
     .eq('id', unitId);
 
@@ -51,7 +47,6 @@ export async function updateUnitOfMeasure(
   }
 
   revalidatePath('/units-of-measure');
-
   redirect('/units-of-measure');
 }
 
@@ -70,6 +65,5 @@ export async function deleteUnitOfMeasure(
   }
 
   revalidatePath('/units-of-measure');
-
   redirect('/units-of-measure');
 }

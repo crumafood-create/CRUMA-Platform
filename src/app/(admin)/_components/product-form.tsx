@@ -51,12 +51,20 @@ export function ProductForm({
   flavors,
   preparationTypes,
 }: ProductFormProps) {
-  const [slug, setSlug]                 = useState(initialValues?.slug ?? '');
-  const [slugEdited, setSlugEdited]     = useState(!!initialValues?.slug);
-  const [internalCode, setInternalCode] = useState(initialValues?.internal_code ?? '');
+  const [slug, setSlug]                     = useState(initialValues?.slug ?? '');
+  const [slugEdited, setSlugEdited]         = useState(!!initialValues?.slug);
+  const [internalCode, setInternalCode]     = useState(initialValues?.internal_code ?? '');
+  const [codeEdited, setCodeEdited]         = useState(!!initialValues?.internal_code);
   const [selectedCategory, setSelectedCategory] = useState(initialValues?.category_id ?? '');
-  const [selectedFamily, setSelectedFamily] = useState(initialValues?.family_id ?? '');
-  const [codeEdited, setCodeEdited]     = useState(!!initialValues?.internal_code);
+  const [selectedFamily, setSelectedFamily]     = useState(initialValues?.family_id ?? '');
+
+  // ─── Derived ───────────────────────────────────────────────────────────────
+
+  const filteredFamilies = families?.filter(
+    (family) => family.category_id === selectedCategory
+  ) ?? [];
+
+  // ─── Handlers ──────────────────────────────────────────────────────────────
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
@@ -74,12 +82,12 @@ export function ProductForm({
     setCodeEdited(true);
   }
 
-  const filteredFamilies =
-  families?.filter(
-    family =>
-      family.category_id ===
-      selectedCategory
-  ) ?? [];
+  function handleCategoryChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setSelectedCategory(e.target.value);
+    setSelectedFamily(''); // resetear familia al cambiar categoría
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
@@ -158,17 +166,11 @@ export function ProductForm({
           <div>
             <label className="mb-2 block font-medium">Categoría</label>
             <select
-  name="category_id"
-  value={selectedCategory}
-  onChange={e => {
-  setSelectedCategory(
-    e.target.value
-  );
-
-  setSelectedFamily('');
-}}
-  className="w-full rounded-lg border p-3"
->
+              name="category_id"
+              value={selectedCategory}
+              onChange={handleCategoryChange}
+              className="w-full rounded-lg border p-3"
+            >
               <option value="">Seleccionar categoría</option>
               {categories?.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -181,24 +183,27 @@ export function ProductForm({
           <div>
             <label className="mb-2 block font-medium">Familia</label>
             <select
-  name="family_id"
-  required
-  value={selectedFamily}
-  onChange={e =>
-    setSelectedFamily(
-      e.target.value
-    )
-  }
-                
-  className="w-full rounded-lg border p-3"
->
-              <option value="">Seleccionar familia</option>
+              name="family_id"
+              value={selectedFamily}
+              onChange={(e) => setSelectedFamily(e.target.value)}
+              disabled={!selectedCategory}
+              required
+              className="w-full rounded-lg border p-3 disabled:bg-gray-100 disabled:text-gray-400"
+            >
+              <option value="">
+                {selectedCategory ? 'Seleccionar familia' : 'Primero selecciona una categoría'}
+              </option>
               {filteredFamilies.map((family) => (
                 <option key={family.id} value={family.id}>
                   {family.name}
                 </option>
               ))}
             </select>
+            {!selectedCategory && (
+              <p className="mt-1 text-xs text-gray-400">
+                Selecciona una categoría para ver las familias disponibles.
+              </p>
+            )}
           </div>
 
           <div>
@@ -336,4 +341,4 @@ export function ProductForm({
       </div>
     </form>
   );
-            }
+}

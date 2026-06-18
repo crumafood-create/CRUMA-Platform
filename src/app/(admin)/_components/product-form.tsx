@@ -2,16 +2,15 @@
 
 import { useState, type ChangeEvent } from 'react';
 
-import {
-  toSlug,
-  toInternalCode,
-} from '@/modules/inventory/application/utils/product-code';
+import { toSlug, toInternalCode } from '@/modules/inventory/application/utils/product-code';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SelectOption {
   id: string;
   name: string;
-  category_id?: string;
-  code_prefix?: string;
+  category_id?:  string;
+  code_prefix?:  string;
 }
 
 interface UnitOfMeasure {
@@ -19,48 +18,45 @@ interface UnitOfMeasure {
   name: string;
   code: string;
 }
+
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
-  categories?: SelectOption[];
-  families?: SelectOption[];
-  flavors?: SelectOption[];
+  categories?:       SelectOption[];
+  families?:         SelectOption[];
+  flavors?:          SelectOption[];
   preparationTypes?: SelectOption[];
-  unitsOfMeasure?: UnitOfMeasure[];
+  unitsOfMeasure?:   UnitOfMeasure[];
   initialValues?: {
-    name?: string;
-    slug?: string;
-    internal_code?: string;
-    category_id?: string;
-    family_id?: string;
-    flavor_id?: string;
-    preparation_type_id?: string;
-    short_description?: string;
-    description?: string;
-    image_url?: string;
-    image_alt?: string;
-    seo_title?: string;
-    seo_description?: string;
-    status?: string;
-    is_featured?: boolean;
-    min_stock?: number;
-    unit_of_measure_id?: string;
+    name?:                 string;
+    slug?:                 string;
+    internal_code?:        string;
+    category_id?:          string;
+    family_id?:            string;
+    flavor_id?:            string;
+    preparation_type_id?:  string;
+    unit_of_measure_id?:   string;
+    short_description?:    string;
+    description?:          string;
+    image_url?:            string;
+    image_alt?:            string;
+    seo_title?:            string;
+    seo_description?:      string;
+    status?:               string;
+    is_featured?:          boolean;
+    min_stock?:            number;
   };
 }
 
-function generateInternalCode(
-  name: string,
-  prefix?: string
-) {
+// ─── Utils ────────────────────────────────────────────────────────────────────
+
+function generateInternalCode(name: string, prefix?: string): string {
   const cleanName = name.trim();
-
-  if (!cleanName) {
-    return '';
-  }
-
+  if (!cleanName) return '';
   const code = toInternalCode(cleanName);
-
   return `${prefix ?? 'PRD'}-${code}`;
 }
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export function ProductForm({
   action,
@@ -69,113 +65,73 @@ export function ProductForm({
   families,
   flavors,
   preparationTypes,
+  unitsOfMeasure,
 }: ProductFormProps) {
-  const [slug, setSlug] = useState(initialValues?.slug ?? '');
-  const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
+  const [productName, setProductName]           = useState(initialValues?.name ?? '');
+  const [slug, setSlug]                         = useState(initialValues?.slug ?? '');
+  const [slugEdited, setSlugEdited]             = useState(!!initialValues?.slug);
+  const [internalCode, setInternalCode]         = useState(initialValues?.internal_code ?? '');
+  const [codeEdited, setCodeEdited]             = useState(!!initialValues?.internal_code);
+  const [selectedCategory, setSelectedCategory] = useState(initialValues?.category_id ?? '');
+  const [selectedFamily, setSelectedFamily]     = useState(initialValues?.family_id ?? '');
 
-  const [productName, setProductName] = useState(
-    initialValues?.name ?? ''
-  );
+  // ─── Derived ───────────────────────────────────────────────────────────────
 
-  const [internalCode, setInternalCode] = useState(
-    initialValues?.internal_code ?? ''
-  );
-  const [codeEdited, setCodeEdited] = useState(
-    !!initialValues?.internal_code
-  );
+  const filteredFamilies = families?.filter(
+    (family) => family.category_id === selectedCategory
+  ) ?? [];
 
-  const [selectedCategory, setSelectedCategory] = useState(
-    initialValues?.category_id ?? ''
-  );
-  const [selectedFamily, setSelectedFamily] = useState(
-    initialValues?.family_id ?? ''
-  );
+  const selectedCategoryPrefix = categories?.find(
+    (category) => category.id === selectedCategory
+  )?.code_prefix;
 
-  const filteredFamilies =
-    families?.filter(
-      (family) => family.category_id === selectedCategory
-    ) ?? [];
+  // ─── Handlers ──────────────────────────────────────────────────────────────
 
-  const selectedCategoryPrefix =
-    categories?.find(
-      (category) => category.id === selectedCategory
-    )?.code_prefix;
-
-  function handleNameChange(
-    e: ChangeEvent<HTMLInputElement>
-  ) {
+  function handleNameChange(e: ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
-
     setProductName(value);
-
-    if (!slugEdited) {
-      setSlug(toSlug(value));
-    }
-
-    if (!codeEdited) {
-      setInternalCode(
-        generateInternalCode(value, selectedCategoryPrefix)
-      );
-    }
+    if (!slugEdited) setSlug(toSlug(value));
+    if (!codeEdited) setInternalCode(generateInternalCode(value, selectedCategoryPrefix));
   }
 
-  function handleSlugChange(
-    e: ChangeEvent<HTMLInputElement>
-  ) {
+  function handleSlugChange(e: ChangeEvent<HTMLInputElement>) {
     setSlug(e.target.value);
     setSlugEdited(true);
   }
 
-  function handleInternalCodeChange(
-    e: ChangeEvent<HTMLInputElement>
-  ) {
+  function handleInternalCodeChange(e: ChangeEvent<HTMLInputElement>) {
     setInternalCode(e.target.value);
     setCodeEdited(true);
   }
 
-  function handleCategoryChange(
-    e: ChangeEvent<HTMLSelectElement>
-  ) {
-    const categoryId = e.target.value;
-    const categoryPrefix = categories?.find(
-      (category) => category.id === categoryId
-    )?.code_prefix;
-
+  function handleCategoryChange(e: ChangeEvent<HTMLSelectElement>) {
+    const categoryId     = e.target.value;
+    const categoryPrefix = categories?.find((c) => c.id === categoryId)?.code_prefix;
     setSelectedCategory(categoryId);
     setSelectedFamily('');
-
-    if (!codeEdited) {
-      setInternalCode(
-        generateInternalCode(productName, categoryPrefix)
-      );
-    }
+    if (!codeEdited) setInternalCode(generateInternalCode(productName, categoryPrefix));
   }
 
-  function handleFamilyChange(
-    e: ChangeEvent<HTMLSelectElement>
-  ) {
+  function handleFamilyChange(e: ChangeEvent<HTMLSelectElement>) {
     setSelectedFamily(e.target.value);
   }
 
+  // ─── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <form
-      action={action}
-      className="space-y-8 rounded-2xl border bg-white p-6"
-    >
+    <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
+
+      {/* INFORMACIÓN GENERAL */}
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">
-          Información General
-        </h2>
+        <h2 className="text-xl font-semibold">Información General</h2>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block font-medium">
-              Nombre *
-            </label>
+            <label className="mb-2 block font-medium">Nombre *</label>
             <input
               name="name"
               required
-              defaultValue={initialValues?.name}
+              value={productName}
               onChange={handleNameChange}
               className="w-full rounded-lg border p-3"
               placeholder="Tequeños Tradicionales Queso"
@@ -183,9 +139,7 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">
-              Código Interno *
-            </label>
+            <label className="mb-2 block font-medium">Código Interno *</label>
             <input
               name="internal_code"
               required
@@ -197,9 +151,7 @@ export function ProductForm({
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-2 block font-medium">
-              Slug *
-            </label>
+            <label className="mb-2 block font-medium">Slug *</label>
             <input
               name="slug"
               required
@@ -214,9 +166,7 @@ export function ProductForm({
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-2 block font-medium">
-              Descripción corta
-            </label>
+            <label className="mb-2 block font-medium">Descripción corta</label>
             <textarea
               name="short_description"
               rows={2}
@@ -226,9 +176,7 @@ export function ProductForm({
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-2 block font-medium">
-              Descripción completa
-            </label>
+            <label className="mb-2 block font-medium">Descripción completa</label>
             <textarea
               name="description"
               rows={5}
@@ -239,14 +187,13 @@ export function ProductForm({
         </div>
       </section>
 
+      {/* CLASIFICACIÓN */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Clasificación</h2>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block font-medium">
-              Categoría
-            </label>
+            <label className="mb-2 block font-medium">Categoría</label>
             <select
               name="category_id"
               value={selectedCategory}
@@ -263,9 +210,7 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">
-              Familia
-            </label>
+            <label className="mb-2 block font-medium">Familia</label>
             <select
               name="family_id"
               value={selectedFamily}
@@ -275,9 +220,7 @@ export function ProductForm({
               className="w-full rounded-lg border p-3 disabled:bg-gray-100 disabled:text-gray-400"
             >
               <option value="">
-                {selectedCategory
-                  ? 'Seleccionar familia'
-                  : 'Primero selecciona una categoría'}
+                {selectedCategory ? 'Seleccionar familia' : 'Primero selecciona una categoría'}
               </option>
               {filteredFamilies.map((family) => (
                 <option key={family.id} value={family.id}>
@@ -293,9 +236,24 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">
-              Sabor
-            </label>
+            <label className="mb-2 block font-medium">Unidad de Medida *</label>
+            <select
+              name="unit_of_measure_id"
+              defaultValue={initialValues?.unit_of_measure_id ?? ''}
+              required
+              className="w-full rounded-lg border p-3"
+            >
+              <option value="">Seleccionar unidad</option>
+              {unitsOfMeasure?.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.code} — {unit.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block font-medium">Sabor</label>
             <select
               name="flavor_id"
               defaultValue={initialValues?.flavor_id ?? ''}
@@ -311,14 +269,10 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">
-              Tipo Preparación
-            </label>
+            <label className="mb-2 block font-medium">Tipo Preparación</label>
             <select
               name="preparation_type_id"
-              defaultValue={
-                initialValues?.preparation_type_id ?? ''
-              }
+              defaultValue={initialValues?.preparation_type_id ?? ''}
               className="w-full rounded-lg border p-3"
             >
               <option value="">Seleccionar tipo</option>
@@ -332,14 +286,13 @@ export function ProductForm({
         </div>
       </section>
 
+      {/* IMAGEN */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Imagen</h2>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block font-medium">
-              URL Imagen
-            </label>
+            <label className="mb-2 block font-medium">URL Imagen</label>
             <input
               name="image_url"
               defaultValue={initialValues?.image_url}
@@ -348,9 +301,7 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">
-              Texto alternativo
-            </label>
+            <label className="mb-2 block font-medium">Texto alternativo</label>
             <input
               name="image_alt"
               defaultValue={initialValues?.image_alt}
@@ -360,14 +311,13 @@ export function ProductForm({
         </div>
       </section>
 
+      {/* SEO */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">SEO</h2>
 
         <div className="grid gap-4">
           <div>
-            <label className="mb-2 block font-medium">
-              SEO Title
-            </label>
+            <label className="mb-2 block font-medium">SEO Title</label>
             <input
               name="seo_title"
               defaultValue={initialValues?.seo_title}
@@ -376,9 +326,7 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">
-              SEO Description
-            </label>
+            <label className="mb-2 block font-medium">SEO Description</label>
             <textarea
               name="seo_description"
               rows={3}
@@ -389,14 +337,13 @@ export function ProductForm({
         </div>
       </section>
 
+      {/* CONFIGURACIÓN */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Configuración</h2>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block font-medium">
-              Estado
-            </label>
+            <label className="mb-2 block font-medium">Estado</label>
             <select
               name="status"
               defaultValue={initialValues?.status ?? 'active'}
@@ -409,9 +356,7 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">
-              Stock Mínimo
-            </label>
+            <label className="mb-2 block font-medium">Stock Mínimo</label>
             <input
               type="number"
               name="min_stock"
@@ -442,4 +387,4 @@ export function ProductForm({
       </div>
     </form>
   );
-              }
+      }

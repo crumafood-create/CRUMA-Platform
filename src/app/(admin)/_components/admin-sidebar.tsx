@@ -33,6 +33,10 @@ export default function AdminSidebar() {
           🗂️ Familias
         </Link>
 
+        <Link href="/units-of-measure">
+  Unidades
+</Link>
+
         <Link
           href="/products"
           className="rounded px-2 py-1 hover:bg-gray-100"
@@ -113,10 +117,7 @@ export default function AdminSidebar() {
           className="rounded px-2 py-1 hover:bg-gray-100"
         >
           👥 Usuarios
-        </Link>
-        <Link href="/units-of-measure">
-  Unidades
-</Link>
+
       </nav>
     </aside>
   );

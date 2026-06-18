@@ -9,23 +9,24 @@ import {
   deleteUnitOfMeasure,
 } from '../../actions';
 
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
+
 export default async function EditUnitPage({
   params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+}: PageProps) {
   const { id } = await params;
 
   const supabase = await createClient();
 
-  const { data: unit } =
-    await supabase
-      .from('units_of_measure')
-      .select('*')
-      .eq('id', id)
-      .single();
+  const { data: unit, error } = await supabase
+    .from('units_of_measure')
+    .select('id, name, code, is_active')
+    .eq('id', id)
+    .single();
 
-  if (!unit) {
+  if (error || !unit) {
     notFound();
   }
 

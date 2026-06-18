@@ -41,6 +41,9 @@ export async function updateProduct(
 
       preparation_type_id:
         formData.get('preparation_type_id') || null,
+
+      unit_of_measure_id:
+  formData.get('unit_of_measure_id') || null,
       
       short_description:
         formData.get('short_description'),
@@ -116,6 +119,9 @@ export async function createProduct(formData: FormData) {
 
     preparation_type_id:
   formData.get('preparation_type_id') || null,
+
+    unit_of_measure_id:
+  formData.get('unit_of_measure_id') || null,
     
     short_description,
     description,

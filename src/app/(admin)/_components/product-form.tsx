@@ -252,21 +252,30 @@ export function ProductForm({
             </select>
           </div>
 
-          <div>
-            <label className="mb-2 block font-medium">Sabor</label>
-            <select
-              name="flavor_id"
-              defaultValue={initialValues?.flavor_id ?? ''}
-              className="w-full rounded-lg border p-3"
-            >
-              <option value="">Seleccionar sabor</option>
-              {flavors?.map((flavor) => (
-                <option key={flavor.id} value={flavor.id}>
-                  {flavor.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className="md:col-span-2">
+  <label className="mb-2 block font-medium">
+    Sabor
+  </label>
+
+  <select
+    name="flavor_id"
+    defaultValue={initialValues?.flavor_id ?? ''}
+    className="w-full rounded-lg border p-3"
+  >
+    <option value="">
+      Seleccionar sabor
+    </option>
+
+    {flavors?.map((flavor) => (
+      <option
+        key={flavor.id}
+        value={flavor.id}
+      >
+        {flavor.name}
+      </option>
+    ))}
+  </select>
+</div>
 
           <div>
             <label className="mb-2 block font-medium">Tipo Preparación</label>

@@ -156,10 +156,15 @@ export function ProductForm({
           <div>
             <label className="mb-2 block font-medium">Categoría</label>
             <select
-              name="category_id"
-              defaultValue={initialValues?.category_id ?? ''}
-              className="w-full rounded-lg border p-3"
-            >
+  name="category_id"
+  value={selectedCategory}
+  onChange={e =>
+    setSelectedCategory(
+      e.target.value
+    )
+  }
+  className="w-full rounded-lg border p-3"
+>
               <option value="">Seleccionar categoría</option>
               {categories?.map((category) => (
                 <option key={category.id} value={category.id}>

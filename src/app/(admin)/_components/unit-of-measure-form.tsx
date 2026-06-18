@@ -2,7 +2,6 @@
 
 interface Props {
   action: (formData: FormData) => Promise<void>;
-
   initialValues?: {
     name?: string;
     code?: string;
@@ -29,6 +28,7 @@ export function UnitOfMeasureForm({
           required
           defaultValue={initialValues?.name}
           className="w-full rounded border p-3"
+          placeholder="Gramos"
         />
       </div>
 
@@ -54,19 +54,12 @@ export function UnitOfMeasureForm({
         <select
           name="is_active"
           defaultValue={
-            initialValues?.is_active
-              ? 'true'
-              : 'false'
+            initialValues?.is_active ? 'true' : 'false'
           }
           className="w-full rounded border p-3"
         >
-          <option value="true">
-            Activo
-          </option>
-
-          <option value="false">
-            Inactivo
-          </option>
+          <option value="true">Activo</option>
+          <option value="false">Inactivo</option>
         </select>
       </div>
 

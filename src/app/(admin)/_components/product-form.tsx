@@ -13,6 +13,7 @@ interface SelectOption {
   id: string;
   name: string;
   category_id?: string;
+  code_prefix?: string;
 }
 
 interface ProductFormProps {

@@ -191,6 +191,17 @@ export function ProductForm({
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Clasificación</h2>
 
+        <div className="rounded-lg border p-3 text-xs">
+  Categorías: {categories?.length ?? 0}
+  <br />
+  Familias: {families?.length ?? 0}
+  <br />
+  Sabores: {flavors?.length ?? 0}
+  <br />
+  Tipos: {preparationTypes?.length ?? 0}
+  <br />
+  Unidades: {unitsOfMeasure?.length ?? 0}
+</div>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-2 block font-medium">Categoría</label>

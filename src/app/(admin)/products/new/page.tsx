@@ -31,11 +31,11 @@ export default async function NewProductPage() {
       .order('name');
 
   const { data: preparationTypes } =
-    await supabase
-      .from('preparation_types')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name');
+  await supabase
+    .from('preparation_types')
+    .select('id, name, category_id')
+    .is('deleted_at', null)
+    .order('name');
 
   const { data: unitsOfMeasure } =
   await supabase

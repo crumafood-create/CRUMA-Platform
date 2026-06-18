@@ -15,6 +15,7 @@ export default function AdminSidebar() {
           🏠 Dashboard
         </Link>
 
+        {/* Catálogo */}
         <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Catálogo
         </div>
@@ -33,9 +34,12 @@ export default function AdminSidebar() {
           🗂️ Familias
         </Link>
 
-        <Link href="/units-of-measure">
-  Unidades
-</Link>
+        <Link
+          href="/units-of-measure"
+          className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+          📏 Unidades
+        </Link>
 
         <Link
           href="/products"
@@ -51,6 +55,7 @@ export default function AdminSidebar() {
           🎨 Sabores
         </Link>
 
+        {/* Operaciones */}
         <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Operaciones
         </div>
@@ -76,6 +81,7 @@ export default function AdminSidebar() {
           🚨 Alertas
         </Link>
 
+        {/* Producción */}
         <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Producción
         </div>
@@ -108,6 +114,7 @@ export default function AdminSidebar() {
           🔖 Lotes
         </Link>
 
+        {/* Administración */}
         <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Administración
         </div>
@@ -117,7 +124,7 @@ export default function AdminSidebar() {
           className="rounded px-2 py-1 hover:bg-gray-100"
         >
           👥 Usuarios
-
+        </Link>
       </nav>
     </aside>
   );

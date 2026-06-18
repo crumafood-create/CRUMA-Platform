@@ -182,12 +182,14 @@ export function ProductForm({
             <label className="mb-2 block font-medium">Familia</label>
             <select
   name="family_id"
+  required
   value={selectedFamily}
   onChange={e =>
     setSelectedFamily(
       e.target.value
     )
   }
+                
   className="w-full rounded-lg border p-3"
 >
               <option value="">Seleccionar familia</option>

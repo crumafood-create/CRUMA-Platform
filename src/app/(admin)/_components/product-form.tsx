@@ -104,6 +104,7 @@ export function ProductForm({
             <label className="mb-2 block font-medium">Código Interno</label>
             <input
               name="internal_code"
+              required
               value={internalCode}
               onChange={handleInternalCodeChange}
               className="w-full rounded-lg border p-3"
@@ -182,7 +183,7 @@ export function ProductForm({
               className="w-full rounded-lg border p-3"
             >
               <option value="">Seleccionar familia</option>
-              {families?.map((family) => (
+              {filteredFamilies.map((family) => (
                 <option key={family.id} value={family.id}>
                   {family.name}
                 </option>

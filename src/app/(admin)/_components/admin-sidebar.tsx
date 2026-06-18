@@ -114,6 +114,9 @@ export default function AdminSidebar() {
         >
           👥 Usuarios
         </Link>
+        <Link href="/units-of-measure">
+  Unidades
+</Link>
       </nav>
     </aside>
   );

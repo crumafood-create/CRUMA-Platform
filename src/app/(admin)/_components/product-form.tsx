@@ -160,11 +160,13 @@ export function ProductForm({
             <select
   name="category_id"
   value={selectedCategory}
-  onChange={e =>
-    setSelectedCategory(
-      e.target.value
-    )
-  }
+  onChange={e => {
+  setSelectedCategory(
+    e.target.value
+  );
+
+  setSelectedFamily('');
+}}
   className="w-full rounded-lg border p-3"
 >
               <option value="">Seleccionar categoría</option>
@@ -179,10 +181,15 @@ export function ProductForm({
           <div>
             <label className="mb-2 block font-medium">Familia</label>
             <select
-              name="family_id"
-              defaultValue={initialValues?.family_id ?? ''}
-              className="w-full rounded-lg border p-3"
-            >
+  name="family_id"
+  value={selectedFamily}
+  onChange={e =>
+    setSelectedFamily(
+      e.target.value
+    )
+  }
+  className="w-full rounded-lg border p-3"
+>
               <option value="">Seleccionar familia</option>
               {filteredFamilies.map((family) => (
                 <option key={family.id} value={family.id}>

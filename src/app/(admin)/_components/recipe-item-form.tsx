@@ -6,22 +6,34 @@ interface Material {
 }
 
 interface Props {
-  action: (formData: FormData) => Promise<void>;
+  recipeId: string;
+
   materials: Material[];
+
+  action: (
+    formData: FormData
+  ) => Promise<void>;
 }
 
-export function RecipeItemsForm({
-  action,
+export function RecipeItemForm({
+  recipeId,
   materials,
+  action,
 }: Props) {
   return (
     <form
       action={action}
-      className="space-y-4 rounded-xl border p-4"
+      className="space-y-4 rounded border p-4"
     >
+      <input
+        type="hidden"
+        name="recipe_id"
+        value={recipeId}
+      />
+
       <div>
-        <label className="mb-2 block font-medium">
-          Ingrediente
+        <label>
+          Materia Prima
         </label>
 
         <select
@@ -30,28 +42,31 @@ export function RecipeItemsForm({
           className="w-full rounded border p-3"
         >
           <option value="">
-            Seleccionar ingrediente
+            Seleccionar
           </option>
 
-          {materials.map((material) => (
-            <option
-              key={material.id}
-              value={material.id}
-            >
-              {material.name}
-            </option>
-          ))}
+          {materials.map(
+            material => (
+              <option
+                key={material.id}
+                value={material.id}
+              >
+                {material.name}
+              </option>
+            )
+          )}
         </select>
       </div>
 
       <div>
-        <label className="mb-2 block font-medium">
+        <label>
           Cantidad
         </label>
 
         <input
           type="number"
-          step="0.0001"
+          step="0.001"
+          min="0.001"
           name="quantity"
           required
           className="w-full rounded border p-3"

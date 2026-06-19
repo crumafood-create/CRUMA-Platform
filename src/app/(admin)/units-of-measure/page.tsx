@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type UnitOfMeasure = {
   id: string;
   name: string;
@@ -9,7 +11,14 @@ type UnitOfMeasure = {
   is_active: boolean;
 };
 
-export default async function UnitsOfMeasurePage() {
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default async function UnitsOfMeasurePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
   const supabase = await createClient();
 
   const { data: units, error } = await supabase
@@ -18,22 +27,9 @@ export default async function UnitsOfMeasurePage() {
     .order('name');
 
   if (error) {
-    console.error('Error loading units_of_measure:', error);
-
     return (
       <main className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold">
-            Unidades de Medida
-          </h1>
-
-          <Link
-            href="/units-of-measure/new"
-            className="rounded border px-4 py-2"
-          >
-            Nueva Unidad
-          </Link>
-        </div>
+        <Header />
 
         <div className="rounded-2xl border p-6">
           <p className="text-sm text-red-600">
@@ -47,37 +43,42 @@ export default async function UnitsOfMeasurePage() {
     );
   }
 
+  const filtered = q
+    ? units?.filter(
+        (unit) =>
+          unit.name.toLowerCase().includes(q.toLowerCase()) ||
+          unit.code.toLowerCase().includes(q.toLowerCase())
+      )
+    : units;
+
   return (
     <main className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold">
-          Unidades de Medida
-        </h1>
+      <Header />
 
-        <Link
-          href="/units-of-measure/new"
-          className="rounded border px-4 py-2"
-        >
-          Nueva Unidad
-        </Link>
-      </div>
+      <div className="rounded-2xl border p-6 space-y-4">
 
-      <div className="rounded-2xl border p-6">
-        {units?.length ? (
+        {/* BÚSQUEDA */}
+        <form method="GET">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Buscar unidad..."
+            className="w-full rounded-lg border p-3"
+            autoComplete="off"
+          />
+        </form>
+
+        {/* LISTADO */}
+        {filtered?.length ? (
           <div className="space-y-3">
-            {units.map((unit: UnitOfMeasure) => (
-              <div
-                key={unit.id}
-                className="rounded border p-4"
-              >
+            {filtered.map((unit: UnitOfMeasure) => (
+              <div key={unit.id} className="rounded border p-4">
                 <div className="font-semibold">
-                  {unit.code} - {unit.name}
+                  {unit.code} — {unit.name}
                 </div>
-
                 <div className="text-sm text-gray-500">
-                  Estado: {unit.is_active ? 'Activo' : 'Inactivo'}
+                  {unit.is_active ? 'Activo' : 'Inactivo'}
                 </div>
-
                 <Link
                   href={`/units-of-measure/${unit.id}/edit`}
                   className="mt-3 inline-block rounded border px-3 py-1"
@@ -88,9 +89,24 @@ export default async function UnitsOfMeasurePage() {
             ))}
           </div>
         ) : (
-          <p>No hay unidades de medida.</p>
+          <p className="text-sm text-gray-500">
+            {q ? `Sin resultados para "${q}".` : 'No hay unidades de medida.'}
+          </p>
         )}
       </div>
     </main>
+  );
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+function Header() {
+  return (
+    <div className="flex items-center justify-between">
+      <h1 className="text-4xl font-bold">Unidades de Medida</h1>
+      <Link href="/units-of-measure/new" className="rounded border px-4 py-2">
+        Nueva Unidad
+      </Link>
+    </div>
   );
 }

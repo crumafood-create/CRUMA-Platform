@@ -31,6 +31,7 @@ interface RawMaterialFormProps {
     name?: string;
     slug?: string;
     internal_code?: string;
+    last_cost?: number;
 
     category_id?: string;
     family_id?: string;

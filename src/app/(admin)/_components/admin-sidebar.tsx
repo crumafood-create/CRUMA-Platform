@@ -38,7 +38,7 @@ export default function AdminSidebar() {
           href="/units-of-measure"
           className="rounded px-2 py-1 hover:bg-gray-100"
         >
-          📏 Unidades
+          ⚖️ Unidades
         </Link>
 
         <Link

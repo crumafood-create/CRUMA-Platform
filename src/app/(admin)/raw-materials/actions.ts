@@ -26,6 +26,7 @@ export async function createRawMaterial(
       unit_of_measure_id:
         formData.get('unit_of_measure_id') || null,
 
+
       current_stock:
         Number(formData.get('current_stock')) || 0,
 
@@ -34,6 +35,9 @@ export async function createRawMaterial(
 
       average_cost:
         Number(formData.get('average_cost')) || 0,
+     
+      last_cost:
+       Number(formData.get('last_cost')) || 0,
 
       description:
         formData.get('description'),
@@ -80,6 +84,9 @@ export async function updateRawMaterial(
 
       average_cost:
         Number(formData.get('average_cost')) || 0,
+
+      last_cost:
+       Number(formData.get('last_cost')) || 0,
 
       description:
         formData.get('description'),

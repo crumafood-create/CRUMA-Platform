@@ -9,12 +9,12 @@ import { createRecipe } from '../actions';
 export default async function NewRecipePage() {
   const supabase = await createClient();
 
-  const { data: products } =
-    await supabase
-      .from('products')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name');
+  const { data: materials } =
+  await supabase
+    .from('raw_materials')
+    .select('id, name')
+    .is('deleted_at', null)
+    .order('name');
 
   return (
     <main className="space-y-6">

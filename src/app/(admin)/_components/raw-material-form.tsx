@@ -385,6 +385,19 @@ export function RawMaterialForm({
               className="w-full rounded-lg border p-3"
             />
           </div>
+          <div>
+            <label className="mb-2 block font-medium">
+              Último Costo
+            </label>
+
+            <input
+              type="number"
+              step="0.0001"
+              name="last_cost"
+              defaultValue={initialValues?.last_cost ?? 0}
+              className="w-full rounded border p-3"
+            />
+        </div>
         </div>
       </section>
 

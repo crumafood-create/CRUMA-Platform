@@ -22,24 +22,18 @@ export default async function ProductsPage() {
     redirect('/dashboard');
   }
 
-  const { data: products } = await supabase
-    .from('products')
-    .select(`
-      *,
-      categories (
-        name
-      ),
-      families (
-        name
-      ),
-      flavors (
-        name
-      ),
-      preparation_types (
-        name
-      )
-    `)
-    .is('deleted_at', null)
+  const { data: products, error } = await supabase
+  .from('products')
+  .select(`
+    *,
+    categories(name),
+    product_families(name),
+    flavors(name),
+    preparation_types(name)
+  `)
+  .is('deleted_at', null);
+
+console.log(error);
     .order('created_at', { ascending: false });
 
   return (
@@ -87,10 +81,10 @@ export default async function ProductsPage() {
                 </div>
 
                 <div className="text-sm text-gray-500">
-                  Familia:{' '}
-                  {product.families?.name ?? '-'}
-                </div>
-
+                 Familia:{' '}
+                {product.product_families?.name ?? '-'}
+              </div>
+    
                 <div className="text-sm text-gray-500">
                   Sabor:{' '}
                   {product.flavors?.name ?? '-'}

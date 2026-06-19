@@ -69,10 +69,13 @@ export default async function RecipeIngredientsPage({
         </div>
 
         <RecipeItemForm
-          recipeId={id}
-          materials={materials ?? []}
-          action={createRecipeItem}
-        />
+  recipeId={id}
+  materials={materials ?? []}
+  action={async (formData) => {
+    'use server';
+    await createRecipeItem(id, formData);
+  }}
+/>
       </div>
 
       <div className="rounded-2xl border p-6">

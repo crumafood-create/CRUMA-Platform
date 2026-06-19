@@ -8,9 +8,16 @@ export default async function UnitsOfMeasurePage() {
     .select('*');
 
   return (
-    <main className="p-6">
+    <main>
       <pre>
-        {JSON.stringify(result, null, 2)}
+        {JSON.stringify(
+          {
+            url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+            result,
+          },
+          null,
+          2
+        )}
       </pre>
     </main>
   );

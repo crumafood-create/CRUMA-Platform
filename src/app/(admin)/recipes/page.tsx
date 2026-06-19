@@ -1,26 +1,21 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createClient }
+from '@/infrastructure/integrations/supabase/server';
 
 export default async function RecipesPage() {
   const supabase = await createClient();
 
-  const { data: recipes } =
+  const { data } =
     await supabase
       .from('recipes')
-      .select(`
-        *,
-        products (
-          name
-        )
-      `)
-      .order('created_at', {
-        ascending: false,
-      });
+      .select('*')
+      .is('deleted_at', null)
+      .order('name');
 
   return (
     <main className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between">
         <h1 className="text-4xl font-bold">
           Recetas
         </h1>
@@ -33,34 +28,24 @@ export default async function RecipesPage() {
         </Link>
       </div>
 
-      <div className="rounded-2xl border p-6">
-        {recipes?.length ? (
-          <div className="space-y-3">
-            {recipes.map(recipe => (
-              <div
-                key={recipe.id}
-                className="rounded border p-4"
-              >
-                <div className="font-semibold">
-                  {recipe.products?.name}
-                </div>
+      <div className="rounded-2xl border">
+        {data?.map((recipe) => (
+          <div
+            key={recipe.id}
+            className="border-b p-4"
+          >
+            <div className="font-semibold">
+              {recipe.name}
+            </div>
 
-                <div className="text-sm text-gray-500">
-                  {recipe.notes}
-                </div>
-
-                <Link
-                  href={`/recipes/${recipe.id}`}
-                  className="mt-3 inline-block rounded border px-3 py-1"
-                >
-                  Abrir
-                </Link>
-              </div>
-            ))}
+            <Link
+              href={`/recipes/${recipe.id}/edit`}
+              className="text-sm"
+            >
+              Editar
+            </Link>
           </div>
-        ) : (
-          <p>No hay recetas.</p>
-        )}
+        ))}
       </div>
     </main>
   );

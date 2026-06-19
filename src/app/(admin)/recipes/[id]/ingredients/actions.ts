@@ -1,39 +1,33 @@
 'use server';
 
+import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-export async function addRecipeItem(
-  formData: FormData
-) {
+export async function addRecipeItem(formData: FormData) {
   const supabase = await createClient();
 
-  const recipe_id =
-    formData.get('recipe_id');
+  const recipe_id = formData.get('recipe_id')?.toString().trim() ?? '';
+  const ingredient_id = formData.get('ingredient_id')?.toString().trim() ?? '';
+  const quantity = Number(formData.get('quantity')) || 0;
 
-  const raw_material_id =
-    formData.get('raw_material_id');
+  if (!recipe_id || !ingredient_id || quantity <= 0) {
+    throw new Error('Receta, materia prima y cantidad son obligatorios');
+  }
 
-  const quantity =
-    Number(
-      formData.get('quantity')
-    );
-
-  const { error } =
-    await supabase
-      .from('recipe_items')
-      .insert({
-        recipe_id,
-        raw_material_id,
-        quantity,
-      });
+  const { error } = await supabase.from('recipe_items').insert({
+    recipe_id,
+    ingredient_id,
+    quantity,
+  });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  revalidatePath(
-    `/recipes/${recipe_id}/ingredients`
-  );
+  revalidatePath(`/recipes/${recipe_id}/ingredients`);
+  revalidatePath('/recipes');
+
+  redirect(`/recipes/${recipe_id}/ingredients`);
 }

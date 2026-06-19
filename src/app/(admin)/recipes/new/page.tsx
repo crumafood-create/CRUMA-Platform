@@ -27,6 +27,7 @@ export default async function NewRecipePage() {
     supabase
       .from('products')
       .select('id, name')
+      .is('deleted_at', null)
       .eq('status', 'active')
       .order('name'),
 

@@ -42,12 +42,12 @@ export default async function RecipePage({
       `)
       .eq('recipe_id', id);
 
-  const { data: products } =
-    await supabase
-      .from('products')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name');
+  const { data: rawMaterials } =
+  await supabase
+    .from('raw_materials')
+    .select('id, name')
+    .is('deleted_at', null)
+    .order('name');
 
   return (
     <main className="space-y-6">

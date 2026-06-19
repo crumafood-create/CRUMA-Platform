@@ -9,11 +9,10 @@ import { createRecipe } from '../actions';
 export default async function NewRecipePage() {
   const supabase = await createClient();
 
-  const { data: materials } =
-  await supabase
-    .from('raw_materials')
-    .select('id, name')
-    .is('deleted_at', null)
+  const { data: unitsOfMeasure } = await supabase
+    .from('units_of_measure')
+    .select('id, name, code')
+    .eq('is_active', true)
     .order('name');
 
   return (
@@ -33,7 +32,7 @@ export default async function NewRecipePage() {
 
       <RecipeForm
         action={createRecipe}
-        products={products ?? []}
+        unitsOfMeasure={unitsOfMeasure ?? []}
       />
     </main>
   );

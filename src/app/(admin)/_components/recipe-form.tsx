@@ -1,12 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
-import {
-  toSlug,
-  toInternalCode,
-} from '@/modules/inventory/application/utils/product-code';
-
 interface Product {
   id: string;
   name: string;
@@ -25,8 +18,6 @@ interface Props {
   initialValues?: {
     product_id?: string;
     name?: string;
-    slug?: string;
-    internal_code?: string;
     description?: string;
     yield_quantity?: number;
     unit_of_measure_id?: string;
@@ -40,14 +31,6 @@ export function RecipeForm({
   unitsOfMeasure,
   initialValues,
 }: Props) {
-  const [slug, setSlug] = useState(initialValues?.slug ?? '');
-  const [code, setCode] = useState(initialValues?.internal_code ?? '');
-
-  function handleNameChange(value: string) {
-    setSlug(toSlug(value));
-    setCode(`REC-${toInternalCode(value)}`);
-  }
-
   return (
     <form
       action={action}
@@ -88,41 +71,8 @@ export function RecipeForm({
           name="name"
           required
           defaultValue={initialValues?.name ?? ''}
-          onChange={(e) =>
-            handleNameChange(e.target.value)
-          }
           className="w-full rounded border p-3"
           placeholder="Receta Tequeños Tradicionales"
-        />
-      </div>
-
-      <div>
-        <label className="mb-2 block font-medium">
-          Código interno *
-        </label>
-
-        <input
-          name="internal_code"
-          required
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          className="w-full rounded border p-3"
-          placeholder="REC-TEQ-TRAD"
-        />
-      </div>
-
-      <div>
-        <label className="mb-2 block font-medium">
-          Slug *
-        </label>
-
-        <input
-          name="slug"
-          required
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          className="w-full rounded border p-3"
-          placeholder="receta-tequenos-tradicionales"
         />
       </div>
 
@@ -139,6 +89,7 @@ export function RecipeForm({
           required
           defaultValue={initialValues?.yield_quantity ?? 1}
           className="w-full rounded border p-3"
+          placeholder="100"
         />
       </div>
 
@@ -188,17 +139,11 @@ export function RecipeForm({
 
         <select
           name="is_active"
-          defaultValue={
-            initialValues?.is_active ? 'true' : 'false'
-          }
+          defaultValue={initialValues?.is_active ? 'true' : 'false'}
           className="w-full rounded border p-3"
         >
-          <option value="true">
-            Activa
-          </option>
-          <option value="false">
-            Inactiva
-          </option>
+          <option value="true">Activa</option>
+          <option value="false">Inactiva</option>
         </select>
       </div>
 

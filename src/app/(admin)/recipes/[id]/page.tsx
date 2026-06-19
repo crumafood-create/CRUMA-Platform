@@ -56,14 +56,8 @@ export default async function RecipePage({
       </h1>
 
       <RecipeItemsForm
-        action={
-          createRecipeItem.bind(
-            null,
-            id
-          )
-        }
-        products={products ?? []}
-      />
+  materials={rawMaterials ?? []}
+/>
 
       <div className="rounded-2xl border p-6">
         <h2 className="mb-4 text-xl font-semibold">

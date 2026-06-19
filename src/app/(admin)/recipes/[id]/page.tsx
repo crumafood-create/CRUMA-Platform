@@ -55,7 +55,7 @@ export default async function RecipePage({
         {recipe.products?.name}
       </h1>
 
-      <RecipeItemForm
+      <RecipeItemsForm
         action={
           createRecipeItem.bind(
             null,

@@ -32,15 +32,17 @@ export default async function RecipePage({
   }
 
   const { data: items } =
-    await supabase
-      .from('recipe_items')
-      .select(`
-        *,
-        products!recipe_items_ingredient_id_fkey (
-          name
-        )
-      `)
-      .eq('recipe_id', id);
+  await supabase
+    .from('recipe_items')
+    .select(`
+      *,
+      raw_materials!recipe_items_ingredient_id_fkey (
+        id,
+        name,
+        unit_of_measure_id
+      )
+    `)
+    .eq('recipe_id', id);
 
   const { data: rawMaterials } =
   await supabase

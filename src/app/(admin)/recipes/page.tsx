@@ -5,10 +5,13 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 type RecipeRow = {
   id: string;
   name: string;
-  is_active: boolean | null;
-  products?: {
-    name: string;
-  } | null;
+  is_active: boolean;
+  product_id: string;
+  products:
+    | {
+        name: string;
+      }[]
+    | null;
 };
 
 export default async function RecipesPage() {

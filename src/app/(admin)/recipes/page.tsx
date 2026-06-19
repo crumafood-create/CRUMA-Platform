@@ -83,7 +83,7 @@ export default async function RecipesPage() {
 
                 <div className="text-sm text-gray-500">
                   Producto:{' '}
-                  {recipe.products?.name ?? '-'}
+                  {recipe.products?.[0]?.name ?? '-'}
                 </div>
 
                 <div className="text-sm text-gray-500">

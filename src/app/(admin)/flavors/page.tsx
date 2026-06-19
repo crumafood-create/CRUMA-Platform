@@ -2,20 +2,64 @@ import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
+type Flavor = {
+  id: string;
+  name: string;
+  slug: string | null;
+  family_id: string | null;
+};
+
+type Family = {
+  id: string;
+  name: string;
+};
+
 export default async function FlavorsPage() {
   const supabase = await createClient();
 
-  const { data: flavors } =
-    await supabase
+  const [
+    { data: flavors, error },
+    { data: families },
+  ] = await Promise.all([
+    supabase
       .from('flavors')
-      .select(`
-        *,
-        families (
-          name
-        )
-      `)
+      .select('id, name, slug, family_id')
       .is('deleted_at', null)
-      .order('name');
+      .order('name'),
+
+    supabase
+      .from('product_families')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name'),
+  ]);
+
+  if (error) {
+    return (
+      <main className="space-y-6">
+        <h1 className="text-4xl font-bold">
+          Sabores
+        </h1>
+
+        <div className="rounded-2xl border p-6">
+          <p className="text-red-600">
+            Error al cargar sabores.
+          </p>
+
+          <pre className="mt-4 whitespace-pre-wrap rounded border bg-gray-50 p-4 text-xs">
+            {JSON.stringify(error, null, 2)}
+          </pre>
+        </div>
+      </main>
+    );
+  }
+
+  const familyMap = new Map(
+    (families ?? []).map((family: Family) => [
+      family.id,
+      family.name,
+    ])
+  );
 
   return (
     <main className="space-y-6">
@@ -35,7 +79,7 @@ export default async function FlavorsPage() {
       <div className="rounded-2xl border p-6">
         {flavors?.length ? (
           <div className="space-y-3">
-            {flavors.map(flavor => (
+            {flavors.map((flavor: Flavor) => (
               <div
                 key={flavor.id}
                 className="rounded border p-4"
@@ -49,9 +93,12 @@ export default async function FlavorsPage() {
                 </div>
 
                 <div className="text-sm text-gray-500">
-                  Familia:
-                  {' '}
-                  {flavor.families?.name}
+                  Familia:{' '}
+                  {flavor.family_id
+                    ? familyMap.get(
+                        flavor.family_id
+                      ) ?? '-'
+                    : '-'}
                 </div>
 
                 <Link

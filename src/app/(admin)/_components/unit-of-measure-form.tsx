@@ -1,72 +1,59 @@
-'use client';
-
 interface Props {
   action: (formData: FormData) => Promise<void>;
   initialValues?: {
-    name?: string;
-    code?: string;
+    name?:      string;
+    code?:      string;
     is_active?: boolean;
   };
 }
 
-export function UnitOfMeasureForm({
-  action,
-  initialValues,
-}: Props) {
+export function UnitOfMeasureForm({ action, initialValues }: Props) {
   return (
-    <form
-      action={action}
-      <div className="overflow-hidden rounded-2xl border">
-  <table className="w-full">
-    <thead className="bg-gray-50">
-      <tr>
-        <th className="p-4 text-left">Código</th>
-        <th className="p-4 text-left">Nombre</th>
-        <th className="p-4 text-left">Estado</th>
-        <th className="p-4 text-right">Acciones</th>
-      </tr>
-    </thead>
+    <form action={action} className="space-y-6 rounded-2xl border bg-white p-6">
 
-    <tbody>
-      {units?.map((unit) => (
-        <tr
-          key={unit.id}
-          className="border-t"
-        >
-          <td className="p-4">
-            {unit.code}
-          </td>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="mb-2 block font-medium">Nombre *</label>
+          <input
+            name="name"
+            required
+            defaultValue={initialValues?.name}
+            className="w-full rounded-lg border p-3"
+            placeholder="Mililitros"
+          />
+        </div>
 
-          <td className="p-4">
-            {unit.name}
-          </td>
+        <div>
+          <label className="mb-2 block font-medium">Código *</label>
+          <input
+            name="code"
+            required
+            defaultValue={initialValues?.code}
+            className="w-full rounded-lg border p-3"
+            placeholder="ML"
+          />
+          <p className="mt-1 text-xs text-gray-400">
+            Se guardará en mayúsculas. Ej: ML, KG, PZA
+          </p>
+        </div>
+      </div>
 
-          <td className="p-4">
-            {unit.is_active
-              ? 'Activo'
-              : 'Inactivo'}
-          </td>
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          name="is_active"
+          value="true"
+          defaultChecked={initialValues?.is_active ?? true}
+        />
+        <span>Activo</span>
+      </div>
 
-          <td className="p-4 text-right">
-            <Link
-              href={`/units-of-measure/${unit.id}/edit`}
-              className="rounded border px-3 py-1"
-            >
-              Editar
-            </Link>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+      <div className="border-t pt-6">
+        <button type="submit" className="rounded border px-6 py-2">
+          Guardar
+        </button>
+      </div>
 
-      <button
-        type="submit"
-        className="rounded border px-6 py-2"
-      >
-        Guardar
-      </button>
     </form>
   );
 }

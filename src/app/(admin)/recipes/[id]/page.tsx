@@ -81,7 +81,7 @@ export default async function RecipePage({
               >
                 <div>
                   {
-                    item.products?.name
+                    item.raw_materials?.name
                   }
                 </div>
 

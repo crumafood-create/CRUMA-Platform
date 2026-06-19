@@ -1,74 +1,69 @@
 'use client';
 
-import { useState } from 'react';
+interface Material {
+  id: string;
+  name: string;
+}
+
+interface Props {
+  action: (formData: FormData) => Promise<void>;
+  materials: Material[];
+}
 
 export function RecipeItemsForm({
+  action,
   materials,
-}: {
-  materials: {
-    id: string;
-    name: string;
-  }[];
-}) {
-  const [items, setItems] = useState([
-    {
-      materialId: '',
-      quantity: '',
-    },
-  ]);
-
-  function addRow() {
-    setItems([
-      ...items,
-      {
-        materialId: '',
-        quantity: '',
-      },
-    ]);
-  }
-
+}: Props) {
   return (
-    <div className="space-y-3">
-      {items.map((item, index) => (
-        <div
-          key={index}
-          className="grid grid-cols-2 gap-4"
+    <form
+      action={action}
+      className="space-y-4 rounded-xl border p-4"
+    >
+      <div>
+        <label className="mb-2 block font-medium">
+          Ingrediente
+        </label>
+
+        <select
+          name="ingredient_id"
+          required
+          className="w-full rounded border p-3"
         >
-          <select
-            name={`material_${index}`}
-            className="rounded border p-2"
-          >
-            <option value="">
-              Ingrediente
+          <option value="">
+            Seleccionar ingrediente
+          </option>
+
+          {materials.map((material) => (
+            <option
+              key={material.id}
+              value={material.id}
+            >
+              {material.name}
             </option>
+          ))}
+        </select>
+      </div>
 
-            {materials.map(
-              (material) => (
-                <option
-                  key={material.id}
-                  value={material.id}
-                >
-                  {material.name}
-                </option>
-              )
-            )}
-          </select>
+      <div>
+        <label className="mb-2 block font-medium">
+          Cantidad
+        </label>
 
-          <input
-            name={`quantity_${index}`}
-            placeholder="Cantidad"
-            className="rounded border p-2"
-          />
-        </div>
-      ))}
+        <input
+          type="number"
+          step="0.0001"
+          name="quantity"
+          required
+          className="w-full rounded border p-3"
+        />
+      </div>
 
       <button
-        type="button"
-        onClick={addRow}
+        type="submit"
         className="rounded border px-4 py-2"
       >
-        + Ingrediente
+        Agregar Ingrediente
       </button>
-    </div>
+    </form>
   );
 }

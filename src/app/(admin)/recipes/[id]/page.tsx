@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-import { RecipeItemForm } from '@/app/(admin)/_components/recipe-item-form';
+import { RecipeItemsForm } from '@/app/(admin)/_components/recipe-item-form';
 
 import { createRecipeItem } from './actions';
 

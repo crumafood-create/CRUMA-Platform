@@ -98,6 +98,12 @@ export default async function RecipesPage() {
                 >
                   Editar
                 </Link>
+                <Link
+                  href={`/recipes/${recipe.id}/ingredients`}
+                  className="ml-2 inline-block rounded border px-3 py-1"
+                >
+                  Ingredientes
+               </Link>
               </div>
             ))}
           </div>

@@ -6,27 +6,40 @@ import { ProductionOrderForm } from '@/app/(admin)/_components/production-order-
 
 import { createProductionOrder } from '../actions';
 
+type Recipe = {
+  id: string;
+  name: string;
+};
+
 export default async function NewProductionOrderPage() {
   const supabase = await createClient();
 
-  const { data: recipes } =
+  const { data: recipes, error } =
     await supabase
       .from('recipes')
-      .select(`
-        id,
-        product_id,
-        products:products!recipes_product_id_fkey (
-          name
-        )
-      `);
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name');
 
-  const recipesData =
-    (recipes ?? []).map(recipe => ({
-      id: recipe.id,
-      products: Array.isArray(recipe.products)
-        ? recipe.products[0] ?? null
-        : recipe.products,
-    }));
+  if (error) {
+    return (
+      <main className="space-y-6">
+        <h1 className="text-4xl font-bold">
+          Nueva Orden
+        </h1>
+
+        <div className="rounded-2xl border p-6">
+          <p className="text-red-600">
+            Error al cargar recetas.
+          </p>
+
+          <pre className="mt-4 whitespace-pre-wrap rounded border bg-gray-50 p-4 text-xs">
+            {JSON.stringify(error, null, 2)}
+          </pre>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="space-y-6">
@@ -45,7 +58,7 @@ export default async function NewProductionOrderPage() {
 
       <ProductionOrderForm
         action={createProductionOrder}
-        recipes={recipesData}
+        recipes={(recipes ?? []) as Recipe[]}
       />
     </main>
   );

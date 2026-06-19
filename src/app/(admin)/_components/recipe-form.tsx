@@ -7,6 +7,11 @@ import {
   toInternalCode,
 } from '@/modules/inventory/application/utils/product-code';
 
+interface Product {
+  id: string;
+  name: string;
+}
+
 interface Unit {
   id: string;
   name: string;
@@ -15,10 +20,10 @@ interface Unit {
 
 interface Props {
   action: (formData: FormData) => Promise<void>;
-
+  products: Product[];
   unitsOfMeasure: Unit[];
-
   initialValues?: {
+    product_id?: string;
     name?: string;
     slug?: string;
     internal_code?: string;
@@ -31,124 +36,170 @@ interface Props {
 
 export function RecipeForm({
   action,
+  products,
   unitsOfMeasure,
   initialValues,
 }: Props) {
-  const [slug, setSlug] =
-    useState(initialValues?.slug ?? '');
+  const [slug, setSlug] = useState(initialValues?.slug ?? '');
+  const [code, setCode] = useState(initialValues?.internal_code ?? '');
 
-  const [code, setCode] =
-    useState(
-      initialValues?.internal_code ?? ''
-    );
+  function handleNameChange(value: string) {
+    setSlug(toSlug(value));
+    setCode(`REC-${toInternalCode(value)}`);
+  }
 
   return (
     <form
       action={action}
-      className="space-y-6 rounded-2xl border p-6"
+      className="space-y-6 rounded-2xl border bg-white p-6"
     >
       <div>
-        <label>Nombre</label>
-
-        <input
-          name="name"
-          required
-          defaultValue={
-            initialValues?.name
-          }
-          onChange={(e) => {
-            setSlug(
-              toSlug(e.target.value)
-            );
-
-            setCode(
-              `REC-${toInternalCode(
-                e.target.value
-              )}`
-            );
-          }}
-          className="w-full rounded border p-3"
-        />
-      </div>
-
-      <div>
-        <label>Código</label>
-
-        <input
-          name="internal_code"
-          value={code}
-          onChange={(e) =>
-            setCode(e.target.value)
-          }
-          className="w-full rounded border p-3"
-        />
-      </div>
-
-      <div>
-        <label>Slug</label>
-
-        <input
-          name="slug"
-          value={slug}
-          onChange={(e) =>
-            setSlug(e.target.value)
-          }
-          className="w-full rounded border p-3"
-        />
-      </div>
-
-      <div>
-        <label>Rendimiento</label>
-
-        <input
-          type="number"
-          step="0.001"
-          name="yield_quantity"
-          defaultValue={
-            initialValues?.yield_quantity ?? 1
-          }
-          className="w-full rounded border p-3"
-        />
-      </div>
-
-      <div>
-        <label>Unidad</label>
+        <label className="mb-2 block font-medium">
+          Producto terminado *
+        </label>
 
         <select
-          name="unit_of_measure_id"
+          name="product_id"
+          required
+          defaultValue={initialValues?.product_id ?? ''}
           className="w-full rounded border p-3"
-          defaultValue={
-            initialValues?.unit_of_measure_id
-          }
         >
           <option value="">
-            Seleccionar
+            Seleccionar producto
           </option>
 
-          {unitsOfMeasure.map(
-            (unit) => (
-              <option
-                key={unit.id}
-                value={unit.id}
-              >
-                {unit.code} - {unit.name}
-              </option>
-            )
-          )}
+          {products.map((product) => (
+            <option
+              key={product.id}
+              value={product.id}
+            >
+              {product.name}
+            </option>
+          ))}
         </select>
       </div>
 
       <div>
-        <label>Descripción</label>
+        <label className="mb-2 block font-medium">
+          Nombre *
+        </label>
+
+        <input
+          name="name"
+          required
+          defaultValue={initialValues?.name ?? ''}
+          onChange={(e) =>
+            handleNameChange(e.target.value)
+          }
+          className="w-full rounded border p-3"
+          placeholder="Receta Tequeños Tradicionales"
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block font-medium">
+          Código interno *
+        </label>
+
+        <input
+          name="internal_code"
+          required
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          className="w-full rounded border p-3"
+          placeholder="REC-TEQ-TRAD"
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block font-medium">
+          Slug *
+        </label>
+
+        <input
+          name="slug"
+          required
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+          className="w-full rounded border p-3"
+          placeholder="receta-tequenos-tradicionales"
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block font-medium">
+          Rendimiento *
+        </label>
+
+        <input
+          type="number"
+          step="0.001"
+          min="0.001"
+          name="yield_quantity"
+          required
+          defaultValue={initialValues?.yield_quantity ?? 1}
+          className="w-full rounded border p-3"
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block font-medium">
+          Unidad de medida *
+        </label>
+
+        <select
+          name="unit_of_measure_id"
+          required
+          className="w-full rounded border p-3"
+          defaultValue={initialValues?.unit_of_measure_id ?? ''}
+        >
+          <option value="">
+            Seleccionar unidad
+          </option>
+
+          {unitsOfMeasure.map((unit) => (
+            <option
+              key={unit.id}
+              value={unit.id}
+            >
+              {unit.code} - {unit.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="mb-2 block font-medium">
+          Descripción
+        </label>
 
         <textarea
           name="description"
           rows={4}
           className="w-full rounded border p-3"
-          defaultValue={
-            initialValues?.description
-          }
+          defaultValue={initialValues?.description ?? ''}
         />
+      </div>
+
+      <div>
+        <label className="mb-2 block font-medium">
+          Estado
+        </label>
+
+        <select
+          name="is_active"
+          defaultValue={
+            initialValues?.is_active ? 'true' : 'false'
+          }
+          className="w-full rounded border p-3"
+        >
+          <option value="true">
+            Activa
+          </option>
+          <option value="false">
+            Inactiva
+          </option>
+        </select>
       </div>
 
       <button
@@ -159,4 +210,4 @@ export function RecipeForm({
       </button>
     </form>
   );
-          }
+}

@@ -5,6 +5,8 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 type RecipeRow = {
   id: string;
   name: string;
+  description: string | null;
+  yield_quantity: number | null;
   is_active: boolean;
   product_id: string | null;
 };
@@ -23,7 +25,7 @@ export default async function RecipesPage() {
   ] = await Promise.all([
     supabase
       .from('recipes')
-      .select('id, name, is_active, product_id')
+      .select('id, name, description, yield_quantity, is_active, product_id')
       .order('name'),
 
     supabase
@@ -36,7 +38,7 @@ export default async function RecipesPage() {
   if (error) {
     return (
       <main className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex justify-between">
           <h1 className="text-4xl font-bold">Recetas</h1>
 
           <Link
@@ -51,7 +53,6 @@ export default async function RecipesPage() {
           <p className="text-sm text-red-600">
             Error al cargar recetas.
           </p>
-
           <pre className="mt-4 whitespace-pre-wrap rounded border bg-gray-50 p-4 text-xs">
             {JSON.stringify(error, null, 2)}
           </pre>
@@ -97,6 +98,11 @@ export default async function RecipesPage() {
                   {recipe.product_id
                     ? productMap.get(recipe.product_id) ?? '-'
                     : '-'}
+                </div>
+
+                <div className="text-sm text-gray-500">
+                  Rendimiento:{' '}
+                  {recipe.yield_quantity ?? '-'}
                 </div>
 
                 <div className="text-sm text-gray-500">

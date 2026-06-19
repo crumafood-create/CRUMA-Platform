@@ -1,36 +1,45 @@
-const { data: products, error } = await supabase
-  .from('products')
-  .select('*');
+import { redirect } from 'next/navigation';
 
-console.log('ERROR:', error);
-console.log('PRODUCTS:', products);return (
-  <main>
-    <pre>
-      {JSON.stringify(
-        {
-          error,
-          count: products?.length,
-          products,
-        },
-        null,
-        2
-      )}
-    </pre>
-  </main>
-);
+import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { getUserRole } from '@/lib/auth/get-user-role';
 
-return (
-  <main>
-    <pre>
-      {JSON.stringify(
-        {
-          error,
-          count: products?.length,
-          products,
-        },
-        null,
-        2
-      )}
-    </pre>
-  </main>
-);
+export default async function ProductsPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const role = await getUserRole(user.id);
+
+  if (role !== 'admin' && role !== 'manager') {
+    redirect('/dashboard');
+  }
+
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('*')
+    .is('deleted_at', null);
+
+  return (
+    <main className="p-6">
+      <pre>
+        {JSON.stringify(
+          {
+            userId: user.id,
+            role,
+            error,
+            count: products?.length,
+            products,
+          },
+          null,
+          2
+        )}
+      </pre>
+    </main>
+  );
+}

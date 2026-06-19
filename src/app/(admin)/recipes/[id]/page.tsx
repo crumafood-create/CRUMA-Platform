@@ -56,6 +56,12 @@ export default async function RecipePage({
       </h1>
 
       <RecipeItemsForm
+  action={
+    createRecipeItem.bind(
+      null,
+      id
+    )
+  }
   materials={rawMaterials ?? []}
 />
 

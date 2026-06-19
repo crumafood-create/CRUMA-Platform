@@ -1,17 +1,16 @@
 'use client';
 
+interface Recipe {
+  id: string;
+  name: string;
+}
+
 interface Props {
   action: (
     formData: FormData
   ) => Promise<void>;
 
-  recipes: {
-    id: string;
-
-    products: {
-      name: string;
-    } | null;
-  }[];
+  recipes: Recipe[];
 }
 
 export function ProductionOrderForm({
@@ -21,10 +20,10 @@ export function ProductionOrderForm({
   return (
     <form
       action={action}
-      className="space-y-6 rounded-2xl border p-6"
+      className="space-y-6 rounded-2xl border bg-white p-6"
     >
       <div>
-        <label>
+        <label className="mb-2 block font-medium">
           Receta
         </label>
 
@@ -37,24 +36,26 @@ export function ProductionOrderForm({
             Seleccionar receta
           </option>
 
-          {recipes.map(recipe => (
-  <option
-    key={recipe.id}
-    value={recipe.id}
-  >
-    {recipe.products?.name}
-  </option>
-))}
+          {recipes.map((recipe) => (
+            <option
+              key={recipe.id}
+              value={recipe.id}
+            >
+              {recipe.name}
+            </option>
+          ))}
         </select>
       </div>
 
       <div>
-        <label>
+        <label className="mb-2 block font-medium">
           Cantidad a producir
         </label>
 
         <input
           type="number"
+          step="0.0001"
+          min="0.0001"
           name="quantity"
           required
           className="w-full rounded border p-3"
@@ -62,7 +63,7 @@ export function ProductionOrderForm({
       </div>
 
       <div>
-        <label>
+        <label className="mb-2 block font-medium">
           Notas
         </label>
 

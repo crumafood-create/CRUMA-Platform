@@ -6,34 +6,37 @@ type RecipeRow = {
   id: string;
   name: string;
   is_active: boolean;
-  product_id: string;
-  products:
-    | {
-        name: string;
-      }[]
-    | null;
+  product_id: string | null;
+};
+
+type ProductRow = {
+  id: string;
+  name: string;
 };
 
 export default async function RecipesPage() {
   const supabase = await createClient();
 
-  const { data: recipes, error } = await supabase
-    .from('recipes')
-    .select(`
-      id,
-      name,
-      is_active,
-      product_id,
-      products (
-        name
-      )
-    `)
-    .order('name');
+  const [
+    { data: recipes, error },
+    { data: products },
+  ] = await Promise.all([
+    supabase
+      .from('recipes')
+      .select('id, name, is_active, product_id')
+      .order('name'),
+
+    supabase
+      .from('products')
+      .select('id, name')
+      .is('deleted_at', null)
+      .order('name'),
+  ]);
 
   if (error) {
     return (
       <main className="space-y-6">
-        <div className="flex justify-between">
+        <div className="flex items-center justify-between">
           <h1 className="text-4xl font-bold">Recetas</h1>
 
           <Link
@@ -48,6 +51,7 @@ export default async function RecipesPage() {
           <p className="text-sm text-red-600">
             Error al cargar recetas.
           </p>
+
           <pre className="mt-4 whitespace-pre-wrap rounded border bg-gray-50 p-4 text-xs">
             {JSON.stringify(error, null, 2)}
           </pre>
@@ -55,6 +59,13 @@ export default async function RecipesPage() {
       </main>
     );
   }
+
+  const productMap = new Map(
+    (products ?? []).map((product: ProductRow) => [
+      product.id,
+      product.name,
+    ])
+  );
 
   return (
     <main className="space-y-6">
@@ -83,27 +94,30 @@ export default async function RecipesPage() {
 
                 <div className="text-sm text-gray-500">
                   Producto:{' '}
-                  {recipe.products?.[0]?.name ?? '-'}
+                  {recipe.product_id
+                    ? productMap.get(recipe.product_id) ?? '-'
+                    : '-'}
                 </div>
 
                 <div className="text-sm text-gray-500">
-                  {recipe.is_active
-                    ? 'Activa'
-                    : 'Inactiva'}
+                  {recipe.is_active ? 'Activa' : 'Inactiva'}
                 </div>
 
-                <Link
-                  href={`/recipes/${recipe.id}/edit`}
-                  className="mt-3 inline-block rounded border px-3 py-1"
-                >
-                  Editar
-                </Link>
-                <Link
-                  href={`/recipes/${recipe.id}/ingredients`}
-                  className="ml-2 inline-block rounded border px-3 py-1"
-                >
-                  Ingredientes
-               </Link>
+                <div className="mt-3 flex gap-2">
+                  <Link
+                    href={`/recipes/${recipe.id}/edit`}
+                    className="rounded border px-3 py-1"
+                  >
+                    Editar
+                  </Link>
+
+                  <Link
+                    href={`/recipes/${recipe.id}/ingredients`}
+                    className="rounded border px-3 py-1"
+                  >
+                    Ingredientes
+                  </Link>
+                </div>
               </div>
             ))}
           </div>

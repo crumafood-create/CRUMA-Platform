@@ -16,52 +16,50 @@ export function UnitOfMeasureForm({
   return (
     <form
       action={action}
-      className="space-y-6 rounded-2xl border p-6"
-    >
-      <div>
-        <label className="mb-2 block font-medium">
-          Nombre
-        </label>
+      <div className="overflow-hidden rounded-2xl border">
+  <table className="w-full">
+    <thead className="bg-gray-50">
+      <tr>
+        <th className="p-4 text-left">Código</th>
+        <th className="p-4 text-left">Nombre</th>
+        <th className="p-4 text-left">Estado</th>
+        <th className="p-4 text-right">Acciones</th>
+      </tr>
+    </thead>
 
-        <input
-          name="name"
-          required
-          defaultValue={initialValues?.name}
-          className="w-full rounded border p-3"
-          placeholder="Gramos"
-        />
-      </div>
-
-      <div>
-        <label className="mb-2 block font-medium">
-          Código
-        </label>
-
-        <input
-          name="code"
-          required
-          defaultValue={initialValues?.code}
-          className="w-full rounded border p-3"
-          placeholder="g"
-        />
-      </div>
-
-      <div>
-        <label className="mb-2 block font-medium">
-          Estado
-        </label>
-
-        <select
-          name="is_active"
-          defaultValue={
-            initialValues?.is_active ? 'true' : 'false'
-          }
-          className="w-full rounded border p-3"
+    <tbody>
+      {units?.map((unit) => (
+        <tr
+          key={unit.id}
+          className="border-t"
         >
-          <option value="true">Activo</option>
-          <option value="false">Inactivo</option>
-        </select>
-      </div>
+          <td className="p-4">
+            {unit.code}
+          </td>
+
+          <td className="p-4">
+            {unit.name}
+          </td>
+
+          <td className="p-4">
+            {unit.is_active
+              ? 'Activo'
+              : 'Inactivo'}
+          </td>
+
+          <td className="p-4 text-right">
+            <Link
+              href={`/units-of-measure/${unit.id}/edit`}
+              className="rounded border px-3 py-1"
+            >
+              Editar
+            </Link>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
       <button
         type="submit"

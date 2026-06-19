@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-import { addRecipeItem } from './actions';
+import { createRecipeItem } from './actions';
 
 type RecipeRow = {
   id: string;
@@ -114,7 +114,7 @@ export default async function RecipeIngredientsPage({
       </div>
 
       <div className="rounded-2xl border p-6">
-        <form action={addRecipeItem} className="space-y-4">
+        <form action={createRecipeItem} className="space-y-4">
           <input type="hidden" name="recipe_id" value={recipe.id} />
 
           <div>

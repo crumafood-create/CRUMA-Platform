@@ -10,18 +10,31 @@ export async function createRecipe(
 ) {
   const supabase = await createClient();
 
-  const productId =
-    formData.get('product_id');
-
-  const notes =
-    formData.get('notes');
-
   const { error } =
     await supabase
       .from('recipes')
       .insert({
-        product_id: productId,
-        notes,
+        name: formData.get('name'),
+        slug: formData.get('slug'),
+        internal_code:
+          formData.get('internal_code'),
+
+        description:
+          formData.get('description'),
+
+        yield_quantity:
+          Number(
+            formData.get('yield_quantity')
+          ) || 1,
+
+        unit_of_measure_id:
+          formData.get(
+            'unit_of_measure_id'
+          ) || null,
+
+        is_active:
+          formData.get('is_active') ===
+          'true',
       });
 
   if (error) {

@@ -19,7 +19,13 @@ export async function createUnitOfMeasure(
     });
 
   if (error) {
-    throw new Error(error.message);
+  if (error.code === '23505') {
+    throw new Error(
+      'Ya existe una unidad con ese código'
+    );
+  }
+
+  throw new Error(error.message);
   }
 
   revalidatePath('/units-of-measure');
@@ -43,7 +49,13 @@ export async function updateUnitOfMeasure(
     .eq('id', unitId);
 
   if (error) {
-    throw new Error(error.message);
+  if (error.code === '23505') {
+    throw new Error(
+      'Ya existe una unidad con ese código'
+    );
+  }
+
+  throw new Error(error.message);
   }
 
   revalidatePath('/units-of-measure');

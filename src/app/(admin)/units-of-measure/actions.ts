@@ -5,76 +5,82 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-export async function createUnitOfMeasure(
-  formData: FormData
-) {
+// ─── Create ───────────────────────────────────────────────────────────────────
+
+export async function createUnitOfMeasure(formData: FormData) {
+  const name = String(formData.get('name') ?? '').trim();
+  const code = String(formData.get('code') ?? '').trim().toUpperCase();
+
+  if (!name || !code) throw new Error('Nombre y código son requeridos');
+
   const supabase = await createClient();
 
   const { error } = await supabase
     .from('units_of_measure')
     .insert({
-      name: formData.get('name'),
-      code: formData.get('code'),
+      name,
+      code,
       is_active: formData.get('is_active') === 'true',
     });
 
   if (error) {
-  if (error.code === '23505') {
-    throw new Error(
-      'Ya existe una unidad con ese código'
-    );
-  }
-
-  throw new Error(error.message);
+    if (error.code === '23505') {
+      throw new Error('Ya existe una unidad con ese código');
+    }
+    throw new Error(error.message);
   }
 
   revalidatePath('/units-of-measure');
   redirect('/units-of-measure');
 }
 
-export async function updateUnitOfMeasure(
-  unitId: string,
-  formData: FormData
-) {
+// ─── Update ───────────────────────────────────────────────────────────────────
+
+export async function updateUnitOfMeasure(unitId: string, formData: FormData) {
+  const name = String(formData.get('name') ?? '').trim();
+  const code = String(formData.get('code') ?? '').trim().toUpperCase();
+
+  if (!name || !code) throw new Error('Nombre y código son requeridos');
+
   const supabase = await createClient();
 
   const { error } = await supabase
     .from('units_of_measure')
     .update({
-      name: formData.get('name'),
-      code: formData.get('code'),
-      is_active: formData.get('is_active') === 'true',
+      name,
+      code,
+      is_active:  formData.get('is_active') === 'true',
       updated_at: new Date().toISOString(),
     })
     .eq('id', unitId);
 
   if (error) {
-  if (error.code === '23505') {
-    throw new Error(
-      'Ya existe una unidad con ese código'
-    );
-  }
-
-  throw new Error(error.message);
+    if (error.code === '23505') {
+      throw new Error('Ya existe una unidad con ese código');
+    }
+    throw new Error(error.message);
   }
 
   revalidatePath('/units-of-measure');
   redirect('/units-of-measure');
 }
 
-export async function deleteUnitOfMeasure(
-  unitId: string
-) {
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+// Soft delete: desactiva la unidad en lugar de eliminarla.
+// Hard delete fallaría si algún producto la referencia (FK constraint).
+export async function deleteUnitOfMeasure(unitId: string) {
   const supabase = await createClient();
 
   const { error } = await supabase
     .from('units_of_measure')
-    .delete()
+    .update({
+      is_active:  false,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', unitId);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath('/units-of-measure');
   redirect('/units-of-measure');

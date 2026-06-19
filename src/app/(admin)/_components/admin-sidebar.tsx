@@ -49,6 +49,13 @@ export default function AdminSidebar() {
         </Link>
 
         <Link
+          href="/raw-materials"
+          className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+          🥛 Materias Primas
+       </Link>
+
+        <Link
           href="/flavors"
           className="rounded px-2 py-1 hover:bg-gray-100"
         >

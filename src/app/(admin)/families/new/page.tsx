@@ -15,14 +15,14 @@ export default async function NewFamilyPage() {
 
   return (
     <main className="space-y-6">
-      <h1 className="text-4xl font-bold">
-        Nueva Familia
-      </h1>
+      <div>
+        <a href="/families" className="text-sm text-blue-600 hover:text-blue-700">
+          ← Volver a Familias
+        </a>
+        <h1 className="mt-2 text-4xl font-bold">Nueva Familia</h1>
+      </div>
 
-      <FamilyForm
-        categories={categories ?? []}
-        action={createFamily}
-      />
+      <FamilyForm categories={categories ?? []} action={createFamily} />
     </main>
   );
 }

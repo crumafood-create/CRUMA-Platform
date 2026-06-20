@@ -4,10 +4,7 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 import { FamilyForm } from '@/app/(admin)/_components/family-form';
 
-import {
-  updateFamily,
-  deleteFamily,
-} from '../../actions';
+import { updateFamily, deleteFamily } from '../../actions';
 
 export default async function EditFamilyPage({
   params,
@@ -15,7 +12,6 @@ export default async function EditFamilyPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-
   const supabase = await createClient();
 
   const { data: family } = await supabase
@@ -24,9 +20,7 @@ export default async function EditFamilyPage({
     .eq('id', id)
     .single();
 
-  if (!family) {
-    notFound();
-  }
+  if (!family) notFound();
 
   const { data: categories } = await supabase
     .from('categories')
@@ -36,24 +30,20 @@ export default async function EditFamilyPage({
 
   return (
     <main className="space-y-6">
-      <h1 className="text-4xl font-bold">
-        Editar Familia
-      </h1>
+      <div>
+        <a href="/families" className="text-sm text-blue-600 hover:text-blue-700">
+          ← Volver a Familias
+        </a>
+        <h1 className="mt-2 text-4xl font-bold">Editar Familia</h1>
+      </div>
 
       <FamilyForm
         categories={categories ?? []}
         initialValues={family}
+        familyId={family.id}
+        onDelete={deleteFamily}
         action={updateFamily.bind(null, family.id)}
       />
-
-      <form action={deleteFamily.bind(null, family.id)}>
-        <button
-          type="submit"
-          className="rounded border px-4 py-2"
-        >
-          Eliminar
-        </button>
-      </form>
     </main>
   );
 }

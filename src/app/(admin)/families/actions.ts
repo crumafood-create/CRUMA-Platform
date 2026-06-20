@@ -19,6 +19,7 @@ export async function createFamily(
     category_id: formData.get('category_id'),
     name: formData.get('name'),
     slug: formData.get('slug'),
+    internal_code: formData.get('internal_code'),
     description: formData.get('description'),
     is_active:
       formData.get('is_active') === 'true',
@@ -51,6 +52,7 @@ export async function updateFamily(
       category_id: formData.get('category_id'),
       name: formData.get('name'),
       slug: formData.get('slug'),
+      internal_code: formData.get('internal_code'),
       description: formData.get('description'),
       is_active:
         formData.get('is_active') === 'true',

@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ChangeEvent } from 'react';
 
-import { toSlug, toFamilyCode } from '@/modules/inventory/application/utils/family-code';
+import {
+  toSlug,
+  toFamilyCode,
+} from '@/modules/inventory/application/utils/family-code';
 
 interface FamilyFormProps {
   action: (formData: FormData) => Promise<void>;
@@ -31,23 +34,34 @@ export function FamilyForm({
 }: FamilyFormProps) {
   const [slug, setSlug] = useState(initialValues?.slug ?? '');
   const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
-  const [internalCode, setInternalCode] = useState(initialValues?.internal_code ?? '');
-  const [codeEdited, setCodeEdited] = useState(!!initialValues?.internal_code);
+
+  const [internalCode, setInternalCode] = useState(
+    initialValues?.internal_code ?? ''
+  );
+  const [codeEdited, setCodeEdited] = useState(
+    !!initialValues?.internal_code
+  );
+
   const [isDeletePending, setIsDeletePending] = useState(false);
 
-  function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleNameChange(e: ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
 
-    if (!slugEdited) setSlug(toSlug(value));
-    if (!codeEdited) setInternalCode(toFamilyCode(value));
+    if (!slugEdited) {
+      setSlug(toSlug(value));
+    }
+
+    if (!codeEdited) {
+      setInternalCode(toFamilyCode(value));
+    }
   }
 
-  function handleSlugChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleSlugChange(e: ChangeEvent<HTMLInputElement>) {
     setSlug(e.target.value);
     setSlugEdited(true);
   }
 
-  function handleInternalCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleInternalCodeChange(e: ChangeEvent<HTMLInputElement>) {
     setInternalCode(e.target.value);
     setCodeEdited(true);
   }
@@ -103,7 +117,7 @@ export function FamilyForm({
             <input
               name="name"
               required
-              defaultValue={initialValues?.name}
+              defaultValue={initialValues?.name ?? ''}
               onChange={handleNameChange}
               className="w-full rounded-lg border p-3"
               placeholder="Tequeños Tradicionales"
@@ -119,7 +133,7 @@ export function FamilyForm({
               value={internalCode}
               onChange={handleInternalCodeChange}
               className="w-full rounded-lg border p-3"
-              placeholder="TEQUE-TRAD"
+              placeholder="TEQ-TRAD"
             />
             <p className="mt-1 text-xs text-gray-400">
               Se genera desde el nombre. Puedes editarlo manualmente.
@@ -160,7 +174,7 @@ export function FamilyForm({
         <div className="flex items-center gap-3">
           <select
             name="is_active"
-            defaultValue={initialValues?.is_active ? 'true' : 'false'}
+            defaultValue={initialValues?.is_active === false ? 'false' : 'true'}
             className="rounded-lg border p-3"
           >
             <option value="true">Activo</option>
@@ -199,4 +213,4 @@ export function FamilyForm({
       )}
     </form>
   );
-      }
+}

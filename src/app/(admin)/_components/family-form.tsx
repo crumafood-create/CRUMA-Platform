@@ -25,9 +25,7 @@ export function FamilyForm({
   categories,
   initialValues,
 }: FamilyFormProps) {
-  const [slug, setSlug] = useState(
-    initialValues?.slug ?? ''
-  );
+  const [slug, setSlug] = useState(initialValues?.slug ?? '');
 
   return (
     <form
@@ -83,9 +81,7 @@ export function FamilyForm({
           name="name"
           required
           defaultValue={initialValues?.name}
-          onChange={(e) =>
-            setSlug(toSlug(e.target.value))
-          }
+          onChange={(e) => setSlug(toSlug(e.target.value))}
           className="w-full rounded border p-3"
         />
       </div>
@@ -99,9 +95,7 @@ export function FamilyForm({
           name="slug"
           required
           value={slug}
-          onChange={(e) =>
-            setSlug(e.target.value)
-          }
+          onChange={(e) => setSlug(e.target.value)}
           className="w-full rounded border p-3"
         />
       </div>
@@ -126,9 +120,7 @@ export function FamilyForm({
 
         <select
           name="is_active"
-          defaultValue={
-            initialValues?.is_active ? 'true' : 'false'
-          }
+          defaultValue={initialValues?.is_active ? 'true' : 'false'}
           className="w-full rounded border p-3"
         >
           <option value="true">Activo</option>

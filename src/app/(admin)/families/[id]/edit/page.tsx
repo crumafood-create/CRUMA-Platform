@@ -18,19 +18,17 @@ export default async function EditFamilyPage({
 
   const supabase = await createClient();
 
-  const { data: family } =
-    await supabase
-      .from('families')
-      .select('*')
-      .eq('id', id)
-      .single();
+  const { data: family } = await supabase
+    .from('families')
+    .select('*')
+    .eq('id', id)
+    .single();
 
   if (!family) {
     notFound();
   }
 
-  const { data: categories } =
-  await supabase
+  const { data: categories } = await supabase
     .from('categories')
     .select('id,name')
     .is('deleted_at', null)
@@ -45,18 +43,10 @@ export default async function EditFamilyPage({
       <FamilyForm
         categories={categories ?? []}
         initialValues={family}
-        action={updateFamily.bind(
-          null,
-          family.id
-        )}
+        action={updateFamily.bind(null, family.id)}
       />
 
-      <form
-        action={deleteFamily.bind(
-          null,
-          family.id
-        )}
-      >
+      <form action={deleteFamily.bind(null, family.id)}>
         <button
           type="submit"
           className="rounded border px-4 py-2"

@@ -71,10 +71,7 @@ export default async function RecipeIngredientsPage({
         <RecipeItemForm
   recipeId={id}
   materials={materials ?? []}
-  action={async (formData) => {
-    'use server';
-    await createRecipeItem(id, formData);
-  }}
+  action={createRecipeItem}
 />
       </div>
 

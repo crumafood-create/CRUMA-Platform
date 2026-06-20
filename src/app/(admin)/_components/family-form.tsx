@@ -40,6 +40,19 @@ export function FamilyForm({
           Categoría
         </label>
 
+        <div>
+  <label>
+    Código Interno
+  </label>
+
+  <input
+    type="text"
+    name="internal_code"
+    defaultValue={family?.internal_code ?? ''}
+    className="w-full rounded border p-3"
+  />
+</div>
+
         <select
           name="category_id"
           defaultValue={

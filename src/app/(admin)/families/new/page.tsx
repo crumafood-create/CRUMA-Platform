@@ -1,17 +1,13 @@
-import { createClient }
-from '@/infrastructure/integrations/supabase/server';
+import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-import { FamilyForm }
-from '@/app/(admin)/_components/family-form';
+import { FamilyForm } from '@/app/(admin)/_components/family-form';
 
-import { createFamily }
-from '../actions';
+import { createFamily } from '../actions';
 
 export default async function NewFamilyPage() {
   const supabase = await createClient();
 
-  const { data: categories } =
-  await supabase
+  const { data: categories } = await supabase
     .from('categories')
     .select('id,name')
     .is('deleted_at', null)

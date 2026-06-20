@@ -43,7 +43,10 @@ export async function createRawMaterial(
       formData.get('is_active') === 'true',
   };
 
-  console.log('RAW MATERIAL PAYLOAD', payload);
+  console.log(
+    'RAW MATERIAL PAYLOAD',
+    payload
+  );
 
   const result = await supabase
     .from('raw_materials')
@@ -52,6 +55,98 @@ export async function createRawMaterial(
 
   console.log(
     'RAW MATERIAL RESULT',
+    JSON.stringify(result, null, 2)
+  );
+
+  if (result.error) {
+    throw new Error(
+      JSON.stringify(result.error)
+    );
+  }
+
+  revalidatePath('/raw-materials');
+  redirect('/raw-materials');
+}
+
+export async function updateRawMaterial(
+  materialId: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+
+  const payload = {
+    name: formData.get('name'),
+    slug: formData.get('slug'),
+    internal_code: formData.get('internal_code'),
+
+    category_id:
+      formData.get('category_id') || null,
+
+    family_id:
+      formData.get('family_id') || null,
+
+    unit_of_measure_id:
+      formData.get('unit_of_measure_id') || null,
+
+    current_stock:
+      Number(formData.get('current_stock')) || 0,
+
+    minimum_stock:
+      Number(formData.get('minimum_stock')) || 0,
+
+    average_cost:
+      Number(formData.get('average_cost')) || 0,
+
+    last_cost:
+      Number(formData.get('last_cost')) || 0,
+
+    description:
+      formData.get('description'),
+
+    is_active:
+      formData.get('is_active') === 'true',
+
+    updated_at:
+      new Date().toISOString(),
+  };
+
+  const result = await supabase
+    .from('raw_materials')
+    .update(payload)
+    .eq('id', materialId)
+    .select();
+
+  console.log(
+    'UPDATE RAW MATERIAL RESULT',
+    JSON.stringify(result, null, 2)
+  );
+
+  if (result.error) {
+    throw new Error(
+      JSON.stringify(result.error)
+    );
+  }
+
+  revalidatePath('/raw-materials');
+  redirect('/raw-materials');
+}
+
+export async function deleteRawMaterial(
+  materialId: string
+) {
+  const supabase = await createClient();
+
+  const result = await supabase
+    .from('raw_materials')
+    .update({
+      deleted_at:
+        new Date().toISOString(),
+    })
+    .eq('id', materialId)
+    .select();
+
+  console.log(
+    'DELETE RAW MATERIAL RESULT',
     JSON.stringify(result, null, 2)
   );
 

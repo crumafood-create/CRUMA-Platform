@@ -2,10 +2,7 @@
 
 import { useState } from 'react';
 
-import {
-  toSlug,
-  toFamilyCode,
-} from '@/modules/inventory/application/utils/family-code';
+import { toSlug, toFamilyCode } from '@/modules/inventory/application/utils/family-code';
 
 interface FamilyFormProps {
   action: (formData: FormData) => Promise<void>;
@@ -32,14 +29,15 @@ export function FamilyForm({
   categories,
   initialValues,
 }: FamilyFormProps) {
-  const [slug, setSlug]                     = useState(initialValues?.slug ?? '');
-  const [slugEdited, setSlugEdited]         = useState(!!initialValues?.slug);
-  const [internalCode, setInternalCode]     = useState(initialValues?.internal_code ?? '');
-  const [codeEdited, setCodeEdited]         = useState(!!initialValues?.internal_code);
+  const [slug, setSlug] = useState(initialValues?.slug ?? '');
+  const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
+  const [internalCode, setInternalCode] = useState(initialValues?.internal_code ?? '');
+  const [codeEdited, setCodeEdited] = useState(!!initialValues?.internal_code);
   const [isDeletePending, setIsDeletePending] = useState(false);
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
+
     if (!slugEdited) setSlug(toSlug(value));
     if (!codeEdited) setInternalCode(toFamilyCode(value));
   }
@@ -56,26 +54,29 @@ export function FamilyForm({
 
   async function handleDelete() {
     if (!familyId || !onDelete) return;
-    
+
     const confirmed = window.confirm(
       '¿Estás seguro de que quieres eliminar esta familia? Esta acción no se puede deshacer.'
     );
-    
+
     if (!confirmed) return;
-    
+
     setIsDeletePending(true);
+
     try {
       await onDelete(familyId);
     } catch (error) {
       setIsDeletePending(false);
-      alert(`Error al eliminar: ${error instanceof Error ? error.message : 'Intenta de nuevo'}`);
+      alert(
+        `Error al eliminar: ${
+          error instanceof Error ? error.message : 'Intenta de nuevo'
+        }`
+      );
     }
   }
 
   return (
     <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
-
-      {/* INFORMACIÓN GENERAL */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Información General</h2>
 
@@ -153,7 +154,6 @@ export function FamilyForm({
         </div>
       </section>
 
-      {/* CONFIGURACIÓN */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Configuración</h2>
 
@@ -179,7 +179,6 @@ export function FamilyForm({
         </button>
       </div>
 
-      {/* ZONA PELIGROSA */}
       {familyId && onDelete && (
         <div className="border-t pt-6">
           <div className="rounded-lg border border-red-200 bg-red-50 p-6">
@@ -200,4 +199,4 @@ export function FamilyForm({
       )}
     </form>
   );
-    }
+      }

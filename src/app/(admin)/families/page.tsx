@@ -46,25 +46,30 @@ export default async function FamiliesPage() {
         {familyList.length > 0 ? (
           <div className="space-y-3">
             {familyList.map((family) => (
-              <div
-                key={family.id}
-                className="rounded border p-4"
-              >
-                <div className="font-semibold">
-                  {family.name}
-                </div>
+              
+                <div
+  key={family.id}
+  className="rounded border p-4"
+>
+  <div className="font-semibold">
+    {family.name}
+  </div>
 
-                <div className="text-sm text-gray-500">
-                  {family.slug}
-                </div>
+  <div className="text-sm text-gray-500">
+    Slug: {family.slug}
+  </div>
 
-                <Link
-                  href={`/families/${family.id}/edit`}
-                  className="mt-3 inline-block rounded border px-3 py-1"
-                >
-                  Editar
-                </Link>
-              </div>
+  <div className="text-sm text-gray-500">
+    Código: {family.internal_code || '-'}
+  </div>
+
+  <Link
+    href={`/families/${family.id}/edit`}
+    className="mt-3 inline-block rounded border px-3 py-1"
+  >
+    Editar
+  </Link>
+</div>
             ))}
           </div>
         ) : (

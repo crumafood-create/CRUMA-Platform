@@ -6,16 +6,15 @@ import { toSlug } from '@/modules/inventory/application/utils/product-code';
 
 interface FamilyFormProps {
   action: (formData: FormData) => Promise<void>;
-
   categories: {
     id: string;
     name: string;
   }[];
-
   initialValues?: {
     category_id?: string;
     name?: string;
     slug?: string;
+    internal_code?: string;
     description?: string;
     is_active?: boolean;
   };
@@ -40,24 +39,9 @@ export function FamilyForm({
           Categoría
         </label>
 
-        <div>
-  <label>
-    Código Interno
-  </label>
-
-  <input
-    type="text"
-    name="internal_code"
-    defaultValue={family?.internal_code ?? ''}
-    className="w-full rounded border p-3"
-  />
-</div>
-
         <select
           name="category_id"
-          defaultValue={
-  initialValues?.category_id ?? ''
-          }
+          defaultValue={initialValues?.category_id ?? ''}
           className="w-full rounded border p-3"
           required
         >
@@ -65,7 +49,7 @@ export function FamilyForm({
             Selecciona categoría
           </option>
 
-          {categories.map(category => (
+          {categories.map((category) => (
             <option
               key={category.id}
               value={category.id}
@@ -78,6 +62,20 @@ export function FamilyForm({
 
       <div>
         <label className="mb-2 block font-medium">
+          Código Interno
+        </label>
+
+        <input
+          type="text"
+          name="internal_code"
+          defaultValue={initialValues?.internal_code ?? ''}
+          className="w-full rounded border p-3"
+          placeholder="FAM-001"
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block font-medium">
           Nombre
         </label>
 
@@ -85,10 +83,8 @@ export function FamilyForm({
           name="name"
           required
           defaultValue={initialValues?.name}
-          onChange={e =>
-            setSlug(
-              toSlug(e.target.value)
-            )
+          onChange={(e) =>
+            setSlug(toSlug(e.target.value))
           }
           className="w-full rounded border p-3"
         />
@@ -103,7 +99,7 @@ export function FamilyForm({
           name="slug"
           required
           value={slug}
-          onChange={e =>
+          onChange={(e) =>
             setSlug(e.target.value)
           }
           className="w-full rounded border p-3"
@@ -118,9 +114,7 @@ export function FamilyForm({
         <textarea
           name="description"
           rows={3}
-          defaultValue={
-            initialValues?.description
-          }
+          defaultValue={initialValues?.description}
           className="w-full rounded border p-3"
         />
       </div>
@@ -133,19 +127,12 @@ export function FamilyForm({
         <select
           name="is_active"
           defaultValue={
-            initialValues?.is_active
-              ? 'true'
-              : 'false'
+            initialValues?.is_active ? 'true' : 'false'
           }
           className="w-full rounded border p-3"
         >
-          <option value="true">
-            Activo
-          </option>
-
-          <option value="false">
-            Inactivo
-          </option>
+          <option value="true">Activo</option>
+          <option value="false">Inactivo</option>
         </select>
       </div>
 

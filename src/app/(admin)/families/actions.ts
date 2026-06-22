@@ -28,9 +28,7 @@ export async function createFamily(formData: FormData) {
     is_active: isActive,
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath('/families');
   redirect('/families');
@@ -63,9 +61,7 @@ export async function updateFamily(familyId: string, formData: FormData) {
     })
     .eq('id', familyId);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath('/families');
   redirect('/families');
@@ -76,14 +72,10 @@ export async function deleteFamily(familyId: string) {
 
   const { error } = await supabase
     .from('families')
-    .update({
-      deleted_at: new Date().toISOString(),
-    })
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', familyId);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath('/families');
   redirect('/families');

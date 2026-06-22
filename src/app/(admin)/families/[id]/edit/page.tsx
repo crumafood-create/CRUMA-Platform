@@ -15,29 +15,33 @@ export default async function EditFamilyPage({
 
   const { data: family } = await supabase
     .from('families')
-    .select('*')
+    .select('id, name, slug, internal_code, category_id, description, is_active')
     .eq('id', id)
     .single();
 
-  if (!family) {
-    notFound();
-  }
+  if (!family) notFound();
 
   const { data: categories } = await supabase
     .from('categories')
-    .select('id,name')
+    .select('id, name')
+    .is('deleted_at', null)
     .order('name');
 
   return (
     <main className="space-y-6">
-      <h1 className="text-4xl font-bold">Editar Familia</h1>
+      <div>
+        <a href="/families" className="text-sm text-blue-600 hover:text-blue-700">
+          ← Volver a Familias
+        </a>
+        <h1 className="mt-2 text-4xl font-bold">Editar Familia</h1>
+      </div>
 
       <FamilyForm
         categories={categories ?? []}
         initialValues={family}
-        action={updateFamily.bind(null, family.id)}
         familyId={family.id}
         onDelete={deleteFamily}
+        action={updateFamily.bind(null, family.id)}
       />
     </main>
   );

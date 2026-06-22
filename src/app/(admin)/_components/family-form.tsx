@@ -34,26 +34,18 @@ export function FamilyForm({
 }: FamilyFormProps) {
   const [slug, setSlug] = useState(initialValues?.slug ?? '');
   const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
-
   const [internalCode, setInternalCode] = useState(
     initialValues?.internal_code ?? ''
   );
   const [codeEdited, setCodeEdited] = useState(
     !!initialValues?.internal_code
   );
-
   const [isDeletePending, setIsDeletePending] = useState(false);
 
   function handleNameChange(e: ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
-
-    if (!slugEdited) {
-      setSlug(toSlug(value));
-    }
-
-    if (!codeEdited) {
-      setInternalCode(toFamilyCode(value));
-    }
+    if (!slugEdited) setSlug(toSlug(value));
+    if (!codeEdited) setInternalCode(toFamilyCode(value));
   }
 
   function handleSlugChange(e: ChangeEvent<HTMLInputElement>) {
@@ -133,7 +125,7 @@ export function FamilyForm({
               value={internalCode}
               onChange={handleInternalCodeChange}
               className="w-full rounded-lg border p-3"
-              placeholder="TEQ-TRAD"
+              placeholder="TEQUE-TRAD"
             />
             <p className="mt-1 text-xs text-gray-400">
               Se genera desde el nombre. Puedes editarlo manualmente.

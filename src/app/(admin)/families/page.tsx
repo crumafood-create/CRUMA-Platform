@@ -1,25 +1,15 @@
-import Link from 'next/link';
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function FamiliesPage() {
   const supabase = await createClient();
 
-  const { data: families, error } = await supabase
+  const { data } = await supabase
     .from('families')
-    .select('*')
-    .is('deleted_at', null)
-    .order('name');
+    .select('*');
 
   return (
     <pre>
-      {JSON.stringify(
-        {
-          error,
-          families,
-        },
-        null,
-        2
-      )}
+      {JSON.stringify(data, null, 2)}
     </pre>
   );
 }

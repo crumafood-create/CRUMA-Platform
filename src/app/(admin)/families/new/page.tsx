@@ -6,10 +6,10 @@ export default async function NewFamilyPage() {
   const supabase = await createClient();
 
   const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name')
-    .is('deleted_at', null)
-    .order('name');
+  .from('categories')
+  .select('id, name, code_prefix')
+  .is('deleted_at', null)
+  .order('name');
 
   return (
     <main className="space-y-6">

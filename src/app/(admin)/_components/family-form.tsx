@@ -87,14 +87,10 @@ export function FamilyForm({
 
   return (
     <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
-
-      {/* INFORMACIÓN GENERAL */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Información General</h2>
 
         <div className="grid gap-4 md:grid-cols-2">
-          
-          {/* CATEGORÍA */}
           <div>
             <label className="mb-2 block font-medium">Categoría *</label>
             <select
@@ -112,7 +108,6 @@ export function FamilyForm({
             </select>
           </div>
 
-          {/* NOMBRE */}
           <div>
             <label className="mb-2 block font-medium">Nombre *</label>
             <input
@@ -126,7 +121,6 @@ export function FamilyForm({
             />
           </div>
 
-          {/* CÓDIGO INTERNO */}
           <div>
             <label className="mb-2 block font-medium">Código Interno *</label>
             <input
@@ -143,7 +137,6 @@ export function FamilyForm({
             </p>
           </div>
 
-          {/* SLUG */}
           <div>
             <label className="mb-2 block font-medium">Slug *</label>
             <input
@@ -160,7 +153,6 @@ export function FamilyForm({
             </p>
           </div>
 
-          {/* DESCRIPCIÓN */}
           <div className="md:col-span-2">
             <label className="mb-2 block font-medium">Descripción</label>
             <textarea
@@ -174,7 +166,6 @@ export function FamilyForm({
         </div>
       </section>
 
-      {/* CONFIGURACIÓN */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Configuración</h2>
 
@@ -191,7 +182,6 @@ export function FamilyForm({
         </div>
       </section>
 
-      {/* GUARDAR */}
       <div className="border-t pt-6">
         <button
           type="submit"
@@ -201,7 +191,6 @@ export function FamilyForm({
         </button>
       </div>
 
-      {/* ZONA PELIGROSA */}
       {familyId && onDelete && (
         <div className="border-t pt-6">
           <div className="rounded-lg border border-red-200 bg-red-50 p-6">
@@ -222,4 +211,4 @@ export function FamilyForm({
       )}
     </form>
   );
-        }
+      }

@@ -8,6 +8,7 @@ export default function AdminSidebar() {
       </h2>
 
       <nav className="flex flex-col gap-2">
+        {/* Dashboard */}
         <Link
           href="/dashboard"
           className="rounded px-2 py-1 hover:bg-gray-100"
@@ -15,9 +16,9 @@ export default function AdminSidebar() {
           🏠 Dashboard
         </Link>
 
-        {/* Catálogo */}
-        <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Catálogo
+        {/* Configuración Maestra */}
+        <div className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Configuración Maestra
         </div>
 
         <Link
@@ -35,32 +36,18 @@ export default function AdminSidebar() {
         </Link>
 
         <Link
-  href="/units-of-measure"
-  className="rounded px-2 py-1 hover:bg-gray-100"
->
-  ⚖️ Unidades de Medida
-</Link>
-
-        <Link
-  href="/warehouses"
-  className="rounded px-2 py-1 hover:bg-gray-100"
->
-  🏬 Almacenes
-</Link>
-        
-        <Link
-          href="/products"
+          href="/units-of-measure"
           className="rounded px-2 py-1 hover:bg-gray-100"
         >
-          📦 Productos
+          ⚖️ Unidades de Medida
         </Link>
 
         <Link
-          href="/raw-materials"
+          href="/warehouses"
           className="rounded px-2 py-1 hover:bg-gray-100"
         >
-          🥛 Materias Primas
-       </Link>
+          🏬 Almacenes
+        </Link>
 
         <Link
           href="/flavors"
@@ -69,9 +56,35 @@ export default function AdminSidebar() {
           🎨 Sabores
         </Link>
 
-        {/* Operaciones */}
-        <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Operaciones
+        {/* Productos */}
+        <div className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Productos
+        </div>
+
+        <Link
+          href="/raw-materials"
+          className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+          🥛 Materias Primas
+        </Link>
+
+        <Link
+          href="/products"
+          className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+          📦 Productos
+        </Link>
+
+        <Link
+          href="/recipes"
+          className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+          🧾 Recetas
+        </Link>
+
+        {/* Inventario */}
+        <div className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Inventario
         </div>
 
         <Link
@@ -89,6 +102,13 @@ export default function AdminSidebar() {
         </Link>
 
         <Link
+          href="/lots"
+          className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+          🔖 Lotes
+        </Link>
+
+        <Link
           href="/inventory/alerts"
           className="rounded px-2 py-1 hover:bg-gray-100"
         >
@@ -96,16 +116,9 @@ export default function AdminSidebar() {
         </Link>
 
         {/* Producción */}
-        <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Producción
         </div>
-
-        <Link
-          href="/recipes"
-          className="rounded px-2 py-1 hover:bg-gray-100"
-        >
-          🧾 Recetas
-        </Link>
 
         <Link
           href="/production-orders"
@@ -121,15 +134,8 @@ export default function AdminSidebar() {
           💰 Costos
         </Link>
 
-        <Link
-          href="/lots"
-          className="rounded px-2 py-1 hover:bg-gray-100"
-        >
-          🔖 Lotes
-        </Link>
-
         {/* Administración */}
-        <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Administración
         </div>
 

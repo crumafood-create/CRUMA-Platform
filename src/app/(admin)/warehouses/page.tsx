@@ -2,6 +2,14 @@ import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
+type Warehouse = {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  is_active: boolean | null;
+};
+
 export default async function WarehousesPage() {
   const supabase = await createClient();
 
@@ -19,7 +27,7 @@ export default async function WarehousesPage() {
     );
   }
 
-  const warehouseList = warehouses ?? [];
+  const warehouseList = (warehouses ?? []) as Warehouse[];
 
   return (
     <main className="space-y-6">
@@ -39,7 +47,7 @@ export default async function WarehousesPage() {
       <div className="rounded-2xl border p-6">
         {warehouseList.length > 0 ? (
           <div className="space-y-3">
-            {warehouseList.map((warehouse: any) => (
+            {warehouseList.map((warehouse) => (
               <div
                 key={warehouse.id}
                 className="flex items-center justify-between rounded-lg border p-4 hover:bg-gray-50"
@@ -66,6 +74,12 @@ export default async function WarehousesPage() {
                   <div className="mt-2 text-sm text-gray-500">
                     Código: {warehouse.code}
                   </div>
+
+                  {warehouse.description ? (
+                    <div className="mt-1 text-sm text-gray-500">
+                      {warehouse.description}
+                    </div>
+                  ) : null}
                 </div>
 
                 <Link

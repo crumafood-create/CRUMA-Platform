@@ -1,39 +1,40 @@
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createClient }
+from '@/infrastructure/integrations/supabase/server';
 
-import { UnitOfMeasureForm } from '@/app/(admin)/_components/unit-of-measure-form';
+import { UnitOfMeasureForm }
+from '@/app/(admin)/_components/unit-of-measure-form';
 
 import {
   updateUnitOfMeasure,
   deleteUnitOfMeasure,
 } from '../../actions';
 
-type PageProps = {
-  params: Promise<{ id: string }>;
-};
-
-export default async function EditUnitPage({
+export default async function EditUnitOfMeasurePage({
   params,
-}: PageProps) {
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
 
   const supabase = await createClient();
 
-  const { data: unit, error } = await supabase
-    .from('units_of_measure')
-    .select('id, name, code, is_active')
-    .eq('id', id)
-    .single();
+  const { data: unit } =
+    await supabase
+      .from('units_of_measure')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-  if (error || !unit) {
+  if (!unit) {
     notFound();
   }
 
   return (
     <main className="space-y-6">
       <h1 className="text-4xl font-bold">
-        Editar Unidad
+        Editar Unidad de Medida
       </h1>
 
       <UnitOfMeasureForm
@@ -52,9 +53,9 @@ export default async function EditUnitPage({
       >
         <button
           type="submit"
-          className="rounded border border-red-300 px-4 py-2"
+          className="rounded-lg border px-4 py-2"
         >
-          Eliminar Unidad
+          Eliminar
         </button>
       </form>
     </main>

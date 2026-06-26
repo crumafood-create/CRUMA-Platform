@@ -57,18 +57,10 @@ export default async function EditRawMaterialPage({
         categories={categories ?? []}
         families={families ?? []}
         unitsOfMeasure={unitsOfMeasure ?? []}
-        action={updateRawMaterial.bind(
-          null,
-          material.id
-        )}
+        action={updateRawMaterial.bind(null, material.id)}
       />
 
-      <form
-        action={deleteRawMaterial.bind(
-          null,
-          material.id
-        )}
-      >
+      <form action={deleteRawMaterial.bind(null, material.id)}>
         <button
           type="submit"
           className="rounded border border-red-300 px-4 py-2"

@@ -18,9 +18,7 @@ export default function NewWarehousePage() {
         </h1>
       </div>
 
-      <WarehouseForm
-        action={createWarehouse}
-      />
+      <WarehouseForm action={createWarehouse} />
     </main>
   );
 }

@@ -18,12 +18,11 @@ export default async function EditWarehousePage({
 
   const supabase = await createClient();
 
-  const { data: warehouse } =
-    await supabase
-      .from('warehouses')
-      .select('*')
-      .eq('id', id)
-      .single();
+  const { data: warehouse } = await supabase
+    .from('warehouses')
+    .select('*')
+    .eq('id', id)
+    .single();
 
   if (!warehouse) {
     notFound();
@@ -37,18 +36,10 @@ export default async function EditWarehousePage({
 
       <WarehouseForm
         initialValues={warehouse}
-        action={updateWarehouse.bind(
-          null,
-          warehouse.id
-        )}
+        action={updateWarehouse.bind(null, warehouse.id)}
       />
 
-      <form
-        action={deleteWarehouse.bind(
-          null,
-          warehouse.id
-        )}
-      >
+      <form action={deleteWarehouse.bind(null, warehouse.id)}>
         <button
           type="submit"
           className="rounded-lg border px-4 py-2"

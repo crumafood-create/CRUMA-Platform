@@ -67,26 +67,33 @@ export function RawMaterialForm({
   unitsOfMeasure,
   initialValues,
 }: RawMaterialFormProps) {
-  const [materialName, setMaterialName] =
-    useState(initialValues?.name ?? '');
+  const [materialName, setMaterialName] = useState(
+    initialValues?.name ?? ''
+  );
 
-  const [slug, setSlug] =
-    useState(initialValues?.slug ?? '');
+  const [slug, setSlug] = useState(
+    initialValues?.slug ?? ''
+  );
 
-  const [slugEdited, setSlugEdited] =
-    useState(!!initialValues?.slug);
+  const [slugEdited, setSlugEdited] = useState(
+    !!initialValues?.slug
+  );
 
-  const [internalCode, setInternalCode] =
-    useState(initialValues?.internal_code ?? '');
+  const [internalCode, setInternalCode] = useState(
+    initialValues?.internal_code ?? ''
+  );
 
-  const [codeEdited, setCodeEdited] =
-    useState(!!initialValues?.internal_code);
+  const [codeEdited, setCodeEdited] = useState(
+    !!initialValues?.internal_code
+  );
 
-  const [selectedCategory, setSelectedCategory] =
-    useState(initialValues?.category_id ?? '');
+  const [selectedCategory, setSelectedCategory] = useState(
+    initialValues?.category_id ?? ''
+  );
 
-  const [selectedFamily, setSelectedFamily] =
-    useState(initialValues?.family_id ?? '');
+  const [selectedFamily, setSelectedFamily] = useState(
+    initialValues?.family_id ?? ''
+  );
 
   const filteredFamilies =
     families?.filter(
@@ -94,11 +101,10 @@ export function RawMaterialForm({
         family.category_id === selectedCategory
     ) ?? [];
 
-  const selectedCategoryPrefix =
-    categories?.find(
-      (category) =>
-        category.id === selectedCategory
-    )?.code_prefix;
+  const selectedCategoryPrefix = categories?.find(
+    (category) =>
+      category.id === selectedCategory
+  )?.code_prefix;
 
   function handleNameChange(
     e: ChangeEvent<HTMLInputElement>
@@ -140,11 +146,10 @@ export function RawMaterialForm({
   ) {
     const categoryId = e.target.value;
 
-    const prefix =
-      categories?.find(
-        (category) =>
-          category.id === categoryId
-      )?.code_prefix;
+    const prefix = categories?.find(
+      (category) =>
+        category.id === categoryId
+    )?.code_prefix;
 
     setSelectedCategory(categoryId);
     setSelectedFamily('');
@@ -164,8 +169,6 @@ export function RawMaterialForm({
       action={action}
       className="space-y-8 rounded-2xl border bg-white p-6"
     >
-      {/* GENERAL */}
-
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">
           Información General
@@ -223,16 +226,12 @@ export function RawMaterialForm({
             <textarea
               name="description"
               rows={4}
-              defaultValue={
-                initialValues?.description
-              }
+              defaultValue={initialValues?.description ?? ''}
               className="w-full rounded-lg border p-3"
             />
           </div>
         </div>
       </section>
-
-      {/* CLASIFICACIÓN */}
 
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">
@@ -275,9 +274,7 @@ export function RawMaterialForm({
               name="family_id"
               value={selectedFamily}
               onChange={(e) =>
-                setSelectedFamily(
-                  e.target.value
-                )
+                setSelectedFamily(e.target.value)
               }
               disabled={!selectedCategory}
               className="w-full rounded-lg border p-3"
@@ -286,16 +283,14 @@ export function RawMaterialForm({
                 Seleccionar familia
               </option>
 
-              {filteredFamilies.map(
-                (family) => (
-                  <option
-                    key={family.id}
-                    value={family.id}
-                  >
-                    {family.name}
-                  </option>
-                )
-              )}
+              {filteredFamilies.map((family) => (
+                <option
+                  key={family.id}
+                  value={family.id}
+                >
+                  {family.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -307,8 +302,7 @@ export function RawMaterialForm({
             <select
               name="unit_of_measure_id"
               defaultValue={
-                initialValues?.unit_of_measure_id ??
-                ''
+                initialValues?.unit_of_measure_id ?? ''
               }
               className="w-full rounded-lg border p-3"
             >
@@ -316,22 +310,18 @@ export function RawMaterialForm({
                 Seleccionar unidad
               </option>
 
-              {unitsOfMeasure?.map(
-                (unit) => (
-                  <option
-                    key={unit.id}
-                    value={unit.id}
-                  >
-                    {unit.code} - {unit.name}
-                  </option>
-                )
-              )}
+              {unitsOfMeasure?.map((unit) => (
+                <option
+                  key={unit.id}
+                  value={unit.id}
+                >
+                  {unit.code} - {unit.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
       </section>
-
-      {/* INVENTARIO */}
 
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">
@@ -348,9 +338,7 @@ export function RawMaterialForm({
               type="number"
               step="0.0001"
               name="current_stock"
-              defaultValue={
-                initialValues?.current_stock ?? 0
-              }
+              defaultValue={initialValues?.current_stock ?? 0}
               className="w-full rounded-lg border p-3"
             />
           </div>
@@ -364,9 +352,7 @@ export function RawMaterialForm({
               type="number"
               step="0.0001"
               name="minimum_stock"
-              defaultValue={
-                initialValues?.minimum_stock ?? 0
-              }
+              defaultValue={initialValues?.minimum_stock ?? 0}
               className="w-full rounded-lg border p-3"
             />
           </div>
@@ -380,12 +366,11 @@ export function RawMaterialForm({
               type="number"
               step="0.0001"
               name="average_cost"
-              defaultValue={
-                initialValues?.average_cost ?? 0
-              }
+              defaultValue={initialValues?.average_cost ?? 0}
               className="w-full rounded-lg border p-3"
             />
           </div>
+
           <div>
             <label className="mb-2 block font-medium">
               Último Costo
@@ -396,13 +381,11 @@ export function RawMaterialForm({
               step="0.0001"
               name="last_cost"
               defaultValue={initialValues?.last_cost ?? 0}
-              className="w-full rounded border p-3"
+              className="w-full rounded-lg border p-3"
             />
-        </div>
+          </div>
         </div>
       </section>
-
-      {/* CONFIGURACIÓN */}
 
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">
@@ -412,19 +395,12 @@ export function RawMaterialForm({
         <select
           name="is_active"
           defaultValue={
-            initialValues?.is_active
-              ? 'true'
-              : 'false'
+            initialValues?.is_active ? 'true' : 'false'
           }
           className="w-full rounded-lg border p-3"
         >
-          <option value="true">
-            Activo
-          </option>
-
-          <option value="false">
-            Inactivo
-          </option>
+          <option value="true">Activo</option>
+          <option value="false">Inactivo</option>
         </select>
       </section>
 
@@ -438,4 +414,4 @@ export function RawMaterialForm({
       </div>
     </form>
   );
-      }
+}

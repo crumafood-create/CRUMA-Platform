@@ -42,6 +42,13 @@ export default function AdminSidebar() {
 </Link>
 
         <Link
+  href="/warehouses"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  🏬 Almacenes
+</Link>
+        
+        <Link
           href="/products"
           className="rounded px-2 py-1 hover:bg-gray-100"
         >

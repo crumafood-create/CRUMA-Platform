@@ -61,9 +61,7 @@ export function WarehouseForm({
             <textarea
               name="description"
               rows={3}
-              defaultValue={
-                initialValues?.description ?? ''
-              }
+              defaultValue={initialValues?.description ?? ''}
               className="w-full rounded-lg border p-3"
               placeholder="Almacén de materia prima."
             />
@@ -80,19 +78,12 @@ export function WarehouseForm({
           <select
             name="is_active"
             defaultValue={
-              initialValues?.is_active === false
-                ? 'false'
-                : 'true'
+              initialValues?.is_active === false ? 'false' : 'true'
             }
             className="rounded-lg border p-3"
           >
-            <option value="true">
-              Activo
-            </option>
-
-            <option value="false">
-              Inactivo
-            </option>
+            <option value="true">Activo</option>
+            <option value="false">Inactivo</option>
           </select>
 
           <span className="text-sm text-gray-600">

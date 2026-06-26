@@ -11,18 +11,20 @@ export async function createRawMaterial(
   const supabase = await createClient();
 
   const payload = {
-    name: formData.get('name'),
-    slug: formData.get('slug'),
-    internal_code: formData.get('internal_code'),
+    name: formData.get('name')?.toString() ?? null,
+    slug: formData.get('slug')?.toString() ?? null,
+    internal_code:
+      formData.get('internal_code')?.toString() ?? null,
 
     category_id:
-      formData.get('category_id') || null,
+      formData.get('category_id')?.toString() || null,
 
     family_id:
-      formData.get('family_id') || null,
+      formData.get('family_id')?.toString() || null,
 
     unit_of_measure_id:
-      formData.get('unit_of_measure_id') || null,
+      formData.get('unit_of_measure_id')?.toString() ||
+      null,
 
     current_stock:
       Number(formData.get('current_stock')) || 0,
@@ -37,31 +39,19 @@ export async function createRawMaterial(
       Number(formData.get('last_cost')) || 0,
 
     description:
-      formData.get('description'),
+      formData.get('description')?.toString() ?? null,
 
     is_active:
       formData.get('is_active') === 'true',
   };
-
-  console.log(
-    'RAW MATERIAL PAYLOAD',
-    payload
-  );
 
   const result = await supabase
     .from('raw_materials')
     .insert(payload)
     .select();
 
-  console.log(
-    'RAW MATERIAL RESULT',
-    JSON.stringify(result, null, 2)
-  );
-
   if (result.error) {
-    throw new Error(
-      JSON.stringify(result.error)
-    );
+    throw new Error(JSON.stringify(result.error));
   }
 
   revalidatePath('/raw-materials');
@@ -75,18 +65,20 @@ export async function updateRawMaterial(
   const supabase = await createClient();
 
   const payload = {
-    name: formData.get('name'),
-    slug: formData.get('slug'),
-    internal_code: formData.get('internal_code'),
+    name: formData.get('name')?.toString() ?? null,
+    slug: formData.get('slug')?.toString() ?? null,
+    internal_code:
+      formData.get('internal_code')?.toString() ?? null,
 
     category_id:
-      formData.get('category_id') || null,
+      formData.get('category_id')?.toString() || null,
 
     family_id:
-      formData.get('family_id') || null,
+      formData.get('family_id')?.toString() || null,
 
     unit_of_measure_id:
-      formData.get('unit_of_measure_id') || null,
+      formData.get('unit_of_measure_id')?.toString() ||
+      null,
 
     current_stock:
       Number(formData.get('current_stock')) || 0,
@@ -101,13 +93,12 @@ export async function updateRawMaterial(
       Number(formData.get('last_cost')) || 0,
 
     description:
-      formData.get('description'),
+      formData.get('description')?.toString() ?? null,
 
     is_active:
       formData.get('is_active') === 'true',
 
-    updated_at:
-      new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   const result = await supabase
@@ -116,15 +107,8 @@ export async function updateRawMaterial(
     .eq('id', materialId)
     .select();
 
-  console.log(
-    'UPDATE RAW MATERIAL RESULT',
-    JSON.stringify(result, null, 2)
-  );
-
   if (result.error) {
-    throw new Error(
-      JSON.stringify(result.error)
-    );
+    throw new Error(JSON.stringify(result.error));
   }
 
   revalidatePath('/raw-materials');
@@ -139,21 +123,13 @@ export async function deleteRawMaterial(
   const result = await supabase
     .from('raw_materials')
     .update({
-      deleted_at:
-        new Date().toISOString(),
+      deleted_at: new Date().toISOString(),
     })
     .eq('id', materialId)
     .select();
 
-  console.log(
-    'DELETE RAW MATERIAL RESULT',
-    JSON.stringify(result, null, 2)
-  );
-
   if (result.error) {
-    throw new Error(
-      JSON.stringify(result.error)
-    );
+    throw new Error(JSON.stringify(result.error));
   }
 
   revalidatePath('/raw-materials');

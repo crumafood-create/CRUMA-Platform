@@ -1,59 +1,116 @@
-interface Props {
+'use client';
+
+interface UnitOfMeasureFormProps {
   action: (formData: FormData) => Promise<void>;
   initialValues?: {
-    name?:      string;
-    code?:      string;
+    name?: string;
+    code?: string;
+    description?: string;
     is_active?: boolean;
   };
 }
 
-export function UnitOfMeasureForm({ action, initialValues }: Props) {
+export function UnitOfMeasureForm({
+  action,
+  initialValues,
+}: UnitOfMeasureFormProps) {
   return (
-    <form action={action} className="space-y-6 rounded-2xl border bg-white p-6">
+    <form
+      action={action}
+      className="space-y-8 rounded-2xl border bg-white p-6"
+    >
+      {/* Información General */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold">
+          Información General
+        </h2>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="mb-2 block font-medium">Nombre *</label>
-          <input
-            name="name"
-            required
-            defaultValue={initialValues?.name}
-            className="w-full rounded-lg border p-3"
-            placeholder="Mililitros"
-          />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block font-medium">
+              Nombre *
+            </label>
+
+            <input
+              name="name"
+              required
+              defaultValue={initialValues?.name ?? ''}
+              className="w-full rounded-lg border p-3"
+              placeholder="Gramo"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block font-medium">
+              Código *
+            </label>
+
+            <input
+              name="code"
+              required
+              defaultValue={initialValues?.code ?? ''}
+              className="w-full rounded-lg border p-3"
+              placeholder="g"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-2 block font-medium">
+              Descripción
+            </label>
+
+            <textarea
+              name="description"
+              rows={3}
+              defaultValue={
+                initialValues?.description ?? ''
+              }
+              className="w-full rounded-lg border p-3"
+              placeholder="Unidad de peso en gramos."
+            />
+          </div>
         </div>
+      </section>
 
-        <div>
-          <label className="mb-2 block font-medium">Código *</label>
-          <input
-            name="code"
-            required
-            defaultValue={initialValues?.code}
-            className="w-full rounded-lg border p-3"
-            placeholder="ML"
-          />
-          <p className="mt-1 text-xs text-gray-400">
-            Se guardará en mayúsculas. Ej: ML, KG, PZA
-          </p>
+      {/* Configuración */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold">
+          Configuración
+        </h2>
+
+        <div className="flex items-center gap-3">
+          <select
+            name="is_active"
+            defaultValue={
+              initialValues?.is_active === false
+                ? 'false'
+                : 'true'
+            }
+            className="rounded-lg border p-3"
+          >
+            <option value="true">
+              Activo
+            </option>
+
+            <option value="false">
+              Inactivo
+            </option>
+          </select>
+
+          <span className="text-sm text-gray-600">
+            Estado de la unidad de medida
+          </span>
         </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          name="is_active"
-          value="true"
-          defaultChecked={initialValues?.is_active ?? true}
-        />
-        <span>Activo</span>
-      </div>
+      </section>
 
       <div className="border-t pt-6">
-        <button type="submit" className="rounded border px-6 py-2">
-          Guardar
+        <button
+          type="submit"
+          className="rounded-lg border bg-blue-50 px-6 py-3 font-medium text-blue-700 hover:bg-blue-100"
+        >
+          Guardar Unidad
         </button>
       </div>
-
     </form>
   );
 }

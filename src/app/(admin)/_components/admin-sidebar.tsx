@@ -35,11 +35,11 @@ export default function AdminSidebar() {
         </Link>
 
         <Link
-          href="/units-of-measure"
-          className="rounded px-2 py-1 hover:bg-gray-100"
-        >
-          ⚖️ Unidades
-        </Link>
+  href="/units-of-measure"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  ⚖️ Unidades de Medida
+</Link>
 
         <Link
           href="/products"

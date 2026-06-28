@@ -3,6 +3,10 @@ import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
+type Product = {
+  name: string;
+};
+
 export default async function RecipePage({
   params,
 }: {
@@ -14,25 +18,29 @@ export default async function RecipePage({
 
   const supabase = await createClient();
 
-  const { data: recipe } =
-    await supabase
-      .from('recipes')
-      .select(`
-        id,
-        name,
-        description,
-        yield_quantity,
-        is_active,
-        products (
-          name
-        )
-      `)
-      .eq('id', id)
-      .single();
+  const { data: recipe } = await supabase
+    .from('recipes')
+    .select(`
+      id,
+      name,
+      description,
+      yield_quantity,
+      is_active,
+      products (
+        name
+      )
+    `)
+    .eq('id', id)
+    .single();
 
   if (!recipe) {
     notFound();
   }
+
+  const product =
+    Array.isArray(recipe.products)
+      ? (recipe.products as Product[])[0]
+      : (recipe.products as Product | null);
 
   return (
     <main className="space-y-6">
@@ -67,11 +75,7 @@ export default async function RecipePage({
             </div>
 
             <div className="font-semibold">
-              {
-                (recipe.products as {
-                  name: string;
-                })?.name
-              }
+              {product?.name ?? '-'}
             </div>
           </div>
 
@@ -81,7 +85,7 @@ export default async function RecipePage({
             </div>
 
             <div className="font-semibold">
-              {recipe.yield_quantity}
+              {recipe.yield_quantity ?? '-'}
             </div>
           </div>
 

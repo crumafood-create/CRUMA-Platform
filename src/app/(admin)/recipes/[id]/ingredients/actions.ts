@@ -4,36 +4,26 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-export async function createRecipeItem(
-  formData: FormData
-) {
+export async function createRecipeItem(formData: FormData) {
   const supabase = await createClient();
 
-  const recipe_id =
-    formData.get('recipe_id');
+  const recipeId = formData.get('recipe_id')?.toString() ?? '';
+  const ingredientId = formData.get('ingredient_id')?.toString() ?? '';
+  const quantity = Number(formData.get('quantity'));
 
-  const ingredient_id =
-    formData.get('ingredient_id');
+  if (!recipeId || !ingredientId || !quantity) {
+    throw new Error('Datos incompletos');
+  }
 
-  const quantity =
-    Number(
-      formData.get('quantity')
-    );
-
-  const { error } =
-    await supabase
-      .from('recipe_items')
-      .insert({
-        recipe_id,
-        ingredient_id,
-        quantity,
-      });
+  const { error } = await supabase.from('recipe_items').insert({
+    recipe_id: recipeId,
+    ingredient_id: ingredientId,
+    quantity,
+  });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  revalidatePath(
-    `/recipes/${recipe_id}/ingredients`
-  );
+  revalidatePath(`/recipes/${recipeId}/ingredients`);
 }

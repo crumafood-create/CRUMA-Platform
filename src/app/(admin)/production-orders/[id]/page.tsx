@@ -1,11 +1,50 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 import {
+  releaseProductionOrder,
   startProductionOrder,
   completeProductionOrder,
+  cancelProductionOrder,
 } from '../actions';
+
+type ProductionOrder = {
+  id: string;
+  order_number: string;
+  recipe_id: string;
+  planned_quantity: number;
+  produced_quantity: number | null;
+  status: string;
+  notes: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+type Recipe = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+function getStatusLabel(status: string): string {
+  switch (status) {
+    case 'draft':
+      return 'Borrador';
+    case 'released':
+      return 'Liberada';
+    case 'in_progress':
+      return 'En producción';
+    case 'completed':
+      return 'Completada';
+    case 'cancelled':
+      return 'Cancelada';
+    default:
+      return status;
+  }
+}
 
 export default async function ProductionOrderPage({
   params,
@@ -17,194 +56,151 @@ export default async function ProductionOrderPage({
 
   const { data: order } = await supabase
     .from('production_orders')
-    .select(`
-      *,
-      recipes (
-        id,
-        products (
-          id,
-          name
-        )
-      )
-    `)
+    .select(
+      'id, order_number, recipe_id, planned_quantity, produced_quantity, status, notes, started_at, completed_at, created_at'
+    )
     .eq('id', id)
     .single();
 
-  if (!order) notFound();
+  if (!order) {
+    notFound();
+  }
 
-  const { data: ingredients } = await supabase
-    .from('recipe_items')
-    .select(`
-      *,
-      products!recipe_items_ingredient_id_fkey (
-        id,
-        name
-      )
-    `)
-    .eq('recipe_id', order.recipe_id);
-
-  const ingredientIds =
-    (ingredients ?? []).map(
-      item => item.ingredient_id
-    );
-
-  const { data: stockRows } =
-    ingredientIds.length > 0
-      ? await supabase
-          .from('inventory_stock')
-          .select(
-            'product_id, quantity'
-          )
-          .in(
-            'product_id',
-            ingredientIds
-          )
-      : { data: [] };
-
-  const stockMap =
-    (stockRows ?? []).reduce<
-      Record<string, number>
-    >((acc, row) => {
-      acc[row.product_id] =
-        (acc[row.product_id] ?? 0) +
-        Number(row.quantity);
-
-      return acc;
-    }, {});
-
-  const canProduce =
-    (ingredients ?? []).every(
-      item => {
-        const required =
-          Number(item.quantity) *
-          Number(order.quantity);
-
-        const available =
-          stockMap[
-            item.ingredient_id
-          ] ?? 0;
-
-        return available >= required;
-      }
-    );
+  const { data: recipe } = await supabase
+    .from('recipes')
+    .select('id, name, description')
+    .eq('id', order.recipe_id)
+    .single();
 
   return (
     <main className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold">
-          Orden de Producción
-        </h1>
+        <div>
+          <h1 className="text-4xl font-bold">
+            Orden de Producción
+          </h1>
 
-        <div className="flex gap-3">
-          {order.status === 'draft' && (
-            <form
-              action={startProductionOrder.bind(
-                null,
-                order.id
-              )}
+          <p className="mt-1 text-sm text-gray-500">
+            {order.order_number}
+          </p>
+        </div>
+
+        <Link
+          href="/production-orders"
+          className="rounded border px-4 py-2"
+        >
+          Volver
+        </Link>
+      </div>
+
+      <div className="rounded-2xl border p-6 space-y-4">
+        <div>
+          <div className="text-sm text-gray-500">
+            Receta
+          </div>
+          <div className="font-semibold">
+            {recipe?.name ?? '-'}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-sm text-gray-500">
+            Rendimiento planeado
+          </div>
+          <div className="font-semibold">
+            {order.planned_quantity}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-sm text-gray-500">
+            Producido
+          </div>
+          <div className="font-semibold">
+            {order.produced_quantity ?? 0}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-sm text-gray-500">
+            Estado
+          </div>
+          <div className="font-semibold">
+            {getStatusLabel(order.status)}
+          </div>
+        </div>
+
+        {order.notes ? (
+          <div>
+            <div className="text-sm text-gray-500">
+              Notas
+            </div>
+            <div>{order.notes}</div>
+          </div>
+        ) : null}
+
+        {recipe?.description ? (
+          <div>
+            <div className="text-sm text-gray-500">
+              Descripción de receta
+            </div>
+            <div>{recipe.description}</div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        {order.status === 'draft' && (
+          <form action={releaseProductionOrder.bind(null, order.id)}>
+            <button
+              type="submit"
+              className="rounded border px-4 py-2"
             >
-              <button className="rounded border px-4 py-2">
-                Iniciar Producción
+              Liberar Orden
+            </button>
+          </form>
+        )}
+
+        {order.status === 'released' && (
+          <form action={startProductionOrder.bind(null, order.id)}>
+            <button
+              type="submit"
+              className="rounded border px-4 py-2"
+            >
+              Iniciar Producción
+            </button>
+          </form>
+        )}
+
+        {order.status === 'in_progress' && (
+          <form action={completeProductionOrder.bind(null, order.id)}>
+            <button
+              type="submit"
+              className="rounded border px-4 py-2"
+            >
+              Completar Producción
+            </button>
+          </form>
+        )}
+
+        {order.status !== 'completed' &&
+          order.status !== 'cancelled' && (
+            <form action={cancelProductionOrder.bind(null, order.id)}>
+              <button
+                type="submit"
+                className="rounded border border-red-300 px-4 py-2 text-red-700"
+              >
+                Cancelar
               </button>
             </form>
           )}
 
-          {order.status ===
-            'in_progress' &&
-            canProduce && (
-              <form
-                action={completeProductionOrder.bind(
-                  null,
-                  order.id
-                )}
-              >
-                <button className="rounded border px-4 py-2">
-                  Finalizar Producción
-                </button>
-              </form>
-            )}
-        </div>
-      </div>
-
-      <div className="rounded-2xl border p-6">
-        <h2 className="text-2xl font-semibold">
-          {order.recipes?.products?.[0]?.name}
-        </h2>
-
-        <p>
-          Cantidad: {order.quantity}
-        </p>
-
-        <p>
-          Estado: {order.status}
-        </p>
-      </div>
-
-      <div className="rounded-2xl border p-6">
-        <h2 className="mb-4 text-xl font-semibold">
-          Materia Prima Requerida
-        </h2>
-
-        {ingredients?.length ? (
-          <div className="space-y-3">
-            {ingredients.map(item => {
-              const required =
-                Number(item.quantity) *
-                Number(order.quantity);
-
-              const available =
-                stockMap[
-                  item.ingredient_id
-                ] ?? 0;
-
-              const enough =
-                available >= required;
-
-              return (
-                <div
-                  key={item.id}
-                  className="rounded border p-3"
-                >
-                  <div className="font-medium">
-                    {item.products?.[0]?.name}
-                  </div>
-
-                  <div className="text-sm text-gray-500">
-                    Fórmula:{' '}
-                    {item.quantity}
-                  </div>
-
-                  <div className="font-semibold">
-                    Requerido:{' '}
-                    {required}
-                  </div>
-
-                  <div>
-                    Disponible:{' '}
-                    {available}
-                  </div>
-
-                  <div
-                    className={
-                      enough
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }
-                  >
-                    {enough
-                      ? 'Stock suficiente'
-                      : 'Stock insuficiente'}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p>
-            Esta receta no tiene
-            ingredientes.
-          </p>
-        )}
+        <Link
+          href={`/recipes/${order.recipe_id}/ingredients`}
+          className="rounded border px-4 py-2"
+        >
+          Ver Ingredientes
+        </Link>
       </div>
     </main>
   );

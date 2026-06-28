@@ -1,58 +1,44 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-import { RecipeItemForm } from '@/app/(admin)/_components/recipe-item-form';
-
-import { createRecipeItem } from './actions';
-
-interface Props {
+export default async function RecipePage({
+  params,
+}: {
   params: Promise<{
     id: string;
   }>;
-}
-
-export default async function RecipeIngredientsPage({
-  params,
-}: Props) {
+}) {
   const { id } = await params;
 
-  const supabase =
-    await createClient();
+  const supabase = await createClient();
 
   const { data: recipe } =
     await supabase
       .from('recipes')
-      .select('id,name')
+      .select(`
+        id,
+        name,
+        description,
+        yield_quantity,
+        is_active,
+        products (
+          name
+        )
+      `)
       .eq('id', id)
       .single();
 
-  const {
-    data: materials,
-  } = await supabase
-    .from('raw_materials')
-    .select('id,name')
-    .eq('is_active', true)
-    .order('name');
-
-  const {
-    data: items,
-  } = await supabase
-    .from('recipe_items')
-    .select(`
-      *,
-      raw_materials (
-        name
-      )
-    `)
-    .eq('recipe_id', id);
+  if (!recipe) {
+    notFound();
+  }
 
   return (
     <main className="space-y-6">
-
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold">
-          Ingredientes
+          Receta
         </h1>
 
         <Link
@@ -64,50 +50,82 @@ export default async function RecipeIngredientsPage({
       </div>
 
       <div className="rounded-2xl border p-6">
-        <div className="mb-6 text-xl font-semibold">
-          {recipe?.name}
-        </div>
+        <div className="space-y-4">
+          <div>
+            <div className="text-sm text-gray-500">
+              Nombre
+            </div>
 
-        <RecipeItemForm
-  recipeId={id}
-  materials={materials ?? []}
-  action={createRecipeItem}
-/>
-      </div>
-
-      <div className="rounded-2xl border p-6">
-        <h2 className="mb-4 text-xl font-semibold">
-          Ingredientes
-        </h2>
-
-        {items?.length ? (
-          <div className="space-y-2">
-            {items.map(item => (
-              <div
-                key={item.id}
-                className="rounded border p-3"
-              >
-                <div>
-                  {
-                    item.raw_materials?.name
-                  }
-                </div>
-
-                <div className="text-sm text-gray-500">
-                  Cantidad:
-                  {' '}
-                  {item.quantity}
-                </div>
-              </div>
-            ))}
+            <div className="font-semibold">
+              {recipe.name}
+            </div>
           </div>
-        ) : (
-          <p>
-            No hay ingredientes.
-          </p>
-        )}
+
+          <div>
+            <div className="text-sm text-gray-500">
+              Producto
+            </div>
+
+            <div className="font-semibold">
+              {
+                (recipe.products as {
+                  name: string;
+                })?.name
+              }
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm text-gray-500">
+              Rendimiento
+            </div>
+
+            <div className="font-semibold">
+              {recipe.yield_quantity}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm text-gray-500">
+              Estado
+            </div>
+
+            <div className="font-semibold">
+              {recipe.is_active
+                ? 'Activa'
+                : 'Inactiva'}
+            </div>
+          </div>
+
+          {recipe.description && (
+            <div>
+              <div className="text-sm text-gray-500">
+                Descripción
+              </div>
+
+              <div>
+                {recipe.description}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
+      <div className="flex gap-3">
+        <Link
+          href={`/recipes/${recipe.id}/ingredients`}
+          className="rounded-lg border bg-blue-50 px-4 py-2 font-medium text-blue-700 hover:bg-blue-100"
+        >
+          Ingredientes
+        </Link>
+
+        <Link
+          href={`/recipes/${recipe.id}/edit`}
+          className="rounded-lg border px-4 py-2"
+        >
+          Editar
+        </Link>
+      </div>
     </main>
   );
 }

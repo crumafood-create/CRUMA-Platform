@@ -59,7 +59,7 @@ export default async function RecipeIngredientsPage({
   if (error || !recipe) {
     return (
       <main className="space-y-6">
-        <div className="flex justify-between">
+        <div className="flex items-center justify-between">
           <h1 className="text-4xl font-bold">
             Ingredientes
           </h1>
@@ -115,7 +115,11 @@ export default async function RecipeIngredientsPage({
 
       <div className="rounded-2xl border p-6">
         <form action={createRecipeItem} className="space-y-4">
-          <input type="hidden" name="recipe_id" value={recipe.id} />
+          <input
+            type="hidden"
+            name="recipe_id"
+            value={recipe.id}
+          />
 
           <div>
             <label className="mb-2 block font-medium">
@@ -133,7 +137,10 @@ export default async function RecipeIngredientsPage({
               </option>
 
               {materials?.map((material: RawMaterialRow) => (
-                <option key={material.id} value={material.id}>
+                <option
+                  key={material.id}
+                  value={material.id}
+                >
                   {material.name}
                 </option>
               ))}
@@ -173,7 +180,10 @@ export default async function RecipeIngredientsPage({
         {items?.length ? (
           <div className="space-y-3">
             {items.map((item: RecipeItemRow) => (
-              <div key={item.id} className="rounded border p-3">
+              <div
+                key={item.id}
+                className="rounded border p-3"
+              >
                 <div className="font-medium">
                   {materialMap.get(item.ingredient_id) ?? '-'}
                 </div>

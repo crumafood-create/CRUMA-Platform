@@ -14,12 +14,11 @@ type Recipe = {
 export default async function NewProductionOrderPage() {
   const supabase = await createClient();
 
-  const { data: recipes, error } =
-    await supabase
-      .from('recipes')
-      .select('id, name')
-      .eq('is_active', true)
-      .order('name');
+  const { data: recipes, error } = await supabase
+    .from('recipes')
+    .select('id, name')
+    .eq('is_active', true)
+    .order('name');
 
   if (error) {
     return (

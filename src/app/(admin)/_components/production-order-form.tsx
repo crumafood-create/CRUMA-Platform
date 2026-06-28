@@ -6,16 +6,19 @@ interface Recipe {
 }
 
 interface Props {
-  action: (
-    formData: FormData
-  ) => Promise<void>;
-
+  action: (formData: FormData) => Promise<void>;
   recipes: Recipe[];
+  initialValues?: {
+    recipe_id?: string;
+    planned_quantity?: number;
+    notes?: string;
+  };
 }
 
 export function ProductionOrderForm({
   action,
   recipes,
+  initialValues,
 }: Props) {
   return (
     <form
@@ -24,12 +27,13 @@ export function ProductionOrderForm({
     >
       <div>
         <label className="mb-2 block font-medium">
-          Receta
+          Receta *
         </label>
 
         <select
           name="recipe_id"
           required
+          defaultValue={initialValues?.recipe_id ?? ''}
           className="w-full rounded border p-3"
         >
           <option value="">
@@ -37,10 +41,7 @@ export function ProductionOrderForm({
           </option>
 
           {recipes.map((recipe) => (
-            <option
-              key={recipe.id}
-              value={recipe.id}
-            >
+            <option key={recipe.id} value={recipe.id}>
               {recipe.name}
             </option>
           ))}
@@ -49,16 +50,18 @@ export function ProductionOrderForm({
 
       <div>
         <label className="mb-2 block font-medium">
-          Cantidad a producir
+          Cantidad a producir *
         </label>
 
         <input
           type="number"
           step="0.0001"
           min="0.0001"
-          name="quantity"
+          name="planned_quantity"
           required
+          defaultValue={initialValues?.planned_quantity ?? 1}
           className="w-full rounded border p-3"
+          placeholder="100"
         />
       </div>
 
@@ -69,8 +72,10 @@ export function ProductionOrderForm({
 
         <textarea
           name="notes"
-          rows={3}
+          rows={4}
+          defaultValue={initialValues?.notes ?? ''}
           className="w-full rounded border p-3"
+          placeholder="Observaciones de producción..."
         />
       </div>
 

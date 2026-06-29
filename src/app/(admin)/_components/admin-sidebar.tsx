@@ -102,6 +102,13 @@ export default function AdminSidebar() {
         </Link>
 
         <Link
+           href="/inventory/adjustments"
+           className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+           🔄 Ajustes
+         </Link>
+
+        <Link
           href="/lots"
           className="rounded px-2 py-1 hover:bg-gray-100"
         >

@@ -89,8 +89,46 @@ export async function completeProductionOrder(orderId: string) {
     .from('production_orders')
     .select('id, planned_quantity, produced_quantity, status')
     .eq('id', orderId)
-    .single();
+    .single()
+    .insert({
+  item_type: 'product',
+  item_id:
+    order.recipes?.product_id,
 
+  movement_type: 'entry',
+
+  quantity: Number(
+    order.quantity
+  ),
+
+  reference_type:
+    'production_order',
+
+  reference_id: order.id,
+
+  notes:
+    'Producción terminada',
+})
+    .from('inventory_stock_by_item')
+.select('quantity')
+.eq(
+  'item_type',
+  'raw_material'
+)
+.eq(
+  'item_id',
+  item.ingredient_id
+)
+.single();
+
+  const available =
+  Number(stock?.quantity ?? 0);
+
+if (available < required) {
+  throw new Error(
+    `Stock insuficiente para el ingrediente ${item.ingredient_id}`
+  );
+}
   if (orderError || !order) {
     throw new Error(orderError?.message ?? 'Orden no encontrada');
   }
@@ -130,4 +168,4 @@ export async function cancelProductionOrder(orderId: string) {
 
   revalidatePath('/production-orders');
   revalidatePath(`/production-orders/${orderId}`);
-      }
+}

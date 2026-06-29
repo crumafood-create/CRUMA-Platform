@@ -5,6 +5,10 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
+/**
+ * Genera un número de orden único
+ * Formato: OP-YYYYMMDD-XXXXXX
+ */
 function generateOrderNumber(): string {
   const date = new Date();
   const yyyy = date.getFullYear();
@@ -15,6 +19,116 @@ function generateOrderNumber(): string {
   return `OP-${yyyy}${mm}${dd}-${random}`;
 }
 
+/**
+ * Obtiene el estado actual de una orden de producción
+ */
+async function getProductionOrder(
+  supabase: any,
+  orderId: string
+) {
+  const { data: order, error } = await supabase
+    .from('production_orders')
+    .select('id, planned_quantity, produced_quantity, status')
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) {
+    throw new Error(error?.message ?? 'Orden de producción no encontrada');
+  }
+
+  return order;
+}
+
+/**
+ * Valida que hay suficiente stock para los ingredientes de una receta
+ */
+async function validateRecipeStockAvailability(
+  supabase: any,
+  recipeId: string
+) {
+  const { data: recipe, error: recipeError } = await supabase
+    .from('recipes')
+    .select('id, ingredients(ingredient_id, required_quantity)')
+    .eq('id', recipeId)
+    .single();
+
+  if (recipeError || !recipe) {
+    throw new Error(recipeError?.message ?? 'Receta no encontrada');
+  }
+
+  if (!recipe.ingredients || recipe.ingredients.length === 0) {
+    return true; // Receta sin ingredientes es válida
+  }
+
+  // Validar stock disponible para cada ingrediente
+  for (const item of recipe.ingredients) {
+    const { data: stock, error: stockError } = await supabase
+      .from('inventory_stock_by_item')
+      .select('quantity')
+      .eq('item_type', 'raw_material')
+      .eq('item_id', item.ingredient_id)
+      .single();
+
+    if (stockError) {
+      throw new Error(
+        `No se puede verificar stock para ingrediente ${item.ingredient_id}`
+      );
+    }
+
+    const available = Number(stock?.quantity ?? 0);
+    const required = Number(item.required_quantity ?? 0);
+
+    if (available < required) {
+      throw new Error(
+        `Stock insuficiente para el ingrediente ${item.ingredient_id}. ` +
+        `Disponible: ${available}, Requerido: ${required}`
+      );
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Registra un movimiento de inventario
+ */
+async function createInventoryMovement(
+  supabase: any,
+  movement: {
+    item_type: 'product' | 'raw_material';
+    item_id: string;
+    movement_type: 'entry' | 'exit' | 'adjustment';
+    quantity: number;
+    reference_type: string;
+    reference_id: string;
+    notes?: string;
+  }
+) {
+  const { error } = await supabase
+    .from('inventory_movements')
+    .insert({
+      item_type: movement.item_type,
+      item_id: movement.item_id,
+      movement_type: movement.movement_type,
+      quantity: movement.quantity,
+      reference_type: movement.reference_type,
+      reference_id: movement.reference_id,
+      notes: movement.notes || null,
+      created_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    throw new Error(`Error al registrar movimiento de inventario: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// ACCIONES PRINCIPALES
+// ============================================================================
+
+/**
+ * Crea una nueva orden de producción
+ */
 export async function createProductionOrder(formData: FormData) {
   const supabase = await createClient();
 
@@ -22,10 +136,15 @@ export async function createProductionOrder(formData: FormData) {
   const plannedQuantity = Number(formData.get('planned_quantity'));
   const notes = formData.get('notes')?.toString().trim() || null;
 
+  // Validar inputs
   if (!recipeId || !plannedQuantity || plannedQuantity <= 0) {
     throw new Error('Receta y cantidad planeada son obligatorias');
   }
 
+  // Validar que la receta existe y hay stock disponible
+  await validateRecipeStockAvailability(supabase, recipeId);
+
+  // Crear la orden
   const { error } = await supabase.from('production_orders').insert({
     recipe_id: recipeId,
     order_number: generateOrderNumber(),
@@ -36,16 +155,29 @@ export async function createProductionOrder(formData: FormData) {
   });
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(`Error al crear orden de producción: ${error.message}`);
   }
 
   revalidatePath('/production-orders');
   redirect('/production-orders');
 }
 
+/**
+ * Libera una orden de producción (draft → released)
+ */
 export async function releaseProductionOrder(orderId: string) {
   const supabase = await createClient();
 
+  // Validar que la orden existe y está en estado correcto
+  const order = await getProductionOrder(supabase, orderId);
+
+  if (order.status !== 'draft') {
+    throw new Error(
+      `No se puede liberar una orden en estado ${order.status}`
+    );
+  }
+
+  // Actualizar estado
   const { error } = await supabase
     .from('production_orders')
     .update({
@@ -55,16 +187,29 @@ export async function releaseProductionOrder(orderId: string) {
     .eq('id', orderId);
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(`Error al liberar orden: ${error.message}`);
   }
 
   revalidatePath('/production-orders');
   revalidatePath(`/production-orders/${orderId}`);
 }
 
+/**
+ * Inicia la producción de una orden (released → in_progress)
+ */
 export async function startProductionOrder(orderId: string) {
   const supabase = await createClient();
 
+  // Validar que la orden existe y está en estado correcto
+  const order = await getProductionOrder(supabase, orderId);
+
+  if (order.status !== 'released') {
+    throw new Error(
+      `No se puede iniciar una orden en estado ${order.status}`
+    );
+  }
+
+  // Actualizar estado
   const { error } = await supabase
     .from('production_orders')
     .update({
@@ -75,65 +220,42 @@ export async function startProductionOrder(orderId: string) {
     .eq('id', orderId);
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(`Error al iniciar orden: ${error.message}`);
   }
 
   revalidatePath('/production-orders');
   revalidatePath(`/production-orders/${orderId}`);
 }
 
+/**
+ * Completa una orden de producción (in_progress → completed)
+ * Registra el movimiento de inventario del producto final
+ */
 export async function completeProductionOrder(orderId: string) {
   const supabase = await createClient();
 
-  const { data: order, error: orderError } = await supabase
-    .from('production_orders')
-    .select('id, planned_quantity, produced_quantity, status')
-    .eq('id', orderId)
-    .single()
-    .insert({
-  item_type: 'product',
-  item_id:
-    order.recipes?.product_id,
+  // 1. Obtener información de la orden
+  const order = await getProductionOrder(supabase, orderId);
 
-  movement_type: 'entry',
-
-  quantity: Number(
-    order.quantity
-  ),
-
-  reference_type:
-    'production_order',
-
-  reference_id: order.id,
-
-  notes:
-    'Producción terminada',
-})
-    .from('inventory_stock_by_item')
-.select('quantity')
-.eq(
-  'item_type',
-  'raw_material'
-)
-.eq(
-  'item_id',
-  item.ingredient_id
-)
-.single();
-
-  const available =
-  Number(stock?.quantity ?? 0);
-
-if (available < required) {
-  throw new Error(
-    `Stock insuficiente para el ingrediente ${item.ingredient_id}`
-  );
-}
-  if (orderError || !order) {
-    throw new Error(orderError?.message ?? 'Orden no encontrada');
+  if (order.status !== 'in_progress') {
+    throw new Error(
+      `No se puede completar una orden en estado ${order.status}`
+    );
   }
 
-  const { error } = await supabase
+  // 2. Obtener información de la receta (incluyendo producto)
+  const { data: productionOrder, error: orderError } = await supabase
+    .from('production_orders')
+    .select('recipe_id, recipes(product_id)')
+    .eq('id', orderId)
+    .single();
+
+  if (orderError || !productionOrder?.recipes?.product_id) {
+    throw new Error('No se pudo obtener el producto de la receta');
+  }
+
+  // 3. Actualizar estado de la orden
+  const { error: updateError } = await supabase
     .from('production_orders')
     .update({
       status: 'completed',
@@ -143,17 +265,44 @@ if (available < required) {
     })
     .eq('id', orderId);
 
-  if (error) {
-    throw new Error(error.message);
+  if (updateError) {
+    throw new Error(`Error al completar orden: ${updateError.message}`);
   }
+
+  // 4. Registrar movimiento de inventario (entrada de producto)
+  await createInventoryMovement(supabase, {
+    item_type: 'product',
+    item_id: productionOrder.recipes.product_id,
+    movement_type: 'entry',
+    quantity: order.planned_quantity,
+    reference_type: 'production_order',
+    reference_id: orderId,
+    notes: 'Producción terminada',
+  });
 
   revalidatePath('/production-orders');
   revalidatePath(`/production-orders/${orderId}`);
 }
 
+/**
+ * Cancela una orden de producción
+ * Solo se puede cancelar si está en estado draft o released
+ */
 export async function cancelProductionOrder(orderId: string) {
   const supabase = await createClient();
 
+  // Validar que la orden existe y está en estado correcto
+  const order = await getProductionOrder(supabase, orderId);
+
+  const cancelableStates = ['draft', 'released'];
+  if (!cancelableStates.includes(order.status)) {
+    throw new Error(
+      `No se puede cancelar una orden en estado ${order.status}. ` +
+      `Solo se pueden cancelar órdenes en estado: ${cancelableStates.join(', ')}`
+    );
+  }
+
+  // Actualizar estado
   const { error } = await supabase
     .from('production_orders')
     .update({
@@ -163,7 +312,7 @@ export async function cancelProductionOrder(orderId: string) {
     .eq('id', orderId);
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(`Error al cancelar orden: ${error.message}`);
   }
 
   revalidatePath('/production-orders');

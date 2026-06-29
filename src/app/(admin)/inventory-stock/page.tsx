@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 type Product = {
@@ -10,6 +12,12 @@ type RawMaterial = {
   id: string;
   name: string;
   internal_code: string | null;
+};
+
+type StockRow = {
+  item_type: 'product' | 'raw_material';
+  item_id: string;
+  quantity: number;
 };
 
 export default async function InventoryStockPage() {
@@ -27,19 +35,16 @@ export default async function InventoryStockPage() {
     throw new Error(stockError.message);
   }
 
+  const typedStock = (stock ?? []) as StockRow[];
+
   const productIds =
-    stock
-      ?.filter(
-        (row) => row.item_type === 'product',
-      )
+    typedStock
+      .filter((row) => row.item_type === 'product')
       .map((row) => row.item_id) ?? [];
 
   const materialIds =
-    stock
-      ?.filter(
-        (row) =>
-          row.item_type === 'raw_material',
-      )
+    typedStock
+      .filter((row) => row.item_type === 'raw_material')
       .map((row) => row.item_id) ?? [];
 
   const [
@@ -49,46 +54,42 @@ export default async function InventoryStockPage() {
     productIds.length > 0
       ? supabase
           .from('products')
-          .select(`
+          .select(
+            `
             id,
             name,
             internal_code
-          `)
+          `
+          )
           .in('id', productIds)
-      : Promise.resolve({
-          data: [],
-        }),
+      : Promise.resolve({ data: [] }),
 
     materialIds.length > 0
       ? supabase
           .from('raw_materials')
-          .select(`
+          .select(
+            `
             id,
             name,
             internal_code
-          `)
+          `
+          )
           .in('id', materialIds)
-      : Promise.resolve({
-          data: [],
-        }),
+      : Promise.resolve({ data: [] }),
   ]);
 
   const productMap = new Map(
-    (products ?? []).map(
-      (product: Product) => [
-        product.id,
-        product,
-      ],
-    ),
+    (products ?? []).map((product: Product) => [
+      product.id,
+      product,
+    ])
   );
 
   const materialMap = new Map(
-    (materials ?? []).map(
-      (material: RawMaterial) => [
-        material.id,
-        material,
-      ],
-    ),
+    (materials ?? []).map((material: RawMaterial) => [
+      material.id,
+      material,
+    ])
   );
 
   return (
@@ -98,59 +99,53 @@ export default async function InventoryStockPage() {
       </h1>
 
       <div className="rounded-2xl border p-6">
-        {stock?.length ? (
+        {typedStock.length > 0 ? (
           <div className="space-y-3">
-            {stock.map((row, index) => {
+            {typedStock.map((row, index) => {
               const item =
-                row.item_type ===
-                'raw_material'
-                  ? materialMap.get(
-                      row.item_id,
-                    )
-                  : productMap.get(
-                      row.item_id,
-                    );
+                row.item_type === 'raw_material'
+                  ? materialMap.get(row.item_id)
+                  : productMap.get(row.item_id);
 
               return (
                 <div
-                  key={
-                    row.item_id ??
-                    index
-                  }
+                  key={row.item_id ?? index}
                   className="rounded border p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold">
-                        {item?.name ??
-                          '-'}
+                        {item?.name ?? '-'}
                       </div>
 
                       <div className="text-sm text-gray-500">
-                        {item?.internal_code ??
-                          '-'}
+                        {item?.internal_code ?? '-'}
                       </div>
                     </div>
 
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        row.item_type ===
-                        'raw_material'
+                        row.item_type === 'raw_material'
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-blue-100 text-blue-800'
                       }`}
                     >
-                      {row.item_type ===
-                      'raw_material'
+                      {row.item_type === 'raw_material'
                         ? 'Materia Prima'
                         : 'Producto'}
                     </span>
                   </div>
 
                   <div className="mt-4 text-lg font-bold">
-                    Stock:{' '}
-                    {row.quantity}
+                    Stock: {row.quantity}
                   </div>
+
+                  <Link
+                    href={`/inventory/kardex/${row.item_type}/${row.item_id}`}
+                    className="mt-3 inline-block rounded border px-3 py-2 text-sm hover:bg-gray-50"
+                  >
+                    Ver Kardex
+                  </Link>
                 </div>
               );
             })}

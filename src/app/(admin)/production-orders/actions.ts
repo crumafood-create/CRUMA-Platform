@@ -227,6 +227,56 @@ export async function startProductionOrder(orderId: string) {
   revalidatePath(`/production-orders/${orderId}`);
 }
 
+export async function cancelProductionOrder(
+  orderId: string
+) {
+  const supabase = await createClient();
+
+  const order = await getProductionOrder(
+    supabase,
+    orderId
+  );
+
+  const cancelableStates = [
+    'draft',
+    'released',
+  ];
+
+  if (
+    !cancelableStates.includes(
+      order.status
+    )
+  ) {
+    throw new Error(
+      `No se puede cancelar una orden en estado ${order.status}`
+    );
+  }
+
+  const { error } =
+    await supabase
+      .from('production_orders')
+      .update({
+        status: 'cancelled',
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq('id', orderId);
+
+  if (error) {
+    throw new Error(
+      error.message
+    );
+  }
+
+  revalidatePath(
+    '/production-orders'
+  );
+
+  revalidatePath(
+    `/production-orders/${orderId}`
+  );
+}
+
 /**
  * Completa una orden de producción
  * Consume materias primas y genera producto terminado

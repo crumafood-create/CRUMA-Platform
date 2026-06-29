@@ -115,6 +115,13 @@ export default function AdminSidebar() {
           🚨 Alertas
         </Link>
 
+        <Link
+          href="/inventory/adjustments"
+          className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+         🔄 Ajustes
+        </Link>
+
         {/* Producción */}
         <div className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Producción

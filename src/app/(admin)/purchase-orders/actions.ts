@@ -85,6 +85,105 @@ async function updatePurchaseOrderStatus(
   }
 }
 
+export async function receivePurchaseOrderItem(
+  itemId: string,
+  quantityReceived: number,
+) {
+  const supabase =
+    await createClient();
+
+  const { data: item, error } =
+    await supabase
+      .from(
+        'purchase_order_items',
+      )
+      .select('*')
+      .eq('id', itemId)
+      .single();
+
+  if (error || !item) {
+    throw new Error(
+      'Item no encontrado',
+    );
+  }
+
+  const pending =
+    Number(item.quantity) -
+    Number(
+      item.received_quantity ??
+        0,
+    );
+
+  if (
+    quantityReceived <= 0 ||
+    quantityReceived > pending
+  ) {
+    throw new Error(
+      'Cantidad inválida',
+    );
+  }
+
+  const newReceived =
+    Number(
+      item.received_quantity ??
+        0,
+    ) + quantityReceived;
+
+  const { error: itemError } =
+    await supabase
+      .from(
+        'purchase_order_items',
+      )
+      .update({
+        received_quantity:
+          newReceived,
+      })
+      .eq('id', item.id);
+
+  if (itemError) {
+    throw new Error(
+      itemError.message,
+    );
+  }
+
+  await createInventoryMovement(
+    supabase,
+    {
+      item_type:
+        'raw_material',
+      item_id:
+        item.raw_material_id,
+      movement_type:
+        'entry',
+      quantity:
+        quantityReceived,
+      reference_type:
+        'purchase_order',
+      reference_id:
+        item.purchase_order_id,
+      notes:
+        'Recepción parcial',
+    },
+  );
+
+  await updatePurchaseOrderStatus(
+    supabase,
+    item.purchase_order_id,
+  );
+
+  revalidatePath(
+    `/purchase-orders/${item.purchase_order_id}`,
+  );
+
+  revalidatePath(
+    '/purchase-orders',
+  );
+
+  revalidatePath(
+    '/inventory-stock',
+  );
+}
+
 export async function createPurchaseOrder(formData: FormData) {
   const supabase = await createClient();
 

@@ -86,6 +86,62 @@ export default async function SalesOrderPage({
       >
         Productos
       </Link>
+
+      {order.status ===
+  'draft' && (
+  <form
+    action={confirmSalesOrder.bind(
+      null,
+      order.id,
+    )}
+  >
+    <button className="rounded border px-4 py-2">
+      Confirmar
+    </button>
+  </form>
+)}
+
+{order.status ===
+  'confirmed' && (
+  <form
+    action={startPreparingSalesOrder.bind(
+      null,
+      order.id,
+    )}
+  >
+    <button className="rounded border px-4 py-2">
+      Preparar
+    </button>
+  </form>
+)}
+
+{order.status ===
+  'preparing' && (
+  <form
+    action={markSalesOrderReady.bind(
+      null,
+      order.id,
+    )}
+  >
+    <button className="rounded border px-4 py-2">
+      Listo
+    </button>
+  </form>
+)}
+
+{order.status ===
+  'ready' && (
+  <form
+    action={deliverSalesOrder.bind(
+      null,
+      order.id,
+    )}
+  >
+    <button className="rounded border px-4 py-2">
+      Entregar
+    </button>
+  </form>
+)}
     </main>
   );
 }

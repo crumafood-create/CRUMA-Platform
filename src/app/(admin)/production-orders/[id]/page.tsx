@@ -365,6 +365,13 @@ export default async function ProductionOrderPage({
         >
           Ver Ingredientes
         </Link>
+
+        <Link
+         href={`/production-orders/${order.id}/consumptions`}
+         className="rounded border px-4 py-2"
+        >
+          Ver Consumos
+       </Link>
       </div>
     </main>
   );

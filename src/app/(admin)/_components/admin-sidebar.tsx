@@ -82,6 +82,13 @@ export default function AdminSidebar() {
           🧾 Recetas
         </Link>
 
+        <Link
+          href="/purchase-orders"
+          className="rounded px-2 py-1 hover:bg-gray-100"
+        >
+          🛒 Compras
+        </Link>
+
         {/* Inventario */}
         <div className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Inventario

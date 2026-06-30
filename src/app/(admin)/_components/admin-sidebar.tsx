@@ -166,6 +166,32 @@ export default function AdminSidebar() {
         >
           👥 Usuarios
         </Link>
+
+        {/* Ventas */}
+<div className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
+  Ventas
+</div>
+
+<Link
+  href="/customers"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  👤 Clientes
+</Link>
+
+<Link
+  href="/sales-orders"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  🛒 Pedidos
+</Link>
+
+<Link
+  href="/accounts-receivable"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  💳 Cuentas por Cobrar
+</Link>
       </nav>
     </aside>
   );

@@ -19,6 +19,72 @@ function generateOrderNumber() {
   return `PO-${yyyy}${mm}${dd}-${random}`;
 }
 
+async function updatePurchaseOrderStatus(
+  supabase: any,
+  orderId: string,
+) {
+  const { data: items, error } =
+    await supabase
+      .from('purchase_order_items')
+      .select(`
+        quantity,
+        received_quantity
+      `)
+      .eq(
+        'purchase_order_id',
+        orderId,
+      );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const total =
+    (items ?? []).reduce(
+      (sum, item) =>
+        sum +
+        Number(item.quantity),
+      0,
+    );
+
+  const received =
+    (items ?? []).reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.received_quantity ??
+            0,
+        ),
+      0,
+    );
+
+  let status =
+    'released';
+
+  if (received > 0) {
+    status =
+      received >= total
+        ? 'received'
+        : 'partially_received';
+  }
+
+  const { error: updateError } =
+    await supabase
+      .from('purchase_orders')
+      .update({
+        status,
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq('id', orderId);
+
+  if (updateError) {
+    throw new Error(
+      updateError.message,
+    );
+  }
+}
+
 export async function createPurchaseOrder(formData: FormData) {
   const supabase = await createClient();
 

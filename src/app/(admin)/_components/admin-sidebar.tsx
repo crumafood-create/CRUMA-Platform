@@ -192,6 +192,13 @@ export default function AdminSidebar() {
 >
   💳 Cuentas por Cobrar
 </Link>
+
+        <Link
+  href="/mrp"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  🏭 Planeación (MRP)
+</Link>
       </nav>
     </aside>
   );

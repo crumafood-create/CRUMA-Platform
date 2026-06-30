@@ -128,6 +128,13 @@ export default async function PurchaseOrdersPage() {
                   >
                     Ver Compra
                   </Link>
+
+                  <Link
+                    href={`/purchase-orders/${order.id}/items`}
+                    className="mt-2 ml-2 inline-block rounded border px-3 py-2 text-sm"
+                  >
+                    Items
+                  </Link>
                 </div>
               ),
             )}

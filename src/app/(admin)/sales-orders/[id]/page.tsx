@@ -87,6 +87,13 @@ export default async function SalesOrderPage({
         Productos
       </Link>
 
+      <Link
+  href={`/sales-orders/${order.id}/profit`}
+  className="rounded border px-4 py-2"
+>
+  📊 Utilidad
+</Link>
+
       {order.status ===
   'draft' && (
   <form

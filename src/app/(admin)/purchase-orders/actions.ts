@@ -124,6 +124,19 @@ export async function receivePurchaseOrder(orderId: string) {
     .from('inventory_movements')
     .insert(movements);
 
+  for (const item of items ?? []) {
+  const { error } = await supabase
+    .from('purchase_order_items')
+    .update({
+      received_quantity: Number(item.quantity),
+    })
+    .eq('id', item.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  }
+
   if (movementError) {
     throw new Error(movementError.message);
   }

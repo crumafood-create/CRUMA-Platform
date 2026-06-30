@@ -417,6 +417,136 @@ export async function completeProductionOrder(
     );
   }
 
+  for (const item of ingredients ?? []) {
+  let pendingQuantity =
+    Number(item.quantity) *
+    Number(order.planned_quantity);
+
+  const { data: lots } =
+    await supabase
+      .from('inventory_lots')
+      .select(`
+        id,
+        quantity,
+        lot_number
+      `)
+      .eq(
+        'item_type',
+        'raw_material'
+      )
+      .eq(
+        'item_id',
+        item.ingredient_id
+      )
+      .gt(
+        'quantity',
+        0
+      )
+      .order(
+        'expiration_date',
+        {
+          ascending: true,
+        }
+      )
+      .order(
+        'created_at',
+        {
+          ascending: true,
+        }
+      );
+
+  if (!lots?.length) {
+    throw new Error(
+      `No existe stock para el ingrediente ${item.ingredient_id}`
+    );
+  }
+
+  for (const lot of lots) {
+    if (pendingQuantity <= 0) {
+      break;
+    }
+
+    const available =
+      Number(lot.quantity);
+
+    const consumed =
+      Math.min(
+        available,
+        pendingQuantity
+      );
+
+    const remaining =
+      available -
+      consumed;
+
+    await supabase
+      .from('inventory_lots')
+      .update({
+        quantity:
+          remaining,
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq(
+        'id',
+        lot.id
+      );
+
+    await supabase
+      .from(
+        'production_lot_consumptions'
+      )
+      .insert({
+        production_order_id:
+          orderId,
+
+        inventory_lot_id:
+          lot.id,
+
+        raw_material_id:
+          item.ingredient_id,
+
+        quantity:
+          consumed,
+      });
+
+    await createInventoryMovement(
+      supabase,
+      {
+        item_type:
+          'raw_material',
+
+        item_id:
+          item.ingredient_id,
+
+        movement_type:
+          'exit',
+
+        quantity:
+          consumed,
+
+        reference_type:
+          'production_order',
+
+        reference_id:
+          orderId,
+
+        notes:
+          `Consumo lote ${lot.lot_number}`,
+      }
+    );
+
+    pendingQuantity -=
+      consumed;
+  }
+
+  if (pendingQuantity > 0) {
+    throw new Error(
+      `Stock insuficiente para ${item.ingredient_id}`
+    );
+  }
+  }
+
   // 6. Registrar entrada del producto terminado
   await createInventoryMovement(
     supabase,
@@ -444,6 +574,19 @@ export async function completeProductionOrder(
         'Producción terminada',
     }
   );
+
+  await supabase
+  .from('production_orders')
+  .update({
+    status: 'completed',
+    produced_quantity:
+      order.planned_quantity,
+    completed_at:
+      new Date().toISOString(),
+    updated_at:
+      new Date().toISOString(),
+  })
+  .eq('id', orderId);
 
   // 7. Completar orden
   const {
@@ -479,4 +622,20 @@ export async function completeProductionOrder(
   revalidatePath(
     `/production-orders/${orderId}`
   );
+
+  revalidatePath(
+  '/production-orders'
+);
+
+revalidatePath(
+  `/production-orders/${orderId}`
+);
+
+revalidatePath(
+  '/inventory-stock'
+);
+
+revalidatePath(
+  '/inventory'
+);
 }

@@ -1,0 +1,230 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+
+import { createClient } from '@/infrastructure/integrations/supabase/server';
+
+export async function calculateDemandForecasts(
+  periodDays = 30,
+  horizonDays = 14,
+) {
+  const supabase =
+    await createClient();
+
+  //
+  // Productos
+  //
+  const {
+    data: products,
+    error: productsError,
+  } = await supabase
+    .from('products')
+    .select(`
+      id,
+      name
+    `);
+
+  if (productsError) {
+    throw new Error(
+      productsError.message,
+    );
+  }
+
+  for (const product of products ?? []) {
+    //
+    // Ventas entregadas
+    //
+    const {
+      data: sales,
+      error: salesError,
+    } = await supabase
+      .from(
+        'sales_order_items',
+      )
+      .select(`
+        quantity,
+        sales_orders (
+          status,
+          created_at
+        )
+      `)
+      .eq(
+        'product_id',
+        product.id,
+      );
+
+    if (salesError) {
+      throw new Error(
+        salesError.message,
+      );
+    }
+
+    const cutoff =
+      new Date();
+
+    cutoff.setDate(
+      cutoff.getDate() -
+        periodDays,
+    );
+
+    let sold = 0;
+
+    for (
+      const row of sales ??
+      []
+    ) {
+      const order =
+        Array.isArray(
+          row.sales_orders,
+        )
+          ? row.sales_orders[0]
+          : row.sales_orders;
+
+      if (!order) {
+        continue;
+      }
+
+      if (
+        order.status !==
+        'delivered'
+      ) {
+        continue;
+      }
+
+      const created =
+        new Date(
+          order.created_at,
+        );
+
+      if (
+        created <
+        cutoff
+      ) {
+        continue;
+      }
+
+      sold += Number(
+        row.quantity,
+      );
+    }
+
+    //
+    // Promedio diario
+    //
+    const averageDaily =
+      sold /
+      periodDays;
+
+    //
+    // Pronóstico
+    //
+    const forecast =
+      averageDaily *
+      horizonDays;
+
+    //
+    // Stock
+    //
+    const {
+      data: stock,
+    } = await supabase
+      .from(
+        'inventory_stock_by_item',
+      )
+      .select(`
+        quantity
+      `)
+      .eq(
+        'item_type',
+        'product',
+      )
+      .eq(
+        'item_id',
+        product.id,
+      )
+      .single();
+
+    const stockQuantity =
+      Number(
+        stock?.quantity ??
+          0,
+      );
+
+    //
+    // Producción sugerida
+    //
+    const suggested =
+      Math.max(
+        forecast -
+          stockQuantity,
+        0,
+      );
+
+    //
+    // Guardar
+    //
+    const {
+      error:
+        upsertError,
+    } = await supabase
+      .from(
+        'demand_forecasts',
+      )
+      .upsert(
+        {
+          product_id:
+            product.id,
+
+          period_days:
+            periodDays,
+
+          average_daily_demand:
+            Number(
+              averageDaily.toFixed(
+                4,
+              ),
+            ),
+
+          forecast_quantity:
+            Number(
+              forecast.toFixed(
+                4,
+              ),
+            ),
+
+          stock_quantity:
+            Number(
+              stockQuantity.toFixed(
+                4,
+              ),
+            ),
+
+          suggested_production:
+            Number(
+              suggested.toFixed(
+                4,
+              ),
+            ),
+
+          updated_at:
+            new Date().toISOString(),
+        },
+        {
+          onConflict:
+            'product_id,period_days',
+        },
+      );
+
+    if (
+      upsertError
+    ) {
+      throw new Error(
+        upsertError.message,
+      );
+    }
+  }
+
+  revalidatePath(
+    '/demand-forecasts',
+  );
+}

@@ -228,3 +228,119 @@ export async function calculateDemandForecasts(
     '/demand-forecasts',
   );
 }
+
+export async function createProductionOrderFromForecast(
+  productId: string,
+) {
+  const supabase =
+    await createClient();
+
+  //
+  // Pronóstico
+  //
+  const {
+    data: forecast,
+    error: forecastError,
+  } = await supabase
+    .from('demand_forecasts')
+    .select('*')
+    .eq(
+      'product_id',
+      productId,
+    )
+    .single();
+
+  if (
+    forecastError ||
+    !forecast
+  ) {
+    throw new Error(
+      forecastError?.message ??
+        'Pronóstico no encontrado',
+    );
+  }
+
+  const quantity =
+    Number(
+      forecast.suggested_production,
+    );
+
+  if (quantity <= 0) {
+    throw new Error(
+      'No hay producción sugerida.',
+    );
+  }
+
+  //
+  // Buscar receta activa
+  //
+  const {
+    data: recipe,
+    error: recipeError,
+  } = await supabase
+    .from('recipes')
+    .select(`
+      id,
+      name
+    `)
+    .eq(
+      'product_id',
+      productId,
+    )
+    .eq(
+      'is_active',
+      true,
+    )
+    .single();
+
+  if (
+    recipeError ||
+    !recipe
+  ) {
+    throw new Error(
+      'El producto no tiene receta activa.',
+    );
+  }
+
+  //
+  // Crear orden
+  //
+  const {
+    error:
+      productionError,
+  } = await supabase
+    .from(
+      'production_orders',
+    )
+    .insert({
+      recipe_id:
+        recipe.id,
+
+      planned_quantity:
+        quantity,
+
+      produced_quantity: 0,
+
+      production_status:
+        'draft',
+
+      notes:
+        'Generada desde Forecast',
+    });
+
+  if (
+    productionError
+  ) {
+    throw new Error(
+      productionError.message,
+    );
+  }
+
+  revalidatePath(
+    '/production-orders',
+  );
+
+  revalidatePath(
+    '/demand-forecasts',
+  );
+}

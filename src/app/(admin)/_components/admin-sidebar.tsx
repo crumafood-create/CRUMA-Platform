@@ -213,6 +213,12 @@ export default function AdminSidebar() {
 >
   📈 Pronóstico
 </Link>
+        <Link
+  href="/dashboard"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  📊 Dashboard
+</Link>
       </nav>
     </aside>
   );

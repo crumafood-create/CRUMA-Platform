@@ -4,6 +4,30 @@ import {
   markNotificationAsRead,
 } from './actions';
 
+import {
+  markNotificationAsRead,
+  generateSystemNotifications,
+} from './actions';
+
+<div className="flex items-center justify-between">
+  <h1 className="text-4xl font-bold">
+    Notificaciones
+  </h1>
+
+  <form
+    action={
+      generateSystemNotifications
+    }
+  >
+    <button
+      type="submit"
+      className="rounded border px-4 py-2"
+    >
+      Actualizar
+    </button>
+  </form>
+</div>
+
 export default async function NotificationsPage() {
   const supabase =
     await createClient();

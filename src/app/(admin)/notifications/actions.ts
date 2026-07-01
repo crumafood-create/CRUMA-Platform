@@ -258,3 +258,81 @@ export async function generateSystemNotifications() {
     '/dashboard',
   );
 }
+
+//
+// REORDEN AUTOMÁTICO
+//
+const {
+  data: materials,
+} = await supabase
+  .from('raw_materials')
+  .select(`
+    id,
+    name,
+    minimum_stock,
+    reorder_quantity
+  `);
+
+for (const material of materials ?? []) {
+  const {
+    data: stock,
+  } = await supabase
+    .from(
+      'inventory_stock_by_item',
+    )
+    .select(`
+      quantity
+    `)
+    .eq(
+      'item_type',
+      'raw_material',
+    )
+    .eq(
+      'item_id',
+      material.id,
+    )
+    .single();
+
+  const quantity =
+    Number(
+      stock?.quantity ?? 0,
+    );
+
+  const minimum =
+    Number(
+      material.minimum_stock ?? 0,
+    );
+
+  if (
+    quantity >
+    minimum
+  ) {
+    continue;
+  }
+
+  await supabase
+    .from(
+      'notifications',
+    )
+    .insert({
+      type:
+        'inventory',
+
+      title:
+        'Reorden sugerido',
+
+      message:
+        `${material.name} tiene ${quantity} disponibles. Se recomienda comprar ${material.reorder_quantity}.`,
+
+      severity:
+        'warning',
+
+      read:
+        false,
+
+      metadata: {
+        raw_material_id:
+          material.id,
+      },
+    });
+}

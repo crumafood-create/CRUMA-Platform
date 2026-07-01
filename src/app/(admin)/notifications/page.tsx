@@ -62,7 +62,7 @@ export default async function NotificationsPage() {
                     </div>
                   </div>
 
-                  {!notification.is_read && (
+                  {!notification.read && (
                     <form
                       action={markNotificationAsRead.bind(
                         null,

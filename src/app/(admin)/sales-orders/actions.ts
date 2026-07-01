@@ -408,36 +408,82 @@ export async function deliverSalesOrder(
   const supabase =
     await createClient();
 
-  const { data: order } =
-    await supabase
-      .from('sales_orders')
-      .select('*')
-      .eq('id', orderId)
-      .single();
+  //
+  // Pedido
+  //
+  const {
+    data: order,
+    error: orderError,
+  } = await supabase
+    .from(
+      'sales_orders',
+    )
+    .select(`
+      id,
+      total,
+      customer_id,
+      status
+    `)
+    .eq(
+      'id',
+      orderId,
+    )
+    .single();
 
-  if (!order) {
+  if (
+    orderError ||
+    !order
+  ) {
     throw new Error(
-      'Pedido no encontrado',
+      orderError?.message ??
+        'Pedido no encontrado',
     );
   }
 
-  const { data: items } =
-    await supabase
-      .from(
-        'sales_order_items',
-      )
-      .select('*')
-      .eq(
-        'sales_order_id',
-        orderId,
-      );
+  if (
+    order.status !==
+    'confirmed'
+  ) {
+    throw new Error(
+      'Solo se pueden entregar pedidos confirmados.',
+    );
+  }
 
-  for (const item of items ?? []) {
-    await supabase
-      .from(
-        'inventory_movements',
-      )
-      .insert({
+  //
+  // Productos
+  //
+  const {
+    data: items,
+    error: itemsError,
+  } = await supabase
+    .from(
+      'sales_order_items',
+    )
+    .select(`
+      product_id,
+      quantity
+    `)
+    .eq(
+      'sales_order_id',
+      orderId,
+    );
+
+  if (
+    itemsError
+  ) {
+    throw new Error(
+      itemsError.message,
+    );
+  }
+
+  //
+  // Salidas de inventario
+  //
+  const movements =
+    (items ?? []).map(
+      (
+        item,
+      ) => ({
         item_type:
           'product',
 
@@ -458,52 +504,129 @@ export async function deliverSalesOrder(
 
         notes:
           'Entrega de pedido',
-      });
+      }),
+    );
+
+  if (
+    movements.length >
+    0
+  ) {
+    const {
+      error:
+        movementError,
+    } =
+      await supabase
+        .from(
+          'inventory_movements',
+        )
+        .insert(
+          movements,
+        );
+
+    if (
+      movementError
+    ) {
+      throw new Error(
+        movementError.message,
+      );
+    }
   }
 
-  await supabase
+  //
+  // Liberar reservas
+  //
+  const {
+    error:
+      reservationError,
+  } = await supabase
     .from(
-      'accounts_receivable',
+      'inventory_reservations',
     )
-    .insert({
-      customer_id:
-        order.customer_id,
-
-      sales_order_id:
-        order.id,
-
-      document_number:
-        order.order_number,
-
-      amount:
-        order.total,
-
-      balance:
-        order.total,
-
-      due_date:
-        order.delivery_date,
-
+    .update({
       status:
-        'pending',
-    });
+        'released',
 
-  const { error } =
-    await supabase
-      .from('sales_orders')
-      .update({
-        status:
-          'delivered',
-
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq('id', orderId);
-
-  if (error) {
-    throw new Error(
-      error.message,
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq(
+      'reference_type',
+      'sales_order',
+    )
+    .eq(
+      'reference_id',
+      orderId,
     );
+
+  if (
+    reservationError
+  ) {
+    throw new Error(
+      reservationError.message,
+    );
+  }
+
+  //
+  // Pedido entregado
+  //
+  const {
+    error:
+      updateError,
+  } = await supabase
+    .from(
+      'sales_orders',
+    )
+    .update({
+      status:
+        'delivered',
+
+      delivered_at:
+        new Date().toISOString(),
+
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq(
+      'id',
+      orderId,
+    );
+
+  if (
+    updateError
+  ) {
+    throw new Error(
+      updateError.message,
+    );
+  }
+
+  //
+  // Cuenta por cobrar
+  //
+  if (
+    Number(
+      order.total,
+    ) > 0
+  ) {
+    await supabase
+      .from(
+        'accounts_receivable',
+      )
+      .insert({
+        customer_id:
+          order.customer_id,
+
+        sales_order_id:
+          orderId,
+
+        amount:
+          order.total,
+
+        balance:
+          order.total,
+
+        status:
+          'pending',
+      });
   }
 
   revalidatePath(
@@ -519,7 +642,7 @@ export async function deliverSalesOrder(
   );
 
   revalidatePath(
-    '/inventory',
+    '/inventory-atp',
   );
 
   revalidatePath(

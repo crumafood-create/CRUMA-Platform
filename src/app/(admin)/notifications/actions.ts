@@ -16,9 +16,9 @@ export async function markNotificationAsRead(
         'notifications',
       )
       .update({
-        is_read: true,
-        updated_at:
-          new Date().toISOString(),
+  read: true,
+  updated_at:
+    new Date().toISOString(),
       })
       .eq(
         'id',

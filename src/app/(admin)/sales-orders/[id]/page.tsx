@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
-
+import { deliverSalesOrder, } from '../actions';
 export default async function SalesOrderPage({
   params,
 }: {
@@ -150,6 +150,22 @@ export default async function SalesOrderPage({
   </form>
 )}
 
+      {order.status ===
+  'confirmed' && (
+  <form
+    action={deliverSalesOrder.bind(
+      null,
+      order.id,
+    )}
+  >
+    <button
+      type="submit"
+      className="rounded border px-4 py-2"
+    >
+      Entregar Pedido
+    </button>
+  </form>
+)}
       <form
   action={confirmSalesOrder.bind(
     null,

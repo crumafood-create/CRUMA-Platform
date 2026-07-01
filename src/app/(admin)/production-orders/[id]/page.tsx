@@ -4,6 +4,10 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 import {
+  calculateProductionCost,
+} from '@/app/(admin)/production-costs/actions';
+
+import {
   releaseProductionOrder,
   startProductionOrder,
   completeProductionOrder,
@@ -378,6 +382,27 @@ export default async function ProductionOrderPage({
   className="rounded border px-4 py-2"
 >
   Ver Trazabilidad
+</Link>
+
+        <form
+  action={calculateProductionCost.bind(
+    null,
+    order.id,
+  )}
+>
+  <button
+    type="submit"
+    className="rounded border px-4 py-2"
+  >
+    Calcular Costos
+  </button>
+</form>
+
+<Link
+  href={`/production-costs/${order.id}`}
+  className="rounded border px-4 py-2"
+>
+  Ver Costos
 </Link>
       </div>
     </main>

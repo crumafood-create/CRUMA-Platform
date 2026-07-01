@@ -300,6 +300,39 @@ export default async function DashboardPage() {
         >
           📈 Forecast
         </Link>
+
+        <div className="rounded-2xl border bg-white p-6">
+  <h2 className="mb-4 text-xl font-semibold">
+    Alertas
+  </h2>
+
+  <div className="space-y-3">
+    {criticalCount > 0 && (
+      <div className="rounded border border-red-300 bg-red-50 p-3">
+        ⚠️
+        Hay {criticalCount}
+        materiales sin stock.
+      </div>
+    )}
+
+    {productsToProduce > 0 && (
+      <div className="rounded border border-orange-300 bg-orange-50 p-3">
+        📈
+        Hay {productsToProduce}
+        productos que necesitan producción.
+      </div>
+    )}
+
+    {receivableBalance > 0 && (
+      <div className="rounded border border-yellow-300 bg-yellow-50 p-3">
+        💰
+        Existen $
+        {receivableBalance.toFixed(2)}
+        pendientes por cobrar.
+      </div>
+    )}
+  </div>
+</div>
       </div>
     </main>
   );

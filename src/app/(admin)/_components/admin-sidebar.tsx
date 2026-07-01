@@ -219,6 +219,14 @@ export default function AdminSidebar() {
 >
   📊 Dashboard
 </Link>
+
+        <Link
+  href="/notifications"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  🔔 Notificaciones
+</Link>
+        
       </nav>
     </aside>
   );

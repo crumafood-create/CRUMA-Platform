@@ -199,6 +199,13 @@ export default function AdminSidebar() {
 >
   🏭 Planeación (MRP)
 </Link>
+
+        <Link
+  href="/inventory-atp"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  📦 ATP
+</Link>
       </nav>
     </aside>
   );

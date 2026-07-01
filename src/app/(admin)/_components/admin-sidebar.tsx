@@ -206,6 +206,13 @@ export default function AdminSidebar() {
 >
   📦 ATP
 </Link>
+
+        <Link
+  href="/demand-forecasts"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  📈 Pronóstico
+</Link>
       </nav>
     </aside>
   );

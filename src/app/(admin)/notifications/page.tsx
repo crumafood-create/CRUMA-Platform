@@ -42,11 +42,15 @@ export default async function NotificationsPage() {
               notification,
             ) => (
               <div
-                key={
-                  notification.id
-                }
-                className="rounded border p-4"
-              >
+  key={notification.id}
+  className={`rounded border p-4 ${
+    notification.severity === 'danger'
+      ? 'border-red-300 bg-red-50'
+      : notification.severity === 'warning'
+      ? 'border-yellow-300 bg-yellow-50'
+      : 'border-blue-300 bg-blue-50'
+  }`}
+>
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="font-semibold">

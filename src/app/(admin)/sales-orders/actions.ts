@@ -90,26 +90,239 @@ export async function createSalesOrder(
     '/sales-orders',
   );
 }
+
 export async function confirmSalesOrder(
   orderId: string,
 ) {
   const supabase =
     await createClient();
 
-  const { error } =
-    await supabase
-      .from('sales_orders')
-      .update({
-        status:
-          'confirmed',
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq('id', orderId);
+  //
+  // Pedido
+  //
+  const {
+    data: order,
+    error: orderError,
+  } = await supabase
+    .from('sales_orders')
+    .select(`
+      id,
+      status
+    `)
+    .eq('id', orderId)
+    .single();
 
-  if (error) {
+  if (
+    orderError ||
+    !order
+  ) {
     throw new Error(
-      error.message,
+      orderError?.message ??
+        'Pedido no encontrado',
+    );
+  }
+
+  if (
+    order.status !==
+    'draft'
+  ) {
+    throw new Error(
+      'Solo se pueden confirmar pedidos en borrador.',
+    );
+  }
+
+  //
+  // Renglones
+  //
+  const {
+    data: items,
+    error: itemsError,
+  } = await supabase
+    .from(
+      'sales_order_items',
+    )
+    .select(`
+      product_id,
+      quantity
+    `)
+    .eq(
+      'sales_order_id',
+      orderId,
+    );
+
+  if (
+    itemsError
+  ) {
+    throw new Error(
+      itemsError.message,
+    );
+  }
+
+  if (
+    !items?.length
+  ) {
+    throw new Error(
+      'El pedido no tiene productos.',
+    );
+  }
+
+  //
+  // ATP
+  //
+  const productIds =
+    items.map(
+      (
+        item,
+      ) =>
+        item.product_id,
+    );
+
+  const {
+    data: atp,
+    error: atpError,
+  } = await supabase
+    .from(
+      'inventory_available_to_promise',
+    )
+    .select(`
+      item_id,
+      available_quantity
+    `)
+    .eq(
+      'item_type',
+      'product',
+    )
+    .in(
+      'item_id',
+      productIds,
+    );
+
+  if (
+    atpError
+  ) {
+    throw new Error(
+      atpError.message,
+    );
+  }
+
+  const atpMap =
+    new Map(
+      (
+        atp ??
+        []
+      ).map(
+        (
+          row,
+        ) => [
+          row.item_id,
+          Number(
+            row.available_quantity,
+          ),
+        ],
+      ),
+    );
+
+  //
+  // Validar ATP
+  //
+  for (const item of items) {
+    const available =
+      atpMap.get(
+        item.product_id,
+      ) ?? 0;
+
+    const required =
+      Number(
+        item.quantity,
+      );
+
+    if (
+      available <
+      required
+    ) {
+      throw new Error(
+        `Stock insuficiente para producto ${item.product_id}. Disponible ${available}. Requerido ${required}.`,
+      );
+    }
+  }
+
+  //
+  // Crear reservas
+  //
+  const reservations =
+    items.map(
+      (
+        item,
+      ) => ({
+        item_type:
+          'product',
+
+        item_id:
+          item.product_id,
+
+        reference_type:
+          'sales_order',
+
+        reference_id:
+          orderId,
+
+        quantity:
+          item.quantity,
+
+        status:
+          'active',
+
+        notes:
+          'Reserva por pedido de venta',
+      }),
+    );
+
+  const {
+    error:
+      reservationError,
+  } = await supabase
+    .from(
+      'inventory_reservations',
+    )
+    .insert(
+      reservations,
+    );
+
+  if (
+    reservationError
+  ) {
+    throw new Error(
+      reservationError.message,
+    );
+  }
+
+  //
+  // Confirmar pedido
+  //
+  const {
+    error:
+      updateError,
+  } = await supabase
+    .from(
+      'sales_orders',
+    )
+    .update({
+      status:
+        'confirmed',
+
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq(
+      'id',
+      orderId,
+    );
+
+  if (
+    updateError
+  ) {
+    throw new Error(
+      updateError.message,
     );
   }
 
@@ -119,6 +332,10 @@ export async function confirmSalesOrder(
 
   revalidatePath(
     `/sales-orders/${orderId}`,
+  );
+
+  revalidatePath(
+    '/inventory-atp',
   );
 }
 

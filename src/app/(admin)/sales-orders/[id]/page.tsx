@@ -149,6 +149,21 @@ export default async function SalesOrderPage({
     </button>
   </form>
 )}
+
+      <form
+  action={confirmSalesOrder.bind(
+    null,
+    order.id,
+  )}
+>
+  <button
+    type="submit"
+    className="rounded border px-4 py-2"
+  >
+    Confirmar Pedido
+  </button>
+</form>
+      
     </main>
   );
 }

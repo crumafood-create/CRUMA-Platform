@@ -226,8 +226,39 @@ export default function AdminSidebar() {
 >
   🔔 Notificaciones
 </Link>
+
+        <Link
+  href="/notifications"
+  className="flex items-center justify-between rounded px-2 py-1 hover:bg-gray-100"
+>
+  <span>
+    🔔 Notificaciones
+  </span>
+
+  {(count ?? 0) >
+    0 && (
+    <span className="rounded-full bg-red-600 px-2 py-1 text-xs text-white">
+      {count}
+    </span>
+  )}
+</Link>
         
       </nav>
     </aside>
   );
 }
+
+const { count } =
+  await supabase
+    .from(
+      'notifications',
+    )
+    .select('*', {
+      count:
+        'exact',
+      head: true,
+    })
+    .eq(
+      'read',
+      false,
+    );

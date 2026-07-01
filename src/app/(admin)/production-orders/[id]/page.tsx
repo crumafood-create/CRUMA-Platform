@@ -372,6 +372,13 @@ export default async function ProductionOrderPage({
         >
           Ver Consumos
        </Link>
+
+        <Link
+  href={`/lots/production/${order.id}`}
+  className="rounded border px-4 py-2"
+>
+  Ver Trazabilidad
+</Link>
       </div>
     </main>
   );

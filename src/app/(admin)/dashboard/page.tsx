@@ -1,22 +1,36 @@
+import Link from 'next/link';
+
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-import { DashboardCard } from './_components/dashboard-card';
-
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  const supabase =
+    await createClient();
+
+  const now = new Date();
+
+  const firstDay =
+    new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+    ).toISOString();
 
   const [
-    { data: deliveredOrders },
-    { data: profits },
+    { data: sales },
     { data: receivables },
-    { data: productionOrders },
-    { data: purchaseOrders },
     { data: stock },
+    { data: production },
+    { data: forecasts },
   ] = await Promise.all([
     supabase
       .from('sales_orders')
-      .select(
-        'total, created_at',
+      .select(`
+        total,
+        created_at
+      `)
+      .gte(
+        'created_at',
+        firstDay,
       )
       .eq(
         'status',
@@ -25,210 +39,267 @@ export default async function DashboardPage() {
 
     supabase
       .from(
-        'sales_order_profit',
-      )
-      .select(
-        'gross_profit, created_at',
-      ),
-
-    supabase
-      .from(
         'accounts_receivable',
       )
-      .select(
-        'balance, status',
-      )
-      .in(
+      .select(`
+        balance,
+        status
+      `)
+      .eq(
         'status',
-        [
-          'pending',
-          'partial',
-        ],
-      ),
-
-    supabase
-      .from(
-        'production_orders',
-      )
-      .select(
-        'status',
-      )
-      .in(
-        'status',
-        [
-          'released',
-          'in_progress',
-        ],
-      ),
-
-    supabase
-      .from(
-        'purchase_orders',
-      )
-      .select(
-        'status',
-      )
-      .in(
-        'status',
-        [
-          'draft',
-          'sent',
-          'partial',
-        ],
+        'pending',
       ),
 
     supabase
       .from(
         'inventory_stock_by_item',
       )
-      .select(
-        'quantity, item_type, item_id',
+      .select(`
+        item_type,
+        quantity
+      `),
+
+    supabase
+      .from(
+        'production_orders',
       )
-      .eq(
-        'item_type',
-        'raw_material',
-      ),
+      .select(`
+        production_status
+      `),
+
+    supabase
+      .from(
+        'demand_forecasts',
+      )
+      .select(`
+        suggested_production
+      `),
   ]);
 
-  const currentMonth =
-    new Date().getMonth();
-
-  const currentYear =
-    new Date().getFullYear();
-
-  const salesThisMonth =
-    (deliveredOrders ?? [])
-      .filter((row) => {
-        const date =
-          new Date(
-            row.created_at,
-          );
-
-        return (
-          date.getMonth() ===
-            currentMonth &&
-          date.getFullYear() ===
-            currentYear
-        );
-      })
-      .reduce(
-        (sum, row) =>
-          sum +
-          Number(
-            row.total,
-          ),
-        0,
-      );
-
-  const profitThisMonth =
-    (profits ?? [])
-      .filter((row) => {
-        const date =
-          new Date(
-            row.created_at,
-          );
-
-        return (
-          date.getMonth() ===
-            currentMonth &&
-          date.getFullYear() ===
-            currentYear
-        );
-      })
-      .reduce(
-        (sum, row) =>
-          sum +
-          Number(
-            row.gross_profit,
-          ),
-        0,
-      );
+  const salesMonth =
+    (sales ?? []).reduce(
+      (sum, row) =>
+        sum +
+        Number(
+          row.total ?? 0,
+        ),
+      0,
+    );
 
   const receivableBalance =
-    (receivables ?? [])
-      .reduce(
-        (sum, row) =>
-          sum +
-          Number(
-            row.balance,
-          ),
-        0,
-      );
+    (
+      receivables ?? []
+    ).reduce(
+      (sum, row) =>
+        sum +
+        Number(
+          row.balance ?? 0,
+        ),
+      0,
+    );
 
-  const activeProduction =
-    productionOrders
-      ?.length ?? 0;
+  const productCount =
+    (
+      stock ?? []
+    ).filter(
+      (row) =>
+        row.item_type ===
+          'product' &&
+        Number(
+          row.quantity,
+        ) > 0,
+    ).length;
 
-  const pendingPurchases =
-    purchaseOrders
-      ?.length ?? 0;
+  const materialCount =
+    (
+      stock ?? []
+    ).filter(
+      (row) =>
+        row.item_type ===
+          'raw_material' &&
+        Number(
+          row.quantity,
+        ) > 0,
+    ).length;
 
-  const totalRawStock =
-    (stock ?? [])
-      .reduce(
-        (sum, row) =>
-          sum +
-          Number(
-            row.quantity,
-          ),
-        0,
-      );
+  const criticalCount =
+    (
+      stock ?? []
+    ).filter(
+      (row) =>
+        Number(
+          row.quantity,
+        ) <= 0,
+    ).length;
+
+  const openProduction =
+    (
+      production ?? []
+    ).filter(
+      (row) =>
+        row.production_status !==
+          'completed' &&
+        row.production_status !==
+          'cancelled',
+    ).length;
+
+  const completedProduction =
+    (
+      production ?? []
+    ).filter(
+      (row) =>
+        row.production_status ===
+        'completed',
+    ).length;
+
+  const productsToProduce =
+    (
+      forecasts ?? []
+    ).filter(
+      (row) =>
+        Number(
+          row.suggested_production,
+        ) > 0,
+    ).length;
+
+  const suggestedProduction =
+    (
+      forecasts ?? []
+    ).reduce(
+      (sum, row) =>
+        sum +
+        Number(
+          row.suggested_production ??
+            0,
+        ),
+      0,
+    );
+
+  const cards = [
+    {
+      title:
+        'Ventas del Mes',
+      value:
+        `$${salesMonth.toFixed(
+          2,
+        )}`,
+    },
+    {
+      title:
+        'Por Cobrar',
+      value:
+        `$${receivableBalance.toFixed(
+          2,
+        )}`,
+    },
+    {
+      title:
+        'Productos con Stock',
+      value:
+        productCount.toString(),
+    },
+    {
+      title:
+        'Materias Primas',
+      value:
+        materialCount.toString(),
+    },
+    {
+      title:
+        'Materiales Críticos',
+      value:
+        criticalCount.toString(),
+    },
+    {
+      title:
+        'Órdenes Abiertas',
+      value:
+        openProduction.toString(),
+    },
+    {
+      title:
+        'Órdenes Completadas',
+      value:
+        completedProduction.toString(),
+    },
+    {
+      title:
+        'Productos por Producir',
+      value:
+        productsToProduce.toString(),
+    },
+    {
+      title:
+        'Producción Sugerida',
+      value:
+        suggestedProduction.toFixed(
+          2,
+        ),
+    },
+  ];
 
   return (
     <main className="space-y-8">
       <div>
         <h1 className="text-4xl font-bold">
-          Dashboard
+          Dashboard Ejecutivo
         </h1>
 
         <p className="mt-2 text-gray-500">
-          Resumen ejecutivo
-          de CRUMAFOOD
+          Resumen general
+          de la operación.
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <DashboardCard
-          title="Ventas del Mes"
-          value={`$${salesThisMonth.toFixed(
-            2,
-          )}`}
-        />
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
+        {cards.map(
+          (card) => (
+            <div
+              key={
+                card.title
+              }
+              className="rounded-2xl border bg-white p-6"
+            >
+              <div className="text-sm text-gray-500">
+                {card.title}
+              </div>
 
-        <DashboardCard
-          title="Utilidad del Mes"
-          value={`$${profitThisMonth.toFixed(
-            2,
-          )}`}
-        />
+              <div className="mt-3 text-3xl font-bold">
+                {card.value}
+              </div>
+            </div>
+          ),
+        )}
+      </div>
 
-        <DashboardCard
-          title="Por Cobrar"
-          value={`$${receivableBalance.toFixed(
-            2,
-          )}`}
-        />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Link
+          href="/sales-orders"
+          className="rounded-2xl border p-6 hover:bg-gray-50"
+        >
+          🛒 Ventas
+        </Link>
 
-        <DashboardCard
-          title="Producción Activa"
-          value={
-            activeProduction
-          }
-        />
+        <Link
+          href="/production-orders"
+          className="rounded-2xl border p-6 hover:bg-gray-50"
+        >
+          🏭 Producción
+        </Link>
 
-        <DashboardCard
-          title="Compras Pendientes"
-          value={
-            pendingPurchases
-          }
-        />
+        <Link
+          href="/inventory-stock"
+          className="rounded-2xl border p-6 hover:bg-gray-50"
+        >
+          📦 Inventario
+        </Link>
 
-        <DashboardCard
-          title="Stock Materia Prima"
-          value={totalRawStock.toFixed(
-            2,
-          )}
-        />
+        <Link
+          href="/demand-forecasts"
+          className="rounded-2xl border p-6 hover:bg-gray-50"
+        >
+          📈 Forecast
+        </Link>
       </div>
     </main>
   );

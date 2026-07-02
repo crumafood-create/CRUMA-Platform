@@ -40,3 +40,39 @@ export async function approve(
     '/approvals',
   );
 }
+
+export async function reject(
+  approvalId: string,
+) {
+  const supabase =
+    await createClient();
+
+  const {
+    error,
+  } = await supabase
+    .from('approvals')
+    .update({
+      status:
+        'rejected',
+
+      rejected_at:
+        new Date().toISOString(),
+
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq(
+      'id',
+      approvalId,
+    );
+
+  if (error) {
+    throw new Error(
+      error.message,
+    );
+  }
+
+  revalidatePath(
+    '/approvals',
+  );
+}

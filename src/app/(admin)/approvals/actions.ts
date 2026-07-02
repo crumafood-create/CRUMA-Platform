@@ -137,6 +137,7 @@ export async function approve(
   );
 
   //
+//
 // Compra automática
 //
 if (
@@ -147,13 +148,17 @@ if (
 ) {
   const {
     data: material,
+    error: materialError,
   } = await supabase
     .from(
       'raw_materials',
     )
     .select(`
       id,
-      reorder_quantity
+      name,
+      reorder_quantity,
+      last_cost,
+      preferred_supplier_id
     `)
     .eq(
       'id',
@@ -162,31 +167,130 @@ if (
     .single();
 
   if (
-    material &&
-    Number(
-      material.reorder_quantity,
-    ) > 0
+    materialError ||
+    !material
   ) {
-    await supabase
-      .from(
-        'purchase_orders',
-      )
-      .insert({
-        order_number:
-          `AUTO-${Date.now()}`,
-
-        status:
-          'draft',
-
-        subtotal: 0,
-
-        total: 0,
-
-        notes:
-          'Generada automáticamente desde aprobación',
-      });
+    throw new Error(
+      materialError?.message ??
+        'Materia prima no encontrada',
+    );
   }
-}
+
+  const supplierId =
+    material.preferred_supplier_id;
+
+  if (!supplierId) {
+    throw new Error(
+      `${material.name} no tiene proveedor preferido.`
+    );
+  }
+
+  const quantity =
+    Number(
+      material.reorder_quantity ??
+        0,
+    );
+
+  if (quantity <= 0) {
+    return;
+  }
+
+  //
+  // Crear orden
+  //
+  const {
+    data: purchaseOrder,
+    error: purchaseError,
+  } = await supabase
+    .from(
+      'purchase_orders',
+    )
+    .insert({
+      order_number:
+        `AUTO-${Date.now()}`,
+
+      supplier_id:
+        supplierId,
+
+      status:
+        'draft',
+
+      subtotal: 0,
+      total: 0,
+
+      notes:
+        'Generada automáticamente desde aprobación',
+    })
+    .select('id')
+    .single();
+
+  if (
+    purchaseError ||
+    !purchaseOrder
+  ) {
+    throw new Error(
+      purchaseError?.message ??
+        'No se pudo crear la orden de compra'
+    );
+  }
+
+  //
+  // Crear renglón
+  //
+  const unitCost =
+    Number(
+      material.last_cost ?? 0,
+    );
+
+  const subtotal =
+    quantity *
+    unitCost;
+
+  const {
+    error: itemError,
+  } = await supabase
+    .from(
+      'purchase_order_items',
+    )
+    .insert({
+      purchase_order_id:
+        purchaseOrder.id,
+
+      raw_material_id:
+        material.id,
+
+      quantity,
+
+      received_quantity: 0,
+
+      unit_cost:
+        unitCost,
+
+      subtotal,
+    });
+
+  if (itemError) {
+    throw new Error(
+      itemError.message,
+    );
+  }
+
+  //
+  // Actualizar totales
+  //
+  await supabase
+    .from(
+      'purchase_orders',
+    )
+    .update({
+      subtotal,
+      total: subtotal,
+    })
+    .eq(
+      'id',
+      purchaseOrder.id,
+    );
+      }
 }
 
 export async function reject(

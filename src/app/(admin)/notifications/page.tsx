@@ -2,10 +2,6 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 import {
   markNotificationAsRead,
-} from './actions';
-
-import {
-  markNotificationAsRead,
   generateSystemNotifications,
 } from './actions';
 

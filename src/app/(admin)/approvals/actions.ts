@@ -135,6 +135,58 @@ export async function approve(
   revalidatePath(
     '/production-orders',
   );
+
+  //
+// Compra automática
+//
+if (
+  approval.approval_type ===
+    'purchase' &&
+  approval.reference_type ===
+    'raw_material'
+) {
+  const {
+    data: material,
+  } = await supabase
+    .from(
+      'raw_materials',
+    )
+    .select(`
+      id,
+      reorder_quantity
+    `)
+    .eq(
+      'id',
+      approval.reference_id,
+    )
+    .single();
+
+  if (
+    material &&
+    Number(
+      material.reorder_quantity,
+    ) > 0
+  ) {
+    await supabase
+      .from(
+        'purchase_orders',
+      )
+      .insert({
+        order_number:
+          `AUTO-${Date.now()}`,
+
+        status:
+          'draft',
+
+        subtotal: 0,
+
+        total: 0,
+
+        notes:
+          'Generada automáticamente desde aprobación',
+      });
+  }
+}
 }
 
 export async function reject(

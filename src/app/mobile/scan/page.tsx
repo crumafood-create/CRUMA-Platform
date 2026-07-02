@@ -4,8 +4,8 @@ import Link from 'next/link';
 
 import { useState } from 'react';
 
-import { Scanner }
-  from '@yudiel/react-qr-scanner';
+// import { Scanner }
+  // from '@yudiel/react-qr-scanner';
 
 import { findLot }
   from './actions';

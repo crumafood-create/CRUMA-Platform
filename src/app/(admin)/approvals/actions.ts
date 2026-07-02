@@ -97,34 +97,36 @@ export async function approve(
       )
       .single();
 
-    if (
-      recipe &&
-      Number(
-        forecast?.suggested_production,
-      ) > 0
-    ) {
-      await supabase
-        .from(
-          'production_orders',
-        )
-        .insert({
-          recipe_id:
-            recipe.id,
+    const suggestedProduction =
+  Number(
+    forecast
+      ?.suggested_production ?? 0,
+  );
 
-          planned_quantity:
-            Number(
-              forecast.suggested_production,
-            ),
+if (
+  recipe &&
+  suggestedProduction > 0
+) {
+  await supabase
+    .from(
+      'production_orders',
+    )
+    .insert({
+      recipe_id:
+        recipe.id,
 
-          produced_quantity:
-            0,
+      planned_quantity:
+        suggestedProduction,
 
-          status:
-            'draft',
+      produced_quantity:
+        0,
 
-          notes:
-            'Generada desde aprobación automática',
-        });
+      status:
+        'draft',
+
+      notes:
+        'Generada desde aprobación automática',
+    });
     }
   }
 

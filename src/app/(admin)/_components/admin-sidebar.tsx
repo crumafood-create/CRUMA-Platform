@@ -242,6 +242,13 @@ export default function AdminSidebar() {
     </span>
   )}
 </Link>
+
+        <Link
+  href="/system"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  ⚙️ Automatizaciones
+</Link>
         
       </nav>
     </aside>

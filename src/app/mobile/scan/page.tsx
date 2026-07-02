@@ -15,6 +15,12 @@ type LotResult = {
     | 'product'
     | 'raw_material';
 
+  itemType:
+    | 'product'
+    | 'raw_material';
+
+  itemId: string;
+
   lot: {
     id: string;
     lot_number: string;

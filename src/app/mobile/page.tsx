@@ -44,12 +44,11 @@ export default function MobilePage() {
         </Link>
 
         <Link
-  href="/mobile/scan"
-  className="rounded-2xl border p-6"
->
-  📷 Escanear
-</Link>
-        
+          href="/mobile/scan"
+          className="rounded-2xl border p-6"
+        >
+          📷 Escanear
+        </Link>
       </div>
     </main>
   );

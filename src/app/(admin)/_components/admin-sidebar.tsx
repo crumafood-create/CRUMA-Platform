@@ -249,6 +249,13 @@ export default function AdminSidebar() {
 >
   ⚙️ Automatizaciones
 </Link>
+        <Link
+  href="/approvals"
+  className="rounded px-2 py-1 hover:bg-gray-100"
+>
+  ✅ Aprobaciones
+</Link>
+
         
       </nav>
     </aside>

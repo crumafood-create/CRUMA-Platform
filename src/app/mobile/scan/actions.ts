@@ -9,7 +9,7 @@ export async function findLot(
     await createClient();
 
   //
-  // Buscar lote de producto
+  // Producto
   //
   const {
     data: productLot,
@@ -31,11 +31,15 @@ export async function findLot(
     return {
       type: 'product',
       lot: productLot,
+      itemType:
+        'product',
+      itemId:
+        productLot.product_id,
     };
   }
 
   //
-  // Buscar lote de materia prima
+  // Materia prima
   //
   const {
     data: materialLot,
@@ -55,8 +59,14 @@ export async function findLot(
 
   if (materialLot) {
     return {
-      type: 'raw_material',
-      lot: materialLot,
+      type:
+        'raw_material',
+      lot:
+        materialLot,
+      itemType:
+        'raw_material',
+      itemId:
+        materialLot.raw_material_id,
     };
   }
 

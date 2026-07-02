@@ -8,7 +8,7 @@ interface Product {
 interface Props {
   action: (
     formData: FormData,
-  ) => Promise<void;
+  ) => Promise<void>;
 
   salesOrderId: string;
 

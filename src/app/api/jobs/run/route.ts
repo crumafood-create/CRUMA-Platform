@@ -7,21 +7,26 @@ import {
 export async function GET(
   request: Request,
 ) {
-  const auth =
-    request.headers.get(
-      'authorization',
-    );
-
   if (
-    auth !==
-    `Bearer ${process.env.CRON_SECRET}`
+    process.env.VERCEL_ENV ===
+    'production'
   ) {
-    return new NextResponse(
-      'Unauthorized',
-      {
-        status: 401,
-      },
-    );
+    const auth =
+      request.headers.get(
+        'authorization',
+      );
+
+    if (
+      auth !==
+      `Bearer ${process.env.CRON_SECRET}`
+    ) {
+      return new NextResponse(
+        'Unauthorized',
+        {
+          status: 401,
+        },
+      );
+    }
   }
 
   try {
@@ -41,27 +46,6 @@ export async function GET(
       },
       {
         status: 500,
-      },
-    );
-  }
-}
-if (
-  process.env.VERCEL_ENV ===
-  'production'
-) {
-  const auth =
-    request.headers.get(
-      'authorization',
-    );
-
-  if (
-    auth !==
-    `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return new NextResponse(
-      'Unauthorized',
-      {
-        status: 401,
       },
     );
   }

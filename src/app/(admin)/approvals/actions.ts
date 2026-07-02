@@ -172,3 +172,129 @@ export async function reject(
     '/approvals',
   );
 }
+
+export async function createPurchaseApprovals() {
+  const supabase =
+    await createClient();
+
+  const {
+    data: materials,
+    error,
+  } = await supabase
+    .from('raw_materials')
+    .select(`
+      id,
+      name,
+      minimum_stock,
+      reorder_quantity
+    `);
+
+  if (error) {
+    throw new Error(
+      error.message,
+    );
+  }
+
+  for (const material of materials ?? []) {
+    const {
+      data: stock,
+    } = await supabase
+      .from(
+        'inventory_stock_by_item',
+      )
+      .select(`
+        quantity
+      `)
+      .eq(
+        'item_type',
+        'raw_material',
+      )
+      .eq(
+        'item_id',
+        material.id,
+      )
+      .single();
+
+    const quantity =
+      Number(
+        stock?.quantity ?? 0,
+      );
+
+    const minimum =
+      Number(
+        material.minimum_stock ??
+          0,
+      );
+
+    const reorder =
+      Number(
+        material.reorder_quantity ??
+          0,
+      );
+
+    if (
+      quantity >
+      minimum ||
+      reorder <= 0
+    ) {
+      continue;
+    }
+
+    const {
+      data: existing,
+    } = await supabase
+      .from(
+        'approvals',
+      )
+      .select('id')
+      .eq(
+        'approval_type',
+        'purchase',
+      )
+      .eq(
+        'reference_type',
+        'raw_material',
+      )
+      .eq(
+        'reference_id',
+        material.id,
+      )
+      .eq(
+        'status',
+        'pending',
+      )
+      .maybeSingle();
+
+    if (existing) {
+      continue;
+    }
+
+    await supabase
+      .from(
+        'approvals',
+      )
+      .insert({
+        approval_type:
+          'purchase',
+
+        reference_type:
+          'raw_material',
+
+        reference_id:
+          material.id,
+
+        title:
+          'Compra sugerida',
+
+        description:
+          `Comprar ${reorder} de ${material.name}.`,
+
+        status:
+          'pending',
+      });
+  }
+
+  revalidatePath(
+    '/approvals',
+  );
+}

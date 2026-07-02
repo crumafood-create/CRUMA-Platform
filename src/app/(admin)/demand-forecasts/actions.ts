@@ -344,3 +344,88 @@ export async function createProductionOrderFromForecast(
     '/demand-forecasts',
   );
 }
+
+export async function createForecastApprovals() {
+  const supabase =
+    await createClient();
+
+  const {
+    data: forecasts,
+    error,
+  } = await supabase
+    .from(
+      'demand_forecasts',
+    )
+    .select(`
+      product_id,
+      suggested_production
+    `)
+    .gt(
+      'suggested_production',
+      0,
+    );
+
+  if (error) {
+    throw new Error(
+      error.message,
+    );
+  }
+
+  for (const row of forecasts ?? []) {
+    const { data: existing } =
+      await supabase
+        .from(
+          'approvals',
+        )
+        .select('id')
+        .eq(
+          'approval_type',
+          'production',
+        )
+        .eq(
+          'reference_type',
+          'product',
+        )
+        .eq(
+          'reference_id',
+          row.product_id,
+        )
+        .eq(
+          'status',
+          'pending',
+        )
+        .maybeSingle();
+
+    if (existing) {
+      continue;
+    }
+
+    await supabase
+      .from(
+        'approvals',
+      )
+      .insert({
+        approval_type:
+          'production',
+
+        reference_type:
+          'product',
+
+        reference_id:
+          row.product_id,
+
+        title:
+          'Producción sugerida',
+
+        description:
+          `Producir ${row.suggested_production} unidades.`,
+
+        status:
+          'pending',
+      });
+  }
+
+  revalidatePath(
+    '/approvals',
+  );
+}

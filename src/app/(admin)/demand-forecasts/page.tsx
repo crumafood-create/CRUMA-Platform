@@ -2,9 +2,7 @@ import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-import {
-  calculateDemandForecasts,
-} from './actions';
+import { calculateDemandForecasts } from './actions';
 
 type Product = {
   id: string;
@@ -41,7 +39,9 @@ export default async function DemandForecastsPage() {
         row.product_id,
     ) ?? [];
 
-  const { data: products } =
+  const {
+    data: products,
+  } =
     productIds.length > 0
       ? await supabase
           .from('products')
@@ -93,7 +93,7 @@ export default async function DemandForecastsPage() {
         >
           <button
             type="submit"
-            className="rounded border px-4 py-2"
+            className="rounded border px-4 py-2 hover:bg-gray-50"
           >
             Calcular Pronóstico
           </button>
@@ -122,21 +122,19 @@ export default async function DemandForecastsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-semibold">
-                          {
-                            product?.name
-                          }
+                          {product?.name ??
+                            'Producto'}
                         </div>
 
                         <div className="text-sm text-gray-500">
-                          {
-                            product?.internal_code
-                          }
+                          {product?.internal_code ??
+                            '-'}
                         </div>
                       </div>
 
                       <Link
                         href={`/demand-forecasts/${row.product_id}`}
-                        className="rounded border px-3 py-2 text-sm"
+                        className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
                       >
                         Ver
                       </Link>
@@ -150,7 +148,8 @@ export default async function DemandForecastsPage() {
 
                         <div className="text-xl font-bold">
                           {Number(
-                            row.average_daily_demand,
+                            row.average_daily_demand ??
+                              0,
                           ).toFixed(
                             2,
                           )}
@@ -164,7 +163,8 @@ export default async function DemandForecastsPage() {
 
                         <div className="text-xl font-bold">
                           {Number(
-                            row.forecast_quantity,
+                            row.forecast_quantity ??
+                              0,
                           ).toFixed(
                             2,
                           )}
@@ -178,7 +178,8 @@ export default async function DemandForecastsPage() {
 
                         <div className="text-xl font-bold">
                           {Number(
-                            row.stock_quantity,
+                            row.stock_quantity ??
+                              0,
                           ).toFixed(
                             2,
                           )}
@@ -193,14 +194,16 @@ export default async function DemandForecastsPage() {
                         <div
                           className={`text-xl font-bold ${
                             Number(
-                              row.suggested_production,
+                              row.suggested_production ??
+                                0,
                             ) > 0
                               ? 'text-orange-600'
                               : 'text-green-600'
                           }`}
                         >
                           {Number(
-                            row.suggested_production,
+                            row.suggested_production ??
+                              0,
                           ).toFixed(
                             2,
                           )}

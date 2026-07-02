@@ -1,20 +1,7 @@
-/** @type {import('next').NextConfig} */
-
-/** @type {import('next').NextConfig} */
-
-import withPWA
-  from 'next-pwa';
+import withPWA from 'next-pwa';
 
 const nextConfig = {
-  reactStrictMode: true,
-};
-
-export default withPWA({
-  dest: 'public',
-})(nextConfig);
-
-const nextConfig = {
-  //output: 'standalone',
+  // output: 'standalone',
 
   reactStrictMode: true,
 
@@ -35,12 +22,16 @@ const nextConfig = {
   },
 
   images: {
-    formats: ['image/avif', 'image/webp'],
+    formats: [
+      'image/avif',
+      'image/webp',
+    ],
 
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'poglpqvmbrfcvtuspvtx.supabase.co',
+        hostname:
+          'poglpqvmbrfcvtuspvtx.supabase.co',
       },
     ],
   },
@@ -51,16 +42,20 @@ const nextConfig = {
         source: '/(.*)',
         headers: [
           {
-            key: 'X-Frame-Options',
+            key:
+              'X-Frame-Options',
             value: 'DENY',
           },
           {
-            key: 'X-Content-Type-Options',
+            key:
+              'X-Content-Type-Options',
             value: 'nosniff',
           },
           {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
+            key:
+              'Referrer-Policy',
+            value:
+              'strict-origin-when-cross-origin',
           },
         ],
       },
@@ -68,4 +63,9 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default withPWA({
+  dest: 'public',
+  disable:
+    process.env.NODE_ENV ===
+    'development',
+})(nextConfig);

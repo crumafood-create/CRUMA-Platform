@@ -45,3 +45,24 @@ export async function GET(
     );
   }
 }
+if (
+  process.env.VERCEL_ENV ===
+  'production'
+) {
+  const auth =
+    request.headers.get(
+      'authorization',
+    );
+
+  if (
+    auth !==
+    `Bearer ${process.env.CRON_SECRET}`
+  ) {
+    return new NextResponse(
+      'Unauthorized',
+      {
+        status: 401,
+      },
+    );
+  }
+}

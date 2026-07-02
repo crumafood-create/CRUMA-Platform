@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState } from 'react';
 
 import { Scanner }
@@ -141,24 +143,26 @@ export default function ScanPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                className="rounded border px-3 py-2 text-sm"
-              >
-                Ver Kardex
-              </button>
+  <Link
+    href={`/inventory/kardex/${lot.itemType}/${lot.itemId}`}
+    className="rounded border px-3 py-2 text-sm"
+  >
+    Ver Kardex
+  </Link>
 
-              <button
-                className="rounded border px-3 py-2 text-sm"
-              >
-                Ver Trazabilidad
-              </button>
+  <Link
+    href={`/mobile/lots/${lot.lot.id}`}
+    className="rounded border px-3 py-2 text-sm"
+  >
+    Ver Trazabilidad
+  </Link>
 
-              <button
-                className="rounded border px-3 py-2 text-sm"
-              >
-                Imprimir Etiqueta
-              </button>
-            </div>
+  <button
+    className="rounded border px-3 py-2 text-sm"
+  >
+    Imprimir Etiqueta
+  </button>
+</div>
           </div>
         )}
       </div>

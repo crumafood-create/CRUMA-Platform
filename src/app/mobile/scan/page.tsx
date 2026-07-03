@@ -5,16 +5,10 @@ import { useState } from 'react';
 
 import { findLot } from './actions';
 
-type LotResult = {
-  type: 'product' | 'raw_material';
-  lot: {
-    id: string;
-    lot_number: string;
-    quantity: number;
-  };
-  itemId?: string;
-  itemType?: string;
-} | null;
+import { findLot, type FindLotResult, } from './actions';
+
+type LotResult =
+  FindLotResult;
 
 export default function ScanPage() {
   const [value, setValue] =

@@ -1,11 +1,6 @@
-'use client';
-
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
-import MobileScanner from '@/app/mobile/components/mobile-scanner';
-import { confirmPicking } from './actions';
+import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 // ============================================================================
 // TIPOS
@@ -13,32 +8,9 @@ import { confirmPicking } from './actions';
 
 type PickingOrder = {
   id: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: string;
   sales_order_id: string;
   created_at: string;
-};
-
-type PickingItem = {
-  id: string;
-  product_id: string;
-  quantity_to_pick: number;
-  suggested_lot?: {
-    id: string;
-    lot_number: string;
-    quantity: number;
-    location_name: string;
-  };
-  product?: {
-    id: string;
-    name: string;
-  };
-};
-
-type PickingConfirmation = {
-  picking_item_id: string;
-  lot_id: string;
-  scanned_lot_number: string;
-  quantity_picked: number;
 };
 
 // ============================================================================
@@ -76,289 +48,141 @@ function getStatusBadgeClass(status: string): string {
 }
 
 // ============================================================================
-// COMPONENTE DE ÍTEM
+// COMPONENTE PRINCIPAL
 // ============================================================================
 
-type PickingItemRowProps = {
-  item: PickingItem;
-  onConfirm: (confirmation: PickingConfirmation) => Promise<void>;
-  isLoading: boolean;
-};
+export default async function MobilePickingListPage() {
+  const supabase = await createClient();
 
-function PickingItemRow({
-  item,
-  onConfirm,
-  isLoading,
-}: PickingItemRowProps) {
-  const [scannedLot, setScannedLot] = useState('');
-  const [isValidating, setIsValidating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data: pickings, error } = await supabase
+    .from('picking_orders')
+    .select('id, status, sales_order_id, created_at')
+    .in('status', ['pending', 'in_progress'])
+    .order('created_at', { ascending: false });
 
-  const suggested = item.suggested_lot;
-  const product = item.product;
-
-  async function handleConfirmPicking() {
-    setError(null);
-    setIsValidating(true);
-
-    try {
-      if (!scannedLot.trim()) {
-        throw new Error('Escanea o ingresa el número de lote');
-      }
-
-      if (!suggested) {
-        throw new Error('No hay lote sugerido para este item');
-      }
-
-      if (scannedLot.trim() !== suggested.lot_number) {
-        throw new Error(
-          `Lote incorrecto. Esperado: ${suggested.lot_number}, Escaneado: ${scannedLot}`,
-        );
-      }
-
-      await onConfirm({
-        picking_item_id: item.id,
-        lot_id: suggested.id,
-        scanned_lot_number: scannedLot.trim(),
-        quantity_picked: item.quantity_to_pick,
-      });
-
-      setScannedLot('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al confirmar picking');
-    } finally {
-      setIsValidating(false);
-    }
+  if (error) {
+    return (
+      <main className="space-y-6 p-6">
+        <h1 className="text-3xl font-bold">Picking</h1>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+          <p className="text-red-700">
+            Error al cargar pickings: {error.message}
+          </p>
+        </div>
+      </main>
+    );
   }
 
+  const pickingList: PickingOrder[] = pickings ?? [];
+
   return (
-    <div className="rounded-2xl border bg-white p-6">
-      <div className="space-y-3">
+    <main className="space-y-6 p-6 pb-24">
+      {/* HEADER */}
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-sm font-medium text-gray-600">Producto</div>
-          <div className="mt-1 text-lg font-semibold">{product?.name ?? '-'}</div>
+          <h1 className="text-4xl font-bold">📦 Picking</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Órdenes pendientes de preparación
+          </p>
         </div>
 
-        <div>
-          <div className="text-sm font-medium text-gray-600">Cantidad a pickear</div>
-          <div className="mt-1 text-lg font-semibold">
-            {item.quantity_to_pick} unidades
+        <div className="rounded-xl bg-blue-100 px-4 py-3 text-center">
+          <div className="text-3xl font-bold text-blue-900">
+            {pickingList.length}
+          </div>
+          <div className="text-xs text-blue-700">
+            {pickingList.length === 1 ? 'orden' : 'órdenes'}
           </div>
         </div>
       </div>
 
-      {suggested && (
-        <div className="mt-6 rounded-lg bg-blue-50 p-4">
-          <div className="text-sm font-medium text-blue-900">Lote Sugerido</div>
-
-          <div className="mt-3 grid gap-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-blue-700">Lote:</span>
-              <span className="font-semibold text-blue-900">
-                {suggested.lot_number}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-blue-700">Ubicación:</span>
-              <span className="font-semibold text-blue-900">
-                {suggested.location_name}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-blue-700">Disponible:</span>
-              <span className="font-semibold text-blue-900">
-                {suggested.quantity} unidades
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-6 space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
-          Escanea el código de lote
-        </label>
-
-        <input
-          type="text"
-          value={scannedLot}
-          onChange={(e) => {
-            setScannedLot(e.target.value);
-            setError(null);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              handleConfirmPicking();
-            }
-          }}
-          placeholder="Apunta la cámara al código QR"
-          className="w-full rounded-lg border border-gray-300 p-3 text-lg"
-          disabled={isValidating || isLoading}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-        />
-
-        <MobileScanner
-          onDetected={(code) => {
-            setScannedLot(code);
-            setError(null);
-          }}
-        />
+      {/* LISTA */}
+      <div className="space-y-4">
+        {pickingList.length > 0 ? (
+          pickingList.map((picking) => (
+            <PickingOrderCard key={picking.id} picking={picking} />
+          ))
+        ) : (
+          <EmptyState />
+        )}
       </div>
-
-      {error && (
-        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      <button
-        onClick={handleConfirmPicking}
-        disabled={isValidating || isLoading}
-        className="mt-6 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:bg-gray-300"
-      >
-        {isValidating ? 'Validando...' : isLoading ? 'Guardando...' : 'Confirmar Picking'}
-      </button>
-    </div>
+    </main>
   );
 }
 
 // ============================================================================
-// COMPONENTE PRINCIPAL
+// CARD
 // ============================================================================
 
-export default function MobilePickingDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [globalError, setGlobalError] = useState<string | null>(null);
-
-  const picking: PickingOrder = {
-    id: params.id,
-    status: 'in_progress',
-    sales_order_id: 'SO-001',
-    created_at: new Date().toISOString(),
-  };
-
-  const pickingItems: PickingItem[] = [
-    {
-      id: '1',
-      product_id: 'prod-1',
-      quantity_to_pick: 5,
-      suggested_lot: {
-        id: 'lot-1',
-        lot_number: 'LOT-2026-001',
-        quantity: 10,
-        location_name: 'Congelador A - Nivel 2',
-      },
-      product: {
-        id: 'prod-1',
-        name: 'Tequeños Tradicionales',
-      },
-    },
-    {
-      id: '2',
-      product_id: 'prod-2',
-      quantity_to_pick: 3,
-      suggested_lot: {
-        id: 'lot-2',
-        lot_number: 'LOT-2026-002',
-        quantity: 8,
-        location_name: 'Congelador B - Nivel 1',
-      },
-      product: {
-        id: 'prod-2',
-        name: 'Empanadas de Queso',
-      },
-    },
-  ];
-
-  async function handleConfirmPicking(confirmation: PickingConfirmation) {
-    setIsLoading(true);
-    setGlobalError(null);
-
-    try {
-      await confirmPicking(
-        confirmation.picking_item_id,
-        confirmation.scanned_lot_number,
-      );
-
-      router.push('/mobile/picking');
-    } catch (error) {
-      setGlobalError(
-        error instanceof Error ? error.message : 'Error al confirmar picking',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  const completedCount = 0;
-  const totalCount = pickingItems.length;
+function PickingOrderCard({ picking }: { picking: PickingOrder }) {
+  const formattedDate = new Date(picking.created_at).toLocaleString('es-MX', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   return (
-    <main className="space-y-6 p-6 pb-20">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold">Picking</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Pedido: {picking.sales_order_id}
-          </p>
+    <Link
+      href={`/mobile/picking/${picking.id}`}
+      className="block rounded-2xl border border-gray-200 bg-white p-6 transition-all hover:border-blue-300 hover:shadow-lg active:scale-[0.99]"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="text-sm text-gray-500">Pedido</div>
+          <div className="mt-1 text-xl font-bold text-gray-900">
+            {picking.sales_order_id}
+          </div>
         </div>
 
-        <Link
-          href="/mobile/picking"
-          className="rounded-lg border bg-gray-50 px-4 py-2 font-medium hover:bg-gray-100"
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
+            picking.status,
+          )}`}
         >
-          ← Volver
-        </Link>
+          {getStatusLabel(picking.status)}
+        </span>
       </div>
 
-      <div className="flex items-center justify-between rounded-2xl border bg-white p-6">
+      <div className="mt-5 border-t pt-4 text-xs text-gray-500">
         <div>
-          <div className="text-sm font-medium text-gray-600">Estado</div>
-          <div className="mt-1">
-            <span
-              className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
-                picking.status,
-              )}`}
-            >
-              {getStatusLabel(picking.status)}
-            </span>
-          </div>
+          ID: {picking.id.slice(0, 8)}...
         </div>
-
-        <div className="text-right">
-          <div className="text-sm font-medium text-gray-600">Progreso</div>
-          <div className="mt-1 text-2xl font-bold text-blue-600">
-            {completedCount}/{totalCount}
-          </div>
-        </div>
+        <div className="mt-1">{formattedDate}</div>
       </div>
 
-      {globalError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-          <p className="text-red-700">{globalError}</p>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {pickingItems.map((item) => (
-          <PickingItemRow
-            key={item.id}
-            item={item}
-            onConfirm={handleConfirmPicking}
-            isLoading={isLoading}
-          />
-        ))}
+      <div className="mt-5 flex items-center justify-between">
+        <div className="text-sm font-medium text-blue-600">Iniciar picking</div>
+        <div className="text-xl text-blue-600">→</div>
       </div>
-    </main>
+    </Link>
+  );
+}
+
+// ============================================================================
+// EMPTY STATE
+// ============================================================================
+
+function EmptyState() {
+  return (
+    <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+      <div className="text-6xl">📦</div>
+
+      <h3 className="mt-4 text-lg font-semibold text-gray-900">
+        No hay pickings pendientes
+      </h3>
+
+      <p className="mt-2 text-gray-600">
+        Las nuevas órdenes aparecerán aquí automáticamente.
+      </p>
+
+      <Link
+        href="/mobile/picking"
+        className="mt-6 inline-block rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700"
+      >
+        Actualizar
+      </Link>
+    </div>
   );
 }

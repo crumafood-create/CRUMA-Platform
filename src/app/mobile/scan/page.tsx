@@ -8,26 +8,23 @@ import {
   type FindLotResult,
 } from './actions';
 
-type LotResult =
-  FindLotResult;
-
 export default function ScanPage() {
   const [value, setValue] =
     useState('');
 
   const [lot, setLot] =
-    useState<LotResult>(
+    useState<FindLotResult>(
       null,
     );
 
   const [loading, setLoading] =
     useState(false);
 
-  // resto del archivo...
-}
-
   async function searchLot() {
-    if (!value.trim()) {
+    const code =
+      value.trim();
+
+    if (!code) {
       return;
     }
 
@@ -36,7 +33,7 @@ export default function ScanPage() {
     try {
       const result =
         await findLot(
-          value.trim(),
+          code,
         );
 
       setLot(result);
@@ -51,7 +48,7 @@ export default function ScanPage() {
         Escanear
       </h1>
 
-      <div className="rounded-2xl border p-6 space-y-4">
+      <div className="space-y-4 rounded-2xl border p-6">
         <div className="text-sm text-gray-500">
           Código de lote
         </div>
@@ -68,6 +65,7 @@ export default function ScanPage() {
         />
 
         <button
+          type="button"
           onClick={searchLot}
           className="rounded border px-4 py-2"
         >
@@ -138,6 +136,7 @@ export default function ScanPage() {
             </Link>
 
             <button
+              type="button"
               className="rounded border px-3 py-2 text-sm"
             >
               Imprimir Etiqueta

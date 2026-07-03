@@ -50,7 +50,7 @@ export default async function SalesOrderPage({
         </Link>
       </div>
 
-      <div className="space-y-4 rounded-2xl border p-6">
+      <div className="rounded-2xl border p-6 space-y-4">
         <div>
           <div className="text-sm text-gray-500">
             Pedido
@@ -66,7 +66,7 @@ export default async function SalesOrderPage({
             Estado
           </div>
 
-          <div className="font-semibold capitalize">
+          <div className="font-semibold">
             {order.status}
           </div>
         </div>
@@ -83,40 +83,14 @@ export default async function SalesOrderPage({
             ).toFixed(2)}
           </div>
         </div>
-
-        {order.delivery_date && (
-          <div>
-            <div className="text-sm text-gray-500">
-              Entrega
-            </div>
-
-            <div className="font-semibold">
-              {new Date(
-                order.delivery_date,
-              ).toLocaleDateString()}
-            </div>
-          </div>
-        )}
-
-        {order.notes && (
-          <div>
-            <div className="text-sm text-gray-500">
-              Notas
-            </div>
-
-            <div>
-              {order.notes}
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2">
         <Link
           href={`/sales-orders/${order.id}/items`}
           className="rounded border px-4 py-2"
         >
-          📦 Productos
+          Productos
         </Link>
 
         <Link
@@ -126,6 +100,18 @@ export default async function SalesOrderPage({
           📊 Utilidad
         </Link>
 
+        {order.status ===
+          'confirmed' && (
+          <Link
+            href="/mobile/picking"
+            className="rounded border px-4 py-2"
+          >
+            📦 Ver Picking
+          </Link>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
         {order.status ===
           'draft' && (
           <form
@@ -138,7 +124,7 @@ export default async function SalesOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              ✅ Confirmar
+              Confirmar Pedido
             </button>
           </form>
         )}
@@ -155,7 +141,7 @@ export default async function SalesOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              🏭 Preparar
+              Preparar
             </button>
           </form>
         )}
@@ -172,13 +158,17 @@ export default async function SalesOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              📦 Marcar Listo
+              Marcar como Listo
             </button>
           </form>
         )}
 
-        {order.status ===
-          'ready' && (
+        {(
+          order.status ===
+            'confirmed' ||
+          order.status ===
+            'ready'
+        ) && (
           <form
             action={deliverSalesOrder.bind(
               null,
@@ -187,18 +177,11 @@ export default async function SalesOrderPage({
           >
             <button
               type="submit"
-              className="rounded border px-4 py-2"
+              className="rounded border bg-green-600 px-4 py-2 text-white hover:bg-green-700"
             >
-              🚚 Entregar
+              Entregar Pedido
             </button>
           </form>
-        )}
-
-        {order.status ===
-          'delivered' && (
-          <div className="rounded border border-green-300 bg-green-50 px-4 py-2 text-green-700">
-            ✅ Pedido entregado
-          </div>
         )}
       </div>
     </main>

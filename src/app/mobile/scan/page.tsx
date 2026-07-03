@@ -1,51 +1,51 @@
 'use client';
 
 import Link from 'next/link';
-
 import { useState } from 'react';
 
-// import { Scanner }
-  // from '@yudiel/react-qr-scanner';
-
-import { findLot }
-  from './actions';
+import { findLot } from './actions';
 
 type LotResult = {
-  type:
-    | 'product'
-    | 'raw_material';
-
-  itemType:
-    | 'product'
-    | 'raw_material';
-
-  itemId: string;
-
+  type: 'product' | 'raw_material';
   lot: {
     id: string;
     lot_number: string;
     quantity: number;
   };
+  itemId?: string;
+  itemType?: string;
 } | null;
 
 export default function ScanPage() {
-  const [
-    value,
-    setValue,
-  ] = useState('');
+  const [value, setValue] =
+    useState('');
 
-  const [
-    lot,
-    setLot,
-  ] =
+  const [lot, setLot] =
     useState<LotResult>(
       null,
     );
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
+
+  async function searchLot() {
+    if (!value.trim()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result =
+        await findLot(
+          value.trim(),
+        );
+
+      setLot(result);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main className="space-y-6 p-6">
@@ -53,125 +53,100 @@ export default function ScanPage() {
         Escanear
       </h1>
 
-      <div className="overflow-hidden rounded-2xl border">
-        <Scanner
-          onScan={async (
-            result,
-          ) => {
-            if (
-              !result.length
-            ) {
-              return;
-            }
-
-            const code =
-              result[0]
-                .rawValue;
-
-            setValue(
-              code,
-            );
-
-            setLoading(
-              true,
-            );
-
-            try {
-              const resultLot =
-                await findLot(
-                  code,
-                );
-
-              setLot(
-                resultLot,
-              );
-            } finally {
-              setLoading(
-                false,
-              );
-            }
-          }}
-        />
-      </div>
-
-      <div className="rounded-2xl border p-6">
+      <div className="rounded-2xl border p-6 space-y-4">
         <div className="text-sm text-gray-500">
-          Resultado
+          Código de lote
         </div>
 
-        <div className="mt-2 break-all text-lg font-semibold">
-          {value ||
-            'Escanea un código'}
-        </div>
+        <input
+          value={value}
+          onChange={(e) =>
+            setValue(
+              e.target.value,
+            )
+          }
+          placeholder="Escribe o pega el código"
+          className="w-full rounded border p-3"
+        />
 
-        {loading && (
-          <div className="mt-4 text-sm text-gray-500">
-            Buscando lote...
-          </div>
-        )}
-
-        {!loading &&
-          value &&
-          !lot && (
-            <div className="mt-4 rounded border border-yellow-300 bg-yellow-50 p-4">
-              No se encontró un lote para este código.
-            </div>
-          )}
-
-        {lot && (
-          <div className="mt-6 rounded border p-4">
-            <div className="font-semibold">
-              Lote encontrado
-            </div>
-
-            <div className="mt-3">
-              Tipo:{' '}
-              {lot.type ===
-              'product'
-                ? 'Producto'
-                : 'Materia Prima'}
-            </div>
-
-            <div>
-              Lote:{' '}
-              {
-                lot.lot
-                  .lot_number
-              }
-            </div>
-
-            <div>
-              Cantidad:{' '}
-              {
-                lot.lot
-                  .quantity
-              }
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-  <Link
-    href={`/inventory/kardex/${lot.itemType}/${lot.itemId}`}
-    className="rounded border px-3 py-2 text-sm"
-  >
-    Ver Kardex
-  </Link>
-
-  <Link
-    href={`/mobile/lots/${lot.lot.id}`}
-    className="rounded border px-3 py-2 text-sm"
-  >
-    Ver Trazabilidad
-  </Link>
-
-  <button
-    className="rounded border px-3 py-2 text-sm"
-  >
-    Imprimir Etiqueta
-  </button>
-</div>
-          </div>
-        )}
+        <button
+          onClick={searchLot}
+          className="rounded border px-4 py-2"
+        >
+          Buscar
+        </button>
       </div>
+
+      {loading && (
+        <div className="rounded border p-4">
+          Buscando lote...
+        </div>
+      )}
+
+      {!loading &&
+        value &&
+        !lot && (
+          <div className="rounded border border-yellow-300 bg-yellow-50 p-4">
+            No se encontró un lote para este código.
+          </div>
+        )}
+
+      {lot && (
+        <div className="rounded border p-6">
+          <div className="font-semibold">
+            Lote encontrado
+          </div>
+
+          <div className="mt-3">
+            Tipo:{' '}
+            {lot.type ===
+            'product'
+              ? 'Producto'
+              : 'Materia Prima'}
+          </div>
+
+          <div>
+            Lote:{' '}
+            {
+              lot.lot
+                .lot_number
+            }
+          </div>
+
+          <div>
+            Cantidad:{' '}
+            {
+              lot.lot
+                .quantity
+            }
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {lot.itemId &&
+              lot.itemType && (
+                <Link
+                  href={`/inventory/kardex/${lot.itemType}/${lot.itemId}`}
+                  className="rounded border px-3 py-2 text-sm"
+                >
+                  Ver Kardex
+                </Link>
+              )}
+
+            <Link
+              href={`/mobile/lots/${lot.lot.id}`}
+              className="rounded border px-3 py-2 text-sm"
+            >
+              Ver Trazabilidad
+            </Link>
+
+            <button
+              className="rounded border px-3 py-2 text-sm"
+            >
+              Imprimir Etiqueta
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

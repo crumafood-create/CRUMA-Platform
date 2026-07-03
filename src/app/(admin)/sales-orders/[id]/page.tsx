@@ -24,13 +24,14 @@ export default async function SalesOrderPage({
 
   const {
     data: order,
+    error,
   } = await supabase
     .from('sales_orders')
     .select('*')
     .eq('id', id)
     .single();
 
-  if (!order) {
+  if (error || !order) {
     notFound();
   }
 
@@ -65,7 +66,7 @@ export default async function SalesOrderPage({
             Estado
           </div>
 
-          <div className="font-semibold">
+          <div className="font-semibold capitalize">
             {order.status}
           </div>
         </div>
@@ -82,6 +83,32 @@ export default async function SalesOrderPage({
             ).toFixed(2)}
           </div>
         </div>
+
+        {order.delivery_date && (
+          <div>
+            <div className="text-sm text-gray-500">
+              Entrega
+            </div>
+
+            <div className="font-semibold">
+              {new Date(
+                order.delivery_date,
+              ).toLocaleDateString()}
+            </div>
+          </div>
+        )}
+
+        {order.notes && (
+          <div>
+            <div className="text-sm text-gray-500">
+              Notas
+            </div>
+
+            <div>
+              {order.notes}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -89,7 +116,7 @@ export default async function SalesOrderPage({
           href={`/sales-orders/${order.id}/items`}
           className="rounded border px-4 py-2"
         >
-          Productos
+          📦 Productos
         </Link>
 
         <Link
@@ -111,7 +138,7 @@ export default async function SalesOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              Confirmar
+              ✅ Confirmar
             </button>
           </form>
         )}
@@ -128,7 +155,7 @@ export default async function SalesOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              Preparar
+              🏭 Preparar
             </button>
           </form>
         )}
@@ -145,7 +172,7 @@ export default async function SalesOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              Listo
+              📦 Marcar Listo
             </button>
           </form>
         )}
@@ -162,9 +189,16 @@ export default async function SalesOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              Entregar
+              🚚 Entregar
             </button>
           </form>
+        )}
+
+        {order.status ===
+          'delivered' && (
+          <div className="rounded border border-green-300 bg-green-50 px-4 py-2 text-green-700">
+            ✅ Pedido entregado
+          </div>
         )}
       </div>
     </main>

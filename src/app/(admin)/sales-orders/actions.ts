@@ -220,13 +220,53 @@ export async function confirmSalesOrder(orderId: string) {
 
   const typedPicking = picking as PickingOrderRow;
 
-  const pickingItems = typedItems.map((item) => ({
-    picking_order_id: typedPicking.id,
-    product_id: item.product_id,
-    quantity: Number(item.quantity ?? 0),
-    picked_quantity: 0,
-    status: 'pending',
-  }));
+  const pickingItems = [];
+
+for (const item of items) {
+  const {
+    data: lot,
+  } = await supabase
+    .from(
+      'inventory_pick_suggestions',
+    )
+    .select(`
+      lot_id,
+      product_id,
+      lot_number,
+      quantity,
+      location_name
+    `)
+    .eq(
+      'product_id',
+      item.product_id,
+    )
+    .limit(1)
+    .maybeSingle();
+
+  pickingItems.push({
+    picking_order_id:
+      picking.id,
+
+    product_id:
+      item.product_id,
+
+    quantity:
+      Number(
+        item.quantity,
+      ),
+
+    suggested_lot_id:
+      lot?.lot_id ?? null,
+
+    suggested_lot_number:
+      lot?.lot_number ??
+      null,
+
+    suggested_location:
+      lot?.location_name ??
+      null,
+  });
+    }
 
   const { error: pickingItemsError } = await supabase
     .from('picking_order_items')

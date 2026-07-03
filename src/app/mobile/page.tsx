@@ -1,7 +1,5 @@
 import Link from 'next/link';
-import {
-  confirmPicking,
-} from './actions';
+
 export default function MobilePage() {
   return (
     <main className="space-y-4 p-6">

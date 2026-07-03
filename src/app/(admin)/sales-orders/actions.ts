@@ -180,6 +180,17 @@ export async function confirmSalesOrder(orderId: string) {
     }
   }
 
+  const {
+  error:
+    reservationError,
+} = await supabase
+  .from(
+    'inventory_reservations',
+  )
+  .insert(
+    reservations,
+  );
+
   const reservations = typedItems.map((item) => ({
     item_type: 'product' as const,
     item_id: item.product_id,
@@ -197,6 +208,68 @@ export async function confirmSalesOrder(orderId: string) {
   if (reservationError) {
     throw new Error(reservationError.message);
   }
+
+  //
+// Crear picking
+//
+const {
+  data: picking,
+  error: pickingError,
+} = await supabase
+  .from(
+    'picking_orders',
+  )
+  .insert({
+    sales_order_id:
+      orderId,
+  })
+  .select()
+  .single();
+
+if (
+  pickingError ||
+  !picking
+) {
+  throw new Error(
+    pickingError?.message ??
+      'No se pudo crear el picking.',
+  );
+}
+
+const pickingItems =
+  items.map(
+    (item) => ({
+      picking_order_id:
+        picking.id,
+
+      product_id:
+        item.product_id,
+
+      quantity:
+        Number(
+          item.quantity,
+        ),
+    }),
+  );
+
+const {
+  error:
+    pickingItemsError,
+} = await supabase
+  .from(
+    'picking_order_items',
+  )
+  .insert(
+    pickingItems,
+  );
+
+if (
+  pickingItemsError
+) {
+  throw new Error(
+    pickingItemsError.message,
+  );
+}
 
   const { error: updateError } = await supabase
     .from('sales_orders')

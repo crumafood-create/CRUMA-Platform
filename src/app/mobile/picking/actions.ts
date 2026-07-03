@@ -157,3 +157,41 @@ export async function pickItem(
     `/mobile/picking/${item.picking_order_id}`,
   );
 }
+export async function getSuggestedLot(
+  productId: string,
+) {
+  const supabase =
+    await createClient();
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      'inventory_product_lots_fefo',
+    )
+    .select(`
+      id,
+      lot_number,
+      quantity,
+      location_name
+    `)
+    .eq(
+      'product_id',
+      productId,
+    )
+    .gt(
+      'quantity',
+      0,
+    )
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      error.message,
+    );
+  }
+
+  return data;
+}

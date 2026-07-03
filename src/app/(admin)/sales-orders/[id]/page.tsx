@@ -2,7 +2,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
-import { deliverSalesOrder, } from '../actions';
+
+import {
+  confirmSalesOrder,
+  startPreparingSalesOrder,
+  markSalesOrderReady,
+  deliverSalesOrder,
+} from '../actions';
+
 export default async function SalesOrderPage({
   params,
 }: {
@@ -10,8 +17,7 @@ export default async function SalesOrderPage({
     id: string;
   }>;
 }) {
-  const { id } =
-    await params;
+  const { id } = await params;
 
   const supabase =
     await createClient();
@@ -43,16 +49,14 @@ export default async function SalesOrderPage({
         </Link>
       </div>
 
-      <div className="rounded-2xl border p-6 space-y-4">
+      <div className="space-y-4 rounded-2xl border p-6">
         <div>
           <div className="text-sm text-gray-500">
             Pedido
           </div>
 
           <div className="font-semibold">
-            {
-              order.order_number
-            }
+            {order.order_number}
           </div>
         </div>
 
@@ -74,112 +78,95 @@ export default async function SalesOrderPage({
           <div className="font-semibold">
             $
             {Number(
-              order.total,
+              order.total ?? 0,
             ).toFixed(2)}
           </div>
         </div>
       </div>
 
-      <Link
-        href={`/sales-orders/${order.id}/items`}
-        className="rounded border px-4 py-2"
-      >
-        Productos
-      </Link>
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href={`/sales-orders/${order.id}/items`}
+          className="rounded border px-4 py-2"
+        >
+          Productos
+        </Link>
 
-      <Link
-  href={`/sales-orders/${order.id}/profit`}
-  className="rounded border px-4 py-2"
->
-  📊 Utilidad
-</Link>
+        <Link
+          href={`/sales-orders/${order.id}/profit`}
+          className="rounded border px-4 py-2"
+        >
+          📊 Utilidad
+        </Link>
 
-      {order.status ===
-  'draft' && (
-  <form
-    action={confirmSalesOrder.bind(
-      null,
-      order.id,
-    )}
-  >
-    <button className="rounded border px-4 py-2">
-      Confirmar
-    </button>
-  </form>
-)}
+        {order.status ===
+          'draft' && (
+          <form
+            action={confirmSalesOrder.bind(
+              null,
+              order.id,
+            )}
+          >
+            <button
+              type="submit"
+              className="rounded border px-4 py-2"
+            >
+              Confirmar
+            </button>
+          </form>
+        )}
 
-{order.status ===
-  'confirmed' && (
-  <form
-    action={startPreparingSalesOrder.bind(
-      null,
-      order.id,
-    )}
-  >
-    <button className="rounded border px-4 py-2">
-      Preparar
-    </button>
-  </form>
-)}
+        {order.status ===
+          'confirmed' && (
+          <form
+            action={startPreparingSalesOrder.bind(
+              null,
+              order.id,
+            )}
+          >
+            <button
+              type="submit"
+              className="rounded border px-4 py-2"
+            >
+              Preparar
+            </button>
+          </form>
+        )}
 
-{order.status ===
-  'preparing' && (
-  <form
-    action={markSalesOrderReady.bind(
-      null,
-      order.id,
-    )}
-  >
-    <button className="rounded border px-4 py-2">
-      Listo
-    </button>
-  </form>
-)}
+        {order.status ===
+          'preparing' && (
+          <form
+            action={markSalesOrderReady.bind(
+              null,
+              order.id,
+            )}
+          >
+            <button
+              type="submit"
+              className="rounded border px-4 py-2"
+            >
+              Listo
+            </button>
+          </form>
+        )}
 
-{order.status ===
-  'ready' && (
-  <form
-    action={deliverSalesOrder.bind(
-      null,
-      order.id,
-    )}
-  >
-    <button className="rounded border px-4 py-2">
-      Entregar
-    </button>
-  </form>
-)}
-
-      {order.status ===
-  'confirmed' && (
-  <form
-    action={deliverSalesOrder.bind(
-      null,
-      order.id,
-    )}
-  >
-    <button
-      type="submit"
-      className="rounded border px-4 py-2"
-    >
-      Entregar Pedido
-    </button>
-  </form>
-)}
-      <form
-  action={confirmSalesOrder.bind(
-    null,
-    order.id,
-  )}
->
-  <button
-    type="submit"
-    className="rounded border px-4 py-2"
-  >
-    Confirmar Pedido
-  </button>
-</form>
-      
+        {order.status ===
+          'ready' && (
+          <form
+            action={deliverSalesOrder.bind(
+              null,
+              order.id,
+            )}
+          >
+            <button
+              type="submit"
+              className="rounded border px-4 py-2"
+            >
+              Entregar
+            </button>
+          </form>
+        )}
+      </div>
     </main>
   );
 }

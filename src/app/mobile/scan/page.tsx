@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { findLot } from './actions';
-
-import { findLot, type FindLotResult, } from './actions';
+import {
+  findLot,
+  type FindLotResult,
+} from './actions';
 
 type LotResult =
   FindLotResult;
@@ -21,6 +22,9 @@ export default function ScanPage() {
 
   const [loading, setLoading] =
     useState(false);
+
+  // resto del archivo...
+}
 
   async function searchLot() {
     if (!value.trim()) {

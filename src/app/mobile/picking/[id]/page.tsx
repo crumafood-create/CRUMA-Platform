@@ -1,4 +1,12 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+import {
+  confirmPicking,
+} from './actions';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
@@ -34,6 +42,31 @@ function getStatusLabel(status: string): string {
   }
 }
 
+async function handleConfirmPicking(
+  confirmation: PickingConfirmation,
+) {
+  setIsLoading(true);
+  setGlobalError(null);
+
+  try {
+    await confirmPicking(
+      confirmation.picking_item_id,
+      confirmation.scanned_lot_number,
+    );
+
+    router.push(
+      '/mobile/picking',
+    );
+  } catch (error) {
+    setGlobalError(
+      error instanceof Error
+        ? error.message
+        : 'Error al confirmar picking',
+    );
+  } finally {
+    setIsLoading(false);
+  }
+}
 /**
  * Obtiene la clase CSS para el badge de estado
  */
@@ -140,3 +173,4 @@ export default async function MobilePickingListPage() {
     </main>
   );
 }
+

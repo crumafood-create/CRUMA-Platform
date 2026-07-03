@@ -59,6 +59,36 @@ export default async function MobilePickingPage() {
                   picking.status
                 }
               </div>
+
+              <div className="rounded border p-4">
+  <div className="font-semibold">
+    {product?.name}
+  </div>
+
+  <div className="mt-3">
+    Cantidad:
+    {' '}
+    {item.quantity}
+  </div>
+
+  <div>
+    Ubicación:
+    {' '}
+    {suggested?.location_name}
+  </div>
+
+  <div>
+    Lote:
+    {' '}
+    {suggested?.lot_number}
+  </div>
+
+  <div>
+    Disponible:
+    {' '}
+    {suggested?.quantity}
+  </div>
+</div>
             </Link>
           ),
         )}

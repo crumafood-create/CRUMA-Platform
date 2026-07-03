@@ -7,39 +7,38 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+type SalesOrderStatus =
+  | 'draft'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready'
+  | 'delivered'
+  | 'cancelled';
+
+interface SalesOrderRow {
+  id: string;
+  order_number: string;
+  customer_id: string;
+  status: SalesOrderStatus;
+  total: number | null;
+}
 
 interface SalesOrderItemRow {
   id: string;
   sales_order_id: string;
   product_id: string;
   quantity: number | null;
-  unit_price: number | null;
-  subtotal: number | null;
   delivered_quantity: number | null;
-}
-
-interface SalesOrderRow {
-  id: string;
-  order_number: string;
-  customer_id: string;
-  status: 'draft' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-  total: number | null;
-}
-
-interface InventoryMovementInput {
-  item_type: 'raw_material' | 'product';
-  item_id: string;
-  movement_type: 'entry' | 'exit' | 'adjustment';
-  quantity: number;
-  reference_type: string;
-  reference_id: string;
-  notes?: string;
 }
 
 interface ATPRow {
   item_id: string;
   available_quantity: number | null;
+}
+
+interface PickingOrderRow {
+  id: string;
+  sales_order_id: string;
 }
 
 function generateOrderNumber() {
@@ -54,32 +53,17 @@ function generateOrderNumber() {
   return `SO-${yyyy}${mm}${dd}-${random}`;
 }
 
-async function createInventoryMovement(
-  supabase: SupabaseClient,
-  movement: InventoryMovementInput,
-) {
-  const { error } = await supabase.from('inventory_movements').insert({
-    item_type: movement.item_type,
-    item_id: movement.item_id,
-    movement_type: movement.movement_type,
-    quantity: movement.quantity,
-    reference_type: movement.reference_type,
-    reference_id: movement.reference_id,
-    notes: movement.notes ?? null,
-    created_at: new Date().toISOString(),
-  });
-
-  if (error) {
-    throw new Error(`Error al registrar movimiento de inventario: ${error.message}`);
-  }
-}
-
 export async function createSalesOrder(formData: FormData) {
   const supabase = await createClient();
 
-  const customer_id = formData.get('customer_id')?.toString().trim() ?? '';
-  const delivery_date = formData.get('delivery_date')?.toString() || null;
-  const notes = formData.get('notes')?.toString().trim() || null;
+  const customer_id =
+    formData.get('customer_id')?.toString().trim() ?? '';
+
+  const delivery_date =
+    formData.get('delivery_date')?.toString() || null;
+
+  const notes =
+    formData.get('notes')?.toString().trim() || null;
 
   if (!customer_id) {
     throw new Error('Cliente requerido');
@@ -108,6 +92,9 @@ export async function createSalesOrder(formData: FormData) {
 export async function confirmSalesOrder(orderId: string) {
   const supabase = await createClient();
 
+  //
+  // Pedido
+  //
   const { data: order, error: orderError } = await supabase
     .from('sales_orders')
     .select(`
@@ -127,9 +114,13 @@ export async function confirmSalesOrder(orderId: string) {
     throw new Error('Solo se pueden confirmar pedidos en borrador.');
   }
 
+  //
+  // Renglones
+  //
   const { data: items, error: itemsError } = await supabase
     .from('sales_order_items')
     .select(`
+      id,
       product_id,
       quantity
     `)
@@ -139,12 +130,17 @@ export async function confirmSalesOrder(orderId: string) {
     throw new Error(itemsError.message);
   }
 
-  const typedItems = (items ?? []) as Array<Pick<SalesOrderItemRow, 'product_id' | 'quantity'>>;
+  const typedItems = (items ?? []) as Array<
+    Pick<SalesOrderItemRow, 'id' | 'product_id' | 'quantity'>
+  >;
 
   if (typedItems.length === 0) {
     throw new Error('El pedido no tiene productos.');
   }
 
+  //
+  // ATP
+  //
   const productIds = typedItems.map((item) => item.product_id);
 
   const { data: atp, error: atpError } = await supabase
@@ -169,6 +165,9 @@ export async function confirmSalesOrder(orderId: string) {
     ]),
   );
 
+  //
+  // Validar ATP
+  //
   for (const item of typedItems) {
     const available = atpMap.get(item.product_id) ?? 0;
     const required = Number(item.quantity ?? 0);
@@ -180,17 +179,9 @@ export async function confirmSalesOrder(orderId: string) {
     }
   }
 
-  const {
-  error:
-    reservationError,
-} = await supabase
-  .from(
-    'inventory_reservations',
-  )
-  .insert(
-    reservations,
-  );
-
+  //
+  // Crear reservas
+  //
   const reservations = typedItems.map((item) => ({
     item_type: 'product' as const,
     item_id: item.product_id,
@@ -201,76 +192,53 @@ export async function confirmSalesOrder(orderId: string) {
     notes: 'Reserva por pedido de venta',
   }));
 
-  const { error: reservationError } = await supabase
+  const { error: insertReservationError } = await supabase
     .from('inventory_reservations')
     .insert(reservations);
 
-  if (reservationError) {
-    throw new Error(reservationError.message);
+  if (insertReservationError) {
+    throw new Error(insertReservationError.message);
   }
 
   //
-// Crear picking
-//
-const {
-  data: picking,
-  error: pickingError,
-} = await supabase
-  .from(
-    'picking_orders',
-  )
-  .insert({
-    sales_order_id:
-      orderId,
-  })
-  .select()
-  .single();
+  // Crear picking
+  //
+  const { data: picking, error: pickingError } = await supabase
+    .from('picking_orders')
+    .insert({
+      sales_order_id: orderId,
+      status: 'pending',
+    })
+    .select('id, sales_order_id')
+    .single();
 
-if (
-  pickingError ||
-  !picking
-) {
-  throw new Error(
-    pickingError?.message ??
-      'No se pudo crear el picking.',
-  );
-}
+  if (pickingError || !picking) {
+    throw new Error(
+      pickingError?.message ?? 'No se pudo crear el picking.',
+    );
+  }
 
-const pickingItems =
-  items.map(
-    (item) => ({
-      picking_order_id:
-        picking.id,
+  const typedPicking = picking as PickingOrderRow;
 
-      product_id:
-        item.product_id,
+  const pickingItems = typedItems.map((item) => ({
+    picking_order_id: typedPicking.id,
+    product_id: item.product_id,
+    quantity: Number(item.quantity ?? 0),
+    picked_quantity: 0,
+    status: 'pending',
+  }));
 
-      quantity:
-        Number(
-          item.quantity,
-        ),
-    }),
-  );
+  const { error: pickingItemsError } = await supabase
+    .from('picking_order_items')
+    .insert(pickingItems);
 
-const {
-  error:
-    pickingItemsError,
-} = await supabase
-  .from(
-    'picking_order_items',
-  )
-  .insert(
-    pickingItems,
-  );
+  if (pickingItemsError) {
+    throw new Error(pickingItemsError.message);
+  }
 
-if (
-  pickingItemsError
-) {
-  throw new Error(
-    pickingItemsError.message,
-  );
-}
-
+  //
+  // Confirmar pedido
+  //
   const { error: updateError } = await supabase
     .from('sales_orders')
     .update({
@@ -286,6 +254,8 @@ if (
   revalidatePath('/sales-orders');
   revalidatePath(`/sales-orders/${orderId}`);
   revalidatePath('/inventory-atp');
+  revalidatePath('/mobile/picking');
+  revalidatePath(`/mobile/picking/${typedPicking.id}`);
 }
 
 export async function startPreparingSalesOrder(orderId: string) {
@@ -329,6 +299,9 @@ export async function markSalesOrderReady(orderId: string) {
 export async function deliverSalesOrder(orderId: string) {
   const supabase = await createClient();
 
+  //
+  // Pedido
+  //
   const { data: order, error: orderError } = await supabase
     .from('sales_orders')
     .select(`
@@ -344,12 +317,21 @@ export async function deliverSalesOrder(orderId: string) {
     throw new Error(orderError?.message ?? 'Pedido no encontrado');
   }
 
-  const typedOrder = order as Pick<SalesOrderRow, 'id' | 'total' | 'customer_id' | 'status'>;
+  const typedOrder = order as Pick<
+    SalesOrderRow,
+    'id' | 'total' | 'customer_id' | 'status'
+  >;
 
-  if (typedOrder.status !== 'confirmed' && typedOrder.status !== 'ready') {
+  if (
+    typedOrder.status !== 'confirmed' &&
+    typedOrder.status !== 'ready'
+  ) {
     throw new Error('Solo se pueden entregar pedidos confirmados o listos.');
   }
 
+  //
+  // Productos
+  //
   const { data: items, error: itemsError } = await supabase
     .from('sales_order_items')
     .select(`
@@ -362,8 +344,13 @@ export async function deliverSalesOrder(orderId: string) {
     throw new Error(itemsError.message);
   }
 
-  const typedItems = (items ?? []) as Array<Pick<SalesOrderItemRow, 'product_id' | 'quantity'>>;
+  const typedItems = (items ?? []) as Array<
+    Pick<SalesOrderItemRow, 'product_id' | 'quantity'>
+  >;
 
+  //
+  // Salidas de inventario
+  //
   const movements = typedItems.map((item) => ({
     item_type: 'product' as const,
     item_id: item.product_id,
@@ -384,7 +371,10 @@ export async function deliverSalesOrder(orderId: string) {
     }
   }
 
-  const { error: reservationError } = await supabase
+  //
+  // Liberar reservas
+  //
+  const { error: releaseReservationError } = await supabase
     .from('inventory_reservations')
     .update({
       status: 'released',
@@ -393,10 +383,13 @@ export async function deliverSalesOrder(orderId: string) {
     .eq('reference_type', 'sales_order')
     .eq('reference_id', orderId);
 
-  if (reservationError) {
-    throw new Error(reservationError.message);
+  if (releaseReservationError) {
+    throw new Error(releaseReservationError.message);
   }
 
+  //
+  // Pedido entregado
+  //
   const { error: updateError } = await supabase
     .from('sales_orders')
     .update({
@@ -410,6 +403,9 @@ export async function deliverSalesOrder(orderId: string) {
     throw new Error(updateError.message);
   }
 
+  //
+  // Cuenta por cobrar
+  //
   if (Number(typedOrder.total ?? 0) > 0) {
     const { error: receivableError } = await supabase
       .from('accounts_receivable')
@@ -431,4 +427,4 @@ export async function deliverSalesOrder(orderId: string) {
   revalidatePath('/inventory-stock');
   revalidatePath('/inventory-atp');
   revalidatePath('/accounts-receivable');
-      }
+}

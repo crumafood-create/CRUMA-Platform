@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
-
+import MobileScanner from '@/app/mobile/components/mobile-scanner';
 // ============================================================================
 // TIPOS
 // ============================================================================

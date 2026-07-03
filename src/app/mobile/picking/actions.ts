@@ -92,66 +92,61 @@ export async function pickItem(
         'completed',
     );
 
-  if (
-    completed &&
-    items?.length
-  ) {
-    const pickingId =
-      items[0]
-        .picking_order_id;
+  if (completed) {
+  const pickingId =
+    item.picking_order_id;
 
-    const {
-      data: picking,
-    } =
-      await supabase
-        .from(
-          'picking_orders',
-        )
-        .select(`
-          sales_order_id
-        `)
-        .eq(
-          'id',
-          pickingId,
-        )
-        .single();
-
+  const {
+    data: picking,
+  } =
     await supabase
       .from(
         'picking_orders',
       )
+      .select(`
+        sales_order_id
+      `)
+      .eq(
+        'id',
+        pickingId,
+      )
+      .single();
+
+  await supabase
+    .from(
+      'picking_orders',
+    )
+    .update({
+      status:
+        'completed',
+      completed_at:
+        new Date().toISOString(),
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq(
+      'id',
+      pickingId,
+    );
+
+  if (
+    picking?.sales_order_id
+  ) {
+    await supabase
+      .from(
+        'sales_orders',
+      )
       .update({
         status:
-          'completed',
-
+          'preparing',
         updated_at:
           new Date().toISOString(),
       })
       .eq(
         'id',
-        pickingId,
+        picking.sales_order_id,
       );
-
-    if (
-      picking
-        ?.sales_order_id
-    ) {
-      await supabase
-        .from(
-          'sales_orders',
-        )
-        .update({
-          status:
-            'ready',
-
-          updated_at:
-            new Date().toISOString(),
-        })
-        .eq(
-          'id',
-          picking.sales_order_id,
-        );
-    }
+  }
   }
 
   revalidatePath(

@@ -127,8 +127,13 @@ export default function MobilePickingDetailPage({
     setGlobalError(null);
 
     try {
-      await confirmPicking(currentItem.id, code);
-      await loadDetail();
+      await confirmPicking(
+  currentItem.id,
+  code,
+);
+
+setScannedLot('');
+await loadDetail();
     } catch (error) {
       setGlobalError(
         error instanceof Error ? error.message : 'Error al confirmar picking',

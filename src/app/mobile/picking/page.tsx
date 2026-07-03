@@ -89,6 +89,31 @@ export default async function MobilePickingPage() {
     {suggested?.quantity}
   </div>
 </div>
+              <input
+  value={scannedLot}
+  onChange={(e) =>
+    setScannedLot(
+      e.target.value,
+    )
+  }
+  placeholder="Escanea el lote"
+  className="w-full rounded border p-3"
+/>
+              <button
+  onClick={confirmPicking}
+  className="rounded border px-4 py-2"
+>
+  Confirmar Picking
+</button>
+
+              if (
+  scannedLot !==
+  suggested.lot_number
+) {
+  throw new Error(
+    'Lote incorrecto',
+  );
+              }
             </Link>
           ),
         )}

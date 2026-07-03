@@ -209,6 +209,18 @@ export async function confirmPicking(
       status: 'completed',
       updated_at: new Date().toISOString(),
     })
+    await supabase
+  .from('inventory_movements')
+  .insert({
+    item_type: 'product',
+    item_id: item.product_id,
+    movement_type: 'reservation',
+    quantity: required,
+    reference_type: 'picking',
+    reference_id: item.picking_order_id,
+    lot_id: lot.id,
+    notes: `Picking lote ${lot.lot_number}`,
+  });
     .eq('id', pickingItemId);
 
   if (updateItemError) {

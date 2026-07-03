@@ -406,6 +406,35 @@ export async function deliverSalesOrder(orderId: string) {
       .from('inventory_movements')
       .insert(movements);
 
+    for (const item of typedItems) {
+  const { data: pickingItem } = await supabase
+    .from('picking_order_items')
+    .select(`
+      quantity,
+      product_lot_id
+    `)
+    .eq('product_id', item.product_id)
+    .limit(1)
+    .maybeSingle();
+
+  if (
+    pickingItem?.product_lot_id &&
+    pickingItem.quantity
+  ) {
+    await supabase.rpc(
+      'decrease_product_lot_quantity',
+      {
+        p_lot_id:
+          pickingItem.product_lot_id,
+        p_quantity:
+          Number(
+            pickingItem.quantity,
+          ),
+      },
+    );
+  }
+    }
+
     if (movementError) {
       throw new Error(movementError.message);
     }

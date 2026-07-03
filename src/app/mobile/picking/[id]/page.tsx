@@ -2,6 +2,10 @@ import { notFound } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 
+import {
+  pickItem,
+} from '../actions';
+
 export default async function PickingPage({
   params,
 }: {
@@ -26,6 +30,7 @@ export default async function PickingPage({
       quantity,
       picked_quantity,
       status,
+      product_id,
       products (
         name
       )
@@ -65,32 +70,52 @@ export default async function PickingPage({
                 }
                 className="rounded-2xl border p-6"
               >
-                <div className="font-semibold">
+                <div className="font-semibold text-lg">
                   {
                     product?.name
                   }
                 </div>
 
-                <div className="mt-3">
-                  Cantidad:{' '}
+                <div className="mt-4">
+                  Cantidad:
+                  {' '}
                   {
                     item.quantity
                   }
                 </div>
 
                 <div>
-                  Recogido:{' '}
+                  Recogido:
+                  {' '}
                   {
                     item.picked_quantity
                   }
                 </div>
 
                 <div>
-                  Estado:{' '}
+                  Estado:
+                  {' '}
                   {
                     item.status
                   }
                 </div>
+
+                {item.status !==
+                  'completed' && (
+                  <form
+                    action={pickItem.bind(
+                      null,
+                      item.id,
+                    )}
+                    className="mt-4"
+                  >
+                    <button
+                      className="rounded border px-4 py-2"
+                    >
+                      ✅ Tomar
+                    </button>
+                  </form>
+                )}
               </div>
             );
           },

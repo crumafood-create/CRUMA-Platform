@@ -238,7 +238,61 @@ if (itemsError) {
     </main>
   );
 }
+const pickingItems =
+  await Promise.all(
+    (items ?? []).map(
+      async (
+        item,
+      ) => {
+        const {
+          data:
+            suggestedLot,
+        } =
+          await supabase
+            .from(
+              'inventory_product_lots_fefo',
+            )
+            .select(`
+              id,
+              lot_number,
+              quantity,
+              location_name
+            `)
+            .eq(
+              'product_id',
+              item.product_id,
+            )
+            .limit(1)
+            .maybeSingle();
 
+        return {
+          id: item.id,
+          product_id:
+            item.product_id,
+          quantity_to_pick:
+            Number(
+              item.quantity,
+            ),
+          picked_quantity:
+            Number(
+              item.picked_quantity ??
+                0,
+            ),
+          status:
+            item.status,
+          suggested_lot:
+            suggestedLot ??
+            undefined,
+          product:
+            Array.isArray(
+              item.products,
+            )
+              ? item.products[0]
+              : item.products,
+        };
+      },
+    ),
+  );
   
   const pickingStatus = detail.picking.status as PickingOrderStatus;
   const isCompleted = pickingStatus === 'completed';

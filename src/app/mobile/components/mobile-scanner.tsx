@@ -1,4 +1,4 @@
-'use client';
+src/app/mobile/picking/page.tsx'use client';
 
 import {
   useEffect,
@@ -26,24 +26,28 @@ export default function MobileScanner({
     );
 
   const intervalRef =
-    useRef<NodeJS.Timeout | null>(
+    useRef<ReturnType<typeof setInterval> | null>(
       null,
     );
 
+  const detectedRef =
+    useRef(false);
+
   const [error, setError] =
-    useState<
-      string | null
-    >(null);
+    useState<string | null>(
+      null,
+    );
 
   const [supported, setSupported] =
     useState(false);
 
   useEffect(() => {
-    startCamera();
+    void startCamera();
 
     return () => {
-      stopCamera();
+      cleanup();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function startCamera() {
@@ -54,59 +58,49 @@ export default function MobileScanner({
         await navigator.mediaDevices.getUserMedia(
           {
             video: {
-              facingMode:
-                'environment',
+              facingMode: 'environment',
             },
           },
         );
 
-      streamRef.current =
-        stream;
+      streamRef.current = stream;
 
-      if (
-        videoRef.current
-      ) {
-        videoRef.current.srcObject =
-          stream;
-
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
 
       const hasBarcodeDetector =
-        'BarcodeDetector' in
-        window;
+        typeof window !== 'undefined' &&
+        'BarcodeDetector' in window;
 
-      setSupported(
-        hasBarcodeDetector,
-      );
+      setSupported(hasBarcodeDetector);
 
-      if (
-        hasBarcodeDetector
-      ) {
-        startDetection();
+      if (hasBarcodeDetector) {
+        void startDetection();
       }
     } catch {
-      setError(
-        'No fue posible acceder a la cámara.',
-      );
+      setError('No fue posible acceder a la cámara.');
     }
   }
 
-  function stopCamera() {
-    if (
-      intervalRef.current
-    ) {
-      clearInterval(
-        intervalRef.current,
-      );
+  function cleanup() {
+    detectedRef.current = false;
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
     streamRef.current
       ?.getTracks()
-      .forEach(
-        (track) =>
-          track.stop(),
-      );
+      .forEach((track) => track.stop());
+
+    streamRef.current = null;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   }
 
   async function startDetection() {
@@ -114,9 +108,7 @@ export default function MobileScanner({
       (
         window as Window & {
           BarcodeDetector?: new (
-            options?: {
-              formats?: string[];
-            },
+            options?: { formats?: string[] },
           ) => {
             detect(
               source:
@@ -132,61 +124,40 @@ export default function MobileScanner({
         }
       ).BarcodeDetector;
 
-    if (
-      !BarcodeDetectorClass
-    ) {
+    if (!BarcodeDetectorClass) {
       return;
     }
 
-    const detector =
-      new BarcodeDetectorClass(
-        {
-          formats: [
-            'qr_code',
-            'code_128',
-            'ean_13',
-            'ean_8',
-          ],
-        },
-      );
+    const detector = new BarcodeDetectorClass({
+      formats: [
+        'qr_code',
+        'code_128',
+        'ean_13',
+        'ean_8',
+      ],
+    });
 
-    intervalRef.current =
-      setInterval(
-        async () => {
-          try {
-            if (
-              !videoRef.current
-            ) {
-              return;
-            }
+    intervalRef.current = setInterval(async () => {
+      try {
+        if (detectedRef.current || !videoRef.current) {
+          return;
+        }
 
-            const codes =
-              await detector.detect(
-                videoRef.current,
-              );
+        const codes = await detector.detect(videoRef.current);
 
-            if (
-              codes.length >
-              0
-            ) {
-              const value =
-                codes[0]
-                  ?.rawValue;
+        if (codes.length > 0) {
+          const value = codes[0]?.rawValue?.trim();
 
-              if (
-                value
-              ) {
-                onDetected(
-                  value,
-                );
-              }
-            }
-          } catch {
-            //
+          if (value) {
+            detectedRef.current = true;
+            onDetected(value);
+            cleanup();
           }
-        },
-        800,
-      );
+        }
+      } catch {
+        //
+      }
+    }, 800);
   }
 
   return (
@@ -207,15 +178,12 @@ export default function MobileScanner({
         </div>
       )}
 
-      {!supported &&
-        !error && (
-          <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-700">
-            Tu navegador no soporta
-            escaneo automático.
-            Puedes escribir el código
-            manualmente.
-          </div>
-        )}
+      {!supported && !error && (
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-700">
+          Tu navegador no soporta escaneo automático. Puedes escribir el código
+          manualmente.
+        </div>
+      )}
     </div>
   );
 }

@@ -176,7 +176,70 @@ await loadDetail();
       </main>
     );
   }
+  const supabase =
+  await createClient();
 
+const {
+  data: picking,
+  error: pickingError,
+} = await supabase
+  .from('picking_orders')
+  .select(`
+    id,
+    status,
+    sales_order_id,
+    created_at
+  `)
+  .eq(
+    'id',
+    params.id,
+  )
+  .single();
+
+if (
+  pickingError ||
+  !picking
+) {
+  return (
+    <main className="p-6">
+      Picking no encontrado
+    </main>
+  );
+}
+
+const {
+  data: items,
+  error: itemsError,
+} = await supabase
+  .from(
+    'picking_order_items',
+  )
+  .select(`
+    id,
+    product_id,
+    quantity,
+    picked_quantity,
+    status,
+    products (
+      id,
+      name
+    )
+  `)
+  .eq(
+    'picking_order_id',
+    params.id,
+  );
+
+if (itemsError) {
+  return (
+    <main className="p-6">
+      Error al cargar
+      items de picking.
+    </main>
+  );
+}
+
+  
   const pickingStatus = detail.picking.status as PickingOrderStatus;
   const isCompleted = pickingStatus === 'completed';
 

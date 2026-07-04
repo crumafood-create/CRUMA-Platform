@@ -1,4 +1,4 @@
-src/app/mobile/picking/page.tsx'use client';
+'use client';
 
 import {
   useEffect,

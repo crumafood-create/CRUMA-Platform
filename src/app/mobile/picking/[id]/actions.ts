@@ -6,13 +6,13 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 import { getSuggestedLot, type SuggestedLot } from '../actions';
 
-type PickingOrderStatus =
+export type PickingOrderStatus =
   | 'pending'
   | 'in_progress'
   | 'completed'
   | 'cancelled';
 
-type PickingDetailPicking = {
+export type PickingOrder = {
   id: string;
   status: PickingOrderStatus;
   sales_order_id: string;
@@ -20,10 +20,15 @@ type PickingDetailPicking = {
   completed_at: string | null;
 };
 
-type PickingDetailProduct = {
+export type PickingProduct = {
   id: string;
   name: string;
 };
+
+export type PickingLot = {
+  id: string;
+  lot_number: string;
+} | null;
 
 export type PickingDetailItem = {
   id: string;
@@ -31,100 +36,11 @@ export type PickingDetailItem = {
   product_id: string;
   quantity: number;
   picked_quantity: number;
-  status: PickingOrderStatus | string;
-  product: PickingDetailProduct | null;
-  suggested_lot: Exclude<SuggestedLot, null>;
-  lot_number?: string | null;
+  status: string;
+  product: PickingProduct | null;
+  picked_lot: PickingLot;
+  suggested_lot: SuggestedLot;
 };
-
-export type PickingDetail = {
-  picking: PickingDetailPicking;
-  items: PickingDetailItem[];
-} | null;
-
-export async function getPickingDetail(
-  pickingId: string,
-): Promise<PickingDetail> {
-  const supabase = await createClient();
-
-  const { data: picking, error: pickingError } = await supabase
-    .from('picking_orders')
-    .select(`
-      id,
-      status,
-      sales_order_id,
-      created_at,
-      completed_at
-    `)
-    .eq('id', pickingId)
-    .maybeSingle();
-
-  if (pickingError) {
-    throw new Error(pickingError.message);
-  }
-
-  if (!picking) {
-    return null;
-  }
-
-  const { data: items, error: itemsError } = await supabase
-    .from('picking_order_items')
-    .select(`
-      id,
-      picking_order_id,
-      product_id,
-      quantity,
-      picked_quantity,
-      status,
-      product_lot_id,
-      products (
-        id,
-        name
-      )
-    `)
-    .eq('picking_order_id', pickingId)
-    .order('created_at', { ascending: true });
-
-  if (itemsError) {
-    throw new Error(itemsError.message);
-  }
-
-  const normalizedItems: PickingDetailItem[] = await Promise.all(
-    (items ?? []).map(async (row) => {
-      const rawProduct = (row as {
-        products?: PickingDetailProduct | PickingDetailProduct[] | null;
-      }).products;
-
-      const product = Array.isArray(rawProduct)
-        ? rawProduct[0] ?? null
-        : rawProduct ?? null;
-
-      const suggestedLot = await getSuggestedLot(row.product_id);
-
-      return {
-        id: row.id,
-        picking_order_id: row.picking_order_id,
-        product_id: row.product_id,
-        quantity: Number(row.quantity ?? 0),
-        picked_quantity: Number(row.picked_quantity ?? 0),
-        status: row.status,
-        product,
-        suggested_lot: suggestedLot,
-      };
-    }),
-  );
-
-  return {
-    picking: {
-      id: picking.id,
-      status: picking.status,
-      sales_order_id: picking.sales_order_id,
-      created_at: picking.created_at,
-      completed_at: picking.completed_at ?? null,
-    },
-    items: normalizedItems,
-  };
-}
 
 export async function confirmPicking(
   pickingItemId: string,
@@ -152,6 +68,10 @@ export async function confirmPicking(
 
   if (itemError || !item) {
     throw new Error('Item de picking no encontrado.');
+  }
+
+  if (item.status === 'completed') {
+    throw new Error('Este item ya fue pickeado.');
   }
 
   //
@@ -209,18 +129,6 @@ export async function confirmPicking(
       status: 'completed',
       updated_at: new Date().toISOString(),
     })
-    await supabase
-  .from('inventory_movements')
-  .insert({
-    item_type: 'product',
-    item_id: item.product_id,
-    movement_type: 'reservation',
-    quantity: required,
-    reference_type: 'picking',
-    reference_id: item.picking_order_id,
-    lot_id: lot.id,
-    notes: `Picking lote ${lot.lot_number}`,
-  });
     .eq('id', pickingItemId);
 
   if (updateItemError) {

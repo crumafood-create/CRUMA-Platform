@@ -275,9 +275,15 @@ function CurrentItemCard({
 
         <div className="rounded-xl bg-blue-50 p-4">
           <div className="text-xs text-blue-700">Lote sugerido</div>
-          <div className="mt-1 text-lg font-bold text-blue-900">
-            {suggested?.lot_number ?? 'Sin lote'}
-          </div>
+          <div className="mt-3 text-center">
+  <div className="text-xs text-blue-700">
+    LOTE A SURTIR
+  </div>
+
+  <div className="mt-2 rounded-xl bg-white p-4 text-3xl font-bold text-blue-900 shadow-sm">
+    {suggested?.lot_number ?? 'SIN LOTE'}
+  </div>
+</div>
 
           <div className="mt-2 rounded-lg bg-blue-100 p-3">
           <div className="text-xs text-blue-700">

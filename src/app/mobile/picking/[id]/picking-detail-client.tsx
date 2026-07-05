@@ -268,9 +268,13 @@ function CurrentItemCard({
       <div className="mt-6 grid gap-3 md:grid-cols-2">
         <div className="rounded-xl bg-gray-50 p-4">
           <div className="text-xs text-gray-500">Cantidad a pickear</div>
-          <div className="mt-1 text-lg font-bold">
-            {item.quantity} unidades
+          <div className="mt-2 text-4xl font-bold text-gray-900">
+            {item.quantity}
           </div>
+
+          <div className="text-sm text-gray-500">
+            unidades
+        </div>
         </div>
 
         <div className="rounded-xl bg-blue-50 p-4">

@@ -279,8 +279,14 @@ function CurrentItemCard({
             {suggested?.lot_number ?? 'Sin lote'}
           </div>
 
-          <div className="text-sm text-blue-700">
-            {suggested?.location_name ?? 'Sin ubicación'}
+          <div className="mt-2 rounded-lg bg-blue-100 p-3">
+          <div className="text-xs text-blue-700">
+            SIGUIENTE UBICACIÓN
+          </div>
+
+          <div className="mt-1 text-lg font-bold text-blue-900">
+          📍 {suggested?.location_name ?? 'Sin ubicación'}
+          </div>
           </div>
 
           <div className="mt-1 text-sm text-blue-700">

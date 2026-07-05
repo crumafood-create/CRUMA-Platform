@@ -199,6 +199,24 @@ export default function PickingDetailClient({
         </div>
       )}
 
+      <div className="mt-6">
+  <div className="mb-2 flex justify-between text-sm">
+    <span>Progreso</span>
+    <span>
+      {completedCount}/{totalCount}
+    </span>
+  </div>
+
+  <div className="h-3 rounded-full bg-gray-200">
+    <div
+      className="h-3 rounded-full bg-blue-600 transition-all duration-500"
+      style={{
+        width: `${progress}%`,
+      }}
+    />
+  </div>
+</div>
+
       {completedItems.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Líneas completadas</h2>

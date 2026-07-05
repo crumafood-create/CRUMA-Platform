@@ -146,9 +146,7 @@ function PickingOrderCard({ picking }: { picking: PickingOrder }) {
       </div>
 
       <div className="mt-5 border-t pt-4 text-xs text-gray-500">
-        <div>
-          ID: {picking.id.slice(0, 8)}...
-        </div>
+        <div>ID: {picking.id.slice(0, 8)}...</div>
         <div className="mt-1">{formattedDate}</div>
       </div>
 

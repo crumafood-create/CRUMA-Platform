@@ -206,3 +206,158 @@ export async function confirmPicking(
   revalidatePath('/sales-orders');
   revalidatePath(`/sales-orders/${picking.sales_order_id}`);
 }
+
+// ============================================================================
+// GET PICKING DETAIL
+// ============================================================================
+
+export type PickingDetailItem = {
+  id: string;
+  quantity: number;
+  status: string;
+
+  product: {
+    id: string;
+    name: string;
+  } | null;
+
+  suggested_lot: {
+    id: string;
+    lot_number: string;
+    quantity: number;
+    location_name: string;
+  } | null;
+
+  picked_lot: {
+    lot_number: string;
+  } | null;
+};
+
+export type PickingDetail = {
+  picking: {
+    id: string;
+    status: string;
+    sales_order_id: string;
+  };
+
+  items: PickingDetailItem[];
+};
+
+export async function getPickingDetail(
+  pickingId: string,
+): Promise<PickingDetail> {
+  const supabase =
+    await createClient();
+
+  const {
+    data: picking,
+    error: pickingError,
+  } = await supabase
+    .from('picking_orders')
+    .select(`
+      id,
+      status,
+      sales_order_id
+    `)
+    .eq('id', pickingId)
+    .single();
+
+  if (
+    pickingError ||
+    !picking
+  ) {
+    throw new Error(
+      'Picking no encontrado.',
+    );
+  }
+
+  const {
+    data: items,
+    error: itemsError,
+  } = await supabase
+    .from(
+      'picking_order_items',
+    )
+    .select(`
+      id,
+      quantity,
+      status,
+
+      product:products(
+        id,
+        name
+      ),
+
+      suggested_lot:product_lots(
+        id,
+        lot_number,
+        quantity,
+
+        inventory_locations(
+          name
+        )
+      ),
+
+      picked_lot:product_lots!product_lot_id(
+        lot_number
+      )
+    `)
+    .eq(
+      'picking_order_id',
+      pickingId,
+    );
+
+  if (itemsError) {
+    throw new Error(
+      itemsError.message,
+    );
+  }
+
+  return {
+    picking,
+
+    items:
+      (items ?? []).map(
+        (item: any) => ({
+          id: item.id,
+          quantity: Number(
+            item.quantity,
+          ),
+          status: item.status,
+
+          product:
+            item.product,
+
+          suggested_lot:
+            item.suggested_lot
+              ? {
+                  id: item
+                    .suggested_lot.id,
+
+                  lot_number:
+                    item
+                      .suggested_lot
+                      .lot_number,
+
+                  quantity:
+                    Number(
+                      item
+                        .suggested_lot
+                        .quantity,
+                    ),
+
+                  location_name:
+                    item
+                      .suggested_lot
+                      .inventory_locations
+                      ?.name ??
+                    'Sin ubicación',
+                }
+              : null,
+
+          picked_lot:
+            item.picked_lot,
+        }),
+      ),
+  };
+}

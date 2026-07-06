@@ -150,6 +150,23 @@ await loadDetail();
         <div className="rounded-2xl border bg-white p-6 text-gray-500">
           Cargando picking...
         </div>
+        <div className="mt-6">
+  <div className="mb-2 flex justify-between text-sm">
+    <span>Progreso</span>
+    <span>
+      {completedCount}/{totalCount}
+    </span>
+  </div>
+
+  <div className="h-3 rounded-full bg-gray-200">
+    <div
+      className="h-3 rounded-full bg-blue-600 transition-all duration-500"
+      style={{
+        width: `${progress}%`,
+      }}
+    />
+  </div>
+</div>
       </main>
     );
   }
@@ -426,9 +443,15 @@ function PickingItemRow({
             {suggested?.lot_number ?? 'Sin lote'}
           </div>
 
-          <div className="text-sm text-blue-700">
-            {suggested?.location_name ?? 'Sin ubicación'}
-          </div>
+          <div className="mt-2 rounded-lg bg-blue-100 p-3">
+  <div className="text-xs text-blue-700">
+    SIGUIENTE UBICACIÓN
+  </div>
+
+  <div className="mt-1 text-lg font-bold text-blue-900">
+    📍 {suggested?.location_name ?? 'Sin ubicación'}
+  </div>
+</div>
 
           <div className="mt-1 text-sm text-blue-700">
             Disponible: {suggested?.quantity ?? 0}

@@ -16,7 +16,7 @@ export type PickingOrder = {
   id: string;
   status: PickingOrderStatus;
   sales_order_id: string;
-  created_at: string;
+  created_at?: string;
   completed_at: string | null;
 };
 
@@ -40,6 +40,53 @@ export type PickingDetailItem = {
   product: PickingProduct | null;
   picked_lot: PickingLot;
   suggested_lot: SuggestedLot;
+};
+
+export type PickingDetail = {
+  picking: {
+    id: string;
+    status: string;
+    sales_order_id: string;
+  };
+  items: PickingDetailItem[];
+};
+
+type PickingOrderItemRow = {
+  id: string;
+  picking_order_id: string;
+  product_id: string;
+  quantity: number | null;
+  picked_quantity: number | null;
+  product_lot_id: string | null;
+  status: string | null;
+};
+
+type PickingOrderItemWithProduct = {
+  id: string;
+  quantity: number | null;
+  status: string | null;
+  product: PickingProduct | PickingProduct[] | null;
+  suggested_lot?: {
+    id: string;
+    lot_number: string;
+    quantity: number | null;
+    inventory_locations:
+      | {
+          name: string | null;
+        }
+      | {
+          name: string | null;
+        }[]
+      | null;
+  } | null;
+  picked_lot:
+    | {
+        lot_number: string | null;
+      }
+    | {
+        lot_number: string | null;
+      }[]
+    | null;
 };
 
 export async function confirmPicking(
@@ -207,47 +254,10 @@ export async function confirmPicking(
   revalidatePath(`/sales-orders/${picking.sales_order_id}`);
 }
 
-// ============================================================================
-// GET PICKING DETAIL
-// ============================================================================
-
-export type PickingDetailItem = {
-  id: string;
-  quantity: number;
-  status: string;
-
-  product: {
-    id: string;
-    name: string;
-  } | null;
-
-  suggested_lot: {
-    id: string;
-    lot_number: string;
-    quantity: number;
-    location_name: string;
-  } | null;
-
-  picked_lot: {
-    lot_number: string;
-  } | null;
-};
-
-export type PickingDetail = {
-  picking: {
-    id: string;
-    status: string;
-    sales_order_id: string;
-  };
-
-  items: PickingDetailItem[];
-};
-
 export async function getPickingDetail(
   pickingId: string,
 ): Promise<PickingDetail> {
-  const supabase =
-    await createClient();
+  const supabase = await createClient();
 
   const {
     data: picking,
@@ -262,102 +272,79 @@ export async function getPickingDetail(
     .eq('id', pickingId)
     .single();
 
-  if (
-    pickingError ||
-    !picking
-  ) {
-    throw new Error(
-      'Picking no encontrado.',
-    );
+  if (pickingError || !picking) {
+    throw new Error('Picking no encontrado.');
   }
 
   const {
     data: items,
     error: itemsError,
   } = await supabase
-    .from(
-      'picking_order_items',
-    )
+    .from('picking_order_items')
     .select(`
       id,
+      picking_order_id,
+      product_id,
       quantity,
+      picked_quantity,
       status,
-
-      product:products(
+      product_lot_id,
+      products (
         id,
         name
       ),
-
-      suggested_lot:product_lots(
+      product_lots (
         id,
-        lot_number,
-        quantity,
-
-        inventory_locations(
-          name
-        )
-      ),
-
-      picked_lot:product_lots!product_lot_id(
         lot_number
       )
     `)
-    .eq(
-      'picking_order_id',
-      pickingId,
-    );
+    .eq('picking_order_id', pickingId)
+    .order('created_at', { ascending: true });
 
   if (itemsError) {
-    throw new Error(
-      itemsError.message,
-    );
+    throw new Error(itemsError.message);
   }
+
+  const normalizedItems: PickingDetailItem[] = await Promise.all(
+    (items ?? []).map(async (row: PickingOrderItemWithProduct) => {
+      const rawProduct = row.product;
+
+      const product = Array.isArray(rawProduct)
+        ? rawProduct[0] ?? null
+        : rawProduct ?? null;
+
+      const rawPickedLot = row.picked_lot;
+
+      const pickedLot = Array.isArray(rawPickedLot)
+        ? rawPickedLot[0] ?? null
+        : rawPickedLot ?? null;
+
+      const suggestedLot = await getSuggestedLot(
+        // el producto puede venir como el ID del item
+        // y FEFO se resuelve por producto
+        product?.id ?? '',
+      );
+
+      return {
+        id: row.id,
+        picking_order_id: pickingId,
+        product_id: product?.id ?? '',
+        quantity: Number(row.quantity ?? 0),
+        picked_quantity: Number((row as PickingOrderItemRow).picked_quantity ?? 0),
+        status: row.status ?? 'pending',
+        product,
+        suggested_lot: suggestedLot,
+        picked_lot: pickedLot
+          ? {
+              lot_number: pickedLot.lot_number ?? null,
+            }
+          : null,
+      };
+    }),
+  );
 
   return {
     picking,
-
-    items:
-      (items ?? []).map(
-        (item: any) => ({
-          id: item.id,
-          quantity: Number(
-            item.quantity,
-          ),
-          status: item.status,
-
-          product:
-            item.product,
-
-          suggested_lot:
-            item.suggested_lot
-              ? {
-                  id: item
-                    .suggested_lot.id,
-
-                  lot_number:
-                    item
-                      .suggested_lot
-                      .lot_number,
-
-                  quantity:
-                    Number(
-                      item
-                        .suggested_lot
-                        .quantity,
-                    ),
-
-                  location_name:
-                    item
-                      .suggested_lot
-                      .inventory_locations
-                      ?.name ??
-                    'Sin ubicación',
-                }
-              : null,
-
-          picked_lot:
-            item.picked_lot,
-        }),
-      ),
+    items: normalizedItems,
   };
 }

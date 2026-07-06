@@ -370,7 +370,30 @@ const pickingItems =
         />
       ) : (
         <div className="rounded-2xl border bg-green-50 p-6 text-green-800">
-          <div className="text-lg font-semibold">✅ Picking completado</div>
+          <div className="rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
+  <div className="text-6xl">
+    🎉
+  </div>
+
+  <h2 className="mt-4 text-2xl font-bold text-green-900">
+    Picking completado
+  </h2>
+
+  <p className="mt-2 text-green-700">
+    Todos los productos fueron surtidos correctamente.
+  </p>
+
+  <p className="mt-2 text-sm text-green-700">
+    El pedido ya pasó a Preparación.
+  </p>
+
+  <Link
+    href="/mobile/picking"
+    className="mt-6 inline-flex rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
+  >
+    Volver al listado
+  </Link>
+</div>
           <p className="mt-2">
             Todas las líneas fueron surtidas. El pedido ya quedó en preparación.
           </p>

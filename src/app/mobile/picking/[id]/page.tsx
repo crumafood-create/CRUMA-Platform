@@ -12,7 +12,7 @@ import {
 } from './actions';
 
 // ============================================================================
-// TIPOS LOCALES
+// TIPOS
 // ============================================================================
 
 type PickingOrderStatus =
@@ -21,10 +21,15 @@ type PickingOrderStatus =
   | 'completed'
   | 'cancelled';
 
+type PageState = 'loading' | 'error' | 'picking' | 'completed';
+
 // ============================================================================
-// FUNCIONES AUXILIARES
+// FUNCIONES AUXILIARES - ESTADO
 // ============================================================================
 
+/**
+ * Obtiene el label del estado en español
+ */
 function getStatusLabel(status: string): string {
   switch (status) {
     case 'pending':
@@ -40,6 +45,9 @@ function getStatusLabel(status: string): string {
   }
 }
 
+/**
+ * Obtiene la clase CSS para el badge de estado
+ */
 function getStatusBadgeClass(status: string): string {
   switch (status) {
     case 'pending':
@@ -55,7 +63,10 @@ function getStatusBadgeClass(status: string): string {
   }
 }
 
-function getLineStatusClass(status: string): string {
+/**
+ * Obtiene la clase CSS para la tarjeta de item según estado
+ */
+function getItemCardClass(status: string): string {
   switch (status) {
     case 'completed':
       return 'border-green-200 bg-green-50';
@@ -66,8 +77,16 @@ function getLineStatusClass(status: string): string {
   }
 }
 
+/**
+ * Calcula el porcentaje de progreso
+ */
+function calculateProgress(completed: number, total: number): number {
+  if (total === 0) return 0;
+  return Math.round((completed / total) * 100);
+}
+
 // ============================================================================
-// PAGE
+// PÁGINA PRINCIPAL
 // ============================================================================
 
 export default function MobilePickingDetailPage({
@@ -75,46 +94,50 @@ export default function MobilePickingDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [detail, setDetail] = useState<PickingDetail>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  // ESTADO - Datos
+  const [detail, setDetail] = useState<PickingDetail | null>(null);
+  const [pageState, setPageState] = useState<PageState>('loading');
   const [globalError, setGlobalError] = useState<string | null>(null);
-  const [scannedLot, setScannedLot] = useState('');
 
+  // ESTADO - Interacción
+  const [scannedLot, setScannedLot] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // DATOS DERIVADOS
+  const currentItem = detail?.items.find((item) => item.status !== 'completed') ?? null;
+  const completedItems = detail?.items.filter((item) => item.status === 'completed') ?? [];
+  const totalItems = detail?.items.length ?? 0;
+  const completedCount = completedItems.length;
+  const progress = calculateProgress(completedCount, totalItems);
+  const isPickingCompleted = completedCount === totalItems && totalItems > 0;
+
+  // EFECTOS - Cargar datos
   useEffect(() => {
-    void loadDetail();
+    const loadData = async () => {
+      try {
+        const data = await getPickingDetail(params.id);
+        setDetail(data);
+        setPageState('picking');
+      } catch (error) {
+        setGlobalError(
+          error instanceof Error ? error.message : 'Error al cargar el picking'
+        );
+        setPageState('error');
+      }
+    };
+
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
-  const currentItem = detail?.items.find((item) => item.status !== 'completed') ?? null;
-  const completedItems = detail?.items.filter((item) => item.status === 'completed') ?? [];
-  const totalCount = detail?.items.length ?? 0;
-  const completedCount = completedItems.length;
-
+  // EFECTOS - Limpiar input al cambiar de item
   useEffect(() => {
     setScannedLot('');
   }, [currentItem?.id]);
 
-  async function loadDetail() {
-    setLoading(true);
-    setGlobalError(null);
-
-    try {
-      const data = await getPickingDetail(params.id);
-      setDetail(data);
-    } catch (error) {
-      setGlobalError(
-        error instanceof Error ? error.message : 'Error al cargar el picking',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // HANDLERS
   async function handleConfirmPicking() {
-    if (!currentItem) {
-      return;
-    }
+    if (!currentItem) return;
 
     const code = scannedLot.trim();
 
@@ -123,206 +146,448 @@ export default function MobilePickingDetailPage({
       return;
     }
 
-    setSaving(true);
+    setIsSaving(true);
     setGlobalError(null);
 
     try {
-      await confirmPicking(
-  currentItem.id,
-  code,
-);
-
-setScannedLot('');
-await loadDetail();
+      await confirmPicking(currentItem.id, code);
+      await loadDetail();
     } catch (error) {
       setGlobalError(
-        error instanceof Error ? error.message : 'Error al confirmar picking',
+        error instanceof Error ? error.message : 'Error al confirmar picking'
       );
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   }
 
-  if (loading) {
-    return (
-      <main className="space-y-6 p-6">
-        <h1 className="text-3xl font-bold">Picking</h1>
-        <div className="rounded-2xl border bg-white p-6 text-gray-500">
-          Cargando picking...
-        </div>
-        <div className="mt-6">
-  <div className="mb-2 flex justify-between text-sm">
-    <span>Progreso</span>
-    <span>
-      {completedCount}/{totalCount}
-    </span>
-  </div>
-
-  <div className="h-3 rounded-full bg-gray-200">
-    <div
-      className="h-3 rounded-full bg-blue-600 transition-all duration-500"
-      style={{
-        width: `${progress}%`,
-      }}
-    />
-  </div>
-</div>
-      </main>
-    );
+  async function loadDetail() {
+    try {
+      const data = await getPickingDetail(params.id);
+      setDetail(data);
+    } catch (error) {
+      setGlobalError(
+        error instanceof Error ? error.message : 'Error al recargar picking'
+      );
+    }
   }
 
-  if (!detail) {
-    return (
-      <main className="space-y-6 p-6">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-3xl font-bold">Picking</h1>
-
-          <Link
-            href="/mobile/picking"
-            className="rounded-lg border bg-gray-50 px-4 py-2 font-medium hover:bg-gray-100"
-          >
-            ← Volver
-          </Link>
-        </div>
-
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-          <p className="text-red-700">
-            No se encontró el picking.
-          </p>
-        </div>
-      </main>
-    );
+  // RENDERIZADO - Estados de carga y error
+  if (pageState === 'loading') {
+    return <LoadingState />;
   }
-  const supabase =
-  await createClient();
 
-const {
-  data: picking,
-  error: pickingError,
-} = await supabase
-  .from('picking_orders')
-  .select(`
-    id,
-    status,
-    sales_order_id,
-    created_at
-  `)
-  .eq(
-    'id',
-    params.id,
-  )
-  .single();
+  if (pageState === 'error' || !detail) {
+    return <ErrorState error={globalError} />;
+  }
 
-if (
-  pickingError ||
-  !picking
-) {
-  return (
-    <main className="p-6">
-      Picking no encontrado
-    </main>
-  );
-}
-
-const {
-  data: items,
-  error: itemsError,
-} = await supabase
-  .from(
-    'picking_order_items',
-  )
-  .select(`
-    id,
-    product_id,
-    quantity,
-    picked_quantity,
-    status,
-    products (
-      id,
-      name
-    )
-  `)
-  .eq(
-    'picking_order_id',
-    params.id,
-  );
-
-if (itemsError) {
-  return (
-    <main className="p-6">
-      Error al cargar
-      items de picking.
-    </main>
-  );
-}
-const pickingItems =
-  await Promise.all(
-    (items ?? []).map(
-      async (
-        item,
-      ) => {
-        const {
-          data:
-            suggestedLot,
-        } =
-          await supabase
-            .from(
-              'inventory_product_lots_fefo',
-            )
-            .select(`
-              id,
-              lot_number,
-              quantity,
-              location_name
-            `)
-            .eq(
-              'product_id',
-              item.product_id,
-            )
-            .limit(1)
-            .maybeSingle();
-
-        return {
-          id: item.id,
-          product_id:
-            item.product_id,
-          quantity_to_pick:
-            Number(
-              item.quantity,
-            ),
-          picked_quantity:
-            Number(
-              item.picked_quantity ??
-                0,
-            ),
-          status:
-            item.status,
-          suggested_lot:
-            suggestedLot ??
-            undefined,
-          product:
-            Array.isArray(
-              item.products,
-            )
-              ? item.products[0]
-              : item.products,
-        };
-      },
-    ),
-  );
-  
   const pickingStatus = detail.picking.status as PickingOrderStatus;
-  const isCompleted = pickingStatus === 'completed';
 
+  // RENDERIZADO - Página principal
   return (
     <main className="space-y-6 p-6 pb-20">
-      <div className="flex items-center justify-between gap-3">
+      {/* ENCABEZADO */}
+      <PageHeader
+        orderId={detail.picking.sales_order_id}
+        status={pickingStatus}
+      />
+
+      {/* BARRA DE PROGRESO Y ESTADO */}
+      <ProgressBar
+        completed={completedCount}
+        total={totalItems}
+        progress={progress}
+        status={pickingStatus}
+      />
+
+      {/* MENSAJE DE ERROR GLOBAL */}
+      {globalError && <ErrorMessage message={globalError} />}
+
+      {/* CONTENIDO PRINCIPAL */}
+      {isPickingCompleted ? (
+        <CompletedState />
+      ) : currentItem ? (
+        <PickingItemSection
+          item={currentItem}
+          scannedLot={scannedLot}
+          onScannedLotChange={setScannedLot}
+          onConfirm={handleConfirmPicking}
+          isSaving={isSaving}
+        />
+      ) : null}
+
+      {/* ITEMS COMPLETADOS */}
+      {completedItems.length > 0 && (
+        <CompletedItemsSection items={completedItems} />
+      )}
+    </main>
+  );
+}
+
+// ============================================================================
+// COMPONENTES - ENCABEZADO Y NAVEGACIÓN
+// ============================================================================
+
+/**
+ * Encabezado de la página
+ */
+type PageHeaderProps = {
+  orderId: string;
+  status: PickingOrderStatus;
+};
+
+function PageHeader({ orderId, status }: PageHeaderProps) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <h1 className="text-4xl font-bold">Picking</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Pedido: {orderId}
+        </p>
+      </div>
+
+      <Link
+        href="/mobile/picking"
+        className="rounded-lg border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
+      >
+        ← Volver
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * Barra de progreso
+ */
+type ProgressBarProps = {
+  completed: number;
+  total: number;
+  progress: number;
+  status: PickingOrderStatus;
+};
+
+function ProgressBar({
+  completed,
+  total,
+  progress,
+  status,
+}: ProgressBarProps) {
+  return (
+    <div className="rounded-2xl border bg-white p-6">
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Picking</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Pedido: {detail.picking.sales_order_id}
-          </p>
+          <div className="text-sm font-medium text-gray-600">Estado</div>
+          <div className="mt-1">
+            <span
+              className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
+                status
+              )}`}
+            >
+              {getStatusLabel(status)}
+            </span>
+          </div>
         </div>
+
+        <div className="text-right">
+          <div className="text-sm font-medium text-gray-600">Progreso</div>
+          <div className="mt-1 text-2xl font-bold text-blue-600">
+            {completed}/{total}
+          </div>
+        </div>
+      </div>
+
+      {/* Barra visual */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>Completado</span>
+          <span>{progress}%</span>
+        </div>
+
+        <div className="h-3 rounded-full bg-gray-200">
+          <div
+            className="h-3 rounded-full bg-green-600 transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Mensaje de error
+ */
+function ErrorMessage({ message }: { message: string }) {
+  return (
+    <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+      <p className="font-medium text-red-900">⚠️ Error</p>
+      <p className="mt-1 text-sm text-red-700">{message}</p>
+    </div>
+  );
+}
+
+// ============================================================================
+// COMPONENTES - PICKING EN PROGRESO
+// ============================================================================
+
+/**
+ * Sección del item actual a pickear
+ */
+type PickingItemSectionProps = {
+  item: PickingDetailItem;
+  scannedLot: string;
+  onScannedLotChange: (value: string) => void;
+  onConfirm: () => Promise<void>;
+  isSaving: boolean;
+};
+
+function PickingItemSection({
+  item,
+  scannedLot,
+  onScannedLotChange,
+  onConfirm,
+  isSaving,
+}: PickingItemSectionProps) {
+  return (
+    <div className={`rounded-2xl border p-6 ${getItemCardClass(item.status)}`}>
+      {/* ENCABEZADO DEL ITEM */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-sm font-medium text-gray-600">Producto</div>
+          <div className="mt-1 text-2xl font-bold text-gray-900">
+            {item.product?.name ?? 'Producto'}
+          </div>
+        </div>
+
+        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+          Pendiente
+        </span>
+      </div>
+
+      {/* INFORMACIÓN DEL PICKING */}
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {/* Cantidad a pickear */}
+        <div className="rounded-xl bg-white p-6 text-center">
+          <div className="text-xs font-medium text-gray-600">
+            Cantidad a Surtir
+          </div>
+          <div className="mt-4 text-5xl font-bold text-blue-600">
+            {item.quantity_to_pick}
+          </div>
+          <div className="mt-2 text-sm text-gray-500">unidades</div>
+        </div>
+
+        {/* Lote sugerido */}
+        <div className="space-y-3 rounded-xl bg-blue-50 p-6">
+          <div className="text-xs font-medium text-blue-700 uppercase">
+            Lote Sugerido
+          </div>
+
+          <div className="rounded-lg bg-white p-4 text-center shadow-sm">
+            <div className="text-3xl font-bold text-blue-900">
+              {item.suggested_lot?.lot_number ?? 'SIN LOTE'}
+            </div>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <div>
+              <div className="text-xs text-blue-700">📍 Ubicación</div>
+              <div className="font-semibold text-blue-900">
+                {item.suggested_lot?.location_name ?? 'Sin ubicación'}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs text-blue-700">Disponible</div>
+              <div className="font-semibold text-blue-900">
+                {item.suggested_lot?.quantity ?? 0} unidades
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ENTRADA DE LOTE */}
+      <div className="mt-6 space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700">
+            Escanea el código de lote
+          </label>
+          <input
+            type="text"
+            value={scannedLot}
+            onChange={(e) => onScannedLotChange(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                onConfirm();
+              }
+            }}
+            placeholder="Apunta la cámara al código QR"
+            className="mt-2 w-full rounded-lg border border-gray-300 p-4 text-lg font-medium"
+            disabled={isSaving}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            autoFocus
+          />
+        </div>
+
+        {/* Escáner móvil */}
+        <MobileScanner
+          onDetected={(code) => {
+            onScannedLotChange(code);
+          }}
+        />
+      </div>
+
+      {/* BOTÓN DE CONFIRMACIÓN */}
+      <button
+        onClick={onConfirm}
+        disabled={isSaving || !scannedLot.trim()}
+        className="mt-6 w-full rounded-lg bg-green-600 px-4 py-4 font-bold text-white transition-colors hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+      >
+        {isSaving ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+            Guardando...
+          </span>
+        ) : (
+          'Confirmar Picking'
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================================
+// COMPONENTES - PICKING COMPLETADO
+// ============================================================================
+
+/**
+ * Estado: Picking completado
+ */
+function CompletedState() {
+  return (
+    <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-8 text-center">
+      <div className="text-6xl">🎉</div>
+
+      <h2 className="mt-4 text-3xl font-bold text-green-900">
+        Picking Completado
+      </h2>
+
+      <p className="mt-3 text-green-700">
+        Todos los productos fueron surtidos correctamente.
+      </p>
+
+      <p className="mt-2 text-sm text-green-600">
+        El pedido ya pasó a la siguiente etapa de preparación.
+      </p>
+
+      <Link
+        href="/mobile/picking"
+        className="mt-6 inline-flex rounded-lg bg-green-600 px-8 py-3 font-bold text-white hover:bg-green-700"
+      >
+        Volver al Listado
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * Sección de items completados
+ */
+function CompletedItemsSection({
+  items,
+}: {
+  items: PickingDetailItem[];
+}) {
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-bold text-gray-900">
+        Items Completados ({items.length})
+      </h2>
+
+      <div className="space-y-3">
+        {items.map((item) => (
+          <CompletedItemRow key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Fila de item completado
+ */
+function CompletedItemRow({ item }: { item: PickingDetailItem }) {
+  return (
+    <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold text-green-900">✓</span>
+            <span className="font-semibold text-green-900">
+              {item.product?.name ?? 'Producto'}
+            </span>
+          </div>
+
+          <div className="mt-2 text-sm text-green-700">
+            <span>{item.quantity_to_pick} unidades</span>
+            <span className="mx-2">•</span>
+            <span>
+              Lote: {item.suggested_lot?.lot_number ?? item.lot_number ?? 'N/D'}
+            </span>
+          </div>
+        </div>
+
+        <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-green-800">
+          ✓
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// COMPONENTES - ESTADOS ESPECIALES
+// ============================================================================
+
+/**
+ * Estado de carga
+ */
+function LoadingState() {
+  return (
+    <main className="space-y-6 p-6">
+      <h1 className="text-4xl font-bold">Picking</h1>
+
+      <div className="space-y-4">
+        <div className="rounded-2xl border bg-white p-6">
+          <div className="mb-4 h-8 w-32 animate-pulse rounded-lg bg-gray-200"></div>
+          <div className="h-6 w-48 animate-pulse rounded-lg bg-gray-200"></div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-6">
+          <div className="space-y-3">
+            <div className="h-4 w-full animate-pulse rounded-lg bg-gray-200"></div>
+            <div className="h-4 w-3/4 animate-pulse rounded-lg bg-gray-200"></div>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-center text-gray-500">Cargando picking...</p>
+    </main>
+  );
+}
+
+/**
+ * Estado de error
+ */
+function ErrorState({ error }: { error: string | null }) {
+  return (
+    <main className="space-y-6 p-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-4xl font-bold">Picking</h1>
 
         <Link
           href="/mobile/picking"
@@ -332,222 +597,24 @@ const pickingItems =
         </Link>
       </div>
 
-      <div className="flex items-center justify-between rounded-2xl border bg-white p-6">
-        <div>
-          <div className="text-sm font-medium text-gray-600">Estado</div>
-          <div className="mt-1">
-            <span
-              className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
-                pickingStatus,
-              )}`}
-            >
-              {getStatusLabel(pickingStatus)}
-            </span>
-          </div>
-        </div>
+      <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-8 text-center">
+        <div className="text-4xl">❌</div>
 
-        <div className="text-right">
-          <div className="text-sm font-medium text-gray-600">Progreso</div>
-          <div className="mt-1 text-2xl font-bold text-blue-600">
-            {completedCount}/{totalCount}
-          </div>
-        </div>
+        <h2 className="mt-4 text-2xl font-bold text-red-900">
+          Error al Cargar el Picking
+        </h2>
+
+        <p className="mt-3 text-red-700">
+          {error ?? 'No se pudo cargar el picking. Por favor, intenta de nuevo.'}
+        </p>
+
+        <Link
+          href="/mobile/picking"
+          className="mt-6 inline-flex rounded-lg bg-red-600 px-6 py-2 font-semibold text-white hover:bg-red-700"
+        >
+          Volver al Listado
+        </Link>
       </div>
-
-      {globalError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-          <p className="text-red-700">{globalError}</p>
-        </div>
-      )}
-
-      {!isCompleted && currentItem ? (
-        <PickingItemRow
-          item={currentItem}
-          scannedLot={scannedLot}
-          setScannedLot={setScannedLot}
-          onConfirm={handleConfirmPicking}
-          isSaving={saving}
-        />
-      ) : (
-        <div className="rounded-2xl border bg-green-50 p-6 text-green-800">
-          <div className="rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
-  <div className="text-6xl">
-    🎉
-  </div>
-
-  <h2 className="mt-4 text-2xl font-bold text-green-900">
-    Picking completado
-  </h2>
-
-  <p className="mt-2 text-green-700">
-    Todos los productos fueron surtidos correctamente.
-  </p>
-
-  <p className="mt-2 text-sm text-green-700">
-    El pedido ya pasó a Preparación.
-  </p>
-
-  <Link
-    href="/mobile/picking"
-    className="mt-6 inline-flex rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
-  >
-    Volver al listado
-  </Link>
-</div>
-          <p className="mt-2">
-            Todas las líneas fueron surtidas. El pedido ya quedó en preparación.
-          </p>
-        </div>
-      )}
-
-      {completedItems.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Líneas completadas</h2>
-
-          <div className="space-y-3">
-            {completedItems.map((item) => (
-              <CompletedItemRow key={item.id} item={item} />
-            ))}
-          </div>
-        </div>
-      )}
     </main>
-  );
-}
-
-// ============================================================================
-// COMPONENTES
-// ============================================================================
-
-type PickingItemRowProps = {
-  item: PickingDetailItem;
-  scannedLot: string;
-  setScannedLot: (value: string) => void;
-  onConfirm: () => Promise<void>;
-  isSaving: boolean;
-};
-
-function PickingItemRow({
-  item,
-  scannedLot,
-  setScannedLot,
-  onConfirm,
-  isSaving,
-}: PickingItemRowProps) {
-  const suggested = item.suggested_lot;
-  const product = item.product;
-
-  return (
-    <div className={`rounded-2xl border p-6 ${getLineStatusClass(item.status)}`}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-sm text-gray-500">Producto</div>
-          <div className="mt-1 text-xl font-semibold">
-            {product?.name ?? 'Producto'}
-          </div>
-        </div>
-
-        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
-          Pendiente
-        </span>
-      </div>
-
-      <div className="mt-6 grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl bg-gray-50 p-4">
-          <div className="text-xs text-gray-500">Cantidad a pickear</div>
-          <div className="mt-3 text-center">
-  <div className="mt-2 text-4xl font-bold text-gray-900">
-  {item.quantity}
-</div>
-
-<div className="text-sm text-gray-500">
-  unidades
-</div>
-        </div>
-
-        <div className="rounded-xl bg-blue-50 p-4">
-          <div className="text-xs text-blue-700">Lote sugerido</div>
-          <div className="mt-3 text-center">
-  <div className="text-xs text-blue-700">
-    LOTE A SURTIR
-  </div>
-
-  <div className="mt-2 rounded-xl bg-white p-4 text-3xl font-bold text-blue-900 shadow-sm">
-    {suggested?.lot_number ?? 'SIN LOTE'}
-  </div>
-</div>
-
-          <div className="mt-2 rounded-lg bg-blue-100 p-3">
-  <div className="text-xs text-blue-700">
-    SIGUIENTE UBICACIÓN
-  </div>
-
-  <div className="mt-1 text-lg font-bold text-blue-900">
-    📍 {suggested?.location_name ?? 'Sin ubicación'}
-  </div>
-</div>
-
-          <div className="mt-1 text-sm text-blue-700">
-            Disponible: {suggested?.quantity ?? 0}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
-          Escanea el código de lote
-        </label>
-
-        <input
-          type="text"
-          value={scannedLot}
-          onChange={(e) => setScannedLot(e.target.value)}
-          placeholder="Apunta la cámara al código QR"
-          className="w-full rounded-lg border border-gray-300 p-3 text-lg"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-        />
-
-        <MobileScanner
-          onDetected={(code) => {
-            setScannedLot(code);
-          }}
-        />
-      </div>
-
-      <button
-        onClick={onConfirm}
-        disabled={isSaving}
-        className="mt-6 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:bg-gray-300"
-      >
-        {isSaving ? 'Guardando...' : 'Confirmar Picking'}
-      </button>
-    </div>
-  );
-}
-
-function CompletedItemRow({ item }: { item: PickingDetailItem }) {
-  return (
-    <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-sm text-green-700">Completado</div>
-          <div className="mt-1 text-lg font-semibold text-green-900">
-            {item.product?.name ?? 'Producto'}
-          </div>
-        </div>
-
-        <div className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
-          ✓
-        </div>
-      </div>
-
-      <div className="mt-3 text-sm text-green-800">
-        {item.quantity} unidades • Lote:{' '}
-        {item.suggested_lot?.lot_number ?? item.lot_number ?? 'N/D'}
-      </div>
-    </div>
   );
 }

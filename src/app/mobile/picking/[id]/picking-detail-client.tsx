@@ -273,7 +273,9 @@ return (
 <div className="h-3 rounded-full bg-gray-200">
 <div
 className="h-3 rounded-full bg-green-600 transition-all duration-500"
-style={{ width: ``${progress}%` }}
+style={{
+  width: `${progress}%`,
+}}
 />
 </div>
 </div>

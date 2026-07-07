@@ -245,10 +245,11 @@ return (
 <div>
 <div className="text-sm font-medium text-gray-600">Estado</div>
 <div className="mt-1">
-<span>
-className={'inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
-status,
-)}}
+<span
+  className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
+    status,
+  )}`}
+>
 
 {getStatusLabel(status)}
 </span>

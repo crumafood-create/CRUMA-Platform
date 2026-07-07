@@ -129,6 +129,37 @@ if (lotUpdateError) {
   throw new Error(lotUpdateError.message);
 }
 
+  const { error: movementError } = await supabase
+  .from('inventory_movements')
+  .insert({
+    item_type: 'product',
+    item_id: item.product_id,
+
+    movement_type: 'exit',
+
+    quantity: required,
+
+    product_lot_id: lot.id,
+
+    reference_type: 'picking',
+
+    reference_id: item.picking_order_id,
+
+    notes: `Picking ${item.picking_order_id}`,
+  });
+
+if (movementError) {
+  throw new Error(movementError.message);
+}
+
+  await supabase
+  .from('inventory_reservations')
+  .update({
+    status: 'released',
+    updated_at: new Date().toISOString(),
+  })
+  .eq('reference_type', 'sales_order')
+  .eq('item_id', item.product_id);
   const { error: updateItemError } = await supabase
     .from('picking_order_items')
     .update({

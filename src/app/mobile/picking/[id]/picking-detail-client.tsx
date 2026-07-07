@@ -248,7 +248,7 @@ return (
 <span
 className={'inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
 status,
-)}`}
+)}}
 >
 {getStatusLabel(status)}
 </span>

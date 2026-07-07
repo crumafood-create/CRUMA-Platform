@@ -310,7 +310,9 @@ onConfirm,
 isSaving,
 }: PickingItemSectionProps) {
 return (
-<div className={rounded-2xl border p-6 ${getItemCardClass(item.status)}}>
+<div
+  className={`rounded-2xl border p-6 ${getItemCardClass(item.status)}`}
+>
 <div className="flex items-start justify-between gap-4">
 <div>
 <div className="text-sm font-medium text-gray-600">Producto</div>

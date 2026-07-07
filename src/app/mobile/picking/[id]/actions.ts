@@ -117,6 +117,18 @@ export async function confirmPicking(
     throw new Error(`El lote solo tiene ${available} unidades disponibles.`);
   }
 
+  const { error: lotUpdateError } = await supabase
+  .from('product_lots')
+  .update({
+    quantity: available - required,
+    updated_at: new Date().toISOString(),
+  })
+  .eq('id', lot.id);
+
+if (lotUpdateError) {
+  throw new Error(lotUpdateError.message);
+}
+
   const { error: updateItemError } = await supabase
     .from('picking_order_items')
     .update({

@@ -26,7 +26,6 @@ export type PickingProduct = {
 };
 
 export type PickingLot = {
-  id: string;
   lot_number: string;
 } | null;
 
@@ -51,44 +50,6 @@ export type PickingDetail = {
   items: PickingDetailItem[];
 };
 
-type PickingOrderItemRow = {
-  id: string;
-  picking_order_id: string;
-  product_id: string;
-  quantity: number | null;
-  picked_quantity: number | null;
-  product_lot_id: string | null;
-  status: string | null;
-};
-
-type PickingOrderItemWithProduct = {
-  id: string;
-  quantity: number | null;
-  status: string | null;
-  product: PickingProduct | PickingProduct[] | null;
-  suggested_lot?: {
-    id: string;
-    lot_number: string;
-    quantity: number | null;
-    inventory_locations:
-      | {
-          name: string | null;
-        }
-      | {
-          name: string | null;
-        }[]
-      | null;
-  } | null;
-  picked_lot:
-    | {
-        lot_number: string | null;
-      }
-    | {
-        lot_number: string | null;
-      }[]
-    | null;
-};
-
 export async function confirmPicking(
   pickingItemId: string,
   lotNumber: string,
@@ -96,9 +57,6 @@ export async function confirmPicking(
   const supabase = await createClient();
   const scannedLotNumber = lotNumber.trim();
 
-  //
-  // Item de picking
-  //
   const { data: item, error: itemError } = await supabase
     .from('picking_order_items')
     .select(`
@@ -121,9 +79,6 @@ export async function confirmPicking(
     throw new Error('Este item ya fue pickeado.');
   }
 
-  //
-  // Lote sugerido FEFO
-  //
   const suggestedLot = await getSuggestedLot(item.product_id);
 
   if (!suggestedLot) {
@@ -136,9 +91,6 @@ export async function confirmPicking(
     );
   }
 
-  //
-  // Buscar lote escaneado
-  //
   const { data: lot, error: lotError } = await supabase
     .from('product_lots')
     .select(`
@@ -165,9 +117,6 @@ export async function confirmPicking(
     throw new Error(`El lote solo tiene ${available} unidades disponibles.`);
   }
 
-  //
-  // Marcar item como pickeado
-  //
   const { error: updateItemError } = await supabase
     .from('picking_order_items')
     .update({
@@ -182,9 +131,6 @@ export async function confirmPicking(
     throw new Error(updateItemError.message);
   }
 
-  //
-  // Revisar si todo el picking terminó
-  //
   const { data: items, error: itemsError } = await supabase
     .from('picking_order_items')
     .select(`
@@ -201,9 +147,6 @@ export async function confirmPicking(
     (row) => row.status === 'completed',
   );
 
-  //
-  // Actualizar picking
-  //
   const { data: picking, error: pickingError } = await supabase
     .from('picking_orders')
     .select(`
@@ -231,9 +174,6 @@ export async function confirmPicking(
     throw new Error(pickingUpdateError.message);
   }
 
-  //
-  // Si terminó todo, pasar pedido a preparing
-  //
   if (completed && picking.sales_order_id) {
     const { error: salesOrderUpdateError } = await supabase
       .from('sales_orders')
@@ -259,15 +199,13 @@ export async function getPickingDetail(
 ): Promise<PickingDetail> {
   const supabase = await createClient();
 
-  const {
-    data: picking,
-    error: pickingError,
-  } = await supabase
+  const { data: picking, error: pickingError } = await supabase
     .from('picking_orders')
     .select(`
       id,
       status,
-      sales_order_id
+      sales_order_id,
+      completed_at
     `)
     .eq('id', pickingId)
     .single();
@@ -276,10 +214,7 @@ export async function getPickingDetail(
     throw new Error('Picking no encontrado.');
   }
 
-  const {
-    data: items,
-    error: itemsError,
-  } = await supabase
+  const { data: items, error: itemsError } = await supabase
     .from('picking_order_items')
     .select(`
       id,
@@ -306,37 +241,33 @@ export async function getPickingDetail(
   }
 
   const normalizedItems: PickingDetailItem[] = await Promise.all(
-    (items ?? []).map(async (row: PickingOrderItemWithProduct) => {
-      const rawProduct = row.product;
-
+    (items ?? []).map(async (row: any) => {
+      const rawProduct = row.products;
       const product = Array.isArray(rawProduct)
         ? rawProduct[0] ?? null
         : rawProduct ?? null;
 
-      const rawPickedLot = row.picked_lot;
-
+      const rawPickedLot = row.product_lots;
       const pickedLot = Array.isArray(rawPickedLot)
         ? rawPickedLot[0] ?? null
         : rawPickedLot ?? null;
 
-      const suggestedLot = await getSuggestedLot(
-        // el producto puede venir como el ID del item
-        // y FEFO se resuelve por producto
-        product?.id ?? '',
-      );
+      const suggestedLot = product?.id
+        ? await getSuggestedLot(product.id)
+        : null;
 
       return {
         id: row.id,
-        picking_order_id: pickingId,
-        product_id: product?.id ?? '',
+        picking_order_id: row.picking_order_id,
+        product_id: row.product_id,
         quantity: Number(row.quantity ?? 0),
-        picked_quantity: Number((row as PickingOrderItemRow).picked_quantity ?? 0),
+        picked_quantity: Number(row.picked_quantity ?? 0),
         status: row.status ?? 'pending',
         product,
         suggested_lot: suggestedLot,
         picked_lot: pickedLot
           ? {
-              lot_number: pickedLot.lot_number ?? null,
+              lot_number: pickedLot.lot_number ?? '',
             }
           : null,
       };
@@ -344,7 +275,11 @@ export async function getPickingDetail(
   );
 
   return {
-    picking,
+    picking: {
+      id: picking.id,
+      status: picking.status,
+      sales_order_id: picking.sales_order_id,
+    },
     items: normalizedItems,
   };
 }

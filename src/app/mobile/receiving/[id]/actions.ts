@@ -380,3 +380,144 @@ export async function confirmReceiving(
     `/purchase-orders/${item.purchase_order_id}`,
   );
 }
+
+// ============================================================================
+// INVENTORY LOCATIONS
+// ============================================================================
+
+export type InventoryLocation = {
+  id: string;
+  code: string;
+  name: string;
+  zone: string | null;
+};
+
+export async function getReceivingLocations(): Promise<
+  InventoryLocation[]
+> {
+  const supabase =
+    await createClient();
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      'inventory_locations',
+    )
+    .select(`
+      id,
+      name,
+      zone
+    `)
+    .eq(
+      'is_active',
+      true,
+    )
+    .order(
+      'name',
+      {
+        ascending: true,
+      },
+    );
+
+  if (error) {
+    throw new Error(
+      error.message,
+    );
+  }
+
+  return (
+    data ?? []
+  ).map(
+    (location: any) => ({
+      id: location.id,
+
+      // Tu tabla no tiene "code",
+      // por eso usamos el nombre como código visual.
+      code:
+        location.name,
+
+      name:
+        location.name,
+
+      zone:
+        location.zone,
+    }),
+  );
+}
+
+// ============================================================================
+// VALIDATE LOT
+// ============================================================================
+
+export async function validateLotNumber(
+  rawMaterialId: string,
+  lotNumber: string,
+): Promise<boolean> {
+  const supabase =
+    await createClient();
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      'raw_material_lots',
+    )
+    .select('id')
+    .eq(
+      'raw_material_id',
+      rawMaterialId,
+    )
+    .eq(
+      'lot_number',
+      lotNumber.trim(),
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      error.message,
+    );
+  }
+
+  return !data;
+}
+
+// ============================================================================
+// GET LOCATION
+// ============================================================================
+
+export async function getLocation(
+  id: string,
+) {
+  const supabase =
+    await createClient();
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      'inventory_locations',
+    )
+    .select(`
+      id,
+      name,
+      zone
+    `)
+    .eq(
+      'id',
+      id,
+    )
+    .single();
+
+  if (error || !data) {
+    throw new Error(
+      'Ubicación no encontrada.',
+    );
+  }
+
+  return data;
+}

@@ -338,3 +338,198 @@ export default function ReceivingDetailClient({
             </div>
 
           </div>
+
+                    {/* LOTE */}
+
+          <div className="mt-8">
+
+            <label className="block text-sm font-semibold text-gray-700">
+              Número de lote
+            </label>
+
+            <input
+              type="text"
+              value={lotNumber}
+              onChange={(e) =>
+                setLotNumber(e.target.value)
+              }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  void handleConfirm();
+                }
+              }}
+              placeholder="Escanee el lote"
+              className="mt-2 w-full rounded-xl border border-gray-300 p-4 text-lg"
+              autoComplete="off"
+              spellCheck={false}
+            />
+
+            <div className="mt-4">
+              <MobileScanner
+                onDetected={(code) => {
+                  setLotNumber(code);
+                  setError(null);
+                }}
+              />
+            </div>
+
+          </div>
+
+          {/* FECHA */}
+
+          <div className="mt-8">
+
+            <label className="block text-sm font-semibold text-gray-700">
+              Fecha de caducidad
+            </label>
+
+            <input
+              type="date"
+              value={expirationDate}
+              onChange={(e) =>
+                setExpirationDate(
+                  e.target.value,
+                )
+              }
+              className="mt-2 w-full rounded-xl border border-gray-300 p-4"
+            />
+
+          </div>
+
+          {/* UBICACIÓN */}
+
+          <div className="mt-8">
+
+            <label className="block text-sm font-semibold text-gray-700">
+              Ubicación
+            </label>
+
+            <select
+              value={locationId}
+              onChange={(e) =>
+                setLocationId(
+                  e.target.value,
+                )
+              }
+              className="mt-2 w-full rounded-xl border border-gray-300 p-4"
+            >
+
+              <option value="">
+                Seleccione una ubicación
+              </option>
+
+              {locations.map(
+                (location) => (
+                  <option
+                    key={location.id}
+                    value={location.id}
+                  >
+                    {location.name}
+                    {location.zone
+                      ? ` (${location.zone})`
+                      : ''}
+                  </option>
+                ),
+              )}
+
+            </select>
+
+          </div>
+
+          {/* BOTÓN */}
+
+          <button
+            type="button"
+            onClick={() => {
+              void handleConfirm();
+            }}
+            disabled={saving}
+            className="mt-10 w-full rounded-xl bg-green-600 px-6 py-4 text-lg font-bold text-white transition hover:bg-green-700 disabled:bg-gray-300"
+          >
+            {saving
+              ? 'Guardando recepción...'
+              : 'Confirmar recepción'}
+          </button>
+
+        </div>
+
+      )}
+
+            {/* HISTORIAL */}
+
+      {completedItems.length > 0 && (
+        <div className="rounded-2xl border bg-white p-6">
+          <h2 className="mb-4 text-xl font-bold">
+            Materiales recibidos
+          </h2>
+
+          <div className="space-y-3">
+            {completedItems.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between rounded-xl border border-green-200 bg-green-50 p-4"
+              >
+                <div>
+                  <div className="font-semibold">
+                    {item.raw_material?.name}
+                  </div>
+
+                  <div className="mt-1 text-sm text-gray-500">
+                    Cantidad recibida:{' '}
+                    {item.received_quantity}
+                  </div>
+
+                  {item.suggested_location && (
+                    <div className="mt-1 text-sm text-gray-500">
+                      Ubicación:{' '}
+                      {item.suggested_location.name}
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-full bg-green-600 px-3 py-1 text-sm font-semibold text-white">
+                  ✓ Recibido
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* RESUMEN */}
+
+      <div className="rounded-2xl border bg-gray-50 p-6">
+        <div className="flex items-center justify-between">
+          <span className="font-medium">
+            Total de partidas
+          </span>
+
+          <span className="font-bold">
+            {detail.items.length}
+          </span>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between">
+          <span className="font-medium">
+            Partidas recibidas
+          </span>
+
+          <span className="font-bold text-green-700">
+            {completedItems.length}
+          </span>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between">
+          <span className="font-medium">
+            Pendientes
+          </span>
+
+          <span className="font-bold text-orange-600">
+            {detail.items.length - completedItems.length}
+          </span>
+        </div>
+      </div>
+
+    </main>
+  );
+}

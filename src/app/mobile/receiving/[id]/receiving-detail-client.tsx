@@ -169,3 +169,172 @@ export default function ReceivingDetailClient({
       </main>
     );
   }
+
+  const progress =
+    detail.items.length === 0
+      ? 0
+      : Math.round(
+          (completedItems.length / detail.items.length) * 100,
+        );
+
+  return (
+    <main className="space-y-6 p-6 pb-24">
+      {/* HEADER */}
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold">
+            Recepción
+          </h1>
+
+          <div className="mt-1 text-sm text-gray-500">
+            OC {detail.purchaseOrder.order_number}
+          </div>
+        </div>
+
+        <Link
+          href="/mobile/receiving"
+          className="rounded-lg border px-4 py-2"
+        >
+          ← Volver
+        </Link>
+      </div>
+
+      {/* PROGRESO */}
+
+      <div className="rounded-2xl border bg-white p-6">
+
+        <div className="mb-4 flex items-center justify-between">
+
+          <div>
+
+            <div className="text-sm text-gray-500">
+              Avance
+            </div>
+
+            <div className="text-3xl font-bold text-blue-700">
+              {completedItems.length} / {detail.items.length}
+            </div>
+
+          </div>
+
+          <div className="text-right">
+
+            <div className="text-sm text-gray-500">
+              Estado
+            </div>
+
+            <div className="font-semibold">
+              {detail.purchaseOrder.status}
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="h-3 rounded-full bg-gray-200">
+
+          <div
+            className="h-3 rounded-full bg-green-600 transition-all"
+            style={{
+              width: `${progress}%`,
+            }}
+          />
+
+        </div>
+
+      </div>
+
+      {/* ERROR */}
+
+      {error && (
+
+        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
+
+          {error}
+
+        </div>
+
+      )}
+
+      {/* RECEPCIÓN TERMINADA */}
+
+      {!currentItem && (
+
+        <div className="rounded-2xl border border-green-200 bg-green-50 p-10 text-center">
+
+          <div className="text-6xl">
+
+            ✅
+
+          </div>
+
+          <div className="mt-4 text-2xl font-bold">
+
+            Recepción completada
+
+          </div>
+
+          <p className="mt-2 text-green-700">
+
+            Todos los materiales fueron recibidos.
+
+          </p>
+
+        </div>
+
+      )}
+
+      {/* ITEM ACTUAL */}
+
+      {currentItem && (
+
+        <div className="rounded-2xl border bg-white p-6">
+
+          <div className="text-sm text-gray-500">
+
+            Materia Prima
+
+          </div>
+
+          <div className="mt-1 text-3xl font-bold">
+
+            {currentItem.raw_material?.name}
+
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+
+            <div className="rounded-xl bg-blue-50 p-6 text-center">
+
+              <div className="text-xs uppercase text-blue-700">
+
+                Esperado
+
+              </div>
+
+              <div className="mt-3 text-5xl font-bold text-blue-700">
+
+                {currentItem.quantity}
+
+              </div>
+
+            </div>
+
+            <div className="rounded-xl bg-green-50 p-6 text-center">
+
+              <div className="text-xs uppercase text-green-700">
+
+                Recibido
+
+              </div>
+
+              <div className="mt-3 text-5xl font-bold text-green-700">
+
+                {currentItem.received_quantity}
+
+              </div>
+
+            </div>
+
+          </div>

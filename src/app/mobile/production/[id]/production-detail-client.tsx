@@ -227,6 +227,7 @@ export default function ProductionDetailClient({
       );
 
       await loadDetail();
+      setScannedLot('');
     } catch (error) {
       setGlobalError(
         error instanceof Error

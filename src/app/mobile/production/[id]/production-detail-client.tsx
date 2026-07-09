@@ -307,3 +307,157 @@ export default function ProductionDetailClient({
     </main>
   );
 }
+
+// ============================================================================
+// HEADER
+// ============================================================================
+
+type PageHeaderProps = {
+  orderNumber: string;
+  recipeName: string;
+  status: ProductionOrderStatus;
+};
+
+function PageHeader({
+  orderNumber,
+  recipeName,
+  status,
+}: PageHeaderProps) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <h1 className="text-4xl font-bold">
+          Producción
+        </h1>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Orden: {orderNumber}
+        </p>
+
+        <p className="text-sm text-gray-500">
+          Receta: {recipeName}
+        </p>
+      </div>
+
+      <div className="text-right">
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadge(
+            status,
+          )}`}
+        >
+          {getStatusLabel(status)}
+        </span>
+
+        <div className="mt-3">
+          <Link
+            href="/mobile/production"
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
+          >
+            ← Volver
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PROGRESS
+// ============================================================================
+
+type ProgressCardProps = {
+  completed: number;
+  total: number;
+  progress: number;
+  status: ProductionOrderStatus;
+};
+
+function ProgressCard({
+  completed,
+  total,
+  progress,
+  status,
+}: ProgressCardProps) {
+  return (
+    <div className="rounded-2xl border bg-white p-6">
+
+      <div className="mb-4 flex items-center justify-between">
+
+        <div>
+          <div className="text-sm text-gray-500">
+            Estado
+          </div>
+
+          <span
+            className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadge(
+              status,
+            )}`}
+          >
+            {getStatusLabel(status)}
+          </span>
+        </div>
+
+        <div className="text-right">
+
+          <div className="text-sm text-gray-500">
+            Avance
+          </div>
+
+          <div className="text-3xl font-bold text-blue-700">
+            {completed}/{total}
+          </div>
+
+        </div>
+
+      </div>
+
+      <div className="mb-2 flex justify-between text-xs text-gray-500">
+
+        <span>
+          Progreso
+        </span>
+
+        <span>
+          {progress}%
+        </span>
+
+      </div>
+
+      <div className="h-3 rounded-full bg-gray-200">
+
+        <div
+          className="h-3 rounded-full bg-green-600 transition-all duration-500"
+          style={{
+            width: `${progress}%`,
+          }}
+        />
+
+      </div>
+
+    </div>
+  );
+}
+
+// ============================================================================
+// ERROR
+// ============================================================================
+
+function ErrorMessage({
+  message,
+}: {
+  message: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+
+      <div className="font-semibold text-red-800">
+        Error
+      </div>
+
+      <p className="mt-2 text-sm text-red-700">
+        {message}
+      </p>
+
+    </div>
+  );
+}

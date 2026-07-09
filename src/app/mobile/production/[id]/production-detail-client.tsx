@@ -541,49 +541,41 @@ function ProductionItemSection({
       </div>
 
       {/* LOTE */}
+<div className="mt-6">
+  <label className="block text-sm font-semibold text-gray-700">
+    Escanea el lote de la materia prima
+  </label>
 
-      <div className="mt-6">
-
-        <label className="block text-sm font-semibold text-gray-700">
-          Escanea el lote de la materia prima
-        </label>
-
-        <input
-          type="text"
-          value={scannedLot}
-          onChange={(e) =>
-            onScannedLotChange(e.target.value)
-          }
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              void onConfirm();
-            }
-          }}
-          placeholder="Escanea el código QR o código de barras"
-          className="mt-2 w-full rounded-lg border border-gray-300 p-4 text-lg"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          disabled={isSaving}
-          autoFocus
-        />
-
-      </div>
-
-      {/* SCANNER */}
-
-      <div className="mt-6">
-
-        {!isSaving && (
-  <MobileScanner
-    onDetected={(value) => {
-      onScannedLotChange(value);
+  <input
+    type="text"
+    value={scannedLot}
+    onChange={(e) => onScannedLotChange(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter') {
+        void onConfirm();
+      }
     }}
+    placeholder="Escanea el código QR o código de barras"
+    className="mt-2 w-full rounded-lg border border-gray-300 p-4 text-lg"
+    autoComplete="off"
+    autoCorrect="off"
+    autoCapitalize="off"
+    spellCheck={false}
+    disabled={isSaving}
+    autoFocus
   />
-)
+</div>
 
-      </div>
+{/* SCANNER */}
+<div className="mt-6">
+  {!isSaving && (
+    <MobileScanner
+      onDetected={(value) => {
+        onScannedLotChange(value);
+      }}
+    />
+  )}
+</div>
 
       {/* BOTÓN */}
 

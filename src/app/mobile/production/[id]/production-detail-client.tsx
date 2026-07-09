@@ -145,3 +145,165 @@ export default function ProductionDetailClient({
   const completed =
     completedCount === totalItems &&
     totalItems > 0;
+
+  // ============================================================================
+  // LOAD DETAIL
+  // ============================================================================
+
+  async function loadDetail() {
+    try {
+      const data =
+        await getProductionDetail(
+          productionOrderId,
+        );
+
+      setDetail(data);
+
+      if (!data) {
+        setPageState('error');
+        return;
+      }
+
+      setPageState('production');
+    } catch (error) {
+      setGlobalError(
+        error instanceof Error
+          ? error.message
+          : 'Error al cargar la orden',
+      );
+
+      setPageState('error');
+    }
+  }
+
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+
+  useEffect(() => {
+    void loadDetail();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productionOrderId]);
+
+  useEffect(() => {
+    setScannedLot('');
+  }, [currentItem?.id]);
+
+  // ============================================================================
+  // ACTIONS
+  // ============================================================================
+
+  async function handleConfirmProduction() {
+    if (!currentItem) {
+      return;
+    }
+
+    const code =
+      scannedLot.trim();
+
+    if (!code) {
+      setGlobalError(
+        'Escanea el lote.',
+      );
+
+      return;
+    }
+
+    setIsSaving(true);
+    setGlobalError(null);
+
+    try {
+      await confirmProductionItem(
+        currentItem.id,
+        code,
+      );
+
+      await loadDetail();
+    } catch (error) {
+      setGlobalError(
+        error instanceof Error
+          ? error.message
+          : 'Error al confirmar consumo',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
+  if (pageState === 'loading') {
+    return <LoadingState />;
+  }
+
+  if (
+    pageState === 'error' ||
+    !detail
+  ) {
+    return (
+      <ErrorState
+        error={globalError}
+      />
+    );
+  }
+
+  const status =
+    detail.order.status as ProductionOrderStatus;
+
+  return (
+    <main className="space-y-6 p-6 pb-24">
+
+      <PageHeader
+        orderNumber={
+          detail.order.order_number
+        }
+        recipeName={
+          detail.order.recipe_name
+        }
+        status={status}
+      />
+
+      <ProgressCard
+        completed={
+          completedCount
+        }
+        total={totalItems}
+        progress={progress}
+        status={status}
+      />
+
+      {globalError && (
+        <ErrorMessage
+          message={globalError}
+        />
+      )}
+
+      {completed ? (
+        <CompletedState />
+      ) : currentItem ? (
+        <ProductionItemSection
+          item={currentItem}
+          scannedLot={scannedLot}
+          onScannedLotChange={
+            setScannedLot
+          }
+          onConfirm={
+            handleConfirmProduction
+          }
+          isSaving={isSaving}
+        />
+      ) : null}
+
+      {completedItems.length >
+        0 && (
+        <CompletedItemsSection
+          items={completedItems}
+        />
+      )}
+
+    </main>
+  );
+}

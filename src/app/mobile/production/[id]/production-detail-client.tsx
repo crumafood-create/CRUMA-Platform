@@ -690,7 +690,9 @@ function CompletedItemRow({
           <div className="mt-2 text-sm text-green-700">
 
             <span>
-              Planeado: {item.planned_quantity}
+              Planeado: {formatQuantity(
+  item.planned_quantity,
+)}
             </span>
 
             <span className="mx-2">
@@ -698,7 +700,9 @@ function CompletedItemRow({
             </span>
 
             <span>
-              Consumido: {item.consumed_quantity}
+              Consumido: {formatQuantity(
+  item.consumed_quantity,
+)}
             </span>
 
           </div>

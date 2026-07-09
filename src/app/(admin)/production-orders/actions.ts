@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 import { consumeProductionItem, } from '@/modules/production/application/production-service';
+import { PRODUCTION_STATUS, } from '@/modules/production/domain/constants';
 // ============================================================================
 // FUNCIONES AUXILIARES - GENERALES
 // ============================================================================

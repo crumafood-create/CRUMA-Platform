@@ -461,3 +461,132 @@ function ErrorMessage({
     </div>
   );
 }
+
+// ============================================================================
+// PRODUCTION ITEM
+// ============================================================================
+
+type ProductionItemSectionProps = {
+  item: ProductionOrderDetailItem;
+  scannedLot: string;
+  onScannedLotChange: (value: string) => void;
+  onConfirm: () => Promise<void>;
+  isSaving: boolean;
+};
+
+function ProductionItemSection({
+  item,
+  scannedLot,
+  onScannedLotChange,
+  onConfirm,
+  isSaving,
+}: ProductionItemSectionProps) {
+  return (
+    <div className="rounded-2xl border border-blue-200 bg-white p-6">
+
+      {/* ENCABEZADO */}
+
+      <div className="flex items-start justify-between">
+
+        <div>
+
+          <div className="text-sm text-gray-500">
+            Materia Prima
+          </div>
+
+          <div className="mt-1 text-2xl font-bold">
+            {item.raw_material?.name ?? 'Materia Prima'}
+          </div>
+
+        </div>
+
+        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+          Pendiente
+        </span>
+
+      </div>
+
+      {/* CANTIDAD */}
+
+      <div className="mt-6 rounded-xl bg-blue-50 p-6 text-center">
+
+        <div className="text-xs font-medium uppercase text-blue-700">
+          Cantidad a Consumir
+        </div>
+
+        <div className="mt-3 text-5xl font-bold text-blue-700">
+          {item.planned_quantity}
+        </div>
+
+      </div>
+
+      {/* LOTE */}
+
+      <div className="mt-6">
+
+        <label className="block text-sm font-semibold text-gray-700">
+          Escanea el lote de la materia prima
+        </label>
+
+        <input
+          type="text"
+          value={scannedLot}
+          onChange={(e) =>
+            onScannedLotChange(e.target.value)
+          }
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              void onConfirm();
+            }
+          }}
+          placeholder="Escanea el código QR o código de barras"
+          className="mt-2 w-full rounded-lg border border-gray-300 p-4 text-lg"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          disabled={isSaving}
+          autoFocus
+        />
+
+      </div>
+
+      {/* SCANNER */}
+
+      <div className="mt-6">
+
+        <MobileScanner
+          onDetected={(value) => {
+            onScannedLotChange(value);
+          }}
+        />
+
+      </div>
+
+      {/* BOTÓN */}
+
+      <button
+        type="button"
+        onClick={() => void onConfirm()}
+        disabled={
+          isSaving ||
+          !scannedLot.trim()
+        }
+        className="mt-6 w-full rounded-xl bg-green-600 px-4 py-4 text-lg font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+      >
+        {isSaving ? (
+          <span className="flex items-center justify-center gap-2">
+
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+
+            Guardando...
+
+          </span>
+        ) : (
+          'Confirmar Consumo'
+        )}
+      </button>
+
+    </div>
+  );
+}

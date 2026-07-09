@@ -377,7 +377,7 @@ type ProgressCardProps = {
   completed: number;
   total: number;
   progress: number;
-  status: ProductionOrderStatus;
+  status: string;
 };
 
 function ProgressCard({
@@ -386,15 +386,14 @@ function ProgressCard({
   progress,
   status,
 }: ProgressCardProps) {
+  const pending = total - completed;
+
   return (
     <div className="rounded-2xl border bg-white p-6">
-
+      {/* Estado y avance numérico */}
       <div className="mb-4 flex items-center justify-between">
-
         <div>
-          <div className="text-sm text-gray-500">
-            Estado
-          </div>
+          <div className="text-sm text-gray-500">Estado</div>
 
           <span
             className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadge(
@@ -406,42 +405,47 @@ function ProgressCard({
         </div>
 
         <div className="text-right">
-
-          <div className="text-sm text-gray-500">
-            Avance
-          </div>
-
+          <div className="text-sm text-gray-500">Avance</div>
           <div className="text-3xl font-bold text-blue-700">
             {completed}/{total}
           </div>
-
         </div>
-
       </div>
 
+      {/* Barra de progreso */}
       <div className="mb-2 flex justify-between text-xs text-gray-500">
-
-        <span>
-          Progreso
-        </span>
-
-        <span>
-          {progress}%
-        </span>
-
+        <span>Progreso</span>
+        <span>{progress}%</span>
       </div>
 
       <div className="h-3 rounded-full bg-gray-200">
-
         <div
           className="h-3 rounded-full bg-green-600 transition-all duration-500"
-          style={{
-            width: `${progress}%`,
-          }}
+          style={{ width: `${progress}%` }}
         />
-
       </div>
 
+      {/* Estadísticas: fuera de la barra, como sección propia */}
+      <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="rounded-xl border p-4 text-center">
+          <div className="text-xs text-gray-500">Ingredientes</div>
+          <div className="text-2xl font-bold">{total}</div>
+        </div>
+
+        <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
+          <div className="text-xs text-green-700">Consumidos</div>
+          <div className="text-2xl font-bold text-green-700">
+            {completed}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-center">
+          <div className="text-xs text-orange-700">Pendientes</div>
+          <div className="text-2xl font-bold text-orange-700">
+            {pending}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

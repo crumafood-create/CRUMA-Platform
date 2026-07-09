@@ -813,3 +813,46 @@ function ErrorState({
     </main>
   );
 }
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function isCompleted(
+  item: ProductionOrderDetailItem,
+) {
+  return item.status === 'completed';
+}
+
+function pendingItems(
+  items: ProductionOrderDetailItem[],
+) {
+  return items.filter(
+    (item) => !isCompleted(item),
+  );
+}
+
+function completedItemsCount(
+  items: ProductionOrderDetailItem[],
+) {
+  return items.filter(
+    isCompleted,
+  ).length;
+}
+
+function totalItemsCount(
+  items: ProductionOrderDetailItem[],
+) {
+  return items.length;
+}
+
+function formatQuantity(
+  quantity: number,
+) {
+  return new Intl.NumberFormat(
+    'es-MX',
+    {
+      maximumFractionDigits: 2,
+    },
+  ).format(quantity);
+}

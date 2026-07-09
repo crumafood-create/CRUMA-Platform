@@ -508,9 +508,17 @@ function ProductionItemSection({
 
         </div>
 
-        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
-          Pendiente
-        </span>
+        <span
+  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+    item.status === 'completed'
+      ? 'bg-green-100 text-green-700'
+      : 'bg-orange-100 text-orange-700'
+  }`}
+>
+  {item.status === 'completed'
+    ? 'Completado'
+    : 'Pendiente'}
+</span>
 
       </div>
 
@@ -565,11 +573,13 @@ function ProductionItemSection({
 
       <div className="mt-6">
 
-        <MobileScanner
-          onDetected={(value) => {
-            onScannedLotChange(value);
-          }}
-        />
+        {!isSaving && (
+  <MobileScanner
+    onDetected={(value) => {
+      onScannedLotChange(value);
+    }}
+  />
+)
 
       </div>
 

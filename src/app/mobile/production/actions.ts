@@ -20,12 +20,10 @@ type RecipeRelation =
     }[]
   | null;
 
-type ProductionItemsRelation =
-  | {
-      id: string;
-      status: string | null;
-    }[]
-  | null;
+type ProductionItemRelation = {
+  id: string;
+  status: string | null;
+}[];
 
 type RawMaterialRelation =
   | {
@@ -121,15 +119,16 @@ export async function getProductionOrders(): Promise<
     const recipe = unwrapSingle<{
       id: string;
       name: string;
-    }>(row.recipes);
+    }>(row.recipes as RecipeRelation);
 
-    const items = (row.production_order_items ?? []) as ProductionItemsRelation;
+    const items =
+      (row.production_order_items ?? []) as ProductionItemRelation;
 
-    const totalItems = Array.isArray(items) ? items.length : 0;
+    const totalItems = items.length;
 
-    const completedItems = Array.isArray(items)
-      ? items.filter((item) => item.status === 'completed').length
-      : 0;
+    const completedItems = items.filter(
+      (item) => item.status === 'completed',
+    ).length;
 
     return {
       id: row.id,
@@ -171,7 +170,8 @@ export async function getProductionDetail(
 
   if (orderError || !order) {
     throw new Error(
-      orderError?.message ?? 'Orden de producción no encontrada.',
+      orderError?.message ??
+        'Orden de producción no encontrada.',
     );
   }
 
@@ -188,7 +188,7 @@ export async function getProductionDetail(
       planned_quantity,
       consumed_quantity,
       status,
-      raw_materials (
+      raw_material:raw_materials (
         id,
         name
       )
@@ -205,7 +205,7 @@ export async function getProductionDetail(
       const rawMaterial = unwrapSingle<{
         id: string;
         name: string;
-      }>(row.raw_materials as RawMaterialRelation);
+      }>(row.raw_material as RawMaterialRelation);
 
       return {
         id: row.id,

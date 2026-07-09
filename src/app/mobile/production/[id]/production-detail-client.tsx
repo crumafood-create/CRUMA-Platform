@@ -131,10 +131,13 @@ export default function ProductionDetailClient({
     ) ?? [];
 
   const totalItems =
-    detail?.items.length ?? 0;
-
+  totalItemsCount(
+    detail?.items ?? [],
+  );
   const completedCount =
-    completedItems.length;
+  completedItemsCount(
+    detail?.items ?? [],
+  );
 
   const progress =
     calculateProgress(

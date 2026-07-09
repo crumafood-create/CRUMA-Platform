@@ -515,7 +515,9 @@ function ProductionItemSection({
         </div>
 
         <div className="mt-3 text-5xl font-bold text-blue-700">
-          {item.planned_quantity}
+          {formatQuantity(
+  item.planned_quantity,
+)}
         </div>
 
       </div>

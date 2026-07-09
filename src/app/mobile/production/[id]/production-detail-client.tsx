@@ -590,3 +590,125 @@ function ProductionItemSection({
     </div>
   );
 }
+
+// ============================================================================
+// COMPLETED STATE
+// ============================================================================
+
+function CompletedState() {
+  return (
+    <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-8 text-center">
+
+      <div className="text-6xl">
+        🎉
+      </div>
+
+      <h2 className="mt-4 text-3xl font-bold text-green-900">
+        Producción Completada
+      </h2>
+
+      <p className="mt-3 text-green-700">
+        Todos los ingredientes fueron consumidos correctamente.
+      </p>
+
+      <p className="mt-2 text-sm text-green-600">
+        La orden quedó registrada y el producto terminado fue generado.
+      </p>
+
+      <Link
+        href="/mobile/production"
+        className="mt-6 inline-flex rounded-lg bg-green-600 px-8 py-3 font-bold text-white hover:bg-green-700"
+      >
+        Volver al Listado
+      </Link>
+
+    </div>
+  );
+}
+
+// ============================================================================
+// COMPLETED ITEMS
+// ============================================================================
+
+function CompletedItemsSection({
+  items,
+}: {
+  items: ProductionOrderDetailItem[];
+}) {
+  return (
+    <div className="space-y-4">
+
+      <h2 className="text-lg font-bold text-gray-900">
+        Ingredientes Consumidos ({items.length})
+      </h2>
+
+      <div className="space-y-3">
+
+        {items.map((item) => (
+          <CompletedItemRow
+            key={item.id}
+            item={item}
+          />
+        ))}
+
+      </div>
+
+    </div>
+  );
+}
+
+// ============================================================================
+// COMPLETED ITEM ROW
+// ============================================================================
+
+function CompletedItemRow({
+  item,
+}: {
+  item: ProductionOrderDetailItem;
+}) {
+  return (
+    <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+
+      <div className="flex items-start justify-between">
+
+        <div className="flex-1">
+
+          <div className="flex items-center gap-2">
+
+            <span className="text-lg font-bold text-green-700">
+              ✓
+            </span>
+
+            <span className="font-semibold text-green-900">
+              {item.raw_material?.name ?? 'Materia Prima'}
+            </span>
+
+          </div>
+
+          <div className="mt-2 text-sm text-green-700">
+
+            <span>
+              Planeado: {item.planned_quantity}
+            </span>
+
+            <span className="mx-2">
+              •
+            </span>
+
+            <span>
+              Consumido: {item.consumed_quantity}
+            </span>
+
+          </div>
+
+        </div>
+
+        <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-green-800">
+          ✓
+        </span>
+
+      </div>
+
+    </div>
+  );
+}

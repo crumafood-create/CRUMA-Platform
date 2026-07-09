@@ -198,6 +198,10 @@ export default function ProductionDetailClient({
   // ============================================================================
 
   async function handleConfirmProduction() {
+    if (isSaving) {
+  return;
+    }
+    
     if (!currentItem) {
       return;
     }

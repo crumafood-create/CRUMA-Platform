@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/infrastructure/integrations/supabase/server';
 import { consumeProductionItem, } from '@/modules/production/application/production-service';
 import { PRODUCTION_STATUS, } from '@/modules/production/domain/constants';
+
 // ============================================================================
 // FUNCIONES AUXILIARES - GENERALES
 // ============================================================================
@@ -120,6 +121,29 @@ async function createInventoryMovement(
   if (error) {
     throw new Error(
       `Error al registrar movimiento de inventario: ${error.message}`
+    );
+  }
+}
+
+/**
+ * Consume los materiales de un item de producción delegando la lógica
+ * de descuento de lotes (FEFO) y registro de movimientos al Production
+ * Service en base de datos.
+ *
+ * NOTA: asume que existe la función `consume_production_item` en Supabase.
+ * Si el nombre real de la función RPC es distinto, ajústalo aquí.
+ */
+async function consumeProductionItem(
+  supabase: any,
+  productionOrderItemId: string
+) {
+  const { error } = await supabase.rpc('consume_production_item', {
+    p_production_order_item_id: productionOrderItemId,
+  });
+
+  if (error) {
+    throw new Error(
+      `Error al consumir materiales del item ${productionOrderItemId}: ${error.message}`
     );
   }
 }
@@ -291,7 +315,13 @@ export async function cancelProductionOrder(orderId: string) {
 
 /**
  * Completa una orden de producción (in_progress → completed)
- * Consume materias primas por lote (FEFO) y genera producto terminado
+ *
+ * 1. Valida estado
+ * 2. Obtiene receta y producto terminado
+ * 3. Consume los materiales de cada item de producción
+ *    delegando al Production Service (consumeProductionItem)
+ * 4. Registra entrada del producto terminado
+ * 5. Marca la orden como completada
  */
 export async function completeProductionOrder(orderId: string) {
   const supabase = await createClient();
@@ -331,111 +361,22 @@ export async function completeProductionOrder(orderId: string) {
     throw new Error('La receta no tiene producto asociado');
   }
 
-  // 3. Obtener ingredientes
-  const { data: ingredients, error: ingredientsError } = await supabase
-    .from('recipe_items')
-    .select(
-      `
-      id,
-      ingredient_id,
-      quantity
-    `
-    )
-    .eq('recipe_id', productionOrder.recipe_id);
+  // 3. Obtener todos los items de producción
+  const { data: productionItems, error: itemsError } = await supabase
+    .from('production_order_items')
+    .select('id')
+    .eq('production_order_id', orderId);
 
-  if (ingredientsError) {
-    throw new Error(ingredientsError.message);
+  if (itemsError) {
+    throw new Error(itemsError.message);
   }
 
-  // 4. Validar stock disponible para todos los ingredientes
-  for (const item of ingredients ?? []) {
-    const required = Number(item.quantity) * Number(order.planned_quantity);
-
-    const { data: stock } = await supabase
-      .from('inventory_stock_by_item')
-      .select('quantity')
-      .eq('item_type', 'raw_material')
-      .eq('item_id', item.ingredient_id)
-      .single();
-
-    const available = Number(stock?.quantity ?? 0);
-
-    if (available < required) {
-      throw new Error(
-        `Stock insuficiente para el ingrediente ${item.ingredient_id}`
-      );
-    }
+  // Consumir todos los materiales usando el nuevo Production Service
+  for (const item of productionItems ?? []) {
+    await consumeProductionItem(supabase, item.id);
   }
 
-  // 5. Consumir materias primas por lote (FEFO: primero vence, primero sale)
-  for (const item of ingredients ?? []) {
-    let pendingQuantity =
-      Number(item.quantity) * Number(order.planned_quantity);
-
-    const { data: lots } = await supabase
-      .from('inventory_lots')
-      .select(
-        `
-        id,
-        quantity,
-        lot_number
-      `
-      )
-      .eq('item_type', 'raw_material')
-      .eq('item_id', item.ingredient_id)
-      .gt('quantity', 0)
-      .order('expiration_date', { ascending: true })
-      .order('created_at', { ascending: true });
-
-    if (!lots?.length) {
-      throw new Error(
-        `No existe stock para el ingrediente ${item.ingredient_id}`
-      );
-    }
-
-    for (const lot of lots) {
-      if (pendingQuantity <= 0) {
-        break;
-      }
-
-      const available = Number(lot.quantity);
-      const consumed = Math.min(available, pendingQuantity);
-      const remaining = available - consumed;
-
-      await supabase
-        .from('inventory_lots')
-        .update({
-          quantity: remaining,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', lot.id);
-
-      await supabase.from('production_lot_consumptions').insert({
-        production_order_id: orderId,
-        inventory_lot_id: lot.id,
-        raw_material_id: item.ingredient_id,
-        quantity: consumed,
-      });
-
-      await createInventoryMovement(supabase, {
-        item_type: 'raw_material',
-        item_id: item.ingredient_id,
-        movement_type: 'exit',
-        quantity: consumed,
-        reference_type: 'production_order',
-        reference_id: orderId,
-        notes: `Consumo lote ${lot.lot_number}`,
-      });
-
-      pendingQuantity -= consumed;
-    }
-
-    if (pendingQuantity > 0) {
-      throw new Error(`Stock insuficiente para ${item.ingredient_id}`);
-    }
-  }
-
-  // 6. Registrar entrada del producto terminado
+  // 4. Registrar entrada del producto terminado
   await createInventoryMovement(supabase, {
     item_type: 'product',
     item_id: recipe.product_id,
@@ -446,7 +387,7 @@ export async function completeProductionOrder(orderId: string) {
     notes: 'Producción terminada',
   });
 
-  // 7. Completar orden
+  // 5. Completar orden
   const { error: updateError } = await supabase
     .from('production_orders')
     .update({

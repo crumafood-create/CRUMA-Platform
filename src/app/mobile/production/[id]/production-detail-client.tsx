@@ -712,3 +712,104 @@ function CompletedItemRow({
     </div>
   );
 }
+
+// ============================================================================
+// LOADING
+// ============================================================================
+
+function LoadingState() {
+  return (
+    <main className="space-y-6 p-6">
+
+      <h1 className="text-4xl font-bold">
+        Producción
+      </h1>
+
+      <div className="space-y-4">
+
+        <div className="rounded-2xl border bg-white p-6">
+
+          <div className="mb-4 h-8 w-40 animate-pulse rounded-lg bg-gray-200" />
+
+          <div className="h-6 w-64 animate-pulse rounded-lg bg-gray-200" />
+
+        </div>
+
+        <div className="rounded-2xl border bg-white p-6">
+
+          <div className="space-y-3">
+
+            <div className="h-4 w-full animate-pulse rounded-lg bg-gray-200" />
+
+            <div className="h-4 w-4/5 animate-pulse rounded-lg bg-gray-200" />
+
+            <div className="h-4 w-3/5 animate-pulse rounded-lg bg-gray-200" />
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <p className="text-center text-gray-500">
+        Cargando orden de producción...
+      </p>
+
+    </main>
+  );
+}
+
+// ============================================================================
+// ERROR
+// ============================================================================
+
+function ErrorState({
+  error,
+}: {
+  error: string | null;
+}) {
+  return (
+    <main className="space-y-6 p-6">
+
+      <div className="flex items-center justify-between">
+
+        <h1 className="text-4xl font-bold">
+          Producción
+        </h1>
+
+        <Link
+          href="/mobile/production"
+          className="rounded-lg border bg-gray-50 px-4 py-2 font-medium hover:bg-gray-100"
+        >
+          ← Volver
+        </Link>
+
+      </div>
+
+      <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-8 text-center">
+
+        <div className="text-5xl">
+          ❌
+        </div>
+
+        <h2 className="mt-4 text-2xl font-bold text-red-900">
+          Error al cargar la producción
+        </h2>
+
+        <p className="mt-3 text-red-700">
+          {error ??
+            'No fue posible cargar la orden de producción.'}
+        </p>
+
+        <Link
+          href="/mobile/production"
+          className="mt-6 inline-flex rounded-lg bg-red-600 px-6 py-3 font-semibold text-white hover:bg-red-700"
+        >
+          Volver al listado
+        </Link>
+
+      </div>
+
+    </main>
+  );
+}

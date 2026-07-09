@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
-
+import { consumeProductionItem, } from '@/modules/production/application/production-service';
 // ============================================================================
 // FUNCIONES AUXILIARES - GENERALES
 // ============================================================================

@@ -3,6 +3,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildFEFOAllocation } from './production-fefo';
 
 import {
+  getAvailableLots,
+  validateSuggestedLot,
+} from './production-lot';
+
+import {
   consumeRawMaterialLot,
   registerConsumption,
   registerMaterialExit,
@@ -20,6 +25,7 @@ import {
 export async function consumeProductionItem(
   supabase: SupabaseClient,
   productionOrderItemId: string,
+  scannedLotNumber: string,
 ): Promise<void> {
   //
   // Obtener item
@@ -51,21 +57,35 @@ export async function consumeProductionItem(
     return;
   }
 
-  const quantity =
-    Number(item.planned_quantity);
+  //
+  // Validar lote escaneado
+  //
+  await validateSuggestedLot(
+    supabase,
+    item.raw_material_id,
+    scannedLotNumber,
+  );
 
   //
-  // FEFO
+  // Obtener todos los lotes FEFO
   //
-  const allocations =
-    await buildFEFOAllocation(
+  const lots =
+    await getAvailableLots(
       supabase,
       item.raw_material_id,
-      quantity,
     );
 
   //
-  // Consumir cada lote
+  // Calcular asignación FEFO
+  //
+  const allocations =
+    buildFEFOAllocation(
+      lots,
+      Number(item.planned_quantity),
+    );
+
+  //
+  // Consumir lotes
   //
   for (const allocation of allocations) {
     await consumeRawMaterialLot(
@@ -93,11 +113,11 @@ export async function consumeProductionItem(
   await completeProductionItem(
     supabase,
     item.id,
-    quantity,
+    Number(item.planned_quantity),
   );
 
   //
-  // Revisar orden
+  // Actualizar orden
   //
   await updateProductionStatus(
     supabase,

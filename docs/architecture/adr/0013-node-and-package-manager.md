@@ -1133,6 +1133,27 @@ Antes de Aceptado se resolverá:
 - ¿qué política exacta de rangos se aplica a cada categoría?;
 - y ¿qué incompatibilidad justificaría Node 22 o npm?
 
+### Validación inicial contra el repositorio — 2026-07-12
+
+| Evidencia | Resultado | Conformidad |
+|---|---|---|
+| Node.js oficial | `24.18.0` es la versión LTS vigente | Conforme con la propuesta |
+| pnpm oficial | `10.34.5` existe en la línea 10 publicada | Conforme con la propuesta |
+| Vercel Node.js | `24.x` está disponible y solo se fija el major | Conforme con la propuesta |
+| Vercel package managers | pnpm 10 está soportado; sin lockfile Vercel usa npm por defecto | Conforme con la decisión, repositorio no conforme |
+| `package.json` | No contiene `packageManager` ni `engines` | No conforme |
+| Manifest | `@tanstack/react-query` aparece dos veces | No conforme |
+| Runtime local | No existe `.nvmrc` ni `.node-version` | No conforme |
+| Lockfile | No existe `pnpm-lock.yaml` ni otro lockfile | No conforme |
+| Configuración pnpm | No existe `.npmrc` ni política equivalente | No conforme |
+| GitHub Actions | `.github/workflows/ci.yml` solo ejecuta checkout | No conforme |
+| Vercel | `vercel.json` no fija runtime, package manager ni install command | No conforme |
+| Supabase CLI | No existe versión controlada en el manifest | Pendiente |
+| Instalación reproducible | No puede demostrarse sin manifest limpio y lockfile canónico | Pendiente |
+| Build y Preview | No se ejecutaron con Node `24.18.0` y pnpm `10.34.5` fijados | Pendiente |
+
+**Resultado:** la selección de versiones conserva soporte oficial, pero la implementación no satisface los criterios de la sección 71. El ADR permanece **Propuesto**. El siguiente gate es un PR de migración que limpie el manifest, fije runtime/gestor, genere el lockfile y configure CI antes de evaluar aceptación.
+
 ---
 
 ## 73. Métricas de la decisión
@@ -1189,6 +1210,7 @@ El texto no equivale a aprobación.
 | Fecha | Cambio |
 |---|---|
 | 2026-07-12 | Creación de la propuesta ADR-0013 |
+| 2026-07-12 | Validación inicial contra repositorio y fuentes oficiales; estado permanece Propuesto |
 
 ---
 

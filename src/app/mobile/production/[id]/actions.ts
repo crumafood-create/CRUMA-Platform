@@ -217,7 +217,7 @@ export async function getProductionDetail(
       Array.isArray(
         row.raw_materials,
       )
-        ? row.raw_materials[0]
+        ? row.raw_materials[0] ?? null
         : row.raw_materials;
 
     const suggestedLot =

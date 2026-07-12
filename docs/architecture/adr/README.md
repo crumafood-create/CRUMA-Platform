@@ -679,6 +679,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | [0011](0011-canonical-design-token-format.md) | Adoptar DTCG JSON como formato canónico de design tokens | Propuesto | 2026-07-12 | — |
 | [0012](0012-storybook-and-visual-testing.md) | Adoptar Storybook y regresión visual selectiva con Playwright | Propuesto | 2026-07-12 | — |
 | [0013](0013-node-and-package-manager.md) | Adoptar Node.js 24 LTS y pnpm 10 como toolchain JavaScript | Propuesto | 2026-07-12 | — |
+| [0014](0014-supabase-environment-isolation.md) | Separar Supabase por entorno y usar branches efímeras en Preview | Propuesto | 2026-07-12 | — |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -690,8 +691,7 @@ El enlace a `0000-template.md` quedará activo después de crear la plantilla en
 
 Las decisiones candidatas identificadas son:
 
-1. separación de proyectos Supabase por entorno;
-2. estrategia de backups y restauración.
+1. estrategia de backups y restauración.
 
 Este backlog no asigna número ni decisión.
 

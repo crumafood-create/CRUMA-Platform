@@ -8,8 +8,8 @@ import MobileScanner from '@/app/mobile/components/mobile-scanner';
 import {
   confirmProductionItem,
   getProductionDetail,
-  type ProductionOrderDetail,
-  type ProductionOrderDetailItem,
+  type ProductionDetail as ProductionOrderDetail,
+  type ProductionDetailItem as ProductionOrderDetailItem,
 } from './actions';
 
 // ============================================================================

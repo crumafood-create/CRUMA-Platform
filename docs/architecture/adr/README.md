@@ -669,6 +669,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | [0001](0001-tenant-isolation-model.md) | Adoptar Tenant técnico con aislamiento lógico por fila | Propuesto | 2026-07-12 | — |
 | [0002](0002-schema-baseline-and-migrations.md) | Establecer baseline y migraciones canónicas de PostgreSQL/Supabase | Propuesto | 2026-07-12 | — |
 | [0003](0003-authorization-model.md) | Adoptar RBAC con permisos canónicos y scopes jerárquicos | Propuesto | 2026-07-12 | — |
+| [0004](0004-desktop-tauri-topology.md) | Adoptar Tauri 2 con frontend local y API versionada | Propuesto | 2026-07-12 | — |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -680,18 +681,17 @@ El enlace a `0000-template.md` quedará activo después de crear la plantilla en
 
 Las decisiones candidatas identificadas son:
 
-1. topología Desktop con Tauri;
-2. estrategia offline;
-3. eventos, outbox e inbox;
-4. pipeline CI/CD;
-5. proveedor de observabilidad;
-6. SLO, RPO y RTO;
-7. estrategia de caché;
-8. formato canónico de design tokens;
-9. Storybook y pruebas visuales;
-10. gestor de paquetes y versión de Node;
-11. separación de proyectos Supabase por entorno;
-12. estrategia de backups y restauración.
+1. estrategia offline;
+2. eventos, outbox e inbox;
+3. pipeline CI/CD;
+4. proveedor de observabilidad;
+5. SLO, RPO y RTO;
+6. estrategia de caché;
+7. formato canónico de design tokens;
+8. Storybook y pruebas visuales;
+9. gestor de paquetes y versión de Node;
+10. separación de proyectos Supabase por entorno;
+11. estrategia de backups y restauración.
 
 Este backlog no asigna número ni decisión.
 

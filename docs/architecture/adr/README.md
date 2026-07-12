@@ -670,6 +670,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | [0002](0002-schema-baseline-and-migrations.md) | Establecer baseline y migraciones canónicas de PostgreSQL/Supabase | Propuesto | 2026-07-12 | — |
 | [0003](0003-authorization-model.md) | Adoptar RBAC con permisos canónicos y scopes jerárquicos | Propuesto | 2026-07-12 | — |
 | [0004](0004-desktop-tauri-topology.md) | Adoptar Tauri 2 con frontend local y API versionada | Propuesto | 2026-07-12 | — |
+| [0005](0005-offline-sync-strategy.md) | Adoptar sincronización offline por comandos y proyecciones | Propuesto | 2026-07-12 | — |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -681,17 +682,16 @@ El enlace a `0000-template.md` quedará activo después de crear la plantilla en
 
 Las decisiones candidatas identificadas son:
 
-1. estrategia offline;
-2. eventos, outbox e inbox;
-3. pipeline CI/CD;
-4. proveedor de observabilidad;
-5. SLO, RPO y RTO;
-6. estrategia de caché;
-7. formato canónico de design tokens;
-8. Storybook y pruebas visuales;
-9. gestor de paquetes y versión de Node;
-10. separación de proyectos Supabase por entorno;
-11. estrategia de backups y restauración.
+1. eventos, outbox e inbox;
+2. pipeline CI/CD;
+3. proveedor de observabilidad;
+4. SLO, RPO y RTO;
+5. estrategia de caché;
+6. formato canónico de design tokens;
+7. Storybook y pruebas visuales;
+8. gestor de paquetes y versión de Node;
+9. separación de proyectos Supabase por entorno;
+10. estrategia de backups y restauración.
 
 Este backlog no asigna número ni decisión.
 

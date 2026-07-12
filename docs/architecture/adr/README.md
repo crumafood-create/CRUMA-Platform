@@ -680,6 +680,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | [0012](0012-storybook-and-visual-testing.md) | Adoptar Storybook y regresión visual selectiva con Playwright | Propuesto | 2026-07-12 | — |
 | [0013](0013-node-and-package-manager.md) | Adoptar Node.js 24 LTS y pnpm 10 como toolchain JavaScript | Propuesto | 2026-07-12 | — |
 | [0014](0014-supabase-environment-isolation.md) | Separar Supabase por entorno y usar branches efímeras en Preview | Propuesto | 2026-07-12 | — |
+| [0015](0015-backup-and-restore-strategy.md) | Adoptar backups multicapa y restauración verificada | Propuesto | 2026-07-12 | — |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -689,11 +690,9 @@ El enlace a `0000-template.md` quedará activo después de crear la plantilla en
 
 ## 42. Backlog inicial sin numerar
 
-Las decisiones candidatas identificadas son:
+No quedan decisiones candidatas sin numerar en el backlog inicial.
 
-1. estrategia de backups y restauración.
-
-Este backlog no asigna número ni decisión.
+Las nuevas candidatas se agregarán aquí hasta que tengan un borrador listo para revisión y reciban un número conforme a este registro.
 
 ---
 

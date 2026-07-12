@@ -666,6 +666,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | ADR | Título | Estado | Fecha | Reemplaza |
 |---|---|---|---|---|
 | [0000](0000-template.md) | Plantilla de Architecture Decision Record | Plantilla | — | — |
+| [0001](0001-tenant-isolation-model.md) | Adoptar Tenant técnico con aislamiento lógico por fila | Propuesto | 2026-07-12 | — |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -677,21 +678,20 @@ El enlace a `0000-template.md` quedará activo después de crear la plantilla en
 
 Las decisiones candidatas identificadas son:
 
-1. modelo de Tenant frente a Organización y clave canónica;
-2. baseline de esquema y ubicación de migraciones;
-3. roles, permisos y scopes;
-4. topología Desktop con Tauri;
-5. estrategia offline;
-6. eventos, outbox e inbox;
-7. pipeline CI/CD;
-8. proveedor de observabilidad;
-9. SLO, RPO y RTO;
-10. estrategia de caché;
-11. formato canónico de design tokens;
-12. Storybook y pruebas visuales;
-13. gestor de paquetes y versión de Node;
-14. separación de proyectos Supabase por entorno;
-15. estrategia de backups y restauración.
+1. baseline de esquema y ubicación de migraciones;
+2. roles, permisos y scopes;
+3. topología Desktop con Tauri;
+4. estrategia offline;
+5. eventos, outbox e inbox;
+6. pipeline CI/CD;
+7. proveedor de observabilidad;
+8. SLO, RPO y RTO;
+9. estrategia de caché;
+10. formato canónico de design tokens;
+11. Storybook y pruebas visuales;
+12. gestor de paquetes y versión de Node;
+13. separación de proyectos Supabase por entorno;
+14. estrategia de backups y restauración.
 
 Este backlog no asigna número ni decisión.
 

@@ -7,7 +7,7 @@
 | Campo | Valor |
 |---|---|
 | Estado | Aprobado |
-| Versión | 2.0 |
+| Versión | 2.1 |
 | Propietarios | Product Owner y responsable de arquitectura |
 | Alcance | Catálogo, orden de lectura, autoridad, estados, mantenimiento y gobierno documental |
 | Autoridad | Derivado de la Visión, la Constitución y el CRUMAFOOD Engineering System |
@@ -798,17 +798,20 @@ El conjunto será conforme cuando:
 
 ---
 
-## 48. Próxima etapa
+## 48. Siguiente etapa
 
-Con el catálogo transversal completo, la próxima etapa documental es:
+El catálogo transversal, el registro, la plantilla y la serie inicial ADR-0001 a ADR-0015 ya están completos como documentación propuesta.
 
-1. crear `docs/architecture/adr/README.md`;
-2. crear `docs/architecture/adr/0000-template.md`;
-3. priorizar ADR-0001;
-4. aprobar o ajustar los documentos propuestos;
-5. y vincular decisiones con el backlog de implementación.
+La siguiente etapa es:
 
-El primer ADR se elegirá por riesgo y dependencia, no por conveniencia.
+1. revisar coherencia entre arquitectura transversal y ADR;
+2. resolver preguntas abiertas y dependencias;
+3. ejecutar pilotos y obtener evidencia;
+4. aprobar, rechazar o reemplazar cada ADR con autoridad explícita;
+5. convertir decisiones aceptadas en backlog de implementación;
+6. y automatizar validaciones documentales en CI.
+
+No se declarará implementada una capacidad por haber completado su documentación.
 
 ---
 

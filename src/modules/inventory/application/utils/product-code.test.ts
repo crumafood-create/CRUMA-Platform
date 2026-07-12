@@ -1,9 +1,12 @@
+import { strictEqual } from 'node:assert';
+import { test } from 'node:test';
+
 import { toSlug, toInternalCode } from './product-code';
 
 test('toSlug elimina tildes', () => {
-  expect(toSlug('Tequeños Clásicos')).toBe('tequenos-clasicos');
+  strictEqual(toSlug('Tequeños Clásicos'), 'tequenos-clasicos');
 });
 
 test('toInternalCode ignora stop words', () => {
-  expect(toInternalCode('Empanadas de Pollo')).toBe('EMP-POL');
+  strictEqual(toInternalCode('Empanadas de Pollo'), 'EMP-POL');
 });

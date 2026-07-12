@@ -213,12 +213,10 @@ export async function getProductionDetail(
 
   for (const row of rows ??
     []) {
-    const material =
-      Array.isArray(
-        row.raw_materials,
-      )
-        ? row.raw_materials[0] ?? null
-        : row.raw_materials;
+   const material =
+  Array.isArray(row.raw_materials)
+    ? row.raw_materials[0] ?? null   // ← se agregó "?? null"
+    : row.raw_materials;
 
     const suggestedLot =
       await getSuggestedRawMaterialLot(

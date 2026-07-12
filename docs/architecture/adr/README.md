@@ -676,6 +676,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | [0008](0008-observability-provider.md) | Adoptar Sentry como plataforma inicial de observabilidad de aplicación | Propuesto | 2026-07-12 | — |
 | [0009](0009-service-level-and-recovery-objectives.md) | Adoptar objetivos iniciales de servicio y recuperación por criticidad | Propuesto | 2026-07-12 | — |
 | [0010](0010-cache-strategy.md) | Adoptar caché explícita, scoped y orientada a frescura | Propuesto | 2026-07-12 | — |
+| [0011](0011-canonical-design-token-format.md) | Adoptar DTCG JSON como formato canónico de design tokens | Propuesto | 2026-07-12 | — |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -687,11 +688,10 @@ El enlace a `0000-template.md` quedará activo después de crear la plantilla en
 
 Las decisiones candidatas identificadas son:
 
-1. formato canónico de design tokens;
-2. Storybook y pruebas visuales;
-3. gestor de paquetes y versión de Node;
-4. separación de proyectos Supabase por entorno;
-5. estrategia de backups y restauración.
+1. Storybook y pruebas visuales;
+2. gestor de paquetes y versión de Node;
+3. separación de proyectos Supabase por entorno;
+4. estrategia de backups y restauración.
 
 Este backlog no asigna número ni decisión.
 

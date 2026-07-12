@@ -8,8 +8,8 @@ import MobileScanner from '@/app/mobile/components/mobile-scanner';
 import {
   confirmProductionItem,
   getProductionDetail,
-  type ProductionDetail as ProductionOrderDetail,
-  type ProductionDetailItem as ProductionOrderDetailItem,
+  type ProductionDetail,
+  type ProductionDetailItem,
 } from './actions';
 
 // ============================================================================
@@ -102,7 +102,7 @@ export default function ProductionDetailClient({
   productionOrderId,
 }: Props) {
   const [detail, setDetail] =
-    useState<ProductionOrderDetail | null>(
+    useState<ProductionDetail | null>(
       null,
     );
 
@@ -201,7 +201,7 @@ export default function ProductionDetailClient({
     if (isSaving) {
   return;
     }
-    
+
     if (!currentItem) {
       return;
     }
@@ -479,7 +479,7 @@ function ErrorMessage({
 // ============================================================================
 
 type ProductionItemSectionProps = {
-  item: ProductionOrderDetailItem;
+  item: ProductionDetailItem;
   scannedLot: string;
   onScannedLotChange: (value: string) => void;
   onConfirm: () => Promise<void>;
@@ -649,7 +649,7 @@ function CompletedState() {
 function CompletedItemsSection({
   items,
 }: {
-  items: ProductionOrderDetailItem[];
+  items: ProductionDetailItem[];
 }) {
   return (
     <div className="space-y-4">
@@ -680,7 +680,7 @@ function CompletedItemsSection({
 function CompletedItemRow({
   item,
 }: {
-  item: ProductionOrderDetailItem;
+  item: ProductionDetailItem;
 }) {
   return (
     <div className="rounded-xl border border-green-200 bg-green-50 p-4">
@@ -839,13 +839,13 @@ function ErrorState({
 // ============================================================================
 
 function isCompleted(
-  item: ProductionOrderDetailItem,
+  item: ProductionDetailItem,
 ) {
   return item.status === 'completed';
 }
 
 function pendingItems(
-  items: ProductionOrderDetailItem[],
+  items: ProductionDetailItem[],
 ) {
   return items.filter(
     (item) => !isCompleted(item),
@@ -853,7 +853,7 @@ function pendingItems(
 }
 
 function completedItemsCount(
-  items: ProductionOrderDetailItem[],
+  items: ProductionDetailItem[],
 ) {
   return items.filter(
     isCompleted,
@@ -861,7 +861,7 @@ function completedItemsCount(
 }
 
 function totalItemsCount(
-  items: ProductionOrderDetailItem[],
+  items: ProductionDetailItem[],
 ) {
   return items.length;
 }

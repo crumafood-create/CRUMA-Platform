@@ -16,7 +16,7 @@
 | Reemplaza | No aplica |
 | Reemplazado por | No aplica |
 | RFC relacionado | No aplica; requiere instalación limpia piloto antes de aceptación |
-| Issues relacionados | Pendiente: limpiar package.json, generar lockfile, fijar runtime, actualizar CI/Vercel, clean install y build |
+| Issues relacionados | Pendiente: ejecutar CI con Node exacto, validar Vercel Preview/Corepack, fijar Supabase CLI y obtener aprobaciones |
 
 ---
 
@@ -1141,18 +1141,19 @@ Antes de Aceptado se resolverá:
 | pnpm oficial | `10.34.5` existe en la línea 10 publicada | Conforme con la propuesta |
 | Vercel Node.js | `24.x` está disponible y solo se fija el major | Conforme con la propuesta |
 | Vercel package managers | pnpm 10 está soportado; sin lockfile Vercel usa npm por defecto | Conforme con la decisión, repositorio no conforme |
-| `package.json` | No contiene `packageManager` ni `engines` | No conforme |
-| Manifest | `@tanstack/react-query` aparece dos veces | No conforme |
-| Runtime local | No existe `.nvmrc` ni `.node-version` | No conforme |
-| Lockfile | No existe `pnpm-lock.yaml` ni otro lockfile | No conforme |
-| Configuración pnpm | No existe `.npmrc` ni política equivalente | No conforme |
-| GitHub Actions | `.github/workflows/ci.yml` solo ejecuta checkout | No conforme |
-| Vercel | `vercel.json` no fija runtime, package manager ni install command | No conforme |
+| `package.json` | Declara `packageManager`, `engines`, scripts canónicos y dependencias directas requeridas | Conforme localmente |
+| Manifest | Se eliminó el duplicado de `@tanstack/react-query` y el JSON es válido | Conforme |
+| Runtime local | `.nvmrc` fija `24.18.0`; no se añadió `.node-version` | Conforme en repositorio; ejecución exacta pendiente en CI |
+| Lockfile | `pnpm-lock.yaml` es el único lockfile y fue generado con pnpm `10.34.5` | Conforme |
+| Configuración pnpm | `.npmrc` aplica `engine-strict`; `pnpm-workspace.yaml` allowlistea solo `sharp` y `unrs-resolver` | Conforme |
+| GitHub Actions | CI configura pnpm `10.34.5`, lee `.nvmrc`, verifica versiones/lockfiles y ejecuta frozen install, typecheck, lint y build | Configurado; ejecución remota pendiente |
+| Vercel | `engines.node` declara `24.x`, el lockfile identifica pnpm y `packageManager` fija `10.34.5` | Configuración de proyecto, Corepack y Preview pendientes |
 | Supabase CLI | No existe versión controlada en el manifest | Pendiente |
-| Instalación reproducible | No puede demostrarse sin manifest limpio y lockfile canónico | Pendiente |
-| Build y Preview | No se ejecutaron con Node `24.18.0` y pnpm `10.34.5` fijados | Pendiente |
+| Instalación reproducible | Frozen install online y repetición offline conservaron el hash del lockfile | Conforme localmente |
+| Typecheck y lint | `tsc --noEmit` y `eslint .` finalizaron correctamente | Conforme localmente |
+| Build y Preview | `next build` generó 238 páginas con pnpm `10.34.5`; el entorno local usó Node `24.14.0` | Build local conforme; Node exacto y Preview pendientes |
 
-**Resultado:** la selección de versiones conserva soporte oficial, pero la implementación no satisface los criterios de la sección 71. El ADR permanece **Propuesto**. El siguiente gate es un PR de migración que limpie el manifest, fije runtime/gestor, genere el lockfile y configure CI antes de evaluar aceptación.
+**Resultado:** la selección de versiones conserva soporte oficial y la migración local satisface los gates técnicos disponibles en el repositorio. El ADR permanece **Propuesto** porque todavía debe observarse GitHub Actions con Node `24.18.0`, probarse Vercel Preview con Node `24.x` y pnpm `10.34.5`, fijarse Supabase CLI y completarse el registro de aprobación.
 
 ---
 
@@ -1211,6 +1212,7 @@ El texto no equivale a aprobación.
 |---|---|
 | 2026-07-12 | Creación de la propuesta ADR-0013 |
 | 2026-07-12 | Validación inicial contra repositorio y fuentes oficiales; estado permanece Propuesto |
+| 2026-07-12 | Migración local implementada y verificada; pendientes CI remoto, Vercel Preview, Supabase CLI y aprobaciones |
 
 ---
 

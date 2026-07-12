@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { getSuggestedRawMaterialLot } from '@/modules/production/application/production-lot';
 import { consumeProductionItem } from '@/modules/production/application/production-service';
 import {
   INVENTORY_MOVEMENT,
@@ -406,7 +407,7 @@ export async function completeProductionOrder(orderId: string) {
 
   const { data: productionItems, error: itemsError } = await supabase
     .from('production_order_items')
-    .select('id')
+    .select('id, raw_material_id')
     .eq('production_order_id', orderId);
 
   if (itemsError) {
@@ -418,7 +419,22 @@ export async function completeProductionOrder(orderId: string) {
   }
 
   for (const item of productionItems) {
-    await consumeProductionItem(supabase, item.id);
+    const suggestedLot = await getSuggestedRawMaterialLot(
+      supabase,
+      item.raw_material_id,
+    );
+
+    if (!suggestedLot) {
+      throw new Error(
+        'No existe un lote disponible para completar el consumo de producción.',
+      );
+    }
+
+    await consumeProductionItem(
+      supabase,
+      item.id,
+      suggestedLot.lot_number,
+    );
   }
 
   await createInventoryMovement(supabase, {

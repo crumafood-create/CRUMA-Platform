@@ -674,6 +674,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | [0006](0006-event-outbox-inbox.md) | Adoptar eventos de integración con outbox e inbox transaccionales | Propuesto | 2026-07-12 | — |
 | [0007](0007-ci-cd-pipeline.md) | Adoptar GitHub Actions como pipeline CI/CD gobernado | Propuesto | 2026-07-12 | — |
 | [0008](0008-observability-provider.md) | Adoptar Sentry como plataforma inicial de observabilidad de aplicación | Propuesto | 2026-07-12 | — |
+| [0009](0009-service-level-and-recovery-objectives.md) | Adoptar objetivos iniciales de servicio y recuperación por criticidad | Propuesto | 2026-07-12 | — |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -685,13 +686,12 @@ El enlace a `0000-template.md` quedará activo después de crear la plantilla en
 
 Las decisiones candidatas identificadas son:
 
-1. SLO, RPO y RTO;
-2. estrategia de caché;
-3. formato canónico de design tokens;
-4. Storybook y pruebas visuales;
-5. gestor de paquetes y versión de Node;
-6. separación de proyectos Supabase por entorno;
-7. estrategia de backups y restauración.
+1. estrategia de caché;
+2. formato canónico de design tokens;
+3. Storybook y pruebas visuales;
+4. gestor de paquetes y versión de Node;
+5. separación de proyectos Supabase por entorno;
+6. estrategia de backups y restauración.
 
 Este backlog no asigna número ni decisión.
 

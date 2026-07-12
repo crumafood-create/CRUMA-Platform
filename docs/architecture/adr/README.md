@@ -671,6 +671,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | [0003](0003-authorization-model.md) | Adoptar RBAC con permisos canónicos y scopes jerárquicos | Propuesto | 2026-07-12 | — |
 | [0004](0004-desktop-tauri-topology.md) | Adoptar Tauri 2 con frontend local y API versionada | Propuesto | 2026-07-12 | — |
 | [0005](0005-offline-sync-strategy.md) | Adoptar sincronización offline por comandos y proyecciones | Propuesto | 2026-07-12 | — |
+| [0006](0006-event-outbox-inbox.md) | Adoptar eventos de integración con outbox e inbox transaccionales | Propuesto | 2026-07-12 | — |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -682,16 +683,15 @@ El enlace a `0000-template.md` quedará activo después de crear la plantilla en
 
 Las decisiones candidatas identificadas son:
 
-1. eventos, outbox e inbox;
-2. pipeline CI/CD;
-3. proveedor de observabilidad;
-4. SLO, RPO y RTO;
-5. estrategia de caché;
-6. formato canónico de design tokens;
-7. Storybook y pruebas visuales;
-8. gestor de paquetes y versión de Node;
-9. separación de proyectos Supabase por entorno;
-10. estrategia de backups y restauración.
+1. pipeline CI/CD;
+2. proveedor de observabilidad;
+3. SLO, RPO y RTO;
+4. estrategia de caché;
+5. formato canónico de design tokens;
+6. Storybook y pruebas visuales;
+7. gestor de paquetes y versión de Node;
+8. separación de proyectos Supabase por entorno;
+9. estrategia de backups y restauración.
 
 Este backlog no asigna número ni decisión.
 

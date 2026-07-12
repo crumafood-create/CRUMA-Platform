@@ -25,7 +25,7 @@ import {
 export async function consumeProductionItem(
   supabase: SupabaseClient,
   productionOrderItemId: string,
-  scannedLotNumber: string,
+  scannedLotNumber?: string,
 ): Promise<void> {
   //
   // Obtener item
@@ -58,13 +58,15 @@ export async function consumeProductionItem(
   }
 
   //
-  // Validar lote escaneado
+  // Validar lote escaneado (solo si se proporcionó uno)
   //
-  await validateSuggestedLot(
-    supabase,
-    item.raw_material_id,
-    scannedLotNumber,
-  );
+  if (scannedLotNumber) {
+    await validateSuggestedLot(
+      supabase,
+      item.raw_material_id,
+      scannedLotNumber,
+    );
+  }
 
   //
   // Obtener todos los lotes FEFO

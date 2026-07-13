@@ -56,8 +56,11 @@ jobs:
 
       - name: Verify Supabase CLI
         shell: bash
-        run: test "$(pnpm exec supabase --version)" = "2.109.1"
-
+        run: |
+          set -o pipefail
+          pnpm exec supabase --version | tee /tmp/supabase-version.txt
+          grep -Fxq "2.109.1" /tmp/supabase-version.txt
+          
       - name: Typecheck
         run: pnpm run typecheck
 

@@ -57,6 +57,10 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      - name: Verify Supabase CLI
+        shell: bash
+        run: test "$(pnpm exec supabase --version)" = "2.109.1"
+
       - name: Lint
         run: pnpm run lint
 

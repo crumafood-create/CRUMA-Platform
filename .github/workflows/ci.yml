@@ -54,6 +54,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify Supabase CLI
+        shell: bash
+        run: test "$(pnpm exec supabase --version)" = "2.109.1"
+
       - name: Typecheck
         run: pnpm run typecheck
 

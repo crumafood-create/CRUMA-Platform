@@ -1,6 +1,6 @@
 # Arquitectura de Datos de CRUMAFOOD Platform
 
-> **Los datos representan hechos del negocio. Deben ser íntegros, trazables, protegidos y recuperables.**
+> **Los datos representan hechos del negocio. Deben ser correctos, trazables, protegidos y recuperables.**
 
 ## Estado del documento
 
@@ -8,1354 +8,674 @@
 |---|---|
 | Estado | Propuesto para aprobación |
 | Versión | 1.0 |
-| Propietarios | Product Owner, responsable de arquitectura y responsable de datos |
-| Alcance | Persistencia, propiedad, integridad, seguridad, evolución y operación de datos |
-| Autoridad | Derivado de `system-overview.md`, `business-core.md`, la Constitución y los Principios del CES |
-| Revisión | Cuando cambie la fuente de autoridad, el modelo de aislamiento, la estrategia de migraciones o una frontera de datos |
+| Propietarios | Product Owner, Arquitectura e Ingeniería de Datos |
+| Alcance | Datos operativos, persistencia, integridad, seguridad, auditoría y evolución |
+| Autoridad | Derivado de `system-overview.md` y `business-core.md` |
+| Revisión | Cuando cambien modelos críticos, políticas de acceso o estrategia de persistencia |
 
 ---
 
 ## 1. Propósito
 
-Este documento define cómo CRUMAFOOD Platform debe modelar, almacenar, proteger, consultar, evolucionar y recuperar sus datos.
+Este documento define cómo CRUMAFOOD Platform diseñará, almacenará, protegerá y evolucionará sus datos.
 
-Su propósito es asegurar que:
+La arquitectura debe asegurar que la información utilizada por Producción, Inventario, Compras, Ventas, Almacenes, Calidad y Costos sea correcta, consistente, trazable, autorizada, recuperable, comprensible y útil para operación y análisis.
 
-- PostgreSQL conserve el estado transaccional compartido de forma confiable;
-- cada dato tenga propietario y significado de negocio;
-- las invariantes se protejan en la fuente de autoridad;
-- inventario, lotes, producción, compras y ventas sean trazables;
-- seguridad y aislamiento no dependan únicamente de la interfaz;
-- los cambios de esquema sean reproducibles;
-- los datos derivados puedan explicarse y reconstruirse;
-- y una falla no deje al negocio en un estado ambiguo.
-
-Este documento gobierna la arquitectura de datos. No reemplaza el catálogo técnico de tablas, los diccionarios de campos, las migraciones SQL ni los ADR.
+PostgreSQL, operado actualmente mediante Supabase, será la fuente de autoridad para el estado transaccional compartido.
 
 ---
 
-## 2. Declaración arquitectónica
+## 2. Principios de datos
 
-> **PostgreSQL, operado actualmente mediante Supabase, es la fuente de autoridad del estado transaccional compartido de CRUMAFOOD Platform.**
+### 2.1 Una fuente de autoridad
 
-Supabase es un proveedor e interfaz de infraestructura. No es el modelo de dominio.
+Cada dato tendrá un propietario y una ubicación principal. No se mantendrán múltiples versiones editables del mismo hecho sin una estrategia explícita de sincronización.
 
-Las reglas del negocio no deberán depender de:
+### 2.2 Integridad por diseño
 
-- nombres de tablas;
-- objetos del cliente Supabase;
-- respuestas PostgREST;
-- componentes React;
-- formularios;
-- ni detalles particulares del proveedor.
+La integridad no dependerá únicamente de formularios o validaciones visuales. Se protegerá mediante tipos correctos, restricciones, claves, transacciones, políticas y reglas de negocio.
 
-El Business Core define intención e invariantes. PostgreSQL protege integridad y atomicidad. La infraestructura traduce entre ambos.
+### 2.3 Trazabilidad
 
----
+Toda operación crítica deberá poder reconstruirse.
 
-## 3. Alcance
+### 2.4 Datos mínimos necesarios
 
-Esta arquitectura cubre:
+Se almacenará únicamente la información necesaria para operar, cumplir obligaciones y mejorar el producto.
 
-- datos maestros;
-- datos transaccionales;
-- movimientos de inventario;
-- lotes y caducidades;
-- documentos operativos;
-- costos y dinero;
-- identidad, autorización y alcance;
-- auditoría;
-- vistas y datos derivados;
-- eventos persistidos;
-- migraciones;
-- seguridad y RLS;
-- rendimiento;
-- respaldo y recuperación;
-- retención y eliminación;
-- y calidad de datos.
+### 2.5 Evolución segura
 
-Quedan fuera de este documento:
+Los cambios de esquema serán versionados, revisados y desplegados de forma controlada.
 
-- el diseño visual de pantallas;
-- la selección detallada de herramientas analíticas;
-- un data warehouse empresarial;
-- machine learning;
-- y la definición campo por campo de cada tabla.
+### 2.6 Separación entre escritura y lectura
 
-Estas materias tendrán documentos específicos cuando el riesgo o la escala lo justifiquen.
+El modelo que protege invariantes no tiene que ser idéntico al modelo optimizado para reportes.
 
 ---
 
-## 4. Principios rectores
+## 3. Plataforma de persistencia
 
-La arquitectura de datos obedecerá los siguientes principios:
+La plataforma actual utiliza PostgreSQL, Supabase Database, Supabase Auth, Supabase Storage, Row Level Security, migraciones SQL versionadas y clientes server/browser separados.
 
-1. una sola fuente de autoridad por hecho;
-2. propiedad explícita por módulo;
-3. integridad antes que conveniencia;
-4. hechos transaccionales trazables;
-5. mínimo privilegio;
-6. cambios reproducibles y reversibles;
-7. consistencia proporcional al riesgo;
-8. datos derivados reconstruibles;
-9. historial suficiente para explicar decisiones;
-10. optimización basada en evidencia.
-
-Cuando dos principios entren en tensión, se priorizarán seguridad, integridad, trazabilidad y continuidad operativa.
+El dominio no importará el SDK de Supabase. La dependencia del proveedor deberá permanecer encapsulada en adaptadores y repositorios.
 
 ---
 
-## 5. Estado actual
+## 4. Categorías de datos
 
-El repositorio refleja una plataforma funcional en evolución.
-
-El levantamiento actual identifica:
-
-- PostgreSQL/Supabase como persistencia principal;
-- acceso a datos desde Server Components, Server Actions y rutas;
-- al menos 37 relaciones o vistas detectables mediante referencias directas, además de relaciones usadas en llamadas distribuidas en varias líneas;
-- funciones PostgreSQL para operaciones específicas;
-- modelos operativos de catálogo, inventario, compras, producción, ventas, picking y cobranza;
-- borrado lógico en varios maestros;
-- vistas de stock, ATP y FEFO;
-- y operaciones multi-paso implementadas parcialmente desde la aplicación.
-
-También se identifican brechas:
-
-- no existe todavía un historial SQL completo y reproducible dentro del repositorio;
-- los directorios de migraciones, esquemas y tipos contienen marcadores, no contratos ejecutables;
-- `database-map.md` expresa una visión parcial y no representa por sí solo el esquema desplegado;
-- parte del acceso a Supabase está distribuido entre páginas y acciones;
-- algunas operaciones relacionadas se ejecutan como escrituras independientes;
-- y no existe evidencia en el repositorio que permita verificar todas las políticas RLS, restricciones, índices, triggers y funciones desplegadas.
-
-Por tanto, la base desplegada contiene conocimiento arquitectónico que todavía debe trasladarse al repositorio.
+- **Datos maestros:** productos, categorías, familias, unidades, proveedores, clientes, ubicaciones y recetas.
+- **Datos transaccionales:** movimientos, órdenes, recepciones, consumos, pedidos, despachos, pagos e inspecciones.
+- **Datos de referencia:** estados, tipos de movimiento, motivos, monedas y unidades.
+- **Datos derivados:** saldos, disponibilidad, costos, indicadores y proyecciones.
+- **Datos de auditoría:** evidencia de cambios y acciones.
+- **Datos analíticos:** proyecciones para reportes y decisiones.
 
 ---
 
-## 6. Estado objetivo
+## 5. Propiedad por módulo
 
-El estado objetivo tendrá:
+| Módulo | Datos principales |
+|---|---|
+| Identity & Access | usuarios, roles, permisos, organizaciones y sucursales |
+| Catalog | productos, categorías, familias, unidades y presentaciones |
+| Inventory | lotes, movimientos, saldos y reservas |
+| Warehouse | almacenes, ubicaciones, conteos y transferencias |
+| Production | recetas, órdenes, consumos, rendimientos y mermas |
+| Purchasing | proveedores, solicitudes, órdenes y recepciones documentales |
+| Sales | clientes, cotizaciones, pedidos y precios |
+| Quality | inspecciones, liberaciones, bloqueos e incidencias |
+| Costing | reglas, costos, variaciones y periodos |
+| Distribution | rutas, despachos y entregas |
 
-- esquema versionado como código;
-- migraciones aplicables desde cero;
-- tipos generados y versionados;
-- propiedad de datos por módulo;
-- repositorios y adaptadores de persistencia;
-- restricciones estructurales explícitas;
-- RLS verificable;
-- transacciones atómicas para flujos críticos;
-- idempotencia en comandos reintentables;
-- auditoría de operaciones sensibles;
-- vistas y proyecciones con propietario;
-- respaldo con restauración probada;
-- y controles automatizados contra deriva.
+Un módulo puede leer datos de otro mediante contratos. No debe modificar sus tablas internas directamente.
 
-La transición será incremental. No requiere reescribir toda la aplicación antes de mejorar la integridad.
+---
 
-```mermaid
-flowchart TB
-    A["Business Core"] --> B["Puertos de aplicación"]
-    B --> C["Adaptadores de persistencia"]
-    C --> D["PostgreSQL / Supabase"]
-    D --> E["Restricciones, RLS y transacciones"]
+## 6. Convenciones de tablas
+
+### 6.1 Nombres
+
+- nombres en plural;
+- `snake_case`;
+- términos del negocio;
+- sin abreviaturas ambiguas.
+
+Ejemplos:
+
+```text
+products
+inventory_movements
+production_orders
+purchase_order_lines
+warehouse_locations
+```
+
+### 6.2 Columnas comunes
+
+Cuando corresponda:
+
+```text
+id
+organization_id
+created_at
+created_by
+updated_at
+updated_by
+deleted_at
+version
+```
+
+### 6.3 Identificadores
+
+Los identificadores internos usarán UUID cuando deban generarse en distintos clientes, evitar secuencias predecibles o participar en sincronización.
+
+Los códigos visibles del negocio se almacenarán por separado:
+
+```text
+id = 8e7...
+internal_code = MP-AGUA
 ```
 
 ---
 
-## 7. Jerarquía de autoridad
+## 7. Relaciones e integridad referencial
 
-Cuando existan discrepancias, se aplicará esta jerarquía:
+Las relaciones se protegerán mediante claves foráneas.
 
-1. migraciones aprobadas y aplicadas;
-2. restricciones y contratos activos de PostgreSQL;
-3. decisiones ADR vigentes;
-4. este documento;
-5. contratos de aplicación y tipos generados;
-6. documentación de tablas y diagramas;
-7. código de interfaz;
-8. documentos históricos o exploratorios.
+```sql
+product_id uuid not null references products(id)
+```
 
-`database-map.md` se tratará como material de intención hasta reconciliarlo con migraciones y propiedad modular.
+Reglas:
 
-Ningún diagrama manual será autoridad superior al esquema versionado.
-
----
-
-## 8. Dominios de datos
-
-Los datos se organizan por capacidad de negocio, no por pantalla.
-
-| Dominio | Responsabilidad de datos |
-|---|---|
-| Catalog | Productos, materias primas, categorías, familias, sabores, preparación y unidades descriptivas |
-| Inventory | Movimientos, reservas, disponibilidad y saldos derivados |
-| Warehouse | Almacenes, ubicaciones y estructura física |
-| Production | Recetas operativas, órdenes, consumos, resultados y estados de fabricación |
-| Purchasing | Proveedores, requisiciones, órdenes y recepciones de compra |
-| Sales | Clientes, pedidos, líneas, compromisos comerciales y cobranza originada por venta |
-| Quality | Estado de liberación, bloqueo, inspección y disposición de lotes |
-| Costing | Costos de materiales, producción, variaciones y reglas de valorización |
-| Distribution | Picking, despacho, entrega e incidencias logísticas |
-| Identity & Access | Usuarios, organizaciones, roles, permisos y alcances operativos |
-| Planning | Pronósticos, necesidades y recomendaciones de abastecimiento o producción |
-| System Operations | Jobs, notificaciones técnicas y registros operativos controlados |
-
-La ubicación física de una tabla no altera su propietario lógico.
+- evitar relaciones por texto;
+- definir comportamiento de borrado;
+- no usar `ON DELETE CASCADE` en datos críticos sin justificación;
+- indexar claves foráneas utilizadas frecuentemente;
+- impedir referencias a registros incompatibles.
 
 ---
 
-## 9. Propiedad de datos
+## 8. Restricciones
 
-Cada relación deberá declarar:
-
-- módulo propietario;
-- significado;
-- clave primaria;
-- alcance organizacional;
-- invariantes;
-- política de escritura;
-- política de lectura;
-- clasificación de seguridad;
-- retención;
-- y estrategia de auditoría.
-
-Solo el módulo propietario modifica directamente su estado.
-
-Otros módulos deberán utilizar:
-
-- casos de uso;
-- puertos;
-- funciones controladas;
-- eventos;
-- o proyecciones de lectura aprobadas.
-
-Una clave foránea permite relacionar datos, pero no concede propiedad sobre ellos.
-
----
-
-## 10. Inventario preliminar de relaciones
-
-El código actual referencia las siguientes relaciones o vistas. La agrupación representa propiedad objetivo preliminar y deberá validarse contra el esquema desplegado.
-
-### 10.1 Catalog
-
-- `categories`;
-- `families`;
-- `flavors`;
-- `preparation_types`;
-- `product_families`;
-- `products`;
-- `raw_materials`;
-- `units_of_measure`;
-- `recipes`;
-- `recipe_items`.
-
-### 10.2 Inventory y Warehouse
-
-- `warehouses`;
-- `inventory_locations`;
-- `inventory_movements`;
-- `inventory_reservations`;
-- `product_lots`;
-- `raw_material_lots`;
-- `inventory_stock`;
-- `inventory_stock_by_item`;
-- `inventory_available_to_promise`;
-- `inventory_product_lots_fefo`.
-
-### 10.3 Purchasing
-
-- `suppliers`;
-- `purchase_orders`;
-- `purchase_order_items`.
-
-El código también utiliza requisiciones de compra; sus relaciones deberán incorporarse al catálogo canónico aunque no aparezcan en todos los barridos estáticos.
-
-### 10.4 Production, Planning y Costing
-
-- `production_orders`;
-- `production_order_items`;
-- `production_costs`;
-- `demand_forecasts`;
-- `approvals`.
-
-### 10.5 Sales y Distribution
-
-- `customers`;
-- `sales_orders`;
-- `sales_order_items`;
-- `picking_orders`;
-- `picking_order_items`;
-- `accounts_receivable`.
-
-La cobranza utiliza además pagos asociados a cuentas por cobrar; deberán registrarse en el catálogo canónico.
-
-### 10.6 Identity y System Operations
-
-- `user_roles`;
-- `notifications`;
-- `orders`.
-
-`orders` deberá clasificarse como modelo vigente, legado o compatibilidad. No coexistirá indefinidamente con `sales_orders` sin una decisión explícita.
-
-Este inventario no sustituye la introspección del esquema ni una migración baseline.
-
----
-
-## 11. Convenciones de nombres
-
-En PostgreSQL se utilizará:
-
-- `snake_case` para esquemas, tablas, vistas, columnas, funciones e índices;
-- nombres plurales para relaciones de entidades;
-- nombres en pasado o sustantivos de hecho para eventos persistidos;
-- sufijo `_id` para referencias;
-- sufijo `_at` para instantes;
-- sufijo `_date` para fechas sin hora;
-- sufijo `_amount` para dinero cuando el contexto lo requiera;
-- sufijo `_quantity` para cantidades;
-- y nombres que expresen negocio, no la pantalla que los consume.
-
-Las restricciones e índices tendrán nombres predecibles:
-
-- `pk_<table>`;
-- `fk_<table>__<column>`;
-- `uq_<table>__<columns>`;
-- `ck_<table>__<rule>`;
-- `idx_<table>__<columns>`.
-
-No se usarán abreviaturas ambiguas.
-
----
-
-## 12. Identificadores
-
-Las entidades utilizarán identificadores estables, opacos y no reutilizables.
-
-La opción predeterminada será UUID.
-
-Los números visibles del negocio, como folios, órdenes o lotes:
-
-- no sustituirán la clave primaria;
-- tendrán unicidad dentro de un alcance definido;
-- se generarán de manera segura ante concurrencia;
-- conservarán reglas de formato separadas;
-- y no dependerán únicamente de `Date.now()` cuando exista riesgo de colisión.
-
-Una relación deberá referenciar identificadores, no nombres mutables.
-
----
-
-## 13. Alcance organizacional y multi-tenancy
-
-El modelo actual contiene intención multi-tenant en `database-map.md`, mientras el esquema real debe ser verificado.
-
-Antes de declarar multi-tenancy productivo se aprobará un ADR que defina:
-
-- unidad de aislamiento;
-- nombre canónico del alcance, por ejemplo `tenant_id` u `organization_id`;
-- relación entre empresa, sucursal, almacén y usuario;
-- estrategia de RLS;
-- unicidades por alcance;
-- administración privilegiada;
-- y migración de los datos existentes.
-
-Si una tabla es multi-tenant:
-
-- la clave de alcance será obligatoria;
-- las referencias deberán impedir cruces accidentales;
-- las unicidades incluirán el alcance cuando corresponda;
-- los índices comenzarán por el alcance en patrones frecuentes;
-- y RLS verificará el alcance desde atributos confiables.
-
-No se asumirá que ocultar registros en la UI proporciona aislamiento.
-
----
-
-## 14. Integridad estructural
-
-PostgreSQL protegerá todas las invariantes que pueda expresar de forma estable.
-
-Se utilizarán:
-
-- claves primarias;
-- claves foráneas;
-- `NOT NULL`;
-- `UNIQUE`;
-- `CHECK`;
-- tipos apropiados;
-- valores predeterminados controlados;
-- restricciones de exclusión cuando sean necesarias;
-- y triggers únicamente cuando su responsabilidad esté documentada.
+PostgreSQL protegerá invariantes estructurales mediante `NOT NULL`, `UNIQUE`, `CHECK`, claves foráneas e índices únicos parciales.
 
 Ejemplos:
 
-- una cantidad recibida no puede ser negativa;
-- una línea debe pertenecer a su documento;
-- un código no se duplica dentro de su alcance;
-- un lote referencia un artículo existente;
-- un estado pertenece al conjunto permitido;
-- y una reserva no puede liberar más de lo reservado.
+```sql
+quantity > 0
+unit_cost >= 0
+expiration_date >= production_date
+```
 
-La validación en TypeScript mejora la experiencia, pero no reemplaza estas protecciones.
-
----
-
-## 15. Estados y transiciones
-
-Los documentos operativos tendrán estados explícitos y transiciones autorizadas.
-
-Ejemplos:
-
-- orden de compra;
-- orden de producción;
-- pedido de venta;
-- recepción;
-- picking;
-- lote;
-- aprobación;
-- cuenta por cobrar.
-
-No se actualizará un estado crítico mediante una escritura genérica.
-
-La transición deberá comprobar:
-
-- estado anterior esperado;
-- permiso;
-- precondiciones;
-- efectos relacionados;
-- actor;
-- fecha efectiva;
-- e idempotencia cuando aplique.
-
-Los estados se representarán con `CHECK`, tipo enumerado o tabla de referencia según su estabilidad y necesidad de configuración.
+La aplicación también validará para ofrecer mensajes comprensibles.
 
 ---
 
-## 16. Transacciones y unidad de trabajo
+## 9. Fechas y tiempo
 
-Una operación es atómica cuando todos sus efectos se confirman o ninguno lo hace.
+- Los eventos con hora se almacenarán como `timestamptz`.
+- Las fechas de negocio sin hora se almacenarán como `date`.
+- La presentación utilizará la zona horaria de la organización o usuario.
+- No se guardarán horas locales ambiguas como texto.
 
-Requieren transacción, entre otras:
-
-- recibir una compra, crear el lote, registrar el movimiento y actualizar el documento;
-- consumir materiales y avanzar una orden de producción;
-- terminar producción, crear lote y registrar entrada;
-- reservar o liberar inventario;
-- confirmar picking y descontar el lote;
-- entregar un pedido y generar la cuenta por cobrar;
-- aprobar y materializar una recomendación;
-- y persistir un cambio junto con su evento de outbox.
-
-Estas operaciones no se implementarán como llamadas independientes desde la interfaz si una falla intermedia puede dejar datos inválidos.
-
-La transacción vivirá en:
-
-- una función PostgreSQL controlada;
-- un adaptador transaccional;
-- o una unidad de trabajo de infraestructura.
-
-El dominio no dependerá del mecanismo de transacción.
+Ejemplos de fecha de negocio: caducidad, producción, fecha prometida y periodo contable.
 
 ---
 
-## 17. Concurrencia
+## 10. Cantidades, unidades y dinero
 
-Las operaciones que leen un estado y luego escriben deberán contemplar cambios concurrentes.
+Las cantidades utilizarán tipos numéricos exactos, por ejemplo:
 
-Casos prioritarios:
+```sql
+quantity numeric(18,6)
+```
 
-- stock disponible;
-- reservas;
-- lotes;
-- recepción acumulada;
-- folios;
-- transiciones de estado;
-- aprobación;
-- y pagos.
+Cada cantidad deberá tener una unidad inequívoca. Las conversiones declararán factor, dirección, precisión y redondeo.
 
-Las estrategias permitidas incluyen:
-
-- actualización condicional;
-- bloqueo de filas;
-- control optimista mediante versión;
-- restricciones;
-- niveles de aislamiento apropiados;
-- y funciones atómicas.
-
-No se aceptará el patrón leer-calcular-actualizar sin una protección proporcional al riesgo.
+Los importes utilizarán `numeric`, no `float`. Toda operación monetaria deberá indicar moneda y reglas de redondeo.
 
 ---
 
-## 18. Idempotencia
+## 11. Borrado lógico
 
-Todo comando crítico que pueda repetirse por red, reintento, doble clic, webhook o sincronización móvil deberá ser idempotente.
+El borrado lógico se utilizará cuando sea necesario preservar historia o referencias.
 
-La persistencia de idempotencia incluirá:
+```text
+deleted_at timestamptz null
+```
 
-- clave;
-- alcance;
-- tipo de operación;
-- huella de la solicitud cuando corresponda;
-- estado de procesamiento;
-- resultado;
-- y vencimiento si es seguro eliminarla.
+Reglas:
 
-Dos solicitudes con la misma clave e intención devolverán el mismo resultado lógico.
+- las consultas operativas excluirán registros eliminados;
+- los índices únicos considerarán `deleted_at is null` cuando aplique;
+- no se reutilizarán identificadores históricos;
+- restaurar requerirá validación;
+- los errores transaccionales se corregirán mediante reversión o movimientos compensatorios.
 
-La misma clave con contenido incompatible será rechazada.
+Ejemplo:
+
+```sql
+create unique index categories_name_active_unique
+on categories (lower(name))
+where deleted_at is null;
+```
 
 ---
 
-## 19. Inventario como libro de movimientos
+## 12. Inventario basado en movimientos
 
-El inventario no se modelará únicamente como un campo editable de stock.
+El saldo no será la única fuente de verdad. La fuente principal será el registro de movimientos.
 
-`inventory_movements` representa hechos trazables.
+Cada movimiento deberá incluir, según corresponda:
 
-Cada movimiento deberá conservar, según corresponda:
-
-- artículo y tipo de artículo;
+- producto;
 - cantidad;
 - unidad;
-- dirección o naturaleza del movimiento;
-- almacén y ubicación;
+- tipo;
+- ubicación;
 - lote;
-- documento de origen;
-- causa;
+- documento origen;
+- motivo;
 - actor;
 - fecha efectiva;
 - fecha de registro;
-- clave de idempotencia;
-- y operación correlacionada.
+- clave de idempotencia.
 
-Los saldos serán proyecciones derivadas del libro de movimientos o tablas de balance mantenidas atómicamente con él.
+Ejemplo:
 
-No se corregirá un hecho histórico mediante edición silenciosa. Se registrará un ajuste o reversión relacionado con el movimiento original.
+```text
+Entrada +100
+Salida -20
+Ajuste -2
+Saldo = 78
+```
 
----
-
-## 20. Disponibilidad, reservas y ATP
-
-Se distinguirá entre:
-
-- existencia física;
-- existencia reservada;
-- existencia bloqueada;
-- existencia disponible;
-- disponibilidad prometible;
-- y existencia en tránsito.
-
-La fórmula canónica de ATP deberá definirse y tener un único propietario.
-
-`inventory_stock`, `inventory_stock_by_item` e `inventory_available_to_promise` se tratarán como proyecciones hasta documentar su implementación exacta.
-
-Toda reserva tendrá:
-
-- origen;
-- cantidad;
-- estado;
-- fecha de creación;
-- fecha de expiración cuando aplique;
-- y liberación o consumo trazable.
+El saldo podrá mantenerse materializado por rendimiento, pero deberá poder reconciliarse.
 
 ---
 
-## 21. Lotes, FEFO y trazabilidad
+## 13. Saldos
 
-Los lotes deberán permitir rastrear materiales recibidos, consumos, producción terminada y salidas.
-
-Un lote conservará, según el tipo:
-
-- número de lote;
-- artículo;
-- proveedor u orden de producción de origen;
-- cantidad inicial y saldo;
-- unidad;
-- fecha de fabricación;
-- fecha de caducidad;
-- estado de calidad;
-- almacén y ubicación;
-- y referencias de trazabilidad.
-
-FEFO asignará primero el lote elegible con vencimiento más próximo.
-
-La elegibilidad deberá considerar:
-
-- liberación de calidad;
-- bloqueo;
-- saldo;
-- reserva;
-- ubicación;
-- caducidad;
-- y reglas del producto.
-
-`inventory_product_lots_fefo` será una proyección de lectura, no una autoridad independiente.
-
----
-
-## 22. Unidades y cantidades
-
-Toda cantidad relevante tendrá valor y unidad.
+Un saldo representa una proyección operativa por organización, almacén, ubicación, producto, lote y estado de calidad.
 
 Reglas:
 
-- se utilizará `numeric`, no punto flotante, para cantidades de negocio;
-- la precisión y escala se definirán por uso;
-- cada artículo tendrá unidad base;
-- las conversiones serán explícitas y versionables;
-- no se sumarán cantidades incompatibles;
-- la receta declarará la unidad de cada ingrediente;
-- y el redondeo se realizará en un límite definido.
-
-Una conversión no se inferirá por nombre, presentación o interfaz.
-
-El modelo canónico de unidades requiere ADR antes de una normalización amplia.
+- actualización atómica con el movimiento;
+- nunca editar manualmente sin movimiento compensatorio;
+- reconciliación periódica;
+- protección contra cantidades negativas según política;
+- control de concurrencia mediante versión, bloqueo o actualización condicional.
 
 ---
 
-## 23. Dinero y costos
+## 14. Lotes y FEFO
 
-Todo valor monetario tendrá:
+Un lote deberá permitir rastrear producto, código, fechas, proveedor u origen, orden de producción, estado de calidad, cantidades, ubicaciones y movimientos relacionados.
 
-- importe;
-- moneda;
-- precisión;
-- regla de redondeo;
-- fecha o contexto de valoración;
-- y fuente.
+FEFO seleccionará primero el lote utilizable con caducidad más próxima.
 
-Se utilizará `numeric`, no `float`.
+La política excluirá lotes bloqueados, vencidos, sin existencia, no disponibles, reservados o incompatibles con el contexto.
 
-Se distinguirán:
-
-- precio;
-- costo de compra;
-- costo promedio;
-- costo estándar;
-- costo real de producción;
-- impuesto;
-- descuento;
-- pago;
-- saldo;
-- y margen.
-
-Los totales materializados deberán poder reconciliarse con sus líneas y conservar la política de cálculo utilizada.
-
-Una corrección de costo histórico no reescribirá silenciosamente decisiones ya contabilizadas.
+El resultado de una asignación FEFO deberá ser reproducible y auditable.
 
 ---
 
-## 24. Tiempo y zonas horarias
+## 15. Reservas
 
-Los instantes se almacenarán como `timestamptz` y se interpretarán en UTC.
+Las reservas separarán:
 
-La presentación utilizará la zona horaria del contexto operativo, inicialmente compatible con `America/Mexico_City` cuando corresponda.
+```text
+existencia física
+existencia reservada
+existencia disponible
+```
 
-Se diferenciará entre:
+Regla conceptual:
 
-- instante técnico;
-- fecha de negocio;
-- hora local de operación;
-- fecha de fabricación;
-- fecha de caducidad;
-- y periodo contable.
+```text
+disponible = física - reservada - bloqueada
+```
 
-Una fecha sin hora se almacenará como `date`.
-
-`created_at` representa registro. No sustituye `occurred_at`, `effective_at`, `received_at`, `manufactured_on` o `expires_on`.
-
----
-
-## 25. Ciclo de vida y eliminación
-
-Los datos maestros podrán utilizar borrado lógico cuando deban conservar referencias históricas.
-
-El patrón será:
-
-- `deleted_at` nulo para registros vigentes;
-- consultas activas con filtro explícito o vista segura;
-- unicidad compatible con la política de reactivación;
-- actor y causa cuando el riesgo lo requiera;
-- y prohibición de reutilizar identidad.
-
-Los hechos transaccionales no se eliminarán para corregirlos.
-
-Se utilizarán:
-
-- cancelación;
-- reversión;
-- ajuste;
-- anulación;
-- o estado terminal.
-
-La eliminación física quedará reservada para retención vencida, datos temporales, solicitudes legales aprobadas o información sin valor histórico.
+Una reserva deberá incluir origen, cantidad, estado, actor, entidad relacionada y vencimiento cuando aplique.
 
 ---
 
-## 26. Datos derivados, vistas y proyecciones
+## 16. Producción
 
-Un dato derivado deberá declarar:
+Las órdenes de producción preservarán:
 
-- fuente;
-- fórmula;
-- propietario;
-- frescura esperada;
-- estrategia de actualización;
-- tolerancia a inconsistencia;
-- y procedimiento de reconstrucción.
+- receta y versión;
+- cantidades planeadas y reales;
+- lotes consumidos y generados;
+- mermas;
+- rendimientos;
+- responsables;
+- marcas de tiempo;
+- evidencia de calidad.
 
-Las vistas son apropiadas para:
-
-- stock consolidado;
-- ATP;
-- FEFO;
-- rentabilidad;
-- alertas;
-- indicadores;
-- y consultas de lectura que combinan varios propietarios.
-
-Una vista no deberá convertirse en canal de escritura implícito.
-
-Las vistas materializadas solo se introducirán con evidencia de rendimiento y tendrán estrategia de refresco y recuperación.
+Cambiar una receta posteriormente no deberá alterar la historia.
 
 ---
 
-## 27. Eventos y transactional outbox
+## 17. Compras, ventas y calidad
 
-Cuando otros módulos necesiten reaccionar a un hecho, el propietario emitirá un evento.
+### Compras
+
+El flujo separará orden aprobada, recepción física, inspección, aceptación y movimiento de inventario.
+
+### Ventas
+
+Los pedidos separarán cantidad solicitada, reservada, preparada, despachada, entregada y cancelada.
+
+### Calidad
+
+Calidad podrá liberar, bloquear, rechazar o condicionar lotes sin borrar movimientos históricos.
+
+---
+
+## 18. Auditoría
+
+La auditoría deberá responder:
+
+- quién;
+- qué;
+- cuándo;
+- dónde;
+- por qué;
+- desde qué operación;
+- cuál era el valor anterior;
+- cuál fue el nuevo valor.
+
+No todas las tablas requieren captura completa de antes y después. Las operaciones críticas sí.
+
+---
+
+## 19. Eventos y transactional outbox
+
+Cuando una operación deba persistir datos y publicar un evento, se considerará transactional outbox.
+
+```text
+transacción
+├── cambio de negocio
+├── actualización derivada
+└── evento en outbox
+```
+
+Un procesador posterior publicará el evento sin perder consistencia.
+
+---
+
+## 20. Idempotencia
+
+Las operaciones críticas aceptarán una clave de idempotencia.
 
 Ejemplos:
 
-- `PurchaseOrderReceived`;
-- `InventoryMovementRecorded`;
-- `ProductionOrderCompleted`;
-- `LotReleased`;
-- `SalesOrderConfirmed`;
-- `PaymentRegistered`.
+- recepción;
+- movimiento;
+- consumo;
+- producción terminada;
+- sincronización móvil;
+- integración externa.
 
-Si el evento debe ser consistente con una escritura, se persistirá dentro de la misma transacción mediante transactional outbox.
-
-El evento incluirá:
-
-- identificador;
-- tipo y versión;
-- agregado;
-- fecha de ocurrencia;
-- alcance organizacional;
-- correlación;
-- causación;
-- y payload mínimo.
-
-Los consumidores serán idempotentes.
-
-No se incorporará mensajería externa sin una necesidad operativa demostrable.
+La misma intención no deberá ejecutarse dos veces.
 
 ---
 
-## 28. Auditoría
+## 21. Concurrencia y transacciones
 
-Las operaciones críticas deberán responder:
+Se elegirá una estrategia según el caso:
 
-- quién actuó;
-- qué acción ejecutó;
-- sobre qué recurso;
-- cuándo ocurrió;
-- desde qué contexto;
-- qué documento la originó;
-- cuál fue el resultado;
-- y qué valores relevantes cambiaron.
+- transacción;
+- bloqueo de fila;
+- actualización condicional;
+- columna `version`;
+- restricción única;
+- advisory lock;
+- función PostgreSQL.
 
-Se auditarán prioritariamente:
-
-- cambios de permisos;
-- aprobaciones;
-- movimientos y ajustes;
-- liberación o bloqueo de lotes;
-- cambios de costo;
-- cancelaciones;
-- pagos;
-- operaciones privilegiadas;
-- y cambios de configuración.
-
-La auditoría será append-only y tendrá controles de acceso más estrictos que los datos ordinarios.
-
-Logs técnicos y auditoría no son equivalentes.
+Las escrituras relacionadas deberán ejecutarse en una misma transacción cuando un fallo intermedio pueda dejar datos inválidos.
 
 ---
 
-## 29. Clasificación y protección
+## 22. Funciones PostgreSQL
 
-Los datos se clasificarán como:
+Se utilizarán para operaciones atómicas, sensibles a concurrencia o que requieran garantías cercanas a los datos.
 
-| Clase | Ejemplos | Protección mínima |
-|---|---|---|
-| Público | Catálogo publicado | Integridad y control de publicación |
-| Interno | Costos operativos, recetas, métricas | Autenticación y autorización |
-| Confidencial | Datos de clientes, proveedores y empleados | Acceso por función, auditoría y minimización |
-| Restringido | Secretos, credenciales y datos sensibles regulados | Almacenamiento especializado, acceso excepcional y rotación |
+Toda función deberá:
 
-Los secretos no se almacenarán en tablas de negocio, logs, eventos ni repositorio.
-
-Solo se recopilarán datos personales necesarios para una finalidad definida.
+- estar versionada;
+- tener pruebas;
+- operar en un contexto autorizado;
+- definir errores;
+- documentar efectos.
 
 ---
 
-## 30. Row Level Security
+## 23. Row Level Security
 
-Toda tabla expuesta mediante Supabase tendrá RLS habilitada y políticas explícitas.
+RLS deberá estar habilitado en tablas expuestas.
 
-Las políticas deberán:
+Las políticas considerarán usuario, organización, sucursal, almacén, rol, estado y propiedad del registro.
 
-- partir de denegación por defecto;
-- verificar identidad y alcance con atributos confiables;
-- separar lectura, inserción, actualización y eliminación;
-- incluir `WITH CHECK` en escrituras cuando corresponda;
-- evitar condiciones globales permisivas en producción;
-- y tener pruebas positivas y negativas.
+No se confiará en `organization_id` enviado por el cliente sin verificación.
 
-La service role:
-
-- solo se utilizará en backend seguro;
-- nunca llegará al navegador;
-- tendrá casos de uso controlados;
-- y no sustituirá la autorización de aplicación.
-
-RLS protege filas. Las reglas de negocio y permisos de operación seguirán verificándose en los casos de uso.
+La `service_role` solo se utilizará en backend seguro y no será la solución predeterminada para evitar RLS.
 
 ---
 
-## 31. Acceso mediante Supabase
+## 24. Datos personales y sensibles
 
-Existirá un único camino canónico para crear clientes:
+Los datos se clasificarán como públicos, internos, confidenciales o sensibles.
 
-- cliente de servidor;
-- cliente de navegador;
-- y cliente privilegiado, si se requiere, solo en infraestructura segura.
+La información sensible requerirá acceso mínimo, protección, auditoría, retención definida y eliminación controlada.
 
-El estado objetivo prohíbe acceso directo a Supabase fuera de adaptadores de infraestructura, salvo excepciones transitorias registradas.
+---
 
-Los repositorios:
+## 25. Archivos
 
-- no devolverán filas crudas al dominio;
-- traducirán errores;
-- aplicarán mappers;
-- encapsularán consultas;
-- y expondrán intención de negocio.
+Supabase Storage almacenará imágenes, documentos, evidencia, importaciones y reportes.
 
-Los tipos generados de Supabase pertenecerán a infraestructura y no serán entidades de dominio.
-
-Ruta objetivo sugerida:
+La base de datos almacenará metadatos:
 
 ```text
-src/infrastructure/integrations/supabase/
-├── browser.ts
-├── server.ts
-├── admin.ts
-└── database.types.ts
+bucket
+object_path
+mime_type
+size
+checksum
+owner
+created_at
 ```
 
-Las rutas duplicadas `browser.ts` y `client.ts` deberán consolidarse mediante una migración controlada.
+No se almacenarán URLs temporales como fuente permanente.
 
 ---
 
-## 32. Funciones, triggers y procedimientos
+## 26. Modelos de lectura y reportes
 
-Las funciones PostgreSQL se utilizarán cuando aporten:
+Los modelos de lectura podrán utilizar vistas, vistas materializadas, tablas de proyección, consultas especializadas e índices.
 
-- atomicidad;
-- control de concurrencia;
-- proximidad a los datos;
-- reutilización segura;
-- o reducción comprobada de viajes de red.
+Deben:
 
-El código actual referencia al menos:
+- derivar de fuentes autorizadas;
+- poder reconstruirse;
+- declarar latencia;
+- no aceptar escrituras directas.
 
-- `create_production_order_items`;
-- `decrease_product_lot_quantity`.
-
-Estas funciones deberán estar versionadas, documentadas y probadas.
-
-Una función privilegiada deberá:
-
-- validar actor y alcance;
-- utilizar permisos mínimos;
-- fijar un `search_path` seguro cuando corresponda;
-- evitar SQL dinámico innecesario;
-- y devolver errores comprensibles.
-
-Los triggers se limitarán a responsabilidades inevitables y transparentes. No contendrán flujos de negocio extensos difíciles de descubrir.
+Los reportes no deberán poner en riesgo la operación transaccional.
 
 ---
 
-## 33. Migraciones y esquema como código
+## 27. Índices y rendimiento
 
-El repositorio será la autoridad del historial de esquema.
+Los índices se crearán con base en consultas reales.
 
-Mientras Supabase sea el proveedor principal, la ruta canónica propuesta será:
+Candidatos frecuentes:
 
-```text
-supabase/
-├── migrations/
-│   ├── <timestamp>_baseline.sql
-│   ├── <timestamp>_catalog_constraints.sql
-│   └── <timestamp>_inventory_atomic_operations.sql
-├── seed.sql
-└── config.toml
-```
+- claves foráneas;
+- organización;
+- estados activos;
+- fechas;
+- producto y almacén;
+- lote y caducidad;
+- documentos origen;
+- claves de idempotencia.
+
+Se observarán consultas lentas, scans completos, N+1, bloqueos, contención, crecimiento e índices no usados.
+
+---
+
+## 28. Migraciones
+
+Toda modificación de esquema deberá existir como migración versionada.
 
 Reglas:
 
-- toda modificación de esquema tendrá migración;
-- una migración aplicada no se reescribirá;
-- las correcciones se harán con una migración posterior;
-- la migración incluirá estructura, políticas, funciones e índices relacionados;
-- los cambios destructivos utilizarán estrategia expand-contract;
-- los backfills serán reanudables y observables;
-- y los cambios con bloqueo se planificarán.
-
-No se aceptarán cambios permanentes hechos solo desde el panel de Supabase.
-
-Una intervención de emergencia deberá convertirse inmediatamente en migración reconciliada.
+- no editar producción manualmente;
+- no modificar migraciones ya aplicadas;
+- una migración debe funcionar en entornos nuevos;
+- separar cambios destructivos;
+- probar con datos representativos;
+- documentar recuperación.
 
 ---
 
-## 34. Baseline y prevención de deriva
+## 29. Estrategia expand-contract
 
-Antes de continuar la expansión del esquema se creará una baseline del estado desplegado.
+Los cambios incompatibles se realizarán por etapas:
 
-Proceso:
-
-1. obtener el esquema real mediante una fuente autorizada;
-2. inventariar tablas, vistas, funciones, triggers, índices, extensiones y RLS;
-3. identificar objetos temporales, duplicados y legados;
-4. asignar propietario modular;
-5. comparar con el código y `database-map.md`;
-6. producir migración baseline revisada;
-7. comprobar que una base vacía puede reconstruirse;
-8. generar tipos;
-9. añadir verificación en CI;
-10. documentar las diferencias que requieran ADR.
-
-CI deberá detectar:
-
-- migraciones que no aplican;
-- tipos desactualizados;
-- políticas faltantes;
-- funciones no versionadas;
-- y diferencias no aprobadas entre el esquema esperado y el desplegado.
+1. **Expand:** agregar estructura compatible.
+2. **Migrate:** transformar datos.
+3. **Switch:** mover consumidores.
+4. **Contract:** retirar estructura anterior.
 
 ---
 
-## 35. Compatibilidad de cambios
+## 30. Backfills y datos semilla
 
-Los cambios se diseñarán para permitir despliegues graduales.
+Todo backfill deberá definir alcance, lotes, reanudación, idempotencia, validación, monitoreo y recuperación.
 
-Secuencia preferida:
+Los seeds se clasificarán en obligatorios, demostración, desarrollo y pruebas.
 
-1. agregar estructura compatible;
-2. desplegar código que soporte ambos modelos;
-3. migrar o rellenar datos;
-4. cambiar lecturas y escrituras;
-5. observar;
-6. retirar estructura anterior.
-
-No se renombrará o eliminará una columna usada por una versión desplegada en el mismo paso que introduce el reemplazo.
-
-Las vistas de compatibilidad serán temporales, tendrán propietario y fecha de retiro.
+Los datos obligatorios deberán ser idempotentes.
 
 ---
 
-## 36. Datos semilla y pruebas
+## 31. Entornos
 
-Los datos semilla serán:
+Los entornos principales serán local, preview, staging cuando exista y production.
 
-- deterministas;
-- mínimos;
-- no sensibles;
-- repetibles;
-- y separados de los datos productivos.
+Cada entorno tendrá base, secretos, políticas y datos separados.
 
-Se distinguirán:
-
-- catálogos obligatorios;
-- datos de desarrollo;
-- fixtures de prueba;
-- y escenarios de demostración.
-
-Las pruebas de integración verificarán:
-
-- restricciones;
-- transacciones;
-- concurrencia crítica;
-- idempotencia;
-- RLS;
-- funciones;
-- mappers;
-- y migración desde versiones soportadas.
-
-No se copiarán datos personales productivos a desarrollo sin anonimización aprobada.
+No se copiarán datos personales de producción a desarrollo sin anonimización.
 
 ---
 
-## 37. Rendimiento e índices
+## 32. Respaldos y recuperación
 
-Los índices se crearán a partir de patrones medidos.
+La estrategia deberá definir frecuencia, retención, cifrado, responsables, ubicación, restauración y pruebas.
 
-Se priorizarán consultas de:
+Un respaldo no es confiable hasta que se prueba su restauración.
 
-- stock por artículo, almacén y ubicación;
-- lotes elegibles por caducidad;
-- movimientos por artículo y fecha;
-- documentos por estado;
-- líneas por documento;
-- reservas activas;
-- pedidos por cliente;
-- cuentas por cobrar por vencimiento;
-- y datos por alcance organizacional.
-
-Cada índice tendrá una consulta o restricción que justifique su existencia.
-
-Se revisará:
-
-- selectividad;
-- orden de columnas;
-- índices parciales para registros activos;
-- impacto en escrituras;
-- planes de ejecución;
-- y crecimiento.
-
-No se resolverá un problema de modelado acumulando índices.
+Para capacidades críticas se definirán RPO, RTO, procedimiento y responsables.
 
 ---
 
-## 38. Calidad de datos
+## 33. Retención y eliminación
 
-La calidad se evaluará mediante dimensiones observables:
+Cada categoría de datos tendrá una política de retención.
 
-- completitud;
-- validez;
-- unicidad;
-- consistencia;
-- actualidad;
-- exactitud operacional;
-- y trazabilidad.
-
-Controles prioritarios:
-
-- movimientos sin documento o causa;
-- saldos que no reconcilian;
-- lotes negativos;
-- reservas vencidas activas;
-- líneas huérfanas;
-- documentos con totales incompatibles;
-- estados imposibles;
-- datos activos con referencias eliminadas;
-- y registros sin alcance cuando sea obligatorio.
-
-Las correcciones se realizarán mediante procesos auditables, no ediciones manuales silenciosas.
+La eliminación permanente será excepcional en datos transaccionales y deberá estar autorizada, respetar retención, conservar evidencia y evitar referencias rotas.
 
 ---
 
-## 39. Observabilidad de datos
+## 34. Importaciones y exportaciones
 
-La operación deberá medir:
+Las importaciones seguirán:
 
-- errores de consulta y mutación;
-- latencia;
-- conflictos de concurrencia;
-- reintentos idempotentes;
-- fallas de funciones;
-- crecimiento de tablas e índices;
-- consultas lentas;
-- bloqueos;
-- fallas de migración;
-- antigüedad de proyecciones;
-- y resultados de reconciliación.
+```text
+cargar
+validar
+previsualizar
+aprobar
+aplicar
+auditar
+```
 
-Los registros técnicos incluirán correlación, pero no expondrán secretos ni datos personales innecesarios.
+Las exportaciones deberán respetar permisos, alcance y protección de datos sensibles.
 
 ---
 
-## 40. Respaldo y recuperación
+## 35. Calidad y reconciliación
 
-Un respaldo no se considerará válido hasta demostrar restauración.
+Se observarán duplicados, valores faltantes, referencias inválidas, estados imposibles, saldos inconsistentes, fechas contradictorias y unidades incompatibles.
 
-La estrategia deberá definir:
+Se crearán procesos para reconciliar movimientos contra saldos, recepciones contra inventario, producción contra consumos y pedidos contra reservas y despachos.
 
-- RPO;
-- RTO;
-- frecuencia;
+---
+
+## 36. Documentación y catálogo de datos
+
+Cada tabla crítica documentará propósito, propietario, columnas, restricciones, índices, relaciones, RLS, retención, eventos y casos de uso.
+
+Estructura sugerida:
+
+```text
+docs/data/
+├── catalog.md
+├── inventory.md
+├── production.md
+├── purchasing.md
+└── sales.md
+```
+
+---
+
+## 37. Definition of Done para cambios de datos
+
+Un cambio está terminado cuando:
+
+- tiene migración;
+- protege integridad;
+- incluye índices necesarios;
+- define RLS;
+- actualiza tipos y repositorios;
+- incluye pruebas;
+- contempla datos existentes;
+- documenta recuperación;
+- actualiza documentación;
+- pasa CI;
+- fue probado fuera de producción.
+
+---
+
+## 38. Antipatrones prohibidos
+
+- editar producción sin migración;
+- usar texto como relación;
+- almacenar dinero en `float`;
+- guardar fechas ambiguas;
+- actualizar saldos sin movimiento;
+- deshabilitar RLS para resolver permisos;
+- usar service role en cliente;
+- duplicar fuentes de verdad;
+- borrar historia para corregir errores;
+- modificar migraciones aplicadas;
+- usar `select *` indiscriminadamente;
+- depender de orden implícito;
+- ocultar errores de integridad.
+
+---
+
+## 39. Decisiones pendientes
+
+Requieren ADR o RFC:
+
+- modelo definitivo de organización y sucursal;
+- propiedad de lotes;
+- estrategia de valuación;
+- reservas;
+- auditoría;
+- eventos y outbox;
 - retención;
-- cifrado;
-- ubicación;
-- responsables;
-- procedimiento de restauración;
-- y pruebas periódicas.
-
-Se respaldarán también:
-
-- migraciones;
-- configuración necesaria;
-- funciones;
-- políticas;
-- y documentación operativa.
-
-La recuperación deberá validar integridad, no solo disponibilidad del servidor.
+- RPO y RTO;
+- estrategia analítica;
+- modelo offline;
+- cifrado adicional;
+- versionado de recetas y costos.
 
 ---
 
-## 41. Retención y privacidad
+## 40. Roadmap de implementación
 
-Cada clase de datos tendrá una política de retención basada en:
+### Fase 1 — Fundamentos
 
-- obligación legal;
-- necesidad operativa;
-- trazabilidad;
-- seguridad;
-- y costo.
+Convenciones, migraciones, RLS, restricciones y propiedad por módulo.
 
-La política definirá:
+### Fase 2 — Inventario confiable
 
-- plazo;
-- archivo;
-- anonimización;
-- eliminación;
-- excepciones por investigación;
-- y evidencia de ejecución.
+Movimientos, saldos, lotes, reconciliación e idempotencia.
 
-La eliminación de datos personales deberá preservar, cuando legalmente proceda, la integridad de documentos comerciales mediante anonimización o seudonimización.
+### Fase 3 — Producción trazable
 
----
+Recetas versionadas, consumos, terminados, rendimientos y mermas.
 
-## 42. Tipos y contratos de esquema
+### Fase 4 — Integración operacional
 
-Los tipos de base de datos se generarán desde el esquema versionado.
+Compras, ventas, calidad, reservas y despachos.
 
-Reglas:
+### Fase 5 — Analítica y resiliencia
 
-- los tipos generados no se editarán manualmente;
-- su actualización formará parte de la migración;
-- los adaptadores mapearán filas a objetos de dominio;
-- los DTO de aplicación serán independientes;
-- y CI detectará desalineación.
-
-Una fila nullable no se convertirá en una entidad válida mediante aserciones TypeScript.
-
-Primero se corregirá el contrato o se manejará explícitamente la ausencia.
+Proyecciones, monitoreo, respaldos, recuperación y retención.
 
 ---
 
-## 43. Estrategia de migración desde el estado actual
+## 41. Declaración final
 
-La transición se ejecutará por etapas.
+> **Los datos de CRUMAFOOD Platform no serán tratados como registros aislados, sino como evidencia estructurada de la operación del negocio.**
 
-### Etapa 1 — Descubrimiento
+Cada modelo deberá expresar qué hecho representa, quién es su propietario, qué reglas lo protegen, cómo puede cambiar, quién puede acceder y cómo puede recuperarse.
 
-- extraer el esquema desplegado;
-- capturar políticas, funciones e índices;
-- clasificar las relaciones o vistas detectadas y completar el inventario mediante introspección;
-- identificar relaciones adicionales usadas dinámicamente;
-- y reconciliar `database-map.md`.
-
-### Etapa 2 — Reproducibilidad
-
-- crear `supabase/migrations`;
-- generar baseline;
-- añadir configuración local;
-- generar tipos;
-- y validar reconstrucción desde cero.
-
-### Etapa 3 — Integridad crítica
-
-- priorizar inventario, lotes, reservas, recepción, producción, picking y pagos;
-- añadir restricciones faltantes;
-- convertir escrituras multi-paso en transacciones;
-- y agregar idempotencia.
-
-### Etapa 4 — Seguridad
-
-- inventariar RLS;
-- corregir políticas;
-- probar aislamiento;
-- consolidar clientes Supabase;
-- y controlar la service role.
-
-### Etapa 5 — Encapsulación
-
-- mover consultas hacia repositorios;
-- introducir mappers;
-- eliminar acceso directo desde presentación;
-- y formalizar contratos entre módulos.
-
-### Etapa 6 — Operación
-
-- automatizar detección de deriva;
-- probar recuperación;
-- medir calidad;
-- y gobernar evolución mediante ADR y revisión.
-
-Cada etapa deberá entregar valor y reducir riesgo por sí misma.
-
----
-
-## 44. Antipatrones prohibidos
-
-Se prohíbe:
-
-- tratar el cliente Supabase como dominio;
-- cambiar producción solo desde un panel sin migración;
-- confiar únicamente en validación de formularios;
-- utilizar RLS permisiva por comodidad;
-- exponer service role al cliente;
-- editar saldos sin movimiento trazable;
-- ejecutar flujos atómicos como escrituras independientes;
-- usar `float` para dinero;
-- mezclar unidades sin conversión;
-- duplicar una fuente de verdad;
-- crear vistas derivadas sin estrategia de reconstrucción;
-- borrar hechos para corregirlos;
-- usar `created_at` como todas las fechas del negocio;
-- generar folios críticos solo con tiempo local;
-- devolver filas crudas al dominio;
-- y mantener objetos de base de datos sin propietario.
-
----
-
-## 45. Definition of Done para cambios de datos
-
-Un cambio de datos está completo cuando:
-
-- tiene propietario de negocio;
-- su intención está documentada;
-- incluye migración versionada;
-- puede aplicarse desde el estado soportado;
-- define compatibilidad y reversión;
-- protege invariantes;
-- actualiza RLS;
-- considera concurrencia;
-- considera idempotencia;
-- actualiza tipos;
-- actualiza repositorios y mappers;
-- tiene pruebas proporcionales al riesgo;
-- no expone secretos ni datos sensibles;
-- tiene estrategia de observación;
-- y actualiza documentación o ADR cuando corresponde.
-
----
-
-## 46. Gobierno
-
-Los cambios se clasificarán por riesgo.
-
-### Bajo
-
-- índice no bloqueante justificado;
-- comentario;
-- vista de lectura compatible;
-- o campo opcional sin efectos de negocio.
-
-### Medio
-
-- nueva tabla;
-- nueva relación;
-- nueva política;
-- backfill;
-- o cambio de consulta crítica.
-
-### Alto
-
-- eliminación o cambio de significado;
-- modificación de cantidades o dinero;
-- cambio de aislamiento;
-- alteración de inventario;
-- nueva función privilegiada;
-- migración masiva;
-- o cambio que pueda detener operación.
-
-Los cambios de alto riesgo requerirán plan, revisión, respaldo, verificación y estrategia de recuperación.
-
----
-
-## 47. Decisiones que requieren ADR
-
-Se deberán formalizar, al menos:
-
-1. alcance multi-tenant y nombre canónico de la clave organizacional;
-2. frontera entre Inventory y Warehouse;
-3. modelo canónico de artículos: productos y materias primas separados o generalizados;
-4. modelo de unidades y conversiones;
-5. estrategia de valorización de inventario;
-6. autoridad de stock: libro puro o libro más balance transaccional;
-7. semántica de reserva y ATP;
-8. numeración de documentos;
-9. estrategia de auditoría;
-10. baseline del esquema desplegado;
-11. ubicación canónica de migraciones;
-12. política de soft delete y reactivación;
-13. estrategia de outbox;
-14. RPO y RTO;
-15. retención de datos personales y comerciales.
-
-Hasta aprobarlos, se evitarán decisiones irreversibles que bloqueen una alternativa razonable.
-
----
-
-## 48. Criterios de conformidad
-
-Una implementación cumple esta arquitectura si:
-
-- reconoce PostgreSQL como autoridad transaccional;
-- preserva propiedad modular;
-- protege invariantes en la fuente adecuada;
-- mantiene trazabilidad;
-- utiliza migraciones versionadas;
-- aplica mínimo privilegio y RLS;
-- trata concurrencia e idempotencia de forma explícita;
-- separa datos fuente de proyecciones;
-- y puede recuperarse de una falla conocida.
-
-Una excepción deberá registrar:
-
-- motivo;
-- alcance;
-- riesgo;
-- responsable;
-- compensación;
-- y fecha de revisión.
-
----
-
-## 49. Evolución
-
-Este documento evolucionará cuando:
-
-- cambie la topología de persistencia;
-- se introduzca operación offline con sincronización;
-- aparezca un almacén analítico;
-- se incorpore mensajería externa;
-- se adopte multi-tenancy productivo;
-- cambien requisitos regulatorios;
-- o la escala exija particionamiento, archivado o separación física.
-
-La evolución conservará el principio de que los hechos del negocio deben seguir siendo explicables.
-
----
-
-## 50. Declaración final
-
-> **CRUMAFOOD Platform no tratará la base de datos como un detalle accidental ni como una colección de tablas conectadas a pantallas.**
-
-Los datos son memoria operativa, evidencia y fundamento de las decisiones del negocio.
-
-Por ello:
-
-- tendrán significado y propietario;
-- sus invariantes se protegerán;
-- sus cambios serán trazables;
-- su evolución será reproducible;
-- su acceso será seguro;
-- y su recuperación será comprobable.
-
-Esta arquitectura permite que la plataforma crezca sin perder confianza en la información que dirige la operación.
+Una arquitectura de datos sólida permitirá que la plataforma crezca sin perder confiabilidad, trazabilidad ni control.

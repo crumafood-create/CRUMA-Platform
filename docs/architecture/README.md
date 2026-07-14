@@ -1,820 +1,215 @@
-# Documentación de Arquitectura de CRUMAFOOD Platform
+# Arquitectura de CRUMAFOOD Platform
 
-> **Este directorio es el índice oficial de las decisiones, límites y estrategias arquitectónicas de CRUMAFOOD Platform.**
+> **Mapa oficial de la arquitectura, sus documentos, su autoridad y sus rutas de lectura.**
 
 ## Estado del documento
 
 | Campo | Valor |
 |---|---|
-| Estado | Aprobado |
-| Versión | 2.1 |
-| Propietarios | Product Owner y responsable de arquitectura |
-| Alcance | Catálogo, orden de lectura, autoridad, estados, mantenimiento y gobierno documental |
-| Autoridad | Derivado de la Visión, la Constitución y el CRUMAFOOD Engineering System |
-| Revisión | Cuando se agregue, retire, renombre o cambie la autoridad de un documento arquitectónico |
+| Estado | Propuesto para aprobación |
+| Versión | 2.0 |
+| Propietarios | Product Owner y responsable de Arquitectura |
+| Alcance | Índice oficial de `docs/architecture/` |
+| Autoridad | Constitución, Principios y Engineering Operating System del CES |
+| Revisión | Cuando cambie el catálogo o el estado de un documento |
 
 ---
 
 ## 1. Propósito
 
-Este README permite:
+Este directorio contiene las decisiones, límites, modelos y criterios que orientan la evolución técnica de **CRUMAFOOD Platform**.
 
-- localizar la documentación vigente;
-- conocer qué documento gobierna cada tema;
-- distinguir propuestas de decisiones aprobadas;
-- seguir un orden de lectura;
-- detectar vacíos;
-- resolver contradicciones;
-- y mantener arquitectura, código y operación sincronizados.
+Este `README.md` funciona como índice oficial, mapa de navegación y punto de entrada para nuevos participantes. No sustituye los documentos especializados: indica qué documento consultar y cuál tiene autoridad sobre cada tema.
 
-No sustituye los documentos enlazados.
-
----
-
-## 2. Alcance de este directorio
-
-`docs/architecture/` contiene arquitectura transversal de plataforma.
-
-Incluye:
-
-- visión del sistema;
-- Business Core;
-- datos;
-- seguridad;
-- integración;
-- despliegue;
-- clientes;
-- operación;
-- calidad;
-- rendimiento;
-- aislamiento multi-tenant;
-- y Design System.
-
-Las decisiones específicas se registrarán mediante ADR y los diseños por explorar mediante RFC.
-
----
-
-## 3. Jerarquía documental
-
-```mermaid
-flowchart TB
-    A["Visión de producto"] --> B["Constitución del CES"]
-    B --> C["Principios de ingeniería"]
-    C --> D["Engineering Operating System"]
-    D --> E["Arquitectura"]
-    E --> F["ADR, RFC, estándares y runbooks"]
-    F --> G["Código, configuración y operación"]
-```
-
-Un documento inferior no podrá contradecir silenciosamente a uno superior.
-
----
-
-## 4. Documentos fundacionales
-
-| Documento | Propósito |
-|---|---|
-| [Visión de producto](../vision.md) | Define el problema, propósito y dirección del producto |
-| [Constitución](../engineering/constitution.md) | Establece compromisos no negociables del Engineering System |
-| [Principios de ingeniería](../engineering/engineering-principles.md) | Convierte compromisos en criterios de decisión |
-| [Engineering Operating System](../engineering/engineering-operating-system.md) | Define cómo diseñar, construir, verificar, liberar y aprender |
-
-Estos documentos gobiernan la interpretación de la arquitectura.
-
----
-
-## 5. Catálogo arquitectónico
-
-| Área | Documento | Estado |
-|---|---|---|
-| Sistema | [system-overview.md](system-overview.md) | Propuesto para aprobación |
-| Negocio | [business-core.md](business-core.md) | Propuesto para aprobación |
-| Datos | [data-architecture.md](data-architecture.md) | Propuesto para aprobación |
-| Seguridad | [security-architecture.md](security-architecture.md) | Propuesto para aprobación |
-| Integraciones | [integration-architecture.md](integration-architecture.md) | Propuesto para aprobación |
-| Despliegue | [deployment-architecture.md](deployment-architecture.md) | Propuesto para aprobación |
-| Frontend | [frontend-architecture.md](frontend-architecture.md) | Propuesto para aprobación |
-| Mobile | [mobile-architecture.md](mobile-architecture.md) | Propuesto para aprobación |
-| Desktop | [desktop-architecture.md](desktop-architecture.md) | Propuesto para aprobación |
-| Observabilidad | [observability-architecture.md](observability-architecture.md) | Propuesto para aprobación |
-| Pruebas | [testing-strategy.md](testing-strategy.md) | Propuesto para aprobación |
-| Rendimiento | [performance-architecture.md](performance-architecture.md) | Propuesto para aprobación |
-| Multi-tenancy | [multi-tenancy-architecture.md](multi-tenancy-architecture.md) | Propuesto para aprobación |
-| Design System | [design-system-architecture.md](design-system-architecture.md) | Propuesto para aprobación |
-
-El estado de este índice no aprueba automáticamente los documentos enlazados.
-
----
-
-## 6. Orden de lectura recomendado
-
-Para comprender la plataforma completa:
-
-1. [Visión de producto](../vision.md);
-2. [Constitución](../engineering/constitution.md);
-3. [Principios de ingeniería](../engineering/engineering-principles.md);
-4. [Engineering Operating System](../engineering/engineering-operating-system.md);
-5. [Arquitectura general](system-overview.md);
-6. [Business Core](business-core.md);
-7. [Datos](data-architecture.md);
-8. [Seguridad](security-architecture.md);
-9. [Integraciones](integration-architecture.md);
-10. [Despliegue](deployment-architecture.md);
-11. clientes aplicables;
-12. operación y calidad;
-13. rendimiento, multi-tenancy y Design System.
-
----
-
-## 7. Ruta para desarrollo de negocio
-
-Quien implemente una capacidad de negocio deberá leer:
-
-1. [business-core.md](business-core.md);
-2. [data-architecture.md](data-architecture.md);
-3. [security-architecture.md](security-architecture.md);
-4. [testing-strategy.md](testing-strategy.md);
-5. y el documento del cliente o integración correspondiente.
-
-Las reglas no vivirán exclusivamente en UI, Server Actions o SQL ad hoc.
-
----
-
-## 8. Ruta para frontend
-
-Quien trabaje en Web deberá leer:
-
-1. [frontend-architecture.md](frontend-architecture.md);
-2. [design-system-architecture.md](design-system-architecture.md);
-3. [security-architecture.md](security-architecture.md);
-4. [performance-architecture.md](performance-architecture.md);
-5. [testing-strategy.md](testing-strategy.md);
-6. y [observability-architecture.md](observability-architecture.md).
-
----
-
-## 9. Ruta para Mobile
-
-Quien trabaje en Mobile deberá leer:
-
-1. [mobile-architecture.md](mobile-architecture.md);
-2. [business-core.md](business-core.md);
-3. [integration-architecture.md](integration-architecture.md);
-4. [security-architecture.md](security-architecture.md);
-5. [design-system-architecture.md](design-system-architecture.md);
-6. [testing-strategy.md](testing-strategy.md);
-7. y [performance-architecture.md](performance-architecture.md).
-
----
-
-## 10. Ruta para Desktop
-
-Quien trabaje en Desktop deberá leer:
-
-1. [desktop-architecture.md](desktop-architecture.md);
-2. [frontend-architecture.md](frontend-architecture.md);
-3. [integration-architecture.md](integration-architecture.md);
-4. [security-architecture.md](security-architecture.md);
-5. [deployment-architecture.md](deployment-architecture.md);
-6. [design-system-architecture.md](design-system-architecture.md);
-7. y [testing-strategy.md](testing-strategy.md).
-
-Tauri 2 continúa sujeto a ADR definitivo y piloto.
-
----
-
-## 11. Ruta para datos y backend
-
-Quien cambie persistencia, API o procesos deberá leer:
-
-1. [data-architecture.md](data-architecture.md);
-2. [business-core.md](business-core.md);
-3. [security-architecture.md](security-architecture.md);
-4. [integration-architecture.md](integration-architecture.md);
-5. [multi-tenancy-architecture.md](multi-tenancy-architecture.md);
-6. [performance-architecture.md](performance-architecture.md);
-7. y [testing-strategy.md](testing-strategy.md).
-
----
-
-## 12. Ruta para operación
-
-Quien despliegue u opere la plataforma deberá leer:
-
-1. [deployment-architecture.md](deployment-architecture.md);
-2. [observability-architecture.md](observability-architecture.md);
-3. [security-architecture.md](security-architecture.md);
-4. [performance-architecture.md](performance-architecture.md);
-5. [testing-strategy.md](testing-strategy.md);
-6. y [integration-architecture.md](integration-architecture.md).
-
----
-
-## 13. Arquitectura general
-
-[system-overview.md](system-overview.md) define:
-
-- contexto;
-- productos;
-- vista lógica;
-- módulos;
-- dependencias;
-- dirección evolutiva;
-- y decisiones que requieren ADR.
-
-Cuando exista duda sobre el lugar de una capacidad, se consultará primero este documento.
-
----
-
-## 14. Business Core
-
-[business-core.md](business-core.md) gobierna:
-
-- dominio;
-- aplicación;
-- puertos;
-- adaptadores;
-- propiedad modular;
-- casos de uso;
-- transacciones;
-- eventos;
-- y errores.
-
-Desktop, Web, Mobile e integraciones no reinterpretarán reglas esenciales.
-
----
-
-## 15. Datos
-
-[data-architecture.md](data-architecture.md) gobierna:
-
-- PostgreSQL/Supabase;
-- autoridad;
-- modelo;
-- integridad;
-- RLS;
-- migraciones;
-- inventario;
-- lotes;
-- auditoría;
-- respaldo;
-- y recuperación.
-
-`database-map.md` es una intención auxiliar y no sustituye el baseline del esquema desplegado.
-
----
-
-## 16. Seguridad
-
-[security-architecture.md](security-architecture.md) gobierna:
-
-- identidad;
-- sesión;
-- autenticación;
-- autorización;
-- RLS;
-- secretos;
-- API;
-- webhooks;
-- archivos;
-- clientes;
-- incidentes;
-- y recuperación.
-
-La seguridad se verifica por éxito y denegación.
-
----
-
-## 17. Integraciones
-
-[integration-architecture.md](integration-architecture.md) gobierna:
-
-- APIs;
-- contratos;
-- eventos;
-- outbox e inbox;
-- idempotencia;
-- terceros;
-- webhooks;
-- jobs;
-- archivos;
-- y resiliencia.
-
-Una integración nunca accederá a tablas como contrato externo.
-
----
-
-## 18. Despliegue
-
-[deployment-architecture.md](deployment-architecture.md) gobierna:
-
-- build;
-- CI/CD;
-- entornos;
-- Vercel;
-- Supabase;
-- configuración;
-- secretos;
-- migraciones;
-- rollback;
-- recuperación;
-- y evolución topológica.
-
-Una versión no termina al compilar.
-
----
-
-## 19. Clientes
-
-Los clientes tienen responsabilidades distintas:
-
-| Cliente | Documento | Enfoque |
-|---|---|---|
-| Web | [frontend-architecture.md](frontend-architecture.md) | Renderizado, estado, formularios, navegación y experiencia |
-| Mobile | [mobile-architecture.md](mobile-architecture.md) | Operación táctil, scanner, conectividad y sincronización |
-| Desktop | [desktop-architecture.md](desktop-architecture.md) | Tauri, bridge nativo, hardware, archivos y distribución |
-
-Ningún cliente es autoridad del negocio por sí mismo.
-
----
-
-## 20. Operación y calidad
-
-| Disciplina | Documento |
-|---|---|
-| Logs, métricas, trazas, alertas y SLO | [observability-architecture.md](observability-architecture.md) |
-| Unitarias, integración, contratos, E2E y CI | [testing-strategy.md](testing-strategy.md) |
-| Latencia, capacidad, caché y escalado | [performance-architecture.md](performance-architecture.md) |
-
-Estas disciplinas forman parte de la entrega, no una etapa posterior.
-
----
-
-## 21. Capacidades transversales
-
-| Capacidad | Documento |
-|---|---|
-| Aislamiento organizacional | [multi-tenancy-architecture.md](multi-tenancy-architecture.md) |
-| Lenguaje visual y componentes | [design-system-architecture.md](design-system-architecture.md) |
-
-Ambos documentos contienen decisiones que deberán formalizarse mediante ADR antes de ciertas implementaciones productivas.
-
----
-
-## 22. Estados documentales
-
-| Estado | Significado |
-|---|---|
-| Borrador | Contenido incompleto, abierto a estructuración |
-| Propuesto para aprobación | Contenido completo pendiente de decisión |
-| Aprobado | Autoridad vigente dentro de su alcance |
-| Reemplazado | Conservado como historia, con sucesor explícito |
-| Retirado | Ya no aplica y no tiene autoridad |
-
-No se usará “Aprobado” como sinónimo de “archivo creado”.
-
----
-
-## 23. Autoridad
-
-Un documento arquitectónico aprobado tiene autoridad sobre:
-
-- nuevas implementaciones;
-- refactors;
-- migraciones;
-- revisiones;
-- y excepciones
-
-dentro de su alcance.
-
-Una propuesta orienta, pero sus decisiones irreversibles requieren aprobación.
-
----
-
-## 24. Contradicciones
-
-Cuando dos documentos parezcan contradecirse:
-
-1. verificar alcance;
-2. verificar estado;
-3. verificar versión;
-4. aplicar el documento de mayor autoridad;
-5. registrar la discrepancia;
-6. corregir ambos si es necesario;
-7. y crear ADR cuando exista una decisión material.
-
-No se elegirá silenciosamente el texto más conveniente.
-
----
-
-## 25. Tipos de documento
-
-| Tipo | Uso |
-|---|---|
-| Arquitectura | Define límites, principios y dirección |
-| ADR | Registra una decisión arquitectónica tomada |
-| RFC | Explora un cambio antes de decidir |
-| Estándar | Define una práctica obligatoria concreta |
-| Guía | Explica una forma recomendada de trabajo |
-| Runbook | Describe respuesta operativa |
-| Catálogo | Enumera contratos, señales o activos |
-
-Cada pregunta deberá vivir en el tipo apropiado.
-
----
-
-## 26. ADR
-
-Un Architecture Decision Record se creará cuando una decisión:
-
-- sea difícil de revertir;
-- afecte varias áreas;
-- cambie un límite;
-- introduzca proveedor;
-- modifique aislamiento;
-- establezca un estándar;
-- o tenga trade-offs importantes.
-
-Un ADR registra la decisión, no reemplaza la discusión previa.
-
----
-
-## 27. Estructura ADR objetivo
+## 2. Jerarquía documental
 
 ```text
-docs/architecture/
-└── adr/
-    ├── README.md
-    ├── 0000-template.md
-    ├── 0001-<decision>.md
-    └── ...
+Product Vision
+      │
+CES Constitution
+      │
+Engineering Principles
+      │
+Engineering Operating System
+      │
+Architecture Documentation
+      │
+ADR y RFC
+      │
+Documentación de módulos
+      │
+Código, esquema e infraestructura
 ```
 
-La numeración será secuencial y no se reutilizará.
+Una capa inferior no deberá contradecir una capa superior sin una decisión explícita.
 
----
+## 3. Documentos fundamentales
 
-## 28. Contenido de un ADR
+Antes de consultar una arquitectura especializada, se recomienda leer:
 
-Cada ADR incluirá:
+1. [`../vision.md`](../vision.md)
+2. [`../engineering/constitution.md`](../engineering/constitution.md)
+3. [`../engineering/engineering-principles.md`](../engineering/engineering-principles.md)
+4. [`../engineering/engineering-operating-system.md`](../engineering/engineering-operating-system.md)
+5. [`system-overview.md`](system-overview.md)
 
-- título;
-- estado;
-- fecha;
-- propietarios;
-- contexto;
-- fuerzas;
-- opciones;
-- decisión;
-- consecuencias;
-- riesgos;
-- controles;
-- migración;
-- validación;
-- y referencias.
+## 4. Catálogo arquitectónico
 
-El ADR deberá ser suficientemente breve para revisarse.
+| Documento | Responsabilidad principal |
+|---|---|
+| [`system-overview.md`](system-overview.md) | Contexto, productos, capas, módulos y dirección general |
+| [`business-core.md`](business-core.md) | Dominio, aplicación, límites modulares y contratos |
+| [`data-architecture.md`](data-architecture.md) | Persistencia, integridad, ownership, inventario, migraciones y recuperación |
+| [`security-architecture.md`](security-architecture.md) | Identidad, autorización, amenazas, protección e incidentes |
+| [`integration-architecture.md`](integration-architecture.md) | APIs, eventos, webhooks, proveedores y contratos externos |
+| [`deployment-architecture.md`](deployment-architecture.md) | Entornos, CI/CD, despliegue, configuración y rollback |
+| [`frontend-architecture.md`](frontend-architecture.md) | Arquitectura web y composición con Next.js |
+| [`desktop-architecture.md`](desktop-architecture.md) | Tauri, capacidades nativas, distribución y actualizaciones |
+| [`mobile-architecture.md`](mobile-architecture.md) | Operación móvil, sincronización y restricciones del cliente |
+| [`multi-tenancy-architecture.md`](multi-tenancy-architecture.md) | Organizaciones, aislamiento, alcance y tenancy |
+| [`observability-architecture.md`](observability-architecture.md) | Logs, métricas, trazas, alertas y diagnóstico |
+| [`performance-architecture.md`](performance-architecture.md) | Medición, capacidad, consultas, caching y presupuestos |
+| [`design-system-architecture.md`](design-system-architecture.md) | Tokens, componentes, accesibilidad y consistencia visual |
+| [`testing-strategy.md`](testing-strategy.md) | Estrategia de pruebas por capa, riesgo y flujo |
+| [`governance.md`](governance.md) | Estados, autoridad, ADR, RFC, revisión y conformidad |
 
----
+## 5. Orden de lectura recomendado
 
-## 29. Estados ADR
+### Fundamentos
+
+1. `system-overview.md`
+2. `business-core.md`
+3. `data-architecture.md`
+4. `security-architecture.md`
+
+### Clientes
+
+1. `frontend-architecture.md`
+2. `desktop-architecture.md`
+3. `mobile-architecture.md`
+4. `design-system-architecture.md`
+
+### Plataforma y operación
+
+1. `integration-architecture.md`
+2. `deployment-architecture.md`
+3. `observability-architecture.md`
+4. `performance-architecture.md`
+5. `testing-strategy.md`
+
+### Gobierno
+
+1. `governance.md`
+2. `adr/`
+3. RFC vigentes
+
+## 6. Rutas de lectura por tipo de trabajo
+
+### Desarrollo de negocio
+
+`system-overview.md` → `business-core.md` → `data-architecture.md` → `security-architecture.md` → ADR aplicables.
+
+### Frontend
+
+`frontend-architecture.md` → `design-system-architecture.md` → `security-architecture.md` → `testing-strategy.md`.
+
+### Desktop
+
+`desktop-architecture.md` → `security-architecture.md` → `integration-architecture.md` → `deployment-architecture.md`.
+
+### Mobile
+
+`mobile-architecture.md` → `security-architecture.md` → `integration-architecture.md` → `data-architecture.md`.
+
+### Datos y backend
+
+`business-core.md` → `data-architecture.md` → `multi-tenancy-architecture.md` → `security-architecture.md` → `performance-architecture.md`.
+
+### Operación y confiabilidad
+
+`deployment-architecture.md` → `observability-architecture.md` → `performance-architecture.md` → `security-architecture.md`.
+
+## 7. Estados documentales
 
 | Estado | Significado |
 |---|---|
-| Propuesto | Pendiente de decisión |
-| Aceptado | Vigente |
-| Rechazado | Evaluado y no elegido |
-| Reemplazado | Sustituido por otro ADR |
-| Deprecado | Vigente solo durante transición |
+| Borrador | Incompleto y no vinculante |
+| Propuesto | Listo para revisión |
+| Aprobado | Referencia vigente |
+| Reemplazado | Sustituido por otro documento |
+| Obsoleto | Conservado solo como historia |
+| Rechazado | Evaluado y no aceptado |
 
-Un ADR aceptado no se reescribe para ocultar la decisión original.
+Las reglas completas están en [`governance.md`](governance.md).
 
----
+## 8. Autoridad
 
-## 30. RFC
+Cuando dos documentos parezcan contradecirse, se aplicará este orden:
 
-Un RFC se utilizará cuando:
+1. Constitución del CES;
+2. Engineering Principles;
+3. ADR aceptado más específico;
+4. arquitectura especializada aprobada;
+5. `system-overview.md`;
+6. documentación de módulo;
+7. guías y ejemplos;
+8. código existente.
 
-- el problema requiera exploración;
-- existan varias opciones;
-- falte evidencia;
-- se necesite spike;
-- o la decisión afecte a varias personas.
+El código existente demuestra el estado actual, pero no siempre representa el estado objetivo.
 
-El RFC podrá cerrar con ADR, implementación, rechazo o aprendizaje.
+## 9. ADR y RFC
 
----
+Los ADR viven en:
 
-## 31. Decisiones prioritarias
+```text
+docs/architecture/adr/
+```
 
-El conjunto actual identifica como prioritarias:
+Se requiere ADR cuando una decisión cambia límites, ownership, persistencia, seguridad, proveedor principal, Desktop, Mobile, offline, eventos o una capacidad costosa de revertir.
 
-- Tenant frente a Organización y clave canónica;
-- baseline y ubicación de migraciones;
-- roles, permisos y scopes;
-- topología Desktop/Tauri;
-- estrategia offline;
-- eventos, outbox e inbox;
-- pipeline CI/CD;
-- proveedor de observabilidad;
-- SLO, RPO y RTO;
-- estrategia de caché;
-- formato de design tokens;
-- y Storybook.
+Un RFC se utiliza cuando todavía existe incertidumbre material y se necesita discusión antes de decidir.
 
-La prioridad final seguirá riesgo y secuencia de implementación.
+## 10. Mantenimiento
 
----
+Cada documento deberá:
 
-## 32. Ownership
+- declarar estado y propietario;
+- separar estado actual de estado objetivo;
+- enlazar sus fuentes relacionadas;
+- evitar duplicar autoridad;
+- actualizarse junto al cambio correspondiente;
+- permanecer referenciado desde este índice.
 
-Cada documento tendrá:
+## 11. Validaciones rápidas
 
-- propietario;
-- revisores;
-- estado;
-- versión;
-- alcance;
-- y trigger de revisión.
+Listar documentos:
 
-El propietario mantiene coherencia; no decide unilateralmente temas fuera de su autoridad.
+```bash
+find docs/architecture -maxdepth 1 -type f -name '*.md' -printf '%f\n' | sort
+```
 
----
+Revisar formato:
 
-## 33. Revisión
+```bash
+git diff --check
+```
 
-Un documento se revisará cuando:
+Revisar enlaces y documentos no referenciados con la validación definida por el repositorio.
 
-- cambie tecnología;
-- cambie contrato;
-- cambie modelo de datos;
-- aparezca un incidente;
-- una excepción se repita;
-- un ADR lo reemplace;
-- o una implementación demuestre que el supuesto era incorrecto.
+## 12. Incorporación de un nuevo documento
 
-También tendrá revisión periódica proporcional al riesgo.
+Antes de crear un archivo nuevo:
 
----
+1. confirmar que el tema no está cubierto;
+2. decidir si corresponde a arquitectura, ADR, RFC, módulo, guía o runbook;
+3. definir propietario y estado;
+4. enlazarlo desde este índice;
+5. enlazar documentos relacionados;
+6. agregar validación;
+7. presentar el cambio mediante Pull Request.
 
-## 34. Cambios
+## 13. Declaración final
 
-Todo cambio documental relevante explicará:
+> **La arquitectura debe ser navegable, verificable y útil para tomar decisiones.**
 
-- qué cambió;
-- por qué;
-- qué documentos afecta;
-- qué código debe migrar;
-- qué decisión lo autoriza;
-- y cómo se verificará.
-
-No se actualizará arquitectura para justificar retroactivamente una omisión sin registrar el motivo.
-
----
-
-## 35. Pull Requests
-
-Un Pull Request que afecte arquitectura deberá:
-
-- enlazar documento, ADR o RFC;
-- actualizar contenido relacionado;
-- explicar compatibilidad;
-- incluir pruebas;
-- incluir migración;
-- y registrar evidencia operativa cuando corresponda.
-
-La documentación forma parte de Definition of Done.
-
----
-
-## 36. Nuevo documento
-
-Antes de crear un archivo se verificará:
-
-- que el tema no esté gobernado;
-- que el alcance sea transversal;
-- que tenga propietario;
-- que no sea mejor ADR, RFC o guía;
-- y que pueda mantenerse.
-
-La proliferación de documentos sin autoridad reduce claridad.
-
----
-
-## 37. Convención de nombres
-
-Los nombres:
-
-- usarán kebab-case;
-- serán descriptivos;
-- evitarán fechas salvo registros;
-- no incluirán “final”;
-- y mantendrán sufijos consistentes.
-
-Ejemplos:
-
-- `data-architecture.md`;
-- `testing-strategy.md`;
-- `0001-tenant-isolation-model.md`.
-
----
-
-## 38. Plantilla arquitectónica
-
-Un documento transversal deberá incluir:
-
-- título;
-- declaración;
-- estado;
-- propósito;
-- alcance;
-- principios;
-- estado actual;
-- estado objetivo;
-- decisiones;
-- seguridad;
-- pruebas;
-- observabilidad;
-- transición;
-- riesgos;
-- conformidad;
-- y pendientes.
-
-La profundidad será proporcional al tema.
-
----
-
-## 39. Enlaces
-
-Los enlaces internos serán relativos.
-
-Al renombrar un archivo:
-
-- se actualizarán referencias;
-- se verificará navegación;
-- se conservará redirect documental si la plataforma lo permite;
-- y se registrará el cambio.
-
-Un enlace roto es un defecto documental.
-
----
-
-## 40. Diagramas
-
-Los diagramas:
-
-- usarán Mermaid cuando sea adecuado;
-- tendrán propósito;
-- se mantendrán pequeños;
-- coincidirán con el texto;
-- y evitarán detalles efímeros.
-
-El texto seguirá siendo comprensible sin depender únicamente del diagrama.
-
----
-
-## 41. Lenguaje
-
-La documentación oficial se mantiene en español.
-
-Los términos técnicos podrán conservar su nombre habitual:
-
-- Business Core;
-- Tenant;
-- RLS;
-- API;
-- ADR;
-- RFC;
-- SLO;
-- y Definition of Done.
-
-Cada término ambiguo se definirá.
-
----
-
-## 42. Evidencia
-
-Una afirmación de estado actual deberá respaldarse mediante:
-
-- código;
-- configuración;
-- esquema;
-- pipeline;
-- pruebas;
-- proveedor;
-- o evidencia operativa.
-
-Una carpeta o dependencia no demuestra una capacidad funcional.
-
----
-
-## 43. Propuesta frente a implementación
-
-Los documentos distinguen:
-
-- lo que existe;
-- lo que se propone;
-- lo que se aprobó;
-- y lo que se verificó.
-
-No se considerarán implementados:
-
-- Tauri;
-- OpenTelemetry;
-- Sentry;
-- Storybook;
-- Vitest;
-- Playwright;
-- Redis;
-- colas;
-- réplicas;
-- ni multi-tenancy productivo
-
-solo porque aparezcan en la documentación.
-
----
-
-## 44. Excepciones
-
-Una excepción arquitectónica incluirá:
-
-- regla afectada;
-- motivo;
-- alcance;
-- riesgo;
-- control compensatorio;
-- propietario;
-- aprobación;
-- vencimiento;
-- y plan de cierre.
-
-Las excepciones no serán indefinidas.
-
----
-
-## 45. Riesgos documentales
-
-| Riesgo | Control |
-|---|---|
-| Documento obsoleto | Owner y trigger de revisión |
-| Contradicción | Jerarquía y ADR |
-| Estado inflado | Evidencia verificable |
-| Enlaces rotos | Validación automatizada |
-| Decisión perdida | ADR |
-| Exceso de documentos | Criterios de creación |
-| Implementación divergente | Definition of Done |
-| Historia reescrita | ADR inmutable |
-
----
-
-## 46. Automatización objetivo
-
-CI deberá verificar progresivamente:
-
-- archivos enlazados;
-- Markdown;
-- headings;
-- Mermaid cuando sea viable;
-- metadata mínima;
-- estados válidos;
-- y referencias ADR.
-
-La automatización no decidirá la calidad del contenido, pero evitará deriva mecánica.
-
----
-
-## 47. Criterios de conformidad documental
-
-El conjunto será conforme cuando:
-
-- el catálogo esté actualizado;
-- cada área tenga autoridad;
-- los estados sean honestos;
-- los enlaces funcionen;
-- las decisiones materiales tengan ADR;
-- el código siga la arquitectura;
-- las excepciones sean visibles;
-- y las revisiones tengan propietario.
-
----
-
-## 48. Siguiente etapa
-
-El catálogo transversal, el registro, la plantilla y la serie inicial ADR-0001 a ADR-0015 ya están completos como documentación propuesta.
-
-La siguiente etapa es:
-
-1. revisar coherencia entre arquitectura transversal y ADR;
-2. resolver preguntas abiertas y dependencias;
-3. ejecutar pilotos y obtener evidencia;
-4. aprobar, rechazar o reemplazar cada ADR con autoridad explícita;
-5. convertir decisiones aceptadas en backlog de implementación;
-6. y automatizar validaciones documentales en CI.
-
-No se declarará implementada una capacidad por haber completado su documentación.
-
----
-
-## 49. Declaración final
-
-> **La arquitectura de CRUMAFOOD no es una colección de archivos: es un sistema de decisiones trazables. Este índice mantiene visible qué gobierna cada tema, qué falta decidir y qué debe demostrar la implementación.**
+Este índice existe para que cualquier participante pueda descubrir rápidamente qué decisión rige, dónde está documentada, quién la mantiene y cómo puede modificarse de forma responsable.

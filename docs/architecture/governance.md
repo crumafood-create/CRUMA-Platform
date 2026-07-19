@@ -6,9 +6,11 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner y responsable de Arquitectura |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-18 |
 | Alcance | Estados, autoridad, ADR, RFC, revisión, excepciones y conformidad |
 | Autoridad | Engineering Operating System y documentación arquitectónica aprobada |
 | Revisión | Semestralmente o cuando cambie el proceso de gobierno |

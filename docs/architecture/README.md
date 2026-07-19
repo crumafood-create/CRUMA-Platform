@@ -6,7 +6,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | sprobado |
+| Estado | Aprobado |
 | Versión | 2.0 |
 | Propietarios | Product Owner y responsable de Arquitectura |
 | Aprobado por | Product Owner de CRUMAFOOD Platform |

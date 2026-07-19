@@ -6,9 +6,11 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 2.0 |
 | Propietarios | Product Owner y responsable de Arquitectura |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-18 |
 | Alcance | Índice oficial de `docs/architecture/` |
 | Autoridad | Constitución, Principios y Engineering Operating System del CES |
 | Revisión | Cuando cambie el catálogo o el estado de un documento |

@@ -6,13 +6,14 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner y responsable de arquitectura de CRUMAFOOD Platform |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-22 |
 | Alcance | Visión técnica de alto nivel, límites, componentes y dirección evolutiva |
 | Autoridad | Derivado de la Visión, la Constitución y los Principios del CES |
 | Revisión | Cuando cambien de forma material la topología, los límites o la estrategia de plataforma |
-
 ---
 
 ## 1. Propósito
@@ -196,6 +197,7 @@ flowchart TB
         Authorization[Autorización]
         Orchestration[Orquestación]
         Transactions[Coordinación transaccional]
+        Ports[Puertos y contratos]
     end
 
     subgraph Domain[Business Core]
@@ -213,7 +215,7 @@ flowchart TB
         SupabaseAdapter[Adaptador Supabase]
         Hardware[Adaptadores de hardware]
         ExternalServices[Servicios externos]
-        Observability[Observabilidad y auditoría]
+        Observability[Observabilidad técnica]
     end
 
     Database[(PostgreSQL)]
@@ -223,7 +225,9 @@ flowchart TB
     Clients --> Interface
     Interface --> Application
     Application --> Domain
-    Application --> Infrastructure
+    Application --> Ports
+
+    Infrastructure --> Ports
     Infrastructure --> Database
     Infrastructure --> Storage
     Infrastructure --> Providers
@@ -682,10 +686,10 @@ crumafood-platform/
 │   ├── supabase/
 │   ├── hardware/
 │   └── integrations/
-├── docs/
+├├── docs/
 │   ├── engineering/
 │   ├── architecture/
-│   ├── adr/
+│   │   └── adr/
 │   ├── rfc/
 │   ├── guides/
 │   └── runbooks/

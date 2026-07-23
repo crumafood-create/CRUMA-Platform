@@ -6,11 +6,18 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
-| Versión | 2.0 consolidada |
-| Propietarios | Product Owner, Arquitectura e Ingeniería de Datos |
+| ## Estado del documento
+
+| Campo | Valor |
+|---|---|
+| Estado | Aprobado |
+| Versión | 2.0 |
+| Propietarios | Product Owner y responsable de Arquitectura de Datos |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-23 |
 | Alcance | Datos operativos, persistencia, integridad, seguridad, auditoría, evolución y recuperación |
-| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `multi-tenancy-architecture.md` y `security-architecture.md` |
+| Autoridad | Derivado de `system-overview.md` y `business-core.md` |
+| Documentos relacionados | `multi-tenancy-architecture.md`, `security-architecture.md`, `integration-architecture.md`, `observability-architecture.md` y `performance-architecture.md` |
 | Sustituye | Versión 1.0 de `data-architecture.md` |
 | Revisión | Cuando cambien modelos críticos, límites de propiedad, políticas de acceso o estrategia de persistencia |
 
@@ -238,9 +245,9 @@ Una validación importante podrá existir en más de una capa, pero deberá tene
 
 | Módulo | Datos principales | No debe modificar directamente |
 |---|---|---|
-| Identity & Access | usuarios, membresías, roles, permisos, organizaciones | datos operativos de otros módulos |
+| Identity & Access | identidades, membresías, roles, permisos y contexto activo | datos operativos de otros módulos |
 | Catalog | productos, categorías, familias, unidades, presentaciones | existencias y movimientos |
-| Inventory | movimientos, saldos, reservas, disponibilidad | órdenes de producción o compra |
+| Inventory | movimientos, reservas y proyecciones autorizadas de saldo y disponibilidad | órdenes de producción o compra |
 | Warehouse | almacenes, ubicaciones, conteos, transferencias físicas | reglas de catálogo |
 | Production | recetas, versiones, órdenes, consumos planeados y reales | saldos de inventario directamente |
 | Purchasing | proveedores, solicitudes, órdenes, compromisos | existencias directamente |
@@ -248,6 +255,10 @@ Una validación importante podrá existir en más de una capa, pero deberá tene
 | Quality | especificaciones, inspecciones, liberaciones, bloqueos | movimientos históricos |
 | Costing | reglas, costos, periodos, variaciones | fuentes transaccionales originales |
 | Distribution | despachos, rutas, entregas | pedidos o inventario sin contrato |
+
+El ownership definitivo de tenants, organizaciones y sucursales será establecido por `multi-tenancy-architecture.md` y el ADR correspondiente.
+
+Las referencias a `organization_id`, organización y sucursal en este documento expresan requisitos de aislamiento, pero no cierran todavía el modelo físico definitivo.
 
 Otros módulos leerán o solicitarán cambios mediante contratos explícitos.
 
@@ -267,9 +278,11 @@ Inventory registra movimientos y saldos. Warehouse define almacenes, ubicaciones
 
 Una orden de compra contiene líneas de producto. Una recepción física puede ser parcial y genera, después de las validaciones aplicables, movimientos de inventario.
 
-### 10.4 Production, Planning y Costing
+### 10.4 Production y Costing
 
 Una orden de producción referencia una versión de receta. Sus consumos y terminados se reflejan en Inventory. Costing consume hechos históricos sin sustituirlos.
+
+La planificación se considera inicialmente una capacidad de Production. Su separación como módulo requerirá una decisión arquitectónica explícita.
 
 ### 10.5 Sales y Distribution
 
@@ -440,10 +453,13 @@ Ejemplo:
 registrar consumo
 ├── validar orden y lote
 ├── insertar movimiento
-├── actualizar saldo
+├── actualizar proyección autorizada de saldo
 ├── relacionar consumo
 └── registrar evento de outbox
 ```
+La actualización de una proyección de saldo deberá ocurrir dentro de la misma operación atómica que registra el movimiento.
+
+La interfaz, los clientes y otros módulos no podrán modificar saldos directamente.
 
 Si una falla intermedia puede dejar un estado inválido, la operación debe ejecutarse dentro de una transacción o mecanismo equivalente.
 
@@ -462,6 +478,8 @@ La estrategia dependerá del caso:
 - advisory lock;
 - función PostgreSQL;
 - serialización de trabajo.
+
+El siguiente ejemplo representa una actualización interna de una proyección controlada por Inventory. No autoriza actualizaciones directas de `inventory_balances` desde interfaces u otros módulos y deberá ejecutarse de forma atómica con el movimiento que la origina.
 
 Ejemplo de control optimista:
 
@@ -815,6 +833,8 @@ Las políticas deberán:
 - ser probadas con casos permitidos y denegados;
 - evitar políticas abiertas como solución temporal permanente.
 
+El siguiente esquema es conceptual. Los nombres físicos de tablas, columnas y alcances deberán alinearse con la arquitectura multi-tenant y el ADR correspondiente.
+
 Ejemplo conceptual:
 
 ```sql
@@ -1165,7 +1185,7 @@ Un cambio está terminado cuando:
 - contempla datos existentes;
 - incluye pruebas proporcionales al riesgo;
 - documenta recuperación;
-- actualiza el catálogo de datos;
+- actualiza la documentación y el catálogo de datos aplicable, cuando exista;
 - pasa CI;
 - fue probado en entorno no productivo;
 - y no introduce deriva conocida.

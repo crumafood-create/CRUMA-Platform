@@ -6,13 +6,18 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura y responsable de seguridad |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-23 |
+| Estado de implementación | En transición; existen remediaciones pendientes identificadas en las secciones 48 y 49 |
+| Base de evidencia | Repositorio y configuración revisados en el commit abc1234 el 2026-07-23 |
 | Alcance | Identidad, acceso, aplicación, datos, integraciones, secretos, operación y respuesta |
 | Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, la Constitución y los Principios del CES |
 | Revisión | Ante cambios de identidad, autorización, exposición, datos sensibles, proveedores o amenazas materiales |
 
+> La aprobación de este documento establece la política y dirección arquitectónica de seguridad. No constituye por sí sola una certificación de que la implementación actual cumpla todos los controles definidos.
 ---
 
 ## 1. Propósito
@@ -319,15 +324,16 @@ La autenticación deberá:
 - registrar eventos relevantes;
 - y fallar sin revelar detalles sensibles.
 
-MFA será obligatorio para:
+MFA deberá ser obligatorio para:
 
 - propietarios;
 - administradores;
 - soporte privilegiado;
-- cambios de seguridad;
-- y operaciones de riesgo definido.
+- y otras identidades con acceso elevado.
 
-Su extensión a otros perfiles se decidirá según riesgo y experiencia operativa.
+Las operaciones de especial riesgo podrán exigir autenticación reforzada o verificación adicional, aunque la sesión ya esté autenticada.
+
+El ADR correspondiente definirá factores permitidos, enrolamiento, recuperación, autenticación reforzada, despliegue gradual y excepciones temporales. Su extensión a perfiles no privilegiados se decidirá según riesgo y experiencia operativa.
 
 ---
 
@@ -614,6 +620,17 @@ Un entorno no productivo expuesto también requiere protección.
 
 RLS será obligatoria en relaciones expuestas mediante Supabase.
 
+Esto incluye toda tabla ubicada en un esquema expuesto mediante la Data API.
+
+Las vistas expuestas deberán respetar las políticas de las relaciones subyacentes mediante una estrategia explícita, como `security_invoker` cuando sea compatible, o permanecer en un esquema no expuesto.
+
+Las funciones `SECURITY DEFINER` deberán:
+
+- tener una justificación documentada;
+- fijar un `search_path` seguro;
+- aplicar permisos de ejecución mínimos;
+- evitar exposición accidental mediante la API;
+- y contar con pruebas específicas de autorización.
 Las políticas deberán:
 
 - denegar por defecto;
@@ -636,6 +653,10 @@ Las políticas se versionarán junto con el esquema.
 ---
 
 ## 27. Operaciones privilegiadas
+
+Las credenciales secretas, service role o cualquier rol con capacidad de omitir RLS se consideran acceso administrativo total a los datos bajo su alcance técnico.
+
+No deberán reutilizar el cliente SSR de un usuario ni aceptar que una sesión de usuario sustituya silenciosamente su contexto de autorización.
 
 La service role y otras credenciales privilegiadas:
 
@@ -1236,9 +1257,15 @@ La seguridad se revisará en:
 - incidente;
 - y revisión periódica.
 
-Los cambios de alto riesgo requerirán revisión independiente.
+Los cambios de alto riesgo requerirán revisión por una persona distinta del autor cuando exista un revisor calificado disponible.
 
-Los hallazgos tendrán severidad, propietario, fecha objetivo y evidencia de cierre.
+Si no existe revisor interno disponible, el cambio deberá:
+
+- obtener revisión externa;
+- posponerse;
+- o registrar una excepción formal con riesgo, controles compensatorios, responsable y fecha de vencimiento.
+
+La ausencia de un segundo colaborador no se interpretará como revisión independiente.
 
 ---
 
@@ -1248,7 +1275,7 @@ Se formalizarán, al menos:
 
 1. modelo de organización y multi-tenancy;
 2. modelo canónico de roles, permisos y alcances;
-3. obligatoriedad y alcance de MFA;
+3. mecanismo, enrolamiento, recuperación, autenticación reforzada y despliegue de MFA;
 4. estrategia de sesiones y revocación;
 5. política de service role;
 6. estándar de webhooks;
@@ -1315,4 +1342,9 @@ Por ello:
 - se reducirá exposición;
 - y se preparará recuperación.
 
+Este tipo es conceptual.
+
+Los nombres `organizationId`, `warehouseScopes` y la cardinalidad de los alcances no establecen todavía el modelo físico definitivo de tenancy. Deberán alinearse con `multi-tenancy-architecture.md` y el ADR correspondiente.
+
+El contrato definitivo podrá representar múltiples organizaciones, sucursales, almacenes u otros alcances sin modificar el principio de autorización expresado en este documento.
 La plataforma será confiable no porque asuma que nada fallará, sino porque sus controles harán que los fallos sean más difíciles, visibles, contenidos y recuperables.

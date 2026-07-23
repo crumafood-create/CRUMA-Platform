@@ -6,9 +6,11 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner y responsable de arquitectura |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-22 |
 | Alcance | Núcleo de negocio, límites modulares, dependencias y contratos |
 | Autoridad | Derivado de `system-overview.md`, la Constitución y los Principios del CES |
 | Revisión | Cuando cambien límites de módulos, contratos o dirección de dependencias |
@@ -75,12 +77,12 @@ modules/
     │   ├── policies/
     │   ├── services/
     │   ├── events/
-    │   ├── errors/
-    │   └── ports/
+    │   └── errors/
     ├── application/
     │   ├── commands/
     │   ├── queries/
     │   ├── use-cases/
+    │   ├── ports/
     │   ├── dto/
     │   └── mappers/
     ├── infrastructure/
@@ -103,7 +105,7 @@ Esta estructura puede simplificarse en módulos pequeños. No se crearán carpet
 
 ### 5.1 Domain
 
-Contiene entidades, objetos de valor, invariantes, políticas, servicios de dominio, eventos, errores del negocio y puertos necesarios para expresar el negocio.
+Contiene entidades, objetos de valor, invariantes, políticas, servicios de dominio, eventos y errores del negocio.
 
 No contiene Supabase, SQL, React, Next.js, Tauri, HTTP, variables de entorno ni formatos visuales.
 
@@ -119,6 +121,8 @@ Coordina casos de uso como:
 - cerrar un conteo físico.
 
 Puede autorizar, cargar datos, invocar el dominio, coordinar transacciones, persistir, publicar eventos y devolver DTO estables.
+
+La capa de aplicación define los puertos necesarios para persistencia, transacciones, tiempo, identificadores, integraciones y otras capacidades externas. La infraestructura implementa esos puertos.
 
 ### 5.3 Infrastructure
 
@@ -231,7 +235,9 @@ Propietario de preparación de despacho, rutas, entregas, confirmaciones e incid
 
 ### 7.10 Identity & Access
 
-Propietario de usuarios internos, organizaciones, sucursales, roles, permisos, alcance operativo y asignaciones.
+Propietario de identidades internas, membresías, roles, permisos, alcances operativos y contexto activo.
+
+La propiedad definitiva de tenants, organizaciones y sucursales será establecida por la arquitectura multi-tenant y el ADR correspondiente.
 
 El proveedor de autenticación no define por sí solo la autorización del negocio.
 
@@ -407,6 +413,11 @@ Reglas:
 - sin referencias a UI;
 - sin secretos.
 
+Un evento de dominio pertenece internamente al módulo que lo produce.
+
+Cuando un hecho deba atravesar el límite modular, la capa de aplicación lo traducirá a un evento de integración explícito y versionado.
+
+Otros módulos no dependerán directamente de entidades, clases ni estructuras internas de eventos del módulo productor.
 ---
 
 ## 15. Errores de dominio
@@ -449,10 +460,11 @@ Ejemplos posibles:
 
 Las transacciones pertenecen a la coordinación de aplicación o infraestructura.
 
+La aplicación define la frontera atómica y coordina la unidad de trabajo mediante un puerto. La infraestructura implementa la transacción física.
+
 ```ts
-await transaction.run(async () => {
-  await inventoryRepository.saveMovement(movement);
-  await inventoryRepository.updateBalance(balance);
+await unitOfWork.run(async () => {
+  await inventoryRepository.recordMovement(movement);
   await outboxRepository.append(event);
 });
 ```
@@ -498,6 +510,8 @@ Las tres capas se complementan.
 ---
 
 ## 20. Autorización de casos de uso
+
+El siguiente ejemplo es conceptual. Los nombres físicos del alcance organizacional no fijan el modelo definitivo de tenancy.
 
 ```ts
 authorization.require({
@@ -595,6 +609,10 @@ No deberá contener la lógica completa del caso de uso.
 ---
 
 ## 25. Composition Root
+
+El patrón Composition Root es la dirección propuesta para concentrar la construcción de dependencias.
+
+Su ubicación definitiva, ciclo de vida, alcance por solicitud y estrategia de composición deberán confirmarse mediante ADR antes de considerarse una decisión cerrada.
 
 La creación de dependencias deberá concentrarse.
 

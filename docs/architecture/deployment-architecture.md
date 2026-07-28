@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura y responsable de operación |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-27 |
+| Estado de implementación | En transición; ya existen toolchain reproducible, CI para Pull Requests, typecheck, lint, build y Preview deployments, pero continúan pendientes pruebas automatizadas, migraciones versionadas, smoke tests, observabilidad operativa y recuperación verificada según la sección 65 |
+| Base de evidencia | Revisión de `package.json`, `.nvmrc`, `pnpm-lock.yaml`, `.github/workflows/ci.yml`, `vercel.json` y despliegues Preview observados |
 | Alcance | Build, entornos, despliegue, topología, configuración, observabilidad, escalado y recuperación |
-| Autoridad | Derivado de `system-overview.md`, `data-architecture.md`, `security-architecture.md`, `integration-architecture.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `multi-tenancy-architecture.md`, `integration-architecture.md` y el CES |
 | Revisión | Cuando cambie una unidad de despliegue, proveedor, entorno, región, objetivo de servicio o estrategia de recuperación |
 
 ---
@@ -99,25 +103,29 @@ El repositorio contiene:
 
 - Next.js 15.5.19 y React 19.1.0;
 - TypeScript estricto;
-- despliegue objetivo en Vercel;
+- pnpm 10.34.5 declarado como gestor canónico;
+- Node.js 24.x declarado en `package.json` y una versión exacta definida mediante `.nvmrc`;
+- `pnpm-lock.yaml` versionado como lockfile canónico;
+- un workflow de GitHub Actions ejecutado en Pull Requests y en `push` a `main`;
+- verificación de versiones de Node.js y pnpm en CI;
+- rechazo automático de lockfiles no canónicos;
+- instalación mediante `pnpm install --frozen-lockfile`;
+- ejecución obligatoria de typecheck, lint y build en CI;
+- despliegue objetivo y Preview deployments en Vercel;
 - `vercel.json` con un cron diario a `/api/jobs/run`;
 - integración con Supabase SSR;
 - PostgreSQL y Auth mediante Supabase;
 - App Router con Admin, Storefront, Mobile y API en una aplicación;
 - manifiesto web para CRUMAFOOD;
 - encabezados básicos de seguridad;
-- workflow de GitHub Actions;
 - documentos iniciales de monitoring y backup;
 - y dominios adquiridos `crumafood.com` y `crumafood.com.mx`.
 
 El levantamiento también identifica brechas:
 
-- CI solo ejecuta checkout y no valida, construye ni prueba;
-- el workflow se activa en `push` a `main`, no en Pull Requests;
-- `next build` ignora ESLint;
-- el script de lint no demuestra todavía una política de cero advertencias;
-- no se identificó lockfile versionado para instalación determinista;
-- no existen scripts de test ni typecheck dedicados en `package.json`;
+- no existe un script `test` ni una suite automatizada verificable en `package.json`;
+- CI todavía no ejecuta pruebas automatizadas, validación de formato, migraciones, análisis de seguridad ni smoke tests posteriores al despliegue;
+- `next build` omite ESLint, aunque CI lo ejecuta como una puerta independiente;
 - las migraciones Supabase no están en el repositorio;
 - la estrategia de backups es declarativa, sin evidencia de restauración;
 - Sentry y Vercel Analytics aparecen como plan, no como implementación verificable;
@@ -392,16 +400,24 @@ El build no deberá descargar datos productivos ni depender de servicios mutable
 
 ## 17. Dependencias deterministas
 
-El repositorio deberá versionar:
+El repositorio versiona actualmente:
 
-- lockfile;
-- versión o rango controlado de Node;
-- gestor de paquetes;
-- y configuración necesaria.
+- `pnpm-lock.yaml` como lockfile canónico;
+- pnpm 10.34.5 mediante `packageManager` y `engines`;
+- Node.js 24.x mediante `engines`;
+- y una versión exacta de Node.js mediante `.nvmrc`.
 
-CI utilizará instalación limpia.
+CI verifica explícitamente el toolchain, rechaza lockfiles alternativos e instala dependencias con:
 
-Se corregirán dependencias duplicadas en `package.json` y se evitarán instalaciones que modifiquen el lockfile durante el build.
+```text
+pnpm install --frozen-lockfile
+```
+
+Estos controles deberán conservarse y actualizarse de forma coordinada.
+
+Los rangos permitidos en `package.json` no modificarán las versiones instaladas durante un build mientras el lockfile permanezca sin cambios.
+
+No se introducirán lockfiles alternativos ni instalaciones que modifiquen silenciosamente `pnpm-lock.yaml` durante CI o despliegue.
 
 Un despliegue debe poder reconstruirse desde el commit sin resolver versiones distintas de forma accidental.
 
@@ -475,21 +491,28 @@ No se perseguirá una métrica de cobertura aislada de riesgo.
 
 ## 21. CI
 
-El workflow actual solo realiza checkout y deberá completarse.
+El workflow actual se ejecuta en Pull Requests y en `push` a `main`.
 
-CI objetivo ejecutará en Pull Requests y `main`:
+Actualmente realiza:
 
 1. checkout;
-2. configuración de runtime;
-3. instalación limpia;
-4. validación de formato cuando exista;
-5. typecheck;
-6. lint;
-7. pruebas;
-8. build;
-9. validación de migraciones;
-10. análisis de seguridad proporcional;
-11. y publicación de resultados.
+2. instalación de pnpm 10.34.5;
+3. configuración de Node.js mediante `.nvmrc`;
+4. verificación explícita del toolchain;
+5. rechazo de lockfiles no canónicos;
+6. instalación con `--frozen-lockfile`;
+7. typecheck;
+8. lint;
+9. y build.
+
+La evolución objetivo añadirá:
+
+1. pruebas automatizadas;
+2. validación de formato cuando se adopte;
+3. validación de migraciones;
+4. análisis de seguridad proporcional;
+5. smoke tests posteriores al despliegue;
+6. y publicación de evidencia operacional.
 
 Una puerta requerida no podrá omitirse fusionando directamente sin excepción registrada.
 
@@ -796,6 +819,7 @@ La programación se interpretará en la zona del proveedor y se documentará en 
 
 El job deberá:
 
+- declarar scope de plataforma o tenant;
 - usar método de mutación apropiado;
 - autenticar todo entorno compartido;
 - ser idempotente;
@@ -803,6 +827,8 @@ El job deberá:
 - tener timeout;
 - registrar ejecución;
 - y alertar fallos.
+
+Un job scoped resolverá el tenant desde configuración o contexto confiable y conservará ese scope durante ejecución, reintentos y observabilidad. Un parámetro recibido por el endpoint no concederá autoridad sobre otro tenant.
 
 Un cron dispara; no garantiza por sí solo procesamiento durable.
 
@@ -864,6 +890,8 @@ Cada ruta definirá si es:
 - o no cacheable.
 
 Datos autenticados, inventario, costos y permisos no se almacenarán en caché compartida sin clave y política correctas.
+
+Toda clave de caché scoped incluirá el tenant y, cuando corresponda, identidad, rol, recurso, filtros y versión. Una respuesta autorizada para un tenant no se reutilizará en otro.
 
 La invalidación será explícita y observable.
 
@@ -966,6 +994,7 @@ La observabilidad cubrirá:
 Cada señal incluirá, cuando corresponda:
 
 - entorno;
+- scope y tenant seudonimizado cuando corresponda;
 - release;
 - commit;
 - ruta o operación;
@@ -973,6 +1002,8 @@ Cada señal incluirá, cuando corresponda:
 - latencia;
 - resultado;
 - y dependencia.
+
+La telemetría no utilizará el nombre comercial del tenant como label de alta cardinalidad ni mezclará diagnósticos entre tenants.
 
 Auditoría y observabilidad seguirán separadas.
 
@@ -1155,12 +1186,15 @@ Estos puntos no se considerarán implementados hasta verificar capacidad, plan c
 
 Cada backup tendrá:
 
+- cobertura y frontera de tenants;
 - cifrado;
 - alcance;
 - propietario;
 - retención;
 - ubicación;
 - y estado.
+
+Un respaldo podrá ser compartido físicamente, pero deberá preservar el aislamiento lógico y permitir procedimientos de recuperación que no sobrescriban datos de tenants no afectados.
 
 ---
 
@@ -1170,6 +1204,8 @@ Se probará restauración periódica en un entorno aislado.
 
 La prueba verificará:
 
+- aislamiento entre tenants;
+- recuperación o extracción controlada de un tenant cuando el servicio y el contrato lo requieran;
 - tablas y datos;
 - funciones;
 - RLS;
@@ -1178,6 +1214,8 @@ La prueba verificará:
 - integridad;
 - secretos externos;
 - y capacidad de la aplicación.
+
+Una restauración parcial deberá ejecutarse en un entorno aislado, reconciliar referencias y demostrar que no modifica información de otros tenants.
 
 El resultado registrará duración real y diferencias contra RTO/RPO.
 
@@ -1367,19 +1405,21 @@ Separar red y datos aumenta costo operativo y consistencia distribuida.
 
 ### P0 — Entrega confiable mínima
 
-- completar CI;
-- ejecutar typecheck, lint y build;
+- conservar typecheck, lint y build como puertas obligatorias de CI;
+- implementar un script `test` con una suite automatizada real;
 - proteger `main`;
 - separar secretos por entorno;
 - asegurar cron;
 - y documentar rollback.
 
-### P1 — Datos y observabilidad
+### P1 — Datos y ampliación de CI
 
 - crear migraciones baseline;
-- validar orden de despliegue;
+- validar migraciones en CI;
+- añadir validación de formato cuando se adopte;
+- incorporar análisis de seguridad proporcional;
 - implementar captura de errores;
-- añadir smoke tests;
+- añadir smoke tests posteriores al despliegue;
 - y verificar backups.
 
 ### P2 — Madurez operativa
@@ -1401,12 +1441,13 @@ Separar red y datos aumenta costo operativo y consistencia distribuida.
 
 ## 66. Estrategia de transición
 
-### Etapa 1 — Determinismo
+### Etapa 1 — Determinismo y ampliación de CI
 
-- fijar runtime;
-- añadir lockfile;
-- normalizar scripts;
-- y completar CI.
+- conservar las versiones canónicas de Node.js y pnpm;
+- mantener un único lockfile;
+- conservar typecheck, lint y build como puertas;
+- implementar pruebas automatizadas;
+- y añadir progresivamente validación de formato, migraciones y seguridad.
 
 ### Etapa 2 — Entornos
 

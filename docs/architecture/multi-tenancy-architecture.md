@@ -6,9 +6,13 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura, responsable de Identity & Access y responsable de datos |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-27 |
+| Estado de implementación | Arquitectura objetivo no productiva; su adopción está condicionada al ADR obligatorio, al baseline del esquema y al cierre de las prioridades P0 definidas en la sección 93 |
+| Base de evidencia | Revisión documental del repositorio; el baseline SQL, las políticas RLS y las pruebas automatizadas de aislamiento continúan pendientes según las secciones 5, 6, 75–89 y 93 |
 | Alcance | Tenant, organizaciones, membresías, alcances, aislamiento, RLS, APIs, operación, migración y gobierno |
 | Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `observability-architecture.md`, `testing-strategy.md`, `performance-architecture.md` y el CES |
 | Revisión | Cuando cambie la frontera de aislamiento, jerarquía organizacional, autorización, RLS, esquema, administración privilegiada o modelo comercial |

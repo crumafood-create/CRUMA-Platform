@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura y responsables de integraciones |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-27 |
+| Estado de implementación | En transición; existen integraciones activas con Supabase, pero los webhooks, jobs, contratos, proveedores externos y mecanismos de entrega durable continúan sujetos a las prioridades P0–P3 de la sección 57 |
+| Base de evidencia | Revisión documental y del estado actual descrito en la sección 5; correcciones de aislamiento aplicadas en las secciones 20, 22, 23, 25, 32–34 y 51 |
 | Alcance | APIs, eventos, webhooks, jobs, proveedores, dispositivos, sincronización y mensajería |
-| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `multi-tenancy-architecture.md` y el CES |
 | Revisión | Cuando cambie un contrato, proveedor, modelo de entrega, canal, topología o requisito de resiliencia |
 
 ---
@@ -477,18 +481,35 @@ Podrá derivarse de un evento de dominio, pero no serán necesariamente el mismo
 Formato base:
 
 ```ts
+type IntegrationScope =
+  | {
+      kind: 'platform';
+    }
+  | {
+      kind: 'tenant';
+      tenantId: string;
+      organizationId?: string;
+    };
+
 type IntegrationEvent<T> = {
   eventId: string;
   eventType: string;
   eventVersion: number;
   aggregateId: string;
-  organizationId?: string;
+  scope: IntegrationScope;
   occurredAt: string;
   correlationId: string;
   causationId?: string;
   payload: T;
 };
 ```
+El `scope` será obligatorio en el envelope interno.
+
+Los eventos con datos de una organización utilizarán `kind: 'tenant'` y conservarán la frontera técnica de aislamiento. El scope de plataforma será excepcional y explícito.
+
+El nombre `tenantId` representa aquí el concepto contractual de Tenant. No decide por sí solo el nombre físico de la columna persistida, que continúa sujeto al ADR definido en `multi-tenancy-architecture.md`.
+
+Los adaptadores externos podrán traducir u omitir identificadores internos según el contrato, la autorización y la minimización de datos.
 
 No incluirá secretos, entidades completas ni datos sin finalidad.
 
@@ -526,10 +547,13 @@ La transacción persistirá:
 
 - cambio del agregado;
 - evento de integración;
+- scope de plataforma o tenant;
 - tipo y versión;
 - correlación;
 - fecha;
 - y estado de publicación.
+
+El publicador conservará el scope original y no podrá reasignar un mensaje a otro tenant durante la entrega o el reintento.
 
 Un publicador separado:
 
@@ -551,13 +575,16 @@ La inbox conservará:
 
 - consumidor;
 - `event_id`;
+- scope de plataforma o tenant;
 - versión;
 - fecha de recepción;
 - estado;
 - resultado o referencia;
 - e intentos.
 
-La combinación consumidor-evento será única.
+La combinación scope-consumidor-evento será única. En eventos scoped, el tenant formará parte obligatoria del namespace de deduplicación.
+
+Un resultado almacenado para un tenant nunca se reutilizará como respuesta idempotente de otro tenant.
 
 Recibir el mismo mensaje no repetirá el efecto de negocio.
 
@@ -597,6 +624,10 @@ Casos prioritarios:
 - y sincronizar comando móvil.
 
 La clave identificará intención, no solo solicitud técnica.
+
+El namespace de idempotencia incluirá el tenant cuando la operación sea scoped, además del caso de uso y del actor o recurso que corresponda.
+
+Una clave enviada por el cliente no concederá contexto ni permitirá reutilizar resultados entre tenants.
 
 El sistema conservará el resultado suficiente para responder reintentos sin duplicar efectos.
 
@@ -735,6 +766,7 @@ Cada job declarará:
 
 - nombre;
 - propietario;
+- scope de plataforma o tenant;
 - frecuencia o disparador;
 - zona horaria;
 - exclusión concurrente;
@@ -743,6 +775,8 @@ Cada job declarará:
 - reintentos;
 - resultado;
 - y runbook.
+
+Un job scoped resolverá el tenant desde configuración o contexto confiable. El tenant no será concedido por un parámetro arbitrario enviado al endpoint.
 
 Una ejecución tendrá identificador único.
 
@@ -758,6 +792,7 @@ Un webhook entrante deberá:
 
 - conservar el cuerpo original para verificar firma;
 - identificar proveedor;
+- resolver el tenant mediante la configuración interna verificada de la integración;
 - verificar firma y timestamp;
 - limitar replay;
 - validar esquema;
@@ -770,6 +805,8 @@ El endpoint genérico actual no es apto para un proveedor productivo.
 
 Cada proveedor tendrá ruta y adaptador explícitos.
 
+Un `tenant_id`, `organization_id` o identificador equivalente recibido en el payload no será autoridad por sí mismo. Deberá coincidir con la cuenta, credencial, endpoint o relación interna previamente configurada.
+
 ---
 
 ## 34. Webhooks salientes
@@ -777,6 +814,7 @@ Cada proveedor tendrá ruta y adaptador explícitos.
 Los webhooks salientes tendrán:
 
 - suscripción autorizada;
+- tenant y scope propietarios;
 - secreto por consumidor;
 - firma;
 - identificador;
@@ -786,6 +824,8 @@ Los webhooks salientes tendrán:
 - historial;
 - desactivación por fallas;
 - y mecanismo de prueba.
+
+La entrega, los reintentos y el historial conservarán el tenant original. Una suscripción no podrá recibir eventos pertenecientes a otro tenant.
 
 El consumidor no elegirá eventos o campos fuera de su autorización.
 
@@ -1136,6 +1176,7 @@ La rotación tendrá procedimiento sin interrupción cuando el proveedor lo perm
 Cada llamada o mensaje registrará de forma segura:
 
 - integración;
+- scope y tenant seudonimizado cuando corresponda;
 - operación;
 - resultado;
 - latencia;
@@ -1156,6 +1197,8 @@ Se medirán:
 - dead letters;
 - duplicados;
 - y reconciliaciones pendientes.
+
+La telemetría no utilizará el nombre comercial del tenant como label y no mezclará payloads o diagnósticos entre tenants.
 
 No se registrarán tokens ni payloads completos no clasificados.
 

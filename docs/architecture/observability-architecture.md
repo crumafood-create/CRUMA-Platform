@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura y responsable de operación |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-28 |
+| Estado de implementación | Inicial y no conforme todavía; existen logs nativos de Vercel y un health básico, pero continúan pendientes logger estructurado, redacción común, correlación, captura central de errores, métricas, dashboards, alertas, SLI/SLO y las prioridades P0–P2 de la sección 82 |
+| Base de evidencia | Revisión de `/api/health`, `/api/webhooks`, `/api/jobs/run`, usos de `console.log` y `console.error`, marcadores en `src/infrastructure/observability/` y propuesta ADR-0008 |
 | Alcance | Logs, métricas, trazas, errores, alertas, SLI/SLO, dashboards, diagnóstico, privacidad y respuesta operativa |
-| Autoridad | Derivado de `system-overview.md`, `data-architecture.md`, `security-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md`, `mobile-architecture.md`, `desktop-architecture.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `multi-tenancy-architecture.md`, `integration-architecture.md`, `deployment-architecture.md` y el CES |
 | Revisión | Cuando cambie una unidad de ejecución, proveedor, flujo crítico, clasificación de datos, objetivo de servicio o modelo de soporte |
 
 ---
@@ -41,7 +45,9 @@ La arquitectura será independiente del proveedor cuando resulte razonable.
 
 Vercel, Supabase y los futuros runtimes podrán aportar señales nativas, pero ninguna consola aislada será la visión completa del sistema.
 
-Sentry, Vercel Analytics y Supabase Monitoring son candidatos o fuentes previstas; no se considerarán implementados hasta existir configuración, captura verificable, retención, acceso y runbook.
+El ADR-0008 propone Sentry Cloud como plataforma inicial de observabilidad de aplicación, pero condiciona su aceptación a un piloto con captura verificada, redacción de datos, alertas accionables, costo medido y procedimiento de salida.
+
+Hasta completar y aceptar ese piloto, Sentry permanecerá como propuesta. Vercel y Supabase conservarán sus señales nativas, y OpenTelemetry continuará como dirección de interoperabilidad.
 
 ---
 
@@ -278,6 +284,10 @@ Toda señal incluirá, cuando aplique:
 
 Los campos ausentes no se inventarán.
 
+`tenant.id` es un atributo semántico de observabilidad y no decide el nombre físico de la clave persistida, que continúa sujeto a `multi-tenancy-architecture.md`.
+
+El tenant podrá incluirse de forma seudonimizada en logs y trazas autorizadas. No se utilizará automáticamente como label de métricas, donde la cardinalidad, finalidad y acceso deberán aprobarse explícitamente.
+
 ---
 
 ## 14. Identidad de servicio
@@ -355,6 +365,8 @@ Un identificador de correlación no concederá autorización.
 
 Jobs, outbox, inbox, reintentos y sincronización conservarán:
 
+- scope de plataforma o tenant;
+- `tenant.id` seudonimizado cuando el mensaje sea scoped;
 - `correlation_id`;
 - `causation_id`;
 - identificador del mensaje o comando;
@@ -362,6 +374,8 @@ Jobs, outbox, inbox, reintentos y sincronización conservarán:
 - fecha de creación;
 - fecha de procesamiento;
 - y resultado.
+
+El scope se conservará desde el envelope confiable definido en `integration-architecture.md`. Un valor recibido en el payload no concederá contexto ni autoridad sobre un tenant.
 
 Cada reintento será un intento nuevo de la misma operación lógica.
 
@@ -521,6 +535,7 @@ Estas guías no reemplazan las métricas del flujo de negocio.
 
 No se usarán como etiquetas métricas:
 
+- ID individual de tenant por defecto;
 - ID de usuario;
 - ID de orden;
 - correo;
@@ -533,6 +548,8 @@ No se usarán como etiquetas métricas:
 Estos datos, si están autorizados, pertenecerán a logs o trazas con retención controlada.
 
 Las dimensiones métricas tendrán conjuntos acotados.
+
+Las necesidades de diagnóstico por tenant se resolverán preferentemente mediante logs o trazas protegidas, o mediante agregados autorizados que no expongan identidad comercial.
 
 ---
 
@@ -700,6 +717,8 @@ Los 4xx esperados se separarán de los 5xx.
 
 Cada ejecución de job tendrá:
 
+- scope de plataforma o tenant;
+- `tenant.id` seudonimizado cuando corresponda;
 - `job_name`;
 - `execution_id`;
 - horario esperado;
@@ -716,6 +735,8 @@ Cada ejecución de job tendrá:
 Se alertará por fallo, ausencia de ejecución, duración anómala y acumulación.
 
 La respuesta HTTP del disparador no será la única evidencia de ejecución.
+
+Las señales de un job scoped conservarán el tenant durante ejecución y reintentos. Los resultados de un tenant no se mezclarán con los de otro en logs de detalle o diagnósticos.
 
 ---
 
@@ -743,6 +764,8 @@ La cola vacía no demostrará que los resultados sean correctos.
 
 Cada integración medirá:
 
+- scope de plataforma o tenant;
+- tenant seudonimizado cuando sea necesario;
 - operación;
 - proveedor;
 - resultado;
@@ -757,6 +780,8 @@ Cada integración medirá:
 - y dependencia.
 
 El webhook actual deberá dejar de registrar el body completo.
+
+En integraciones scoped, el tenant se resolverá mediante la configuración interna verificada de la integración. Un identificador recibido en el payload no será autoridad por sí mismo.
 
 La observabilidad conservará metadatos permitidos y hash o identificadores seguros cuando sean necesarios.
 
@@ -809,12 +834,15 @@ La disponibilidad externa del proveedor se correlacionará con resultados reales
 
 Se observarán de forma agregada:
 
+- intentos o denegaciones potencialmente cross-tenant;
 - denegaciones;
 - errores de política;
 - consultas inesperadamente vacías;
 - uso de service role;
 - cambios de rol;
 - y operaciones privilegiadas.
+
+Las señales de posibles cruces de tenant se tratarán como eventos de seguridad, con datos mínimos, correlación y acceso restringido.
 
 No se reducirá la seguridad para obtener telemetría.
 
@@ -1070,6 +1098,8 @@ Cada dashboard indicará entorno, ventana, zona horaria y última actualización
 
 Una gráfica sin unidad ni propietario se considerará incompleta.
 
+Los dashboards de tenant estarán aislados y autorizados. Los dashboards de plataforma utilizarán agregados minimizados y acceso separado; no expondrán datos identificables de otros tenants por defecto.
+
 ---
 
 ## 55. Golden dashboard
@@ -1087,6 +1117,8 @@ El dashboard principal de Production mostrará:
 - release activa;
 - incidentes;
 - y consumo de error budget.
+
+El golden dashboard de plataforma tendrá acceso restringido. Las vistas operativas ordinarias mostrarán únicamente el tenant y scope autorizados.
 
 Permitirá pasar de síntoma a componente sin cambiar manualmente identificadores.
 
@@ -1602,6 +1634,8 @@ El catálogo de señales se revisará junto con la arquitectura.
 
 ### P0 — Reducir exposición y habilitar diagnóstico
 
+- propagar scope de plataforma o tenant en señales de jobs e integraciones;
+- detectar y escalar posibles denegaciones cross-tenant;
 - retirar logging de bodies en webhooks;
 - crear logger estructurado;
 - crear redacción común;

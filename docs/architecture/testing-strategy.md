@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura y responsables de calidad e ingeniería |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-29 |
+| Estado de implementación | En transición; Vitest, jsdom, Testing Library, cobertura V8, scripts y gates básicos de CI están activos. Las pruebas de integración, Supabase/RLS, contratos, E2E, accesibilidad, seguridad, rendimiento y operación continúan pendientes según la sección 101 |
+| Base de evidencia | Revisión de `package.json`, `pnpm-lock.yaml`, `.github/workflows/ci.yml`, `vitest.config.ts`, `vitest.setup.ts` y `product-code.test.ts`; ejecución satisfactoria de lint, typecheck, pruebas, cobertura y build |
 | Alcance | Estrategia, niveles, herramientas, datos, automatización, CI, ambientes, evidencia y gobierno de pruebas |
-| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md`, `mobile-architecture.md`, `desktop-architecture.md`, `observability-architecture.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `multi-tenancy-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md`, `mobile-architecture.md`, `desktop-architecture.md`, `observability-architecture.md` y el CES |
 | Revisión | Cuando cambie un flujo crítico, tecnología, entorno, modelo de riesgo, contrato, unidad desplegable o política de entrega |
 
 ---
@@ -39,7 +43,9 @@ Su propósito es asegurar que:
 
 La automatización protegerá comportamiento, no detalles incidentales de implementación.
 
-Vitest, Testing Library y Playwright son la dirección inicial propuesta para TypeScript, componentes y E2E, sujetos a un spike corto y a decisión registrada si aparecen incompatibilidades.
+Vitest está adoptado como runner para pruebas TypeScript. Testing Library y jsdom están configurados para lógica y componentes compatibles con un entorno DOM simulado.
+
+Playwright continúa como dirección propuesta para E2E y deberá incorporarse mediante una configuración verificable y un spike corto antes de considerarse implementado.
 
 PostgreSQL/Supabase se probará en un entorno aislado y reproducible.
 
@@ -108,48 +114,63 @@ No convierte al equipo de calidad en único responsable de la calidad.
 
 El repositorio actual contiene:
 
-- TypeScript estricto;
-- una prueba `product-code.test.ts`;
+- TypeScript estricto y un comando dedicado `pnpm run typecheck`;
+- Vitest 4.1.10 como runner de pruebas TypeScript;
+- jsdom como entorno DOM simulado;
+- Testing Library y `jest-dom` para pruebas de componentes;
+- `vitest.config.ts` con alias del código fuente, setup común y cobertura V8;
+- `vitest.setup.ts` con los matchers de `jest-dom`;
+- una prueba `product-code.test.ts` con tres escenarios ejecutables;
+- comandos para pruebas, watch, cobertura y verificación integrada;
+- lint configurado con política de cero advertencias;
+- un workflow de GitHub Actions ejecutado en Pull Requests y en `push` a `main`;
+- instalación determinista mediante `pnpm install --frozen-lockfile`;
+- gates de typecheck, lint, cobertura, pruebas y build;
+- reportes de cobertura en texto, JSON y HTML;
 - directorios marcadores bajo `src/testing`;
-- archivos de stories para algunos componentes compartidos;
-- un workflow de GitHub Actions que solo ejecuta checkout;
-- un script `lint` sin evidencia de ejecución en CI;
-- y un script de build de Next.js.
+- y archivos de stories para algunos componentes compartidos.
 
-No se identificó configuración verificable de:
+La cobertura V8 incluye explícitamente por ahora únicamente `src/modules/inventory/application/utils/product-code.ts`. El 100% obtenido demuestra la cobertura de ese archivo, no de toda CRUMAFOOD Platform.
 
-- runner de pruebas;
-- entorno DOM;
-- Testing Library;
-- Playwright o Cypress;
-- cobertura;
-- pruebas de integración;
-- Supabase local para CI;
-- RLS automatizada;
+No se identificó todavía evidencia automatizada suficiente de:
+
+- pruebas del Business Core y de las reglas críticas de dominio;
+- helpers, builders y fixtures compartidos;
+- integración con PostgreSQL o Supabase;
+- migraciones y backfills;
+- RLS positiva y negativa;
 - contratos;
-- pruebas de seguridad;
+- autenticación y autorización;
+- webhooks y jobs;
+- seguridad;
+- Playwright o una suite E2E equivalente;
+- accesibilidad automatizada;
 - rendimiento;
 - visual regression;
-- ni quality gates.
-
-El archivo de prueba existente usa una API global de test, pero `package.json` no declara un runner capaz de ejecutarlo.
+- resiliencia y restauración;
+- pruebas Mobile, Desktop o de hardware;
+- ni publicación y retención de reportes de prueba como artefactos de CI.
 
 ---
 
 ## 6. Brechas inmediatas
 
-Las brechas prioritarias son:
+La fundación ejecutable de pruebas ya existe. Las brechas prioritarias restantes son:
 
-- CI no valida ningún comportamiento;
-- no existe comando dedicado de typecheck;
-- no existe comando de pruebas;
-- una prueba presente no es ejecutable de forma demostrada;
-- RLS y permisos no tienen evidencia automatizada;
-- rutas, jobs y webhooks carecen de pruebas de seguridad;
-- no existen E2E para flujos críticos;
-- y los marcadores de `src/testing` pueden crear una impresión falsa de madurez.
+- ampliar la cobertura más allá de `product-code.ts`;
+- proteger invariantes y reglas críticas del Business Core;
+- crear helpers, builders y fixtures mínimos;
+- reemplazar o retirar los marcadores vacíos de `src/testing`;
+- incorporar pruebas de integración reproducibles con PostgreSQL o Supabase;
+- demostrar aislamiento RLS con casos positivos y negativos;
+- probar contratos, autenticación, autorización, rutas, jobs y webhooks;
+- incorporar pruebas de componentes representativos;
+- establecer una suite E2E pequeña para los flujos críticos;
+- añadir evidencia automatizada de accesibilidad, seguridad y rendimiento;
+- probar restauración y comportamiento operativo;
+- y publicar artefactos de pruebas y cobertura apropiadamente protegidos.
 
-La transición P0–P2 cerrará estas brechas progresivamente.
+La transición P0–P2 cerrará estas brechas progresivamente sin presentar la infraestructura inicial como cobertura completa de la plataforma.
 
 ---
 
@@ -231,18 +252,18 @@ El nombre de una carpeta no define el nivel; lo define el límite real de la pru
 
 ## 11. Herramientas objetivo
 
-| Necesidad | Dirección propuesta |
-|---|---|
-| Unitarias y aplicación TypeScript | Vitest |
-| Componentes React | Testing Library con entorno DOM |
-| E2E Web | Playwright |
-| Mock de red en cliente | Adaptador controlado o MSW si el spike lo justifica |
-| PostgreSQL/Supabase | Supabase CLI o PostgreSQL efímero reproducible |
-| Contratos | Esquemas Zod y artefactos versionados |
-| Accesibilidad | Axe integrado y revisión manual |
-| Cobertura | Provider compatible con Vitest |
-| Rust | `cargo test`, `cargo clippy` y pruebas de integración |
-| Rendimiento | Herramienta de carga elegida por ADR ligero |
+| Necesidad | Herramienta o dirección | Estado |
+|---|---|---|
+| Unitarias y aplicación TypeScript | Vitest | Implementado |
+| Componentes React compatibles con DOM simulado | Testing Library con jsdom y `jest-dom` | Infraestructura implementada; pruebas representativas pendientes |
+| E2E Web y async Server Components | Playwright | Pendiente |
+| Mock de red en cliente | Adaptador controlado o MSW si el spike lo justifica | Pendiente |
+| PostgreSQL/Supabase | Supabase CLI o PostgreSQL efímero reproducible | Pendiente |
+| Contratos | Esquemas Zod y artefactos versionados | Pendiente como suite automatizada |
+| Accesibilidad | Axe integrado y revisión manual | Pendiente |
+| Cobertura | Provider V8 de Vitest | Implementado con alcance inicial limitado a `product-code.ts` |
+| Rust | `cargo test`, `cargo clippy` y pruebas de integración | Pendiente hasta que exista la unidad Desktop |
+| Rendimiento | Herramienta de carga elegida mediante ADR ligero | Pendiente |
 
 Las herramientas se incorporarán solo con configuración, comandos, propietario y CI.
 
@@ -942,6 +963,12 @@ Los componentes interactivos se probarán desde la perspectiva del usuario:
 
 Se evitarán aserciones sobre clases internas salvo que definan un contrato visual.
 
+Vitest y Testing Library se utilizarán para lógica y componentes compatibles con ejecución en jsdom.
+
+jsdom emula APIs del navegador dentro de Node.js, pero no sustituye la validación en un navegador real.
+
+Los async Server Components no se declararán cubiertos por esta capa. Se validarán mediante integración o E2E sobre la aplicación en ejecución.
+
 ---
 
 ## 50. Formularios
@@ -1039,7 +1066,7 @@ Una story vacía no contará como prueba.
 
 ## 55. E2E Web
 
-Playwright es la dirección propuesta para recorridos Web.
+Playwright es la dirección propuesta para recorridos Web y todavía no está configurado en el repositorio.
 
 Los E2E usarán:
 
@@ -1438,17 +1465,18 @@ Las excepciones tendrán justificación, propietario y vencimiento.
 
 ---
 
-## 76. Comandos objetivo
+## 76. Comandos
+
+Los comandos implementados actualmente son:
 
 ```text
-npm run format:check
-npm run typecheck
-npm run lint
-npm run test
-npm run test:coverage
-npm run test:integration
-npm run test:e2e
-npm run build
+pnpm run typecheck
+pnpm run lint
+pnpm run test
+pnpm run test:watch
+pnpm run test:coverage
+pnpm run verify
+pnpm run build
 ```
 
 Los nombres podrán ajustarse en la implementación.
@@ -1459,37 +1487,49 @@ Cada comando tendrá semántica estable y funcionará localmente y en CI.
 
 ## 77. Pipeline de Pull Request
 
-Cada Pull Request ejecutará, como mínimo:
+El pipeline actual de cada Pull Request ejecuta:
 
-1. instalación determinista;
-2. formato;
-3. typecheck;
-4. lint;
-5. unitarias;
-6. aplicación;
-7. integración afectada;
-8. contratos;
-9. build;
-10. y E2E críticos proporcionales.
+1. checkout;
+2. instalación de pnpm 10.34.5;
+3. configuración de Node.js mediante `.nvmrc`;
+4. verificación explícita de las versiones de Node.js y pnpm;
+5. rechazo de lockfiles no canónicos;
+6. instalación mediante `pnpm install --frozen-lockfile`;
+7. typecheck;
+8. lint con política de cero advertencias;
+9. pruebas con cobertura;
+10. y build.
 
-Los checks requeridos bloquearán merge cuando fallen.
+La evolución objetivo añadirá, de forma proporcional al riesgo:
+
+- validación de formato;
+- pruebas de integración afectadas;
+- contratos;
+- validación de migraciones;
+- pruebas de seguridad;
+- y E2E críticos.
+
+Los checks requeridos bloquearán el merge cuando fallen.
 
 ---
 
 ## 78. Pipeline de main
 
-Main repetirá gates esenciales y producirá:
+El workflow actual se ejecuta también en cada `push` a `main` y repite los gates esenciales de instalación determinista, typecheck, lint, pruebas con cobertura y build.
 
-- artefacto identificable;
-- reporte de pruebas;
-- cobertura;
+La evolución objetivo deberá producir y conservar:
+
+- artefactos de prueba identificables;
+- reportes de cobertura;
 - resultados de integración;
-- evidencia de migración;
-- y release candidate.
+- evidencia de migraciones;
+- evidencia de seguridad;
+- release candidate;
+- y resultados de smoke tests posteriores al despliegue.
 
-Después del despliegue ejecutará smoke tests.
+Actualmente los reportes de cobertura se generan durante CI, pero no se publican ni retienen como artefactos verificables.
 
-Una ejecución verde previa no sustituirá verificación del artefacto promovido.
+Una ejecución verde previa no sustituirá la verificación del artefacto promovido.
 
 ---
 
@@ -1566,14 +1606,16 @@ La cobertura ayudará a localizar áreas sin evidencia.
 
 Se observarán:
 
-- statements;
-- branches;
-- functions;
-- y lines.
+- `statements`;
+- `branches`;
+- `functions`;
+- y `lines`.
 
-No se fijará un porcentaje global arbitrario como sustituto de riesgo.
+El repositorio utiliza actualmente el proveedor V8 de Vitest y exige umbrales mínimos de 80% para `statements`, `branches`, `functions` y `lines` dentro del alcance explícito definido en `coverage.include`.
 
-Los módulos críticos exigirán cobertura de decisiones e invariantes, aunque el promedio general sea alto.
+El alcance inicial cubre `product-code.ts` y no representa todavía cobertura global de CRUMAFOOD Platform.
+
+Este alcance se ampliará progresivamente según riesgo y evidencia.
 
 ---
 

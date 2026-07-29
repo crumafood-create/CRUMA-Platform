@@ -11,8 +11,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "verify": "pnpm run typecheck && pnpm run lint && pnpm run test:coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -39,15 +43,21 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "15.5.19",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.13.10",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.21.0",
     "eslint-config-next": "15.5.19",
+    "jsdom": "^30.0.0",
     "postcss": "^8.5.3",
     "supabase": "2.109.1",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^4.1.10"
   }
 }

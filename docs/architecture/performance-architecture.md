@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura, responsable de datos y responsable de operación |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-29 |
+| Estado de implementación | En transición; existen optimizaciones básicas de Next.js y puertas de CI, pero la instrumentación de Web Vitals y RED, las líneas base, los budgets, la paginación amplia, la reducción de `select('*')`, las pruebas de rendimiento y la planificación de capacidad continúan pendientes según las prioridades P0–P2 de la sección 98 |
+| Base de evidencia | Revisión de `next.config.js`, `package.json`, `.github/workflows/ci.yml` y del código en `src`; conteos estáticos de 45 llamadas `select('*')`, 152 referencias a `revalidatePath`, ninguna a `revalidateTag` y 8 usos de `.range()` o `.limit()` |
 | Alcance | Experiencia, aplicación, datos, caché, capacidad, escalado, límites, pruebas, costos y evolución |
-| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md`, `mobile-architecture.md`, `desktop-architecture.md`, `observability-architecture.md`, `testing-strategy.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `multi-tenancy-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md`, `mobile-architecture.md`, `desktop-architecture.md`, `observability-architecture.md`, `testing-strategy.md` y el CES |
 | Revisión | Cuando cambie un flujo crítico, patrón de carga, proveedor, topología, objetivo de servicio, volumen o modelo de datos |
 
 ---
@@ -103,28 +107,32 @@ El repositorio actual contiene:
 - compresión habilitada;
 - formatos AVIF y WebP configurados;
 - Server Components y Server Actions;
+- un límite configurado de 10 MB para el body de Server Actions;
 - Supabase SSR;
 - React Query y TanStack Table disponibles;
 - Recharts y Framer Motion;
-- revalidación de rutas después de mutaciones;
+- revalidación de rutas mediante `revalidatePath`;
 - un cron diario;
+- CI con typecheck, lint, pruebas con cobertura y build;
+- arquitectura de observabilidad aprobada, aunque su instrumentación operativa continúa incompleta;
 - y Vercel/Supabase como topología objetivo.
 
-El levantamiento identifica:
+El levantamiento del 2026-07-29 identifica:
 
-- numerosas consultas `select('*')`;
+- 45 llamadas `select('*')`;
+- 152 referencias a `revalidatePath` y ninguna a `revalidateTag`;
+- solo 8 usos de `.range()` o `.limit()` como señales de paginación o acotamiento;
 - páginas que realizan varias consultas desde la renderización;
-- colecciones sin paginación uniforme;
-- invalidación amplia de varias rutas;
-- Server Actions con límite de body de 10 MB;
+- invalidación predominantemente basada en rutas;
+- ausencia de instrumentación verificable de Web Vitals o Speed Insights;
+- ausencia de análisis de bundles configurado;
+- ausencia de una herramienta y suites de pruebas de rendimiento;
 - componentes cliente relativamente grandes en Mobile;
 - iconos PWA actuales de un byte y no representativos;
-- roadmaps que mencionan Redis, CDN, réplicas y multirregión sin criterios;
-- ausencia de budgets verificables;
-- ausencia de pruebas de rendimiento;
-- y observabilidad todavía propuesta.
+- roadmaps que mencionan Redis, CDN, réplicas y multirregión sin criterios de adopción;
+- y ausencia de budgets y líneas base verificables.
 
-No existe evidencia suficiente para declarar cuellos de botella concretos ni necesidad actual de Redis, réplicas o microservicios.
+Los conteos anteriores describen referencias estáticas del código y no demuestran por sí solos impacto productivo. No existe todavía evidencia suficiente para declarar cuellos de botella concretos ni necesidad actual de Redis, réplicas o microservicios.
 
 ---
 
@@ -132,16 +140,20 @@ No existe evidencia suficiente para declarar cuellos de botella concretos ni nec
 
 Las brechas prioritarias son:
 
-- falta de línea base;
-- consultas con columnas innecesarias;
-- listas crecientes sin contrato común de paginación;
-- ausencia de medición por flujo;
+- falta de línea base por flujo crítico;
+- 45 consultas que seleccionan todas las columnas;
+- cobertura limitada de paginación o límites explícitos;
+- ausencia de medición real de experiencia mediante Web Vitals;
 - falta de análisis de consultas críticas;
-- bundles y límites cliente sin presupuesto;
-- invalidación no gobernada;
-- y capacidad no documentada.
+- bundles y límites cliente sin presupuesto verificable;
+- predominio de invalidación por ruta sin estrategia de tags;
+- ausencia de pruebas de rendimiento;
+- instrumentación operativa de observabilidad todavía incompleta;
+- y capacidad y límites de proveedores no documentados con uso real.
 
-La primera etapa será obtener evidencia y corregir desperdicio evidente.
+La primera etapa será instrumentar, establecer líneas base y corregir desperdicio evidente.
+
+La adopción de `revalidateTag` requerirá primero definir datos cacheados y tags estables; su ausencia no se tratará por sí sola como defecto.
 
 ---
 
@@ -289,9 +301,11 @@ Los percentiles se segmentarán por:
 - entorno;
 - release;
 - operación;
-- producto;
+- superficie o flujo;
 - región;
 - y tipo de cliente cuando sea útil.
+
+No se utilizarán identificadores individuales de tenant, usuario, producto, orden o recurso como dimensiones métricas por defecto.
 
 ---
 
@@ -435,11 +449,14 @@ El costo de una solicitud adicional se considerará junto con el ahorro inicial.
 Las imágenes usarán:
 
 - dimensiones;
+- `sizes` responsivos cuando se utilice `fill` o diseño adaptable;
 - formato moderno;
 - compresión;
 - lazy loading;
 - prioridad explícita;
 - y origen aprobado.
+
+La prioridad se reservará para imágenes visibles inicialmente o candidatas a LCP. Las demás conservarán carga diferida.
 
 Los assets PWA marcadores deberán sustituirse antes de medir instalación real.
 
@@ -540,7 +557,7 @@ Cada query definirá:
 - retry;
 - cancelación;
 - invalidación;
-- y límite de memoria.
+- y `gcTime` o política de retención en memoria.
 
 No duplicará lecturas ya resueltas adecuadamente por Server Components.
 
@@ -640,7 +657,7 @@ La atomicidad seguirá definiendo el límite.
 
 ## 35. Timeouts
 
-Cada límite remoto tendrá timeout explícito.
+Cada llamada a una dependencia remota tendrá un timeout explícito.
 
 Los timeouts se definirán por:
 
@@ -791,6 +808,8 @@ La configuración deberá respetar autenticación y RLS.
 
 No se confiará en defaults implícitos para datos sensibles.
 
+No se asumirá que una lectura mediante el cliente de Supabase queda cacheada por ejecutarse en un Server Component. Toda caché de datos deberá configurarse y verificarse explícitamente.
+
 ---
 
 ## 44. CDN
@@ -919,7 +938,7 @@ Se observarán:
 - buffers;
 - y tiempo.
 
-No se ejecutará `ANALYZE` destructivo o costoso en Production sin control.
+`EXPLAIN ANALYZE` ejecuta realmente la sentencia. Las sentencias de mutación se analizarán únicamente en un entorno controlado y representativo; cuando corresponda se envolverán en una transacción con `ROLLBACK`. No se ejecutarán análisis de mutaciones en Production sin autorización, límites y procedimiento operativo.
 
 ---
 
@@ -1082,7 +1101,7 @@ Storage se optimizará mediante:
 - transformaciones;
 - URLs firmadas;
 - CDN;
-- y lifecycle.
+- y política explícita de retención y eliminación.
 
 La aplicación no transportará archivos grandes a través de Server Actions sin necesidad.
 
@@ -1098,6 +1117,7 @@ Se controlarán:
 - suscriptores;
 - filtros;
 - payload;
+- límites del plan y mensajes por segundo;
 - reconexiones;
 - y fan-out.
 
@@ -1355,6 +1375,7 @@ Vercel Functions requieren observar:
 - concurrencia;
 - región;
 - payload;
+- tamaño del bundle;
 - y conexiones.
 
 El runtime se elegirá por compatibilidad y necesidad.
@@ -1365,7 +1386,7 @@ No se ejecutará un worker permanente dentro de una función.
 
 ## 77. Edge
 
-Edge Functions solo se evaluarán cuando:
+El runtime Edge solo se evaluará cuando:
 
 - la latencia geográfica sea material;
 - las dependencias sean compatibles;
@@ -1444,6 +1465,7 @@ Definirán:
 
 - umbral;
 - ventana;
+- closed;
 - open;
 - half-open;
 - fallback;
@@ -1473,16 +1495,16 @@ El mecanismo no bloqueará indefinidamente.
 
 La estrategia seguirá `testing-strategy.md`.
 
-Se ejecutarán:
+Se podrán ejecutar, según el riesgo:
 
-- baseline;
-- load;
+- smoke;
+- average-load;
 - stress;
 - spike;
-- soak;
-- y capacity
+- breakpoint;
+- y soak.
 
-según riesgo.
+Las pruebas average-load establecerán comparaciones de baseline. Los resultados de stress y breakpoint alimentarán la planificación de capacidad.
 
 Cada prueba tendrá hipótesis, entorno, dataset, carga y criterio.
 
@@ -1521,19 +1543,23 @@ Se probarán simultáneamente:
 
 El criterio incluirá integridad y no solo throughput.
 
+También se verificarán actualizaciones perdidas, efectos duplicados, conflictos de serialización, idempotencia e invariantes bajo reintentos.
+
 Una solución rápida que duplica movimientos es inválida.
 
 ---
 
 ## 86. Regresión
 
-Los Pull Requests ejecutarán checks ligeros de budgets cuando sean estables.
+Los Pull Requests ejecutarán checks ligeros de budgets cuando exista una línea base reproducible y thresholds estables.
 
 Suites pesadas podrán ejecutarse:
 
 - periódicamente;
 - antes de releases de riesgo;
 - y tras cambios de datos.
+
+Un threshold requerido producirá un resultado fallido y bloqueará el gate correspondiente cuando se exceda.
 
 Una regresión significativa requerirá explicación o corrección.
 
@@ -1581,7 +1607,9 @@ La captura de consultas lentas tendrá:
 
 - umbral por entorno;
 - fingerprint;
+- frecuencia o número de llamadas;
 - duración;
+- tiempo total acumulado;
 - filas;
 - plan cuando sea seguro;
 - y correlación.
@@ -1654,7 +1682,7 @@ La eficiencia se evaluará junto con valor.
 
 Se alertará por:
 
-- SLO o burn rate;
+- consumo de error budget mediante burn rate, cuando exista un SLO aprobado;
 - latencia elevada;
 - error;
 - conexiones;
@@ -1666,6 +1694,8 @@ Se alertará por:
 - y límite próximo.
 
 Los umbrales se calibrarán con baseline.
+
+Las alertas de burn rate combinarán ventanas corta y larga para detectar tanto consumo rápido como degradación sostenida.
 
 Cada alerta tendrá runbook.
 
@@ -1711,17 +1741,17 @@ Feature flags podrán limitar exposición.
 
 Un cambio con impacto de rendimiento estará terminado cuando:
 
-- define escenario;
-- mide baseline;
-- respeta budget;
-- limita datos;
-- pagina;
-- evita N+1;
-- mantiene autorización;
-- prueba concurrencia cuando aplica;
-- actualiza observabilidad;
-- documenta trade-offs;
-- y tiene plan de rollback.
+- defina el escenario;
+- mida la línea base;
+- respete el budget;
+- limite los datos;
+- pagine;
+- evite N+1;
+- mantenga la autorización;
+- pruebe concurrencia cuando aplique;
+- actualice la observabilidad;
+- documente trade-offs;
+- y tenga plan de rollback.
 
 No todos los cambios requieren load test.
 
@@ -1796,7 +1826,7 @@ solo cuando un cuello de botella medido lo justifique.
 1. medir experiencia y servidor;
 2. definir flujos y datasets;
 3. reducir payloads y consultas;
-4. añadir índices;
+4. analizar consultas y añadir índices justificados;
 5. gobernar caché;
 6. controlar concurrencia;
 7. separar trabajo diferible;
@@ -1816,7 +1846,7 @@ Se evitará:
 - usar promedios únicamente;
 - aplicar Redis por moda;
 - añadir índices a toda columna;
-- usar `select('*')`;
+- usar `select('*')` como contrato accidental o en consultas críticas;
 - devolver listas ilimitadas;
 - cachear permisos sin scope;
 - desactivar RLS;
@@ -1850,20 +1880,20 @@ Se evitará:
 
 Una capacidad será conforme cuando:
 
-- tiene flujo y budget;
-- mide percentiles;
-- limita volumen;
-- pagina colecciones;
-- selecciona campos;
-- evita fan-out no acotado;
-- mantiene consistencia;
-- protege tenants;
-- observa saturación;
-- prueba carga proporcional;
-- documenta capacidad;
-- y escala mediante decisión registrada.
+- tenga flujo y budget;
+- mida percentiles;
+- limite volumen;
+- pagine colecciones;
+- seleccione los campos necesarios;
+- evite fan-out no acotado;
+- mantenga consistencia;
+- proteja tenants;
+- observe saturación;
+- pruebe carga proporcional;
+- documente capacidad;
+- y escale mediante una decisión registrada.
 
-La conformidad se demuestra con código, métricas, pruebas y análisis.
+La conformidad se demostrará con código, métricas, pruebas y análisis.
 
 ---
 

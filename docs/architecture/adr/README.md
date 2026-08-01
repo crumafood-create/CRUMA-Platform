@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner y responsable de arquitectura |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-08-01 |
+| Estado de implementación | Operativo de forma manual; existen índice, plantilla y quince ADR numerados, todos todavía en estado Propuesto, mientras continúan pendientes la automatización de validaciones en CI y la aceptación individual de decisiones con evidencia suficiente |
+| Base de evidencia | Revisión de `docs/architecture/adr/README.md`, `0000-template.md`, los ADR 0001–0015 y `.github/workflows/ci.yml`; numeración e índice presentes, sin verificaciones automatizadas de nombres, metadata, estados, enlaces o reemplazos |
 | Alcance | Registro, numeración, estados, creación, aprobación, reemplazo y mantenimiento de ADR |
-| Autoridad | Derivado de la Constitución, el Engineering Operating System y el índice de arquitectura |
+| Autoridad | Derivado de `docs/engineering/constitution.md`, `docs/engineering/engineering-principles.md`, `docs/engineering/engineering-operating-system.md`, `docs/architecture/README.md`, `docs/vision.md` y el CES |
 | Revisión | Cuando cambie el proceso de decisiones, plantilla, estados, autoridad o convención de almacenamiento |
 
 ---
@@ -61,7 +65,9 @@ Un ADR no es:
 - una aprobación de producto;
 - ni una justificación retroactiva sin evidencia.
 
-Un ADR registra una decisión tomada.
+Un ADR Aceptado registra una decisión tomada.
+
+Un ADR Propuesto documenta la decisión solicitada y su razonamiento, pero todavía no tiene autoridad.
 
 ---
 
@@ -212,7 +218,7 @@ Ejemplos:
 
 - `0000-template.md`;
 - `0001-tenant-isolation-model.md`;
-- `0002-schema-migration-baseline.md`.
+- `0002-schema-baseline-and-migrations.md`.
 
 El título usará inglés o términos técnicos estables en kebab-case; el contenido oficial permanecerá en español.
 
@@ -287,9 +293,12 @@ Cada ADR incluirá:
 | Decisores | Roles responsables |
 | Consultados | Roles o áreas que aportaron |
 | Informados | Áreas afectadas |
+| Propietario | Rol responsable de mantener la decisión |
 | Alcance | Sistemas, módulos o procesos |
 | Reemplaza | ADR anterior, si aplica |
 | Reemplazado por | ADR sucesor, si aplica |
+| RFC relacionado | Exploración previa, si aplica |
+| Issues relacionados | Trabajo o evidencia vinculada, si aplica |
 
 No se incluirán datos personales innecesarios.
 
@@ -308,6 +317,8 @@ Los estados válidos son:
 | Reemplazado | Sustituido por otro ADR |
 
 No se usarán estados ambiguos como “Final”.
+
+`Plantilla` es una clasificación exclusiva del índice para `0000-template.md`; no es un estado válido para una decisión real.
 
 ---
 
@@ -684,7 +695,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
-El enlace a `0000-template.md` quedará activo después de crear la plantilla en el siguiente paso.
+`0000-template.md` permanecerá como plantilla y se excluirá del conteo de decisiones propuestas, aceptadas, rechazadas, deprecadas o reemplazadas.
 
 ---
 
@@ -810,13 +821,17 @@ El registro será conforme cuando:
 
 ## 50. Próximo paso
 
-El siguiente archivo será:
+Los ADR 0001–0015 se evaluarán individualmente según:
 
-```text
-docs/architecture/adr/0000-template.md
-```
+- dependencia;
+- riesgo;
+- evidencia;
+- reversibilidad;
+- y preparación de la decisión.
 
-Después se seleccionará ADR-0001 mediante prioridad y autoridad explícitas.
+La selección no seguirá únicamente el número.
+
+Cada ADR permanecerá Propuesto hasta confirmar autoridad, resolver las preguntas que cambien la decisión y obtener evidencia proporcional al riesgo.
 
 ---
 

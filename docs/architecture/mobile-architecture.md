@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura y responsable de Mobile Operations |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-08-01 |
+| Estado de implementación | En transición; las rutas online de recepción, producción, picking, lotes y escaneo están activas, pero la protección integral de `/mobile`, los permisos por almacén, la atomicidad, la idempotencia, el shell Mobile, la PWA, la conectividad, el soporte offline, las pruebas y la accesibilidad verificable continúan pendientes según las prioridades P0–P4 de la sección 72 |
+| Base de evidencia | Revisión de `src/app/mobile`, `src/middleware.ts`, `src/modules/production/application`, `public/manifest.json` y `.github/workflows/ci.yml`; inventario de nueve páginas, cuatro fronteras cliente, 4772 líneas, sin layout ni límites Mobile de carga o error, escrituras múltiples sin RPC, ausencia de idempotencia y ninguna prueba Mobile |
 | Alcance | Recepción, producción, picking, inventario, lotes, escaneo, PWA, conectividad y sincronización |
-| Autoridad | Derivado de `system-overview.md`, `data-architecture.md`, `security-architecture.md`, `integration-architecture.md`, `frontend-architecture.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `multi-tenancy-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md`, `design-system-architecture.md`, `observability-architecture.md`, `testing-strategy.md`, `performance-architecture.md` y el CES |
 | Revisión | Cuando cambie un flujo operativo, capacidad offline, dispositivo, estrategia de sincronización o superficie Mobile |
 
 ---
@@ -112,39 +116,38 @@ La velocidad operativa nunca justificará pérdida de integridad o trazabilidad.
 
 ## 5. Estado actual
 
-El repositorio contiene una superficie `/mobile` con:
+El repositorio contiene una superficie `/mobile` online con:
 
-- recepción;
-- producción;
-- picking;
-- consulta de lote por ID;
-- escaneo de lote;
+- nueve páginas activas para recepción, producción, picking, consulta de lotes y escaneo;
+- siete archivos convencionales de Server Actions y una acción adicional de FEFO;
+- cuatro fronteras cliente para cámara e interacción operativa;
+- consulta de lote por ID y búsqueda manual por código;
 - cámara mediante `getUserMedia`;
 - `BarcodeDetector` cuando el navegador lo soporta;
 - entrada manual como fallback;
 - sugerencias FEFO;
 - progreso de órdenes;
 - Server Actions;
-- y acceso a Supabase.
+- y acceso directo a Supabase.
 
 También se identifican brechas:
 
-- no existe layout Mobile propio;
-- no existe protección central visible para toda `/mobile`;
+- no existe layout Mobile propio ni límites `loading.tsx` o `error.tsx`;
+- `/mobile` no está incluido en la protección del middleware actual;
 - la portada enlaza `/mobile/receive`, pero la ruta real es `/mobile/receiving`;
 - la portada enlaza `/mobile/inventory` sin página implementada;
 - la portada enlaza `/mobile/lots` y solo existe `/mobile/lots/[id]`;
-- no existe service worker;
-- no existe IndexedDB ni almacenamiento offline;
-- no existe cola de comandos;
-- no existe estado de conectividad;
-- no existe identidad de dispositivo;
-- el manifiesto PWA usa iconos marcadores inválidos;
-- el escáner solicita cámara al montar;
-- recepción, picking y producción realizan múltiples escrituras sin una transacción única demostrable;
-- los casos de uso Mobile acceden a Supabase de forma directa o reciben `SupabaseClient`;
-- no se observan permisos de almacén aplicados explícitamente en cada comando;
-- y algunos errores del proveedor llegan a la experiencia.
+- recepción, picking y producción ejecutan múltiples escrituras sin una transacción única demostrable ni RPC;
+- los casos de uso Mobile acceden directamente a Supabase o reciben `SupabaseClient`;
+- no existe idempotencia, command ID, expected version ni control de concurrencia verificable;
+- no se observan permisos de organización o almacén aplicados explícitamente en cada comando;
+- el escáner solicita cámara al montar el componente;
+- la ruta `/mobile/scan` usa captura manual y presenta una acción de impresión sin comportamiento implementado;
+- no existe service worker, IndexedDB, almacenamiento offline, cola de comandos, estado de conectividad ni identidad de dispositivo;
+- el manifiesto PWA no está conectado, inicia en `/`, no declara iconos y los dos archivos de icono son marcadores de un byte;
+- algunos errores del proveedor llegan directamente a la experiencia;
+- no se identificaron pruebas Mobile;
+- y las señales explícitas de accesibilidad son todavía escasas.
 
 Mobile actual debe considerarse online y experimental hasta cerrar las prioridades críticas.
 
@@ -1517,10 +1520,11 @@ src/
 │   ├── loading.tsx
 │   ├── error.tsx
 │   └── <task>/
-├── modules/mobile/
-│   ├── application/
-│   ├── presentation/
-│   └── sync/
+├── modules/
+│   └── <domain>/
+│       ├── application/
+│       └── presentation/
+│           └── mobile/
 ├── infrastructure/mobile/
 │   ├── scanner/
 │   ├── storage/
@@ -1528,6 +1532,10 @@ src/
 │   └── sync/
 └── shared/ui/mobile/
 ```
+
+Los casos de uso de recepción, producción, picking, inventario y lotes permanecerán en sus módulos de dominio.
+
+`app/mobile` será un adaptador de presentación e `infrastructure/mobile` contendrá capacidades de dispositivo, almacenamiento, conectividad y sincronización.
 
 La estructura se introducirá al existir responsabilidades reales, no como carpetas vacías.
 

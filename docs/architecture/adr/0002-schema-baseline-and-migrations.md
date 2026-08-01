@@ -15,8 +15,8 @@
 | Alcance | PostgreSQL, Supabase, migraciones, RLS, funciones, triggers, tipos, seeds, CI, despliegue, drift y recuperación |
 | Reemplaza | No aplica |
 | Reemplazado por | No aplica |
-| RFC relacionado | No aplica; requiere spike de extracción y reconstrucción antes de aceptación |
-| Issues relacionados | Pendiente: baseline SQL, Supabase local, CI de migraciones y reconciliación de drift |
+| RFC relacionado | No aplica; spike seguro iniciado el 2026-08-01, con extracción y reconstrucción todavía pendientes antes de aceptación |
+| Issues relacionados | Pendiente: inventario remoto, baseline SQL, reset local, CI de migraciones y reconciliación de drift |
 
 ---
 
@@ -46,13 +46,15 @@ La plataforma depende de:
 
 Los documentos de datos, seguridad y despliegue exigen migraciones versionadas.
 
-Sin embargo, el repositorio actual no contiene:
+Al iniciar el spike, el repositorio no contenía:
 
 - `supabase/config.toml`;
 - `supabase/migrations/`;
 - un baseline SQL;
 - un seed canónico;
 - ni CI que reconstruya la base.
+
+El spike del 2026-08-01 añade únicamente configuración local mínima y un inventario reproducible de referencias Supabase encontradas en el código. Todavía no añade migraciones ni baseline porque esos artefactos deben derivarse del esquema desplegado mediante acceso autorizado y probarse sobre una base vacía.
 
 ---
 
@@ -821,6 +823,24 @@ Se alertará por:
 
 ## 44. Validación previa a Aceptado
 
+### Evidencia del spike — 2026-08-01
+
+| Evidencia | Resultado | Conformidad |
+|---|---|---|
+| Supabase CLI | `2.109.1` fijado en manifest y lockfile | Conforme |
+| Configuración local | `supabase/config.toml` mínimo y sin secretos | Conforme para iniciar el spike |
+| Inventario de aplicación | Ejecución reproducible identificó 49 relaciones, 2 RPC y 0 buckets literales referenciados en `src` | Conforme como evidencia auxiliar; no es autoridad del esquema |
+| Acceso al esquema alojado | No existe sesión o token Supabase disponible en este entorno | Pendiente; no se intentó acceso remoto |
+| Runtime local de base | Docker `29.3.0-1` y Supabase CLI `2.109.1` ejecutaron el stack local | Conforme para el spike; no valida el esquema de aplicación |
+| Aislamiento local | Puertos publicados únicamente en `127.0.0.1` mediante la red `cruma-supabase-local` | Conforme |
+| Compatibilidad con Codespaces | Los health checks de `vector` y `logflare` fallaron; el stack requerido arrancó excluyéndolos explícitamente | Excepción local documentada; no usar `--ignore-health-check` |
+| Red durante reset | El CLI no conservó automáticamente `--network-id` y produjo resolución DNS dividida; el parámetro debe repetirse en `db reset` | Limitación conocida del CLI documentada |
+| Esquema reconstruible | Una instancia local limpia respondió `Did not find any relation named "public.*"` | No conforme: el repositorio no reconstruye los 49 objetos relacionales referenciados por la aplicación |
+| Baseline y migraciones | No creados para evitar inventar o aplicar un esquema incompleto | Pendiente |
+| CI de base de datos | No añadido hasta demostrar reset, RLS y pruebas sobre el baseline real | Pendiente |
+
+**Resultado del spike:** la herramienta y el runtime local quedaron comprobados, y el ensayo demostró que el repositorio todavía no puede reconstruir el esquema consumido por la aplicación. ADR-0002 permanece **Propuesto**. La aceptación requiere inventario remoto autorizado, baseline revisado, reconstrucción desde cero, pruebas de seguridad y reconciliación segura del historial.
+
 Este ADR podrá pasar a Aceptado cuando:
 
 - se extraiga el esquema real;
@@ -892,7 +912,6 @@ Se probarán:
 
 Antes de Aceptado se resolverá:
 
-- ¿qué versión de Supabase CLI se fijará?;
 - ¿qué objetos administrados deben excluirse?;
 - ¿qué historial remoto existe?;
 - ¿cómo se marcará el baseline como aplicado sin ejecutarlo sobre Production?;

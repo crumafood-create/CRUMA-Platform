@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura y responsable de Desktop |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-08-01 |
+| Estado de implementación | Arquitectura objetivo no implementada; Tauri 2 permanece como propuesta del ADR-0004 y su adopción definitiva está condicionada al spike técnico, el threat model, la distribución firmada, la integración con hardware y un piloto controlado según las prioridades P0–P3 de la sección 75 |
+| Base de evidencia | Revisión de `package.json`, `next.config.js`, `.github/workflows/ci.yml`, `src/app`, `src/contracts`, `src/core/contracts` y `docs/architecture/adr/0004-desktop-tauri-topology.md`; contraste con la documentación oficial de Tauri 2 y Next.js; no existen `src-tauri`, código Rust, dependencias Tauri, API de negocio versionada, pipeline Desktop, instaladores ni updater, y el frontend actual depende de 36 archivos con `'use server'`, tres Route Handlers, middleware y 152 referencias a `revalidatePath` sin `output: 'export'` |
 | Alcance | Tauri, interfaz Desktop, bridge nativo, hardware, archivos, distribución, actualización y operación local |
-| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `security-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `multi-tenancy-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md`, `design-system-architecture.md`, `mobile-architecture.md`, `observability-architecture.md`, `testing-strategy.md`, `performance-architecture.md` y el CES |
 | Revisión | Cuando cambie la tecnología Desktop, plataforma, bridge, hardware, distribución, seguridad o estrategia offline |
 
 ---
@@ -109,28 +113,38 @@ Instalar una aplicación no le concede autoridad adicional sobre el negocio.
 
 El repositorio actual:
 
+- solo contiene este documento y el ADR-0004 como artefactos específicos de Desktop;
+- mantiene el ADR-0004 en estado Propuesto, condicionado a spike técnico y piloto;
 - no contiene `src-tauri`;
 - no contiene `tauri.conf.json`;
-- no contiene `Cargo.toml` ni código Rust;
-- no incluye dependencias Tauri;
-- no tiene pipeline Desktop;
-- no tiene instaladores;
-- no tiene firma de código;
-- no tiene updater;
-- no tiene adaptadores de impresora, báscula o escáner Desktop;
-- no tiene almacenamiento local Desktop;
-- y no tiene protocolo de sincronización Desktop.
+- no contiene `Cargo.toml`, `Cargo.lock` ni código Rust;
+- no incluye dependencias o scripts Tauri;
+- no tiene pipeline Desktop, instaladores, firma de código ni updater;
+- no tiene adaptadores Desktop de impresora, báscula o escáner;
+- no tiene almacenamiento local ni protocolo de sincronización Desktop;
+- no expone una API de negocio versionada para este cliente;
+- solo tiene Route Handlers activos para health, jobs y webhooks;
+- y sus dos archivos detectados como contratos API son marcadores de un byte.
+
+El frontend Next.js actual tampoco puede empaquetarse directamente como assets locales de Tauri:
+
+- `next.config.js` no define `output: 'export'`;
+- existen 36 archivos con `'use server'`;
+- existen tres Route Handlers activos;
+- existe middleware;
+- `next.config.js` define headers de servidor;
+- y existen 152 referencias estáticas a `revalidatePath`.
 
 Sí contiene bases reutilizables:
 
-- Business Core definido;
-- frontend React/Next.js;
-- contratos de integración planeados;
+- Business Core documentado y capacidades de dominio en evolución;
+- frontend React y Next.js;
+- Design System y arquitectura frontend;
 - scanner web Mobile;
 - módulos de inventario y producción;
-- y documentación de seguridad, datos y despliegue.
+- y documentación de seguridad, datos, integración, despliegue, pruebas y rendimiento.
 
-Desktop es una dirección, no una capacidad implementada.
+Desktop es una dirección arquitectónica, no una capacidad implementada.
 
 ---
 
@@ -249,12 +263,29 @@ La dirección propuesta es:
 
 Esta dirección evita cargar código remoto arbitrario con privilegios nativos.
 
+El frontend Next.js actual no se empaquetará directamente, porque depende de capacidades de servidor incompatibles con una exportación estática.
+
+El spike decidirá entre:
+
+- una aplicación React dedicada que reutilice paquetes compartidos;
+- o una variante Next.js exportable y separada de las capacidades de servidor.
+
+Si se elige Next.js, el build Desktop deberá:
+
+- usar `output: 'export'`;
+- producir assets locales;
+- adaptar imágenes y rutas al modo estático;
+- y excluir Server Actions, Route Handlers, middleware, headers de servidor y dependencias de runtime servidor.
+
+Las operaciones de servidor vivirán detrás de una API de plataforma versionada.
+
 No se considera decisión definitiva hasta validar:
 
 - autenticación;
 - updater;
 - hardware;
 - tamaño;
+- exportación o build del frontend;
 - y experiencia de desarrollo.
 
 ---
@@ -425,6 +456,10 @@ Se separarán capacidades para:
 - y updater.
 
 Una ventana no heredará todos los permisos por conveniencia.
+
+Los commands propios registrados por la aplicación se declararán explícitamente mediante `AppManifest::commands` y se asociarán a capabilities explícitas.
+
+No conservarán la disponibilidad global predeterminada para todas las ventanas y WebViews.
 
 Agregar un plugin requerirá revisar sus comandos, alcance y permisos.
 
@@ -1134,15 +1169,21 @@ Se preferirán cambios expand-contract entre cliente y servidor.
 
 Los artefactos productivos se firmarán según plataforma.
 
-Las claves de firma:
+La firma de código de plataforma y la firma criptográfica utilizada por el updater son controles distintos.
+
+Ambas se configurarán, protegerán y verificarán explícitamente.
+
+Las claves privadas de firma de plataforma y del updater:
 
 - no vivirán en el repositorio;
 - estarán restringidas;
 - tendrán respaldo seguro;
-- rotación;
-- y procedimiento de incidente.
+- tendrán rotación cuando el mecanismo lo permita;
+- y contarán con procedimiento de incidente y continuidad.
 
-CI protegerá secretos de firma de código no confiable.
+La clave pública del updater se distribuirá con la aplicación para verificar artefactos.
+
+CI protegerá secretos de firma frente a código no confiable.
 
 ---
 
@@ -1467,12 +1508,13 @@ No se ampliará distribución hasta demostrar instalación, actualización y rec
 
 ### P0 — Decisión y seguridad
 
-- ADR de topología;
-- prototipo Tauri;
-- capabilities mínimas;
-- autenticación;
-- API versionada;
-- y threat model.
+- ejecutar el prototipo y spike Tauri;
+- resolver el ADR-0004 con la evidencia del spike;
+- elegir y validar la estrategia de frontend exportable o dedicado;
+- restringir capabilities y commands propios;
+- validar autenticación y callback;
+- definir la API de plataforma versionada;
+- y completar el threat model.
 
 ### P1 — Distribución básica
 

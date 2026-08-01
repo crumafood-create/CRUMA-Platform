@@ -6,9 +6,44 @@ Esta carpeta inicia la validación de ADR-0002. `config.toml` permite preparar e
 
 - Supabase CLI está fijado en `2.109.1` mediante `devDependencies`.
 - El inventario de referencias del código se obtiene con `pnpm db:inventory`.
+- Docker `29.3.0-1` y el stack local se validaron con puertos publicados únicamente en `127.0.0.1`.
+- Una instancia limpia no contiene relaciones de aplicación en `public`; el repositorio todavía no puede reconstruir las 49 relaciones y 2 RPC inventariadas.
 - La extracción del esquema alojado, el baseline, los seeds y las pruebas de reconstrucción permanecen pendientes.
 
 El inventario del código no es autoridad del esquema: puede omitir objetos no referenciados por la aplicación y no demuestra columnas, constraints, índices, triggers, grants ni RLS.
+
+## Ejecución local en Codespaces
+
+La red debe crearse una sola vez:
+
+```bash
+docker network create \
+  -o 'com.docker.network.bridge.host_binding_ipv4=127.0.0.1' \
+  cruma-supabase-local
+```
+
+El stack requerido para el spike se inicia excluyendo los servicios opcionales cuyos health checks no son compatibles con este Codespace:
+
+```bash
+pnpm exec supabase start \
+  --network-id cruma-supabase-local \
+  -x vector,logflare
+```
+
+El CLI no conserva automáticamente la red personalizada al recrear PostgreSQL. Cualquier reset debe repetirla:
+
+```bash
+pnpm exec supabase db reset \
+  --network-id cruma-supabase-local
+```
+
+No usar `--ignore-health-check`. Para eliminar únicamente los datos locales del ensayo:
+
+```bash
+pnpm exec supabase stop --no-backup
+```
+
+Estas acciones no enlazan ni modifican Supabase Dev o Production.
 
 ## Guardas
 

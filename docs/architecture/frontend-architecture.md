@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de arquitectura y responsable de experiencia frontend |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-31 |
+| Estado de implementación | En transición; Next.js App Router, Server Components, límites de carga y error, formularios operativos y puertas básicas de CI están activos, pero la separación consistente mediante casos de uso, el estado navegable en URL, la caché explícita, la plataforma visual accesible, Storefront, PWA y las pruebas frontend continúan pendientes |
+| Base de evidencia | Revisión de `package.json`, `.github/workflows/ci.yml`, `src/app`, `src/providers`, `src/modules` y `src/shared/ui`; inventario de 281 páginas activas, 21 límites `loading.tsx`, 21 límites `error.tsx`, 20 páginas y dos Route Handlers deshabilitados, 180 archivos en Shared UI con 74 marcadores de un byte, 49 fronteras cliente, cero pruebas TSX y seis stories sin infraestructura ejecutable |
 | Alcance | Admin, Storefront, Mobile Web, presentación, interacción, estado, accesibilidad y rendimiento |
-| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `security-architecture.md`, `deployment-architecture.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `data-architecture.md`, `security-architecture.md`, `multi-tenancy-architecture.md`, `integration-architecture.md`, `deployment-architecture.md`, `design-system-architecture.md`, `mobile-architecture.md`, `desktop-architecture.md`, `observability-architecture.md`, `testing-strategy.md`, `performance-architecture.md` y el CES |
 | Revisión | Cuando cambie el framework, el sistema de diseño, una superficie, el modelo de estado o una regla de experiencia transversal |
 
 ---
@@ -118,41 +122,41 @@ La simplicidad para el usuario puede requerir complejidad bien contenida dentro 
 
 El repositorio contiene:
 
-- Next.js 15.5.19;
-- React 19.1.0;
-- App Router;
-- route groups para Admin, Auth y Storefront;
+- Next.js 15.5.19 y React 19.1.0;
+- App Router con route groups para Admin, Auth y Storefront;
 - una superficie `/mobile`;
-- Tailwind CSS 3;
+- 281 páginas activas;
+- 21 límites `loading.tsx` y 21 límites `error.tsx`;
+- 49 fronteras cliente bajo `src/app`, con solo login y scan como páginas cliente completas;
+- Tailwind CSS 3, `next-themes`, Sonner, Recharts, Framer Motion y Lucide;
 - TanStack Query y Table;
-- Zustand instalado;
 - React Hook Form y Zod;
-- Sonner;
-- next-themes;
-- Recharts;
-- Framer Motion;
-- Lucide;
-- 21 límites `loading.tsx`;
-- 21 límites `error.tsx`;
+- Zustand instalado, aunque sin consumo real;
 - formularios funcionales de catálogo y operación;
+- puertas de CI para typecheck, lint, cobertura y build;
 - y una estructura amplia en `src/shared/ui`.
 
 También se identifican brechas:
 
-- 180 archivos en `shared/ui`, de los cuales 74 son marcadores mínimos;
+- 180 archivos en `src/shared/ui`, de los cuales 74 son marcadores de un byte;
 - `DataTable` todavía no implementa el comportamiento declarado;
-- varios primitives exponen props de variante sin estilos asociados;
-- Tailwind no contiene tokens extendidos;
-- `globals.css` solo contiene base mínima;
-- existen formularios manuales y formularios RHF/Zod sin una norma aplicada de forma consistente;
-- existen 20 páginas deshabilitadas;
+- varios primitives exponen variantes sin estilos asociados;
+- Tailwind no contiene tokens extendidos y `globals.css` solo contiene una base mínima;
+- de 42 archivos con formularios, solo uno usa React Hook Form con Zod Resolver;
+- TanStack Query está disponible globalmente, pero su uso funcional se limita actualmente a dos hooks de usuarios;
+- Zustand no tiene consumidores y sus cuatro stores detectados son marcadores de un byte;
+- existen 20 páginas y dos Route Handlers deshabilitados;
 - Storefront y su navegación son mayormente placeholders;
 - el sidebar Admin no es responsivo y consulta notificaciones directamente;
-- Mobile enlaza rutas que no siempre coinciden con las rutas implementadas;
-- hay estilos repetidos directamente en páginas;
-- algunos errores presentan `error.message` al usuario;
-- Query Provider es global aunque su uso real todavía es limitado;
-- y stories existentes no equivalen a un catálogo ejecutable sin configuración de herramienta.
+- Mobile enlaza `/mobile/receive`, `/mobile/inventory` y `/mobile/lots`, que no coinciden con rutas de lista implementadas;
+- el acceso a Supabase continúa extendido directamente dentro de `src/app`, sin separación consistente mediante casos de uso y DTO;
+- no existe uso verificable de la URL como estado navegable;
+- la caché no se declara explícitamente y la invalidación depende de `revalidatePath`, con 152 referencias estáticas y ninguna a `revalidateTag`;
+- varios límites y pantallas presentan `error.message` directamente al usuario;
+- solo el layout raíz y una ruta de producto declaran metadata explícita;
+- el manifest PWA no está conectado, no declara iconos, sus dos archivos de icono son marcadores de un byte y no existe service worker verificable;
+- no se identificaron pruebas frontend TSX ni infraestructura ejecutable para las seis stories;
+- y las señales estáticas de accesibilidad explícita son todavía escasas.
 
 El frontend actual es funcional en áreas específicas, pero su plataforma visual y de interacción todavía debe consolidarse.
 
@@ -1462,12 +1466,15 @@ src/
 ├── modules/
 │   └── <module>/presentation/
 ├── shared/
+│   ├── design-system/
+│   │   ├── styles/
+│   │   ├── tokens/
+│   │   └── typography/
 │   └── ui/
-│       ├── tokens/
 │       ├── primitives/
 │       ├── components/
 │       ├── patterns/
-│       └── utilities/
+│       └── utils/
 └── providers/
 ```
 

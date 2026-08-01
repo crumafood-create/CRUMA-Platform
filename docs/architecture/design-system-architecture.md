@@ -6,11 +6,15 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto para aprobación |
+| Estado | Aprobado |
 | Versión | 1.0 |
 | Propietarios | Product Owner, responsable de diseño, responsable de frontend y responsable de accesibilidad |
+| Aprobado por | Product Owner de CRUMAFOOD Platform |
+| Fecha de aprobación | 2026-07-31 |
+| Estado de implementación | En transición; existen Tailwind CSS, `next-themes` y una estructura inicial de primitives, componentes y stories, pero la cadena canónica de tokens, los temas completos, las variantes, los overlays accesibles, el catálogo ejecutable, las pruebas visuales y la migración de superficies continúan pendientes según las prioridades P0–P2 de la sección 95 |
+| Base de evidencia | Revisión de `package.json`, `tailwind.config.ts`, `src/app/globals.css`, `src/providers/theme-provider.tsx`, `src/shared/design-system` y `src/shared/ui`; inventario de 193 archivos, 85 marcadores de un byte y seis stories sin infraestructura verificable de Storybook |
 | Alcance | Tokens, temas, primitives, componentes, patrones, documentación, pruebas, distribución y gobierno visual |
-| Autoridad | Derivado de `system-overview.md`, `frontend-architecture.md`, `mobile-architecture.md`, `desktop-architecture.md`, `testing-strategy.md`, `performance-architecture.md` y el CES |
+| Autoridad | Derivado de `system-overview.md`, `business-core.md`, `security-architecture.md`, `multi-tenancy-architecture.md`, `deployment-architecture.md`, `frontend-architecture.md`, `mobile-architecture.md`, `desktop-architecture.md`, `observability-architecture.md`, `testing-strategy.md`, `performance-architecture.md` y el CES |
 | Revisión | Cuando cambie la identidad visual, plataforma, accesibilidad, sistema de tokens, librería de componentes o estrategia de distribución |
 
 ---
@@ -109,13 +113,12 @@ El repositorio contiene:
 
 - Tailwind CSS;
 - `next-themes`;
-- un `ThemeProvider` con light, dark y system;
+- un `ThemeProvider` configurado mediante `next-themes` para seleccionar `light`, `dark` o `system`;
 - `src/shared/design-system/tokens/`;
 - archivos para color, tipografía, spacing, radius, shadows, sizes, breakpoints, motion y z-index;
 - `tokens.css` con variables mínimas;
 - una colección amplia bajo `src/shared/ui`;
 - primitives, formularios, tablas, gráficos, overlays, layouts y patrones;
-- algunas stories;
 - Class Variance Authority como dependencia;
 - Lucide;
 - y utilidades de composición de clases.
@@ -128,9 +131,9 @@ Sin embargo:
 - la paleta CSS solo define un tema claro mínimo;
 - Button, Card y Badge primitives no aplican estilos a sus variantes;
 - existen componentes duplicados o superpuestos;
-- muchas carpetas contienen marcadores vacíos;
+- de los 193 archivos bajo `src/shared/design-system` y `src/shared/ui`, 85 son marcadores de un byte;
 - abundan colores, radios, spacing y tamaños directos;
-- y no existe configuración verificable de Storybook.
+- seis archivos `*.stories.tsx`, pero sin configuración, dependencias, scripts, runner, CI ni publicación de Storybook, y sin pruebas de interacción mediante `play`.
 
 ---
 
@@ -138,14 +141,16 @@ Sin embargo:
 
 Las brechas prioritarias son:
 
+- overlays, menús y selects provisionales sin semántica, foco ni navegación por teclado verificables;
 - tokens declarados pero no operativos;
 - dos globals CSS sin cadena de importación canónica;
 - temas sin paridad;
 - primitives sin apariencia consistente;
 - variantes sin implementación;
+- un `ThemeProvider` configurado con `attribute="class"`, `defaultTheme="system"` y `enableSystem`, pero sin paleta `.dark` operativa ni paridad visual verificada;
 - estilos de estado duplicados;
 - páginas Mobile fuertemente hardcodeadas;
-- y stories sin runner.
+- y catálogo visual sin configuración, runner de interacción, CI ni publicación.
 
 Primero se cerrará la cadena de autoridad; después se migrarán superficies.
 

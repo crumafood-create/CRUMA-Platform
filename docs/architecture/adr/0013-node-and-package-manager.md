@@ -1028,7 +1028,7 @@ No se regenerará lockfile como primera respuesta a todo fallo.
 | Riesgo | Control |
 |---|---|
 | Vercel no usa pnpm exacto | Logs, Corepack piloto y Preview |
-| Node patch difiere | Major fijo, log y smoke |
+| Node patch difiere | Major fijo, log y build de Preview |
 | Lockfile inicial incorrecto | Manifest limpio y doble install |
 | Peer incompatible | Sin force y excepción temporal |
 | Script malicioso | Review y allowlist de build scripts |
@@ -1042,7 +1042,7 @@ No se regenerará lockfile como primera respuesta a todo fallo.
 
 ## 69. Plan de migración ejecutado
 
-Las fases 0–4 se completaron y quedaron verificadas mediante repositorio, CI y Vercel Preview. La fase 5 continúa como adopción incremental de tooling y no bloquea esta decisión.
+Las fases 0–3 se completaron y quedaron verificadas mediante repositorio y CI. En la fase 4 se verificaron el major de Node, la versión de pnpm, el build y el despliegue de Vercel Preview; el smoke funcional posterior al despliegue permanece pendiente dentro de la estrategia de deployment y no bloquea esta decisión de toolchain. La fase 5 continúa como adopción incremental de tooling y tampoco bloquea esta decisión.
 
 ### Fase 0 — Preparación
 
@@ -1074,11 +1074,11 @@ Las fases 0–4 se completaron y quedaron verificadas mediante repositorio, CI y
 
 ### Fase 4 — Vercel
 
-- fijar Node 24.x;
-- verificar pnpm;
-- desplegar Preview;
-- ejecutar smoke;
-- y documentar versiones observadas.
+- completado: fijar Node 24.x;
+- completado: verificar pnpm 10.34.5;
+- completado: desplegar Preview y verificar el build;
+- completado: documentar las versiones observadas;
+- pendiente no bloqueante: ejecutar el smoke funcional posterior al despliegue conforme a la estrategia de deployment.
 
 ### Fase 5 — Tooling
 
@@ -1126,7 +1126,7 @@ No coexistirán dos lockfiles como rollback permanente.
 | Pregunta | Resolución |
 |---|---|
 | pnpm en Vercel | El Preview del PR #2 confirmó pnpm `10.34.5` y terminó `Ready` |
-| Patch Node en Vercel | Vercel administra el patch dentro de `24.x`; la paridad exacta no es requisito, el major y el smoke build sí |
+| Patch Node en Vercel | Vercel administra el patch dentro de `24.x`; la paridad exacta no es requisito, el major y el build de Preview sí |
 | Corepack en Vercel | Se habilita explícitamente cuando sea necesario; `packageManager`, lockfile y logs siguen siendo controles independientes |
 | Lifecycle scripts | Solo `sharp` y `unrs-resolver` están autorizados en `allowBuilds` |
 | Peer dependencies | La instalación congelada completó sin excepciones `--force` ni `--legacy-peer-deps` |

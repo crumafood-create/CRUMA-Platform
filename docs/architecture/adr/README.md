@@ -11,7 +11,7 @@
 | Propietarios | Product Owner y responsable de arquitectura |
 | Aprobado por | Product Owner de CRUMAFOOD Platform |
 | Fecha de aprobación | 2026-08-01 |
-| Estado de implementación | Operativo de forma manual; existen índice, plantilla y quince ADR numerados, todos todavía en estado Propuesto, mientras continúan pendientes la automatización de validaciones en CI y la aceptación individual de decisiones con evidencia suficiente |
+| Estado de implementación | Operativo de forma manual; existen índice, plantilla y quince ADR numerados: ADR-0013 está Aceptado y los catorce restantes continúan Propuestos; permanece pendiente automatizar las validaciones ADR en CI |
 | Base de evidencia | Revisión de `docs/architecture/adr/README.md`, `0000-template.md`, los ADR 0001–0015 y `.github/workflows/ci.yml`; numeración e índice presentes, sin verificaciones automatizadas de nombres, metadata, estados, enlaces o reemplazos |
 | Alcance | Registro, numeración, estados, creación, aprobación, reemplazo y mantenimiento de ADR |
 | Autoridad | Derivado de `docs/engineering/constitution.md`, `docs/engineering/engineering-principles.md`, `docs/engineering/engineering-operating-system.md`, `docs/architecture/README.md`, `docs/vision.md` y el CES |
@@ -689,7 +689,7 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 | [0010](0010-cache-strategy.md) | Adoptar caché explícita, scoped y orientada a frescura | Propuesto | 2026-07-12 | — |
 | [0011](0011-canonical-design-token-format.md) | Adoptar DTCG JSON como formato canónico de design tokens | Propuesto | 2026-07-12 | — |
 | [0012](0012-storybook-and-visual-testing.md) | Adoptar Storybook y regresión visual selectiva con Playwright | Propuesto | 2026-07-12 | — |
-| [0013](0013-node-and-package-manager.md) | Adoptar Node.js 24 LTS y pnpm 10 como toolchain JavaScript | Propuesto | 2026-07-12 | — |
+| [0013](0013-node-and-package-manager.md) | Adoptar Node.js 24 LTS y pnpm 10 como toolchain JavaScript | Aceptado | 2026-08-01 | — |
 | [0014](0014-supabase-environment-isolation.md) | Separar Supabase por entorno y usar branches efímeras en Preview | Propuesto | 2026-07-12 | — |
 | [0015](0015-backup-and-restore-strategy.md) | Adoptar backups multicapa y restauración verificada | Propuesto | 2026-07-12 | — |
 

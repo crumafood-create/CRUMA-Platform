@@ -1,30 +1,30 @@
 # ADR-0013: Adoptar Node.js 24 LTS y pnpm 10 como toolchain JavaScript
 
-> **Propuesta:** fijar Node.js 24.18.0 para desarrollo y CI, declarar Node 24.x para Vercel, usar pnpm 10.34.5 como único gestor y versionar `pnpm-lock.yaml` con instalaciones congeladas.
+> **Decisión aceptada:** fijar Node.js 24.18.0 para desarrollo y CI, declarar Node 24.x para Vercel, usar pnpm 10.34.5 como único gestor y versionar `pnpm-lock.yaml` con instalaciones congeladas.
 
 ## Metadata
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto |
-| Fecha | 2026-07-12 |
-| Decisores | Responsable de arquitectura, responsable de operación y responsable de desarrollo |
+| Estado | Aceptado |
+| Fecha | 2026-08-01 |
+| Decisores | Product Owner de CRUMAFOOD Platform como autoridad final, con responsabilidad técnica de Arquitectura, Operación y Desarrollo |
 | Consultados | Frontend, calidad, seguridad, datos, Mobile, Desktop y responsables de CI/CD |
 | Informados | Product Owner, contributors y responsables de releases |
 | Propietario | Platform Engineering/Operación, con corresponsabilidad de Desarrollo |
 | Alcance | Node.js, pnpm, lockfile, package.json, CI, Vercel, desarrollo local, caché, upgrades y supply chain |
 | Reemplaza | No aplica |
 | Reemplazado por | No aplica |
-| RFC relacionado | No aplica; requiere instalación limpia piloto antes de aceptación |
-| Issues relacionados | Pendiente: ejecutar CI con Node exacto, validar Vercel Preview/Corepack, fijar Supabase CLI y obtener aprobaciones |
+| RFC relacionado | No aplica |
+| Issues relacionados | No aplica; implementación inicial registrada en el PR [#2](https://github.com/crumafood-create/CRUMA-Platform/pull/2) |
 
 ---
 
 ## 1. Resumen ejecutivo
 
-El repositorio no contiene lockfile, `.nvmrc`, `packageManager`, `engines` ni instalación en CI. `package.json` contiene una dependencia duplicada y el workflow actual solo ejecuta checkout.
+El repositorio ya contiene `.nvmrc`, `packageManager`, `engines`, `pnpm-lock.yaml`, configuración de pnpm y un pipeline CI que verifica versiones, lockfiles, instalación congelada, tipos, lint, pruebas y build.
 
-La decisión propuesta es:
+La decisión es:
 
 > **CRUMAFOOD usará Node.js 24.18.0 LTS como runtime exacto en desarrollo y GitHub Actions, Node 24.x como major soportado en Vercel y pnpm 10.34.5 como único gestor. `pnpm-lock.yaml` será obligatorio; CI y builds usarán instalación frozen; y ningún otro lockfile será válido.**
 
@@ -53,34 +53,35 @@ Todas estas herramientas dependen de una instalación JavaScript reproducible.
 
 ## 3. Estado actual
 
-No existe:
+Al aceptar esta decisión, el repositorio contiene:
 
-- `pnpm-lock.yaml`;
-- `package-lock.json`;
-- `yarn.lock`;
-- `.nvmrc`;
-- `.node-version`;
-- `.npmrc` del proyecto;
-- campo `packageManager`;
-- campo `engines`;
-- instalación en GitHub Actions;
-- ni validación de versión.
+- `pnpm-lock.yaml` como único lockfile;
+- `.nvmrc` con Node `24.18.0`;
+- `packageManager: pnpm@10.34.5`;
+- `engines.node: 24.x` y `engines.pnpm: 10.34.5`;
+- `pnpm-workspace.yaml` con una allowlist mínima de scripts nativos;
+- Supabase CLI `2.109.1` fijado como dependencia de desarrollo;
+- GitHub Actions sobre Ubuntu 24.04 con verificación exacta de Node y pnpm;
+- instalación mediante `pnpm install --frozen-lockfile`;
+- y gates de TypeScript, ESLint, Vitest con cobertura y build de Next.js.
 
-Vercel usaría npm por defecto al no encontrar lockfile.
+No existen `package-lock.json`, `yarn.lock`, `bun.lock`, `bun.lockb` ni `.node-version`.
+
+No se versiona `.npmrc`: la compatibilidad del motor se declara en `package.json` y CI aplica la versión exacta. Una configuración personal no es autoridad del proyecto.
 
 ---
 
 ## 4. Hallazgos del manifest
 
-`package.json` contiene:
+La migración corrigió el duplicado de `@tanstack/react-query` y dejó explícitos:
 
-- `@tanstack/react-query` declarado dos veces;
-- scripts mínimos;
-- versiones exactas y rangos mezclados;
-- lint basado en un comando que debe verificarse contra Next.js instalado;
-- y ninguna política de engines o gestor.
+- el gestor y su versión exacta;
+- los engines soportados;
+- los scripts canónicos de validación;
+- las dependencias directas;
+- y Supabase CLI como tooling versionado.
 
-La primera generación de lockfile deberá corregir el manifest antes de resolver dependencias.
+Los rangos de dependencias de aplicación permanecen gobernados por el lockfile. Node, pnpm, Next.js y Supabase CLI conservan versiones fijadas según su riesgo operativo.
 
 ---
 
@@ -125,7 +126,7 @@ No define:
 - registry privado;
 - publicación de paquetes;
 - runtime Rust/Tauri;
-- ni versión final de Supabase CLI.
+- ni la política funcional de Supabase CLI y migraciones, que corresponde al ADR-0002.
 
 ---
 
@@ -271,7 +272,7 @@ Se descarta para mantener Node como runtime de producción.
 
 ---
 
-## 18. Decisión propuesta
+## 18. Decisión
 
 CRUMAFOOD adoptará:
 
@@ -867,9 +868,9 @@ Sus PR deberán respetar:
 
 pnpm ofrece ruta natural a workspaces.
 
-No se creará `pnpm-workspace.yaml` hasta existir más de un package real o decisión de monorepo.
+`pnpm-workspace.yaml` existe actualmente para declarar una allowlist mínima de scripts de instalación; no convierte por sí solo al repositorio en monorepo.
 
-Cuando ocurra, se definirán:
+Cuando exista más de un package real o se adopte un monorepo, se definirán:
 
 - límites;
 - catálogo de versiones;
@@ -892,7 +893,7 @@ pnpm no gestionará crates ni binarios nativos fuera de adapters explícitos.
 
 ## 58. Supabase CLI
 
-Supabase CLI se fijará como dependencia o mecanismo versionado compatible con ADR-0002.
+Supabase CLI queda fijado en `2.109.1` como dependencia de desarrollo y resolución del lockfile, compatible con el trabajo posterior del ADR-0002.
 
 No se invocará una versión global arbitraria en CI.
 
@@ -902,9 +903,9 @@ Su versión podrá evolucionar separadamente, pero la instalación deberá pasar
 
 ## 59. Storybook y testing
 
-ADR-0012 podrá implementar Storybook 10, Vitest y Playwright después de aceptar este toolchain.
+Vitest, jsdom, Testing Library y cobertura V8 ya ejecutan sobre este toolchain. Storybook 10 y Playwright permanecen bajo el alcance del ADR-0012.
 
-El piloto verificará:
+Su implementación verificará:
 
 - ESM config;
 - Vite;
@@ -1027,7 +1028,7 @@ No se regenerará lockfile como primera respuesta a todo fallo.
 | Riesgo | Control |
 |---|---|
 | Vercel no usa pnpm exacto | Logs, Corepack piloto y Preview |
-| Node patch difiere | Major fijo, log y smoke |
+| Node patch difiere | Major fijo, log y build de Preview |
 | Lockfile inicial incorrecto | Manifest limpio y doble install |
 | Peer incompatible | Sin force y excepción temporal |
 | Script malicioso | Review y allowlist de build scripts |
@@ -1039,7 +1040,9 @@ No se regenerará lockfile como primera respuesta a todo fallo.
 
 ---
 
-## 69. Plan de migración
+## 69. Plan de migración ejecutado
+
+Las fases 0–3 se completaron y quedaron verificadas mediante repositorio y CI. En la fase 4 se verificaron el major de Node, la versión de pnpm, el build y el despliegue de Vercel Preview; el smoke funcional posterior al despliegue permanece pendiente dentro de la estrategia de deployment y no bloquea esta decisión de toolchain. La fase 5 continúa como adopción incremental de tooling y tampoco bloquea esta decisión.
 
 ### Fase 0 — Preparación
 
@@ -1071,11 +1074,11 @@ No se regenerará lockfile como primera respuesta a todo fallo.
 
 ### Fase 4 — Vercel
 
-- fijar Node 24.x;
-- verificar pnpm;
-- desplegar Preview;
-- ejecutar smoke;
-- y documentar versiones observadas.
+- completado: fijar Node 24.x;
+- completado: verificar pnpm 10.34.5;
+- completado: desplegar Preview y verificar el build;
+- completado: documentar las versiones observadas;
+- pendiente no bloqueante: ejecutar el smoke funcional posterior al despliegue conforme a la estrategia de deployment.
 
 ### Fase 5 — Tooling
 
@@ -1087,73 +1090,66 @@ No se regenerará lockfile como primera respuesta a todo fallo.
 
 ## 70. Estrategia de rollback
 
-Si pnpm bloquea el piloto antes de aceptación:
+Si pnpm o Node bloquean el desarrollo o Production después de esta aceptación:
 
-- se conservará el PR aislado;
-- no se promoverá el lockfile;
-- se documentará incompatibilidad;
-- se evaluará npm con Node 24;
-- y se actualizará o reemplazará este ADR.
+- se documentará la incompatibilidad con evidencia reproducible;
+- se conservará el lockfile y el último runtime funcional durante el diagnóstico;
+- se evaluará Node 22 o npm como alternativa temporal;
+- se verificará CI y Preview antes de cualquier promoción;
+- y un ADR nuevo reemplazará formalmente esta decisión si cambia el toolchain.
 
 No coexistirán dos lockfiles como rollback permanente.
 
 ---
 
-## 71. Criterios para Aceptado
+## 71. Criterios de aceptación
 
-Este ADR podrá pasar a Aceptado cuando:
-
-- manifest esté limpio y sin duplicados;
-- `.nvmrc` y fields estén presentes;
-- exista un único `pnpm-lock.yaml`;
-- dos installs limpias no produzcan cambios;
-- CI use Node 24.18.0 y pnpm 10.34.5;
-- frozen install falle ante drift canario;
-- cache miss sea funcional;
-- Next.js build pase;
-- Vercel Preview use Node 24.x y pnpm 10 probado;
-- Supabase CLI tenga versión controlada;
-- tooling piloto sea compatible;
-- y Arquitectura, Operación, Desarrollo y Seguridad aprueben evidencia.
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Manifest limpio | Cumplido | Dependencias directas sin duplicados y JSON válido |
+| Runtime y gestor declarados | Cumplido | `.nvmrc`, `engines` y `packageManager` versionados |
+| Lockfile único | Cumplido | `pnpm-lock.yaml`; CI rechaza lockfiles alternativos |
+| Instalación reproducible | Cumplido | Instalación congelada y repetición sin cambios al lockfile |
+| Versiones exactas en CI | Cumplido | CI run 3888 registró Node `24.18.0` y pnpm `10.34.5` |
+| Drift rechazado | Cumplido | pnpm rechazó pnpm 11.7.0 y CI usa `--frozen-lockfile` |
+| Cache miss funcional | Cumplido | Instalación limpia de 531 paquetes completada el 2026-08-01 |
+| Gates y build | Cumplido | Typecheck, lint, 3 pruebas, cobertura configurada y 238 páginas generadas |
+| Vercel Preview | Cumplido | PR #2 produjo Preview `Ready` con pnpm 10.34.5 |
+| Supabase CLI controlado | Cumplido | `supabase@2.109.1` en manifest y lockfile |
+| Scripts nativos gobernados | Cumplido | Solo `sharp` y `unrs-resolver` en `allowBuilds` |
+| Autoridad | Cumplido | Aprobación del Product Owner de CRUMAFOOD Platform el 2026-08-01 |
 
 ---
 
-## 72. Preguntas abiertas
+## 72. Resoluciones de aceptación
 
-Antes de Aceptado se resolverá:
+| Pregunta | Resolución |
+|---|---|
+| pnpm en Vercel | El Preview del PR #2 confirmó pnpm `10.34.5` y terminó `Ready` |
+| Patch Node en Vercel | Vercel administra el patch dentro de `24.x`; la paridad exacta no es requisito, el major y el build de Preview sí |
+| Corepack en Vercel | Se habilita explícitamente cuando sea necesario; `packageManager`, lockfile y logs siguen siendo controles independientes |
+| Lifecycle scripts | Solo `sharp` y `unrs-resolver` están autorizados en `allowBuilds` |
+| Peer dependencies | La instalación congelada completó sin excepciones `--force` ni `--legacy-peer-deps` |
+| Supabase CLI | Se fija `2.109.1` |
+| `engine-strict` | No se versiona `.npmrc`; `engines`, el gestor fijado y la verificación exacta de CI son la autoridad |
+| Bot de upgrades | No se adopta todavía; los upgrades se presentan por PR dedicado |
+| Rangos de dependencias | Este ADR fija el toolchain crítico; los rangos de aplicación permanecen gobernados por manifest y lockfile |
+| Fallback | Solo una incompatibilidad reproducible que impida instalación, CI o Preview justificaría evaluar Node 22 o npm mediante un ADR sucesor |
 
-- ¿Vercel ejecuta exactamente pnpm 10.34.5 con la configuración elegida?;
-- ¿qué patch de Node 24 usa Preview?;
-- ¿Corepack se habilita o se evita en Vercel?;
-- ¿qué lifecycle scripts requieren aprobación?;
-- ¿qué peers aparecen al generar lockfile?;
-- ¿qué versión de Supabase CLI se fija?;
-- ¿se adopta `engine-strict`?;
-- ¿qué bot propondrá upgrades?;
-- ¿qué política exacta de rangos se aplica a cada categoría?;
-- y ¿qué incompatibilidad justificaría Node 22 o npm?
-
-### Validación inicial contra el repositorio — 2026-07-12
+### Validación de aceptación — 2026-08-01
 
 | Evidencia | Resultado | Conformidad |
 |---|---|---|
-| Node.js oficial | `24.18.0` es la versión LTS vigente | Conforme con la propuesta |
-| pnpm oficial | `10.34.5` existe en la línea 10 publicada | Conforme con la propuesta |
-| Vercel Node.js | `24.x` está disponible y solo se fija el major | Conforme con la propuesta |
-| Vercel package managers | pnpm 10 está soportado; sin lockfile Vercel usa npm por defecto | Conforme con la decisión, repositorio no conforme |
-| `package.json` | Declara `packageManager`, `engines`, scripts canónicos y dependencias directas requeridas | Conforme localmente |
-| Manifest | Se eliminó el duplicado de `@tanstack/react-query` y el JSON es válido | Conforme |
-| Runtime local | `.nvmrc` fija `24.18.0`; no se añadió `.node-version` | Conforme en repositorio; ejecución exacta pendiente en CI |
-| Lockfile | `pnpm-lock.yaml` es el único lockfile y fue generado con pnpm `10.34.5` | Conforme |
-| Configuración pnpm | `.npmrc` aplica `engine-strict`; `pnpm-workspace.yaml` allowlistea solo `sharp` y `unrs-resolver` | Conforme |
-| GitHub Actions | CI configura pnpm `10.34.5`, lee `.nvmrc`, verifica versiones/lockfiles y ejecuta frozen install, typecheck, lint y build | Configurado; ejecución remota pendiente |
-| Vercel | `engines.node` declara `24.x`, el lockfile identifica pnpm y `packageManager` fija `10.34.5` | Configuración de proyecto, Corepack y Preview pendientes |
-| Supabase CLI | No existe versión controlada en el manifest | Pendiente |
-| Instalación reproducible | Frozen install online y repetición offline conservaron el hash del lockfile | Conforme localmente |
-| Typecheck y lint | `tsc --noEmit` y `eslint .` finalizaron correctamente | Conforme localmente |
-| Build y Preview | `next build` generó 238 páginas con pnpm `10.34.5`; el entorno local usó Node `24.14.0` | Build local conforme; Node exacto y Preview pendientes |
+| GitHub Actions | Run 3888 completó `Verify toolchain`, lockfiles, frozen install, typecheck, lint, test y build | Conforme |
+| Versiones en CI | Node `24.18.0` y pnpm `10.34.5` registrados y verificados | Conforme |
+| Supabase CLI | `2.109.1` presente en manifest, lockfile e instalación CI | Conforme |
+| Instalación local limpia | 531 paquetes con pnpm `10.34.5`; lockfile sin cambios | Conforme |
+| Control negativo | pnpm `11.7.0` fue rechazado por `engines.pnpm` | Conforme |
+| Verificación local | TypeScript, ESLint y 3 pruebas Vitest aprobadas; cobertura configurada 100% en el alcance inicial | Conforme |
+| Build local | Next.js 15.5.19 generó 238 páginas; solo advertencias conocidas no bloqueantes | Conforme |
+| Vercel Preview | PR #2 desplegó estado `Ready` | Conforme |
 
-**Resultado:** la selección de versiones conserva soporte oficial y la migración local satisface los gates técnicos disponibles en el repositorio. El ADR permanece **Propuesto** porque todavía debe observarse GitHub Actions con Node `24.18.0`, probarse Vercel Preview con Node `24.x` y pnpm `10.34.5`, fijarse Supabase CLI y completarse el registro de aprobación.
+**Resultado:** el toolchain está implementado, reproducible y protegido por CI. La evidencia satisface los criterios y la autoridad final acepta la decisión.
 
 ---
 
@@ -1195,14 +1191,13 @@ Este ADR se revisará cuando:
 
 | Rol | Estado | Evidencia |
 |---|---|---|
-| Arquitectura | Pendiente | Compatibilidad y decisión |
-| Operación | Pendiente | CI/Vercel y recuperación |
-| Desarrollo | Pendiente | Setup local y scripts |
-| Seguridad | Pendiente | Supply chain y lifecycle scripts |
-| Calidad | Pendiente | Gates y reproducibilidad |
-| Datos | Pendiente | Supabase CLI |
-
-El texto no equivale a aprobación.
+| Product Owner | Aprobado | Autoridad final registrada el 2026-08-01 |
+| Arquitectura | Conforme | Opciones, compatibilidad, consecuencias y triggers documentados |
+| Operación | Conforme | CI run 3888 y Vercel Preview exitosos |
+| Desarrollo | Conforme | Instalación limpia, scripts y build verificados |
+| Seguridad | Conforme | Lockfile único, instalación frozen y allowlist mínima |
+| Calidad | Conforme | Typecheck, lint, pruebas y build aprobados |
+| Datos | Conforme | Supabase CLI `2.109.1` fijado |
 
 ---
 
@@ -1213,6 +1208,7 @@ El texto no equivale a aprobación.
 | 2026-07-12 | Creación de la propuesta ADR-0013 |
 | 2026-07-12 | Validación inicial contra repositorio y fuentes oficiales; estado permanece Propuesto |
 | 2026-07-12 | Migración local implementada y verificada; pendientes CI remoto, Vercel Preview, Supabase CLI y aprobaciones |
+| 2026-08-01 | Evidencia actualizada; CI, Preview, Supabase CLI, instalación y gates conformes; decisión Aceptada por Product Owner |
 
 ---
 
@@ -1237,9 +1233,9 @@ Las versiones y capacidades se verificaron el 2026-07-12. Node 24.18.0 era la ú
 
 ---
 
-## 78. Resultado de la propuesta
+## 78. Resultado de la decisión
 
-La propuesta establece por primera vez una cadena reproducible desde manifest hasta Production.
+La decisión establece una cadena reproducible desde manifest hasta Production.
 
 Node 24 LTS aporta horizonte; pnpm 10 mantiene compatibilidad con Vercel; el lockfile fija resoluciones; CI impide drift; y los ADR de tokens, Storybook y testing pueden implementarse sobre una base conocida.
 

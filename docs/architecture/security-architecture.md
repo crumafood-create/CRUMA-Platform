@@ -162,6 +162,14 @@ El levantamiento también identifica brechas:
 
 Estas brechas describen el estado actual. No implican que toda ruta sea explotable, pero sí que los controles no son todavía demostrables de extremo a extremo.
 
+### Evidencia de verificación
+
+La auditoría del 2026-08-03 confirmó y amplió las brechas de autorización relacionadas con middleware, Server Actions, RPC, grants, RLS, atomicidad y contrato de roles:
+
+- [Auditoría de autorización de funciones y mutaciones de base de datos](../engineering/security-audits/2026-08-03-database-function-authorization.md)
+
+La auditoría es evidencia de implementación y no modifica las decisiones normativas ni el estado aprobado de esta arquitectura.
+
 ---
 
 ## 7. Estado objetivo

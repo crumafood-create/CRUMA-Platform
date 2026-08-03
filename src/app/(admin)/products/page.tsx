@@ -1,8 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-import { getUserRole } from '@/lib/auth/get-user-role';
+import { requireAuthenticatedUser } from '@/lib/auth/guards/auth.guard';
+import {
+  isAuthorizationError,
+  requirePermission,
+} from '@/lib/auth/guards/permission.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 
 type LookupRow = {
   id: string;
@@ -23,20 +27,26 @@ type ProductRow = {
 };
 
 export default async function ProductsPage() {
-  const supabase = await createClient();
+  const { actor, supabase } =
+    await requireAuthenticatedUser().catch((error: unknown) => {
+      if (
+        isAuthorizationError(error) &&
+        error.reason === 'unauthenticated'
+      ) {
+        redirect('/login');
+      }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+      throw error;
+    });
 
-  if (!user) {
-    redirect('/login');
-  }
+  try {
+    requirePermission(actor, PERMISSIONS.CATALOG_PRODUCT_MANAGE);
+  } catch (error) {
+    if (isAuthorizationError(error)) {
+      redirect('/dashboard');
+    }
 
-  const role = await getUserRole(user.id);
-
-  if (role !== 'admin' && role !== 'manager') {
-    redirect('/dashboard');
+    throw error;
   }
 
   const [

@@ -15,8 +15,8 @@
 | Alcance | PostgreSQL, Supabase, migraciones, RLS, funciones, triggers, tipos, seeds, CI, despliegue, drift y recuperación |
 | Reemplaza | No aplica |
 | Reemplazado por | No aplica |
-| RFC relacionado | No aplica; spike seguro iniciado el 2026-08-01, con extracción y reconstrucción todavía pendientes antes de aceptación |
-| Issues relacionados | Pendiente: inventario remoto, baseline SQL, reset local, CI de migraciones y reconciliación de drift |
+| RFC relacionado | No aplica; spike seguro ejecutado del 2026-08-01 al 2026-08-02, con extracción y reconstrucción completadas; aceptación todavía condicionada a seguridad, CI y reconciliación |
+| Issues relacionados | Pendiente: inventario remoto completo, pruebas de seguridad, seeds, CI de migraciones, reconciliación del historial y verificación de drift |
 
 ---
 
@@ -54,7 +54,7 @@ Al iniciar el spike, el repositorio no contenía:
 - un seed canónico;
 - ni CI que reconstruya la base.
 
-El spike del 2026-08-01 añade únicamente configuración local mínima y un inventario reproducible de referencias Supabase encontradas en el código. Todavía no añade migraciones ni baseline porque esos artefactos deben derivarse del esquema desplegado mediante acceso autorizado y probarse sobre una base vacía.
+El spike ejecutado entre el 2026-08-01 y el 2026-08-02 añade configuración local mínima, un inventario reproducible de referencias Supabase encontradas en el código y un baseline SQL derivado mediante acceso autorizado y de solo lectura al esquema desplegado. El baseline fue reconstruido desde cero y validado localmente. Permanecen pendientes las pruebas específicas de seguridad, los seeds, la automatización en CI y la reconciliación segura del historial remoto.
 
 ---
 
@@ -823,37 +823,48 @@ Se alertará por:
 
 ## 44. Validación previa a Aceptado
 
-### Evidencia del spike — 2026-08-01
+### Evidencia del spike — 2026-08-01 al 2026-08-02
 
 | Evidencia | Resultado | Conformidad |
 |---|---|---|
 | Supabase CLI | `2.109.1` fijado en manifest y lockfile | Conforme |
-| Configuración local | `supabase/config.toml` mínimo y sin secretos | Conforme para iniciar el spike |
-| Inventario de aplicación | Ejecución reproducible identificó 49 relaciones, 2 RPC y 0 buckets literales referenciados en `src` | Conforme como evidencia auxiliar; no es autoridad del esquema |
-| Acceso al esquema alojado | No existe sesión o token Supabase disponible en este entorno | Pendiente; no se intentó acceso remoto |
-| Runtime local de base | Docker `29.3.0-1` y Supabase CLI `2.109.1` ejecutaron el stack local | Conforme para el spike; no valida el esquema de aplicación |
-| Aislamiento local | Puertos publicados únicamente en `127.0.0.1` mediante la red `cruma-supabase-local` | Conforme |
-| Compatibilidad con Codespaces | Los health checks de `vector` y `logflare` fallaron; el stack requerido arrancó excluyéndolos explícitamente | Excepción local documentada; no usar `--ignore-health-check` |
-| Red durante reset | El CLI no conservó automáticamente `--network-id` y produjo resolución DNS dividida; el parámetro debe repetirse en `db reset` | Limitación conocida del CLI documentada |
-| Esquema reconstruible | Una instancia local limpia respondió `Did not find any relation named "public.*"` | No conforme: el repositorio no reconstruye los 49 objetos relacionales referenciados por la aplicación |
-| Baseline y migraciones | No creados para evitar inventar o aplicar un esquema incompleto | Pendiente |
-| CI de base de datos | No añadido hasta demostrar reset, RLS y pruebas sobre el baseline real | Pendiente |
+| Configuración local | `supabase/config.toml` mínimo y sin secretos | Conforme |
+| Inventario de aplicación | Ejecución reproducible identificó 49 relaciones, 2 RPC y 0 buckets literales referenciados en `src` | Conforme como evidencia auxiliar; no sustituye el inventario completo del esquema |
+| Acceso al esquema alojado | Extracción autorizada y de solo lectura del schema `public` de Production mediante Session pooler, sin vincular el proyecto y sin ejecutar escrituras | Conforme |
+| Exportación del esquema | Dump de definiciones sin datos: 7,472 líneas, 238,947 bytes y SHA-256 `b6917628a6fd176050a5871f2b18bc65569686f6a6dc8253a6928060d2154674` | Conforme |
+| Exclusión de datos | No se detectaron instrucciones `COPY` ni `INSERT INTO` | Conforme |
+| Revisión de secretos | No se detectaron claves privadas, AWS access keys, Supabase secret keys ni JWT literales | Conforme como control inicial; permanece sujeta a secret scanning del PR |
+| Extensiones requeridas | `pgvector` se crea en `public` para reproducir la ubicación vigente en Production | Conforme para paridad; su traslado futuro a `extensions` requerirá una migración independiente |
+| Baseline versionado | `20260802000000_schema_baseline.sql`, normalizado a 7,465 líneas y SHA-256 `ce6621f8a27297de85745bf4982a3f1c8c1187dc7c91dfc9362de88a015f6dc5` | Conforme |
+| Reconstrucción desde cero | Las migraciones se aplicaron sobre una base local vacía mediante Supabase CLI | Conforme |
+| Objetos reconstruidos | 124 tablas, 12 vistas, 188 policies y RLS habilitado en las 124 tablas de `public` | Conforme respecto del baseline exportado |
+| Funciones exportadas | 11 funciones incluidas en el baseline | Conforme para presencia; sus contratos y permisos requieren pruebas específicas |
+| Columnas vectoriales | `ai_search_queries.embedding` y `product_embeddings.embedding` reproducidas como `public.vector(1536)` | Conforme |
+| Lint del esquema | `supabase db lint --local --level error` terminó sin hallazgos | Conforme |
+| Tipos derivados | Generación local reproducible: 6,819 líneas y 205,431 bytes | Conforme como prueba de generación; falta definir ubicación canónica y verificación en CI |
+| Validación de aplicación | Typecheck, ESLint, pruebas con cobertura y build de Next.js completaron correctamente | Conforme |
+| Aislamiento local | Servicios publicados mediante la red `cruma-supabase-local`, restringida a `127.0.0.1` | Conforme |
+| Compatibilidad con Codespaces | `vector` y `logflare` se excluyeron por health checks incompatibles; Storage y Studio requirieron tiempo adicional para alcanzar estado saludable | Excepción local documentada |
+| Red durante reset | `--network-id cruma-supabase-local` debe repetirse en `db reset`; la generación de tipos requirió una red temporal posteriormente eliminada | Limitación operativa documentada |
+| Seeds | No existe todavía un seed canónico | Pendiente |
+| Pruebas de seguridad | No se han ejecutado pruebas positivas y negativas de RLS, grants y funciones | Pendiente |
+| CI de base de datos | Aún no reconstruye el baseline ni verifica tipos y seguridad | Pendiente |
+| Historial remoto | No se ha definido ni ensayado el procedimiento para marcar el baseline como aplicado sin ejecutarlo sobre Production | Pendiente |
+| Drift | No se ha completado la comparación gobernada entre el baseline, el inventario remoto y los entornos alojados | Pendiente |
 
-**Resultado del spike:** la herramienta y el runtime local quedaron comprobados, y el ensayo demostró que el repositorio todavía no puede reconstruir el esquema consumido por la aplicación. ADR-0002 permanece **Propuesto**. La aceptación requiere inventario remoto autorizado, baseline revisado, reconstrucción desde cero, pruebas de seguridad y reconciliación segura del historial.
+**Resultado del spike:** el esquema real de Production fue extraído de forma autorizada y sin datos, convertido en migraciones versionadas y reconstruido con éxito sobre una base local vacía. El baseline reproduce los objetos principales observados y permite generar tipos TypeScript. No se realizaron escrituras ni se vinculó el CLI con Production.
 
-Este ADR podrá pasar a Aceptado cuando:
+ADR-0002 permanece **Propuesto** porque la existencia del baseline no completa por sí sola la decisión. Antes de pasar a Aceptado deberán completarse:
 
-- se extraiga el esquema real;
-- el inventario esté revisado;
-- un baseline reconstruya una base vacía;
-- se comparen objetos relevantes;
-- RLS y funciones estén presentes;
-- seeds no contengan datos sensibles;
-- tipos se generen;
-- CI complete reset y pruebas;
-- y se demuestre una reconciliación segura del historial remoto.
+- inventario remoto y comparación final de objetos relevantes;
+- pruebas positivas y negativas de RLS;
+- pruebas de funciones, grants, constraints y triggers críticos;
+- estrategia de seeds;
+- CI con reconstrucción desde cero, lint, tipos y pruebas;
+- reconciliación segura del historial remoto;
+- y verificación controlada de drift.
 
-Datos, Arquitectura y Operación deberán aprobar.
+Datos, Arquitectura, Operación y Seguridad deberán revisar la evidencia. La aprobación del Product Owner se registrará únicamente después de completar estos controles.
 
 ---
 
@@ -956,6 +967,7 @@ El estado permanecerá Propuesto hasta completar validación y aprobaciones.
 | Fecha | Cambio | Autor o rol |
 |---|---|---|
 | 2026-07-12 | Propuesta inicial | Responsable de arquitectura |
+| 2026-08-02 | Extracción autorizada, baseline reproducible y actualización de evidencia del spike | Responsable de datos y arquitectura |
 
 Después de Aceptado, las correcciones decisorias requerirán un ADR nuevo.
 

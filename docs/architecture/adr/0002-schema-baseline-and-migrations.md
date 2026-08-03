@@ -839,6 +839,8 @@ Se alertará por:
 | Reconstrucción desde cero | Las migraciones se aplicaron sobre una base local vacía mediante Supabase CLI | Conforme |
 | Objetos reconstruidos | 124 tablas, 12 vistas, 188 policies y RLS habilitado en las 124 tablas de `public` | Conforme respecto del baseline exportado |
 | Funciones exportadas | 11 funciones incluidas en el baseline | Conforme para presencia; sus contratos y permisos requieren pruebas específicas |
+| Funciones `SECURITY DEFINER` | `handle_new_user()` e `is_admin(uuid)` ejecutan con privilegios del propietario sin fijar un `search_path` seguro | No conforme; deberán endurecerse mediante una migración posterior antes de aceptar ADR-0002 |
+| Grants de funciones | Las 11 funciones exportadas conceden ejecución a `anon`, `authenticated` y `service_role`, incluidas funciones de mutación y funciones de trigger | Pendiente de revisión de mínimo privilegio; el baseline conserva fielmente el estado observado en Production |
 | Columnas vectoriales | `ai_search_queries.embedding` y `product_embeddings.embedding` reproducidas como `public.vector(1536)` | Conforme |
 | Lint del esquema | `supabase db lint --local --level error` terminó sin hallazgos | Conforme |
 | Tipos derivados | Generación local reproducible: 6,819 líneas y 205,431 bytes | Conforme como prueba de generación; falta definir ubicación canónica y verificación en CI |

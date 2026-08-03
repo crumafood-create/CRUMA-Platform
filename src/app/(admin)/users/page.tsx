@@ -1,23 +1,34 @@
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-import { getUserRole } from '@/lib/auth/get-user-role';
+import { requireAuthenticatedUser } from '@/lib/auth/guards/auth.guard';
+import {
+  isAuthorizationError,
+  requirePermission,
+} from '@/lib/auth/guards/permission.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 
 export default async function UsersPage() {
-  const supabase = await createClient();
+  const { actor } = await requireAuthenticatedUser().catch(
+    (error: unknown) => {
+      if (
+        isAuthorizationError(error) &&
+        error.reason === 'unauthenticated'
+      ) {
+        redirect('/login');
+      }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+      throw error;
+    },
+  );
 
-  if (!user) {
-    redirect('/login');
-  }
+  try {
+    requirePermission(actor, PERMISSIONS.IDENTITY_USER_MANAGE);
+  } catch (error) {
+    if (isAuthorizationError(error)) {
+      redirect('/dashboard');
+    }
 
-  const role = await getUserRole(user.id);
-
-  if (role !== 'admin') {
-    redirect('/dashboard');
+    throw error;
   }
 
   return (

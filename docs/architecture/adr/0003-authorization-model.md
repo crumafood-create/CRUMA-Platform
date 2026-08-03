@@ -15,8 +15,8 @@
 | Alcance | Membresías, roles, permisos, scopes, casos de uso, RLS, sesiones, clientes, auditoría y revocación |
 | Reemplaza | No aplica |
 | Reemplazado por | No aplica |
-| RFC relacionado | No aplica; requiere prototipo de evaluación y RLS antes de aceptación |
-| Issues relacionados | Pendiente: normalización de `user_roles`, catálogo de permisos, scopes y matriz de pruebas |
+| RFC relacionado | No aplica; validación iniciada el 2026-08-03 con baseline y auditoría de autorización; permanecen pendientes el prototipo de evaluación, RLS y revocación |
+| Issues relacionados | [Auditoría de autorización del 2026-08-03](../../engineering/security-audits/2026-08-03-database-function-authorization.md); pendientes la convergencia de modelos actuales, el catálogo de permisos, scopes y la matriz de pruebas |
 
 ---
 
@@ -50,6 +50,19 @@ Los documentos de seguridad y multi-tenancy establecen:
 - y service role limitada.
 
 Falta decidir cómo se representan y evalúan estos elementos de forma consistente.
+
+### Evidencia del estado actual — 2026-08-03
+
+El baseline canónico ya versionado y la auditoría de autorización permiten sustituir supuestos por evidencia verificable:
+
+- existen tres representaciones parciales y superpuestas: `user_roles`, `tenant_members` y el conjunto `admin_permissions`/`user_admin_permissions`;
+- la aplicación consultada utiliza `user_roles` como control efectivo, mientras los guards, la matriz y el servicio de permisos permanecen como archivos marcadores vacíos;
+- `user_roles` solo admite `admin` y `customer`, aunque el código también compara `manager`;
+- la unicidad `(user_id, role)` permite varios roles por usuario, pero `getUserRole(userId)` usa `.single()` y presupone uno solo;
+- existen `tenants` y `tenant_members`, pero todavía no hay una fuente canónica que relacione membresías, roles, permisos y scopes conforme a esta propuesta;
+- y la auditoría confirmó brechas P0 en protección de superficies, autorización de mutaciones, RLS y grants.
+
+Esta evidencia no acepta la decisión ni autoriza todavía su implementación completa. Sí establece el punto de partida y los conflictos que el prototipo deberá resolver.
 
 ---
 
@@ -991,16 +1004,40 @@ No se mantendrán dos fuentes autoritativas indefinidamente.
 
 ## 54. Validación previa a Aceptado
 
+### Evidencia de validación — 2026-08-03
+
+| Evidencia | Resultado | Conformidad |
+|---|---|---|
+| Baseline versionado | 124 tablas, 12 vistas, 188 policies y RLS habilitado en 124 tablas de `public` | Conforme como base verificable; ADR-0002 continúa sujeto a sus propios criterios |
+| Inventario de roles actuales | `user_roles` admite `admin` y `customer`; el código también compara `manager` | No conforme; contrato inconsistente |
+| Cardinalidad de roles | El esquema permite varias filas por usuario, mientras `getUserRole()` exige una sola | No conforme; requiere decisión explícita |
+| Modelos de autorización coexistentes | `user_roles`, `tenant_members` y `admin_permissions`/`user_admin_permissions` representan conceptos superpuestos | No conforme; no existe autoridad canónica |
+| Consumo por la aplicación | Los controles revisados dependen de `user_roles`; los guards, permisos y políticas objetivo son marcadores vacíos | No conforme |
+| Persistencia tenant-scoped | Existen `tenants` y `tenant_members`, pero no roles, assignments y scopes canónicos integrados | Parcial |
+| Auditoría de autorización | Nueve hallazgos documentados, incluidos ocho de severidad alta y uno media | Evidencia suficiente para priorizar contención; no para aceptar el modelo |
+| RLS y caso de uso | Se observaron policies permisivas y RPC sin policies aplicables en tablas subyacentes | No conforme |
+| Prototipo tenant/warehouse/location | No ejecutado | Pendiente |
+| Revocación e invalidación | No demostradas | Pendiente |
+| Rendimiento y aprobaciones | Sin benchmark ni aprobaciones registradas | Pendiente |
+
+La [auditoría de autorización del 2026-08-03](../../engineering/security-audits/2026-08-03-database-function-authorization.md) constituye evidencia de implementación, no una decisión normativa adicional.
+
+### Condiciones restantes
+
 Este ADR podrá pasar a Aceptado cuando:
 
 - ADR-0001 y ADR-0002 tengan evidencia suficiente para el modelo;
-- se inventaríen roles actuales;
+- se defina cómo convergen o se retiran los tres modelos actuales;
+- exista un contrato único de cardinalidad y asignación de roles;
 - exista catálogo inicial por módulo;
 - el prototipo evalúe tenant, warehouse y location;
 - una revocación invalide acceso;
 - RLS coincida con caso de uso;
 - el rendimiento sea aceptable;
+- se completen pruebas positivas y negativas;
 - y Seguridad, Identity, Datos y Arquitectura aprueben.
+
+Hasta entonces, el estado permanece `Propuesto`. Las contenciones P0 ya exigidas por la arquitectura de seguridad pueden avanzar mediante controles temporales explícitos, sin convertirlos en el modelo canónico definitivo.
 
 ---
 
@@ -1095,11 +1132,14 @@ La optimización no reducirá seguridad.
 
 Antes de Aceptado se resolverá:
 
-- ¿qué roles existen hoy y dónde se usan?;
+- ¿cómo convergen o se retiran `user_roles`, `tenant_members` y `admin_permissions`/`user_admin_permissions`?;
+- ¿una membresía puede recibir varios roles simultáneos y cómo se resuelven sus assignments?;
+- ¿`manager` debe existir, mapearse a un permiso o eliminarse?;
 - ¿qué permisos iniciales posee cada módulo?;
 - ¿qué scopes son necesarios en el primer rollout?;
 - ¿cómo se relaciona Sucursal con Almacén?;
 - ¿qué grants pueden delegarse?;
+- ¿qué adaptador de compatibilidad protege las mutaciones P0 mientras se implementa el modelo canónico?;
 - ¿qué latencia máxima se acepta?;
 - ¿qué mecanismo invalida sesiones?;
 - ¿cómo se materializa el grafo para RLS?;
@@ -1142,6 +1182,7 @@ El estado permanecerá Propuesto hasta completar validación y aprobaciones.
 | Fecha | Cambio | Autor o rol |
 |---|---|---|
 | 2026-07-12 | Propuesta inicial | Responsable de arquitectura |
+| 2026-08-03 | Incorporación del baseline, inventario del estado actual y auditoría de autorización; la decisión permanece Propuesto | Responsable de arquitectura y seguridad |
 
 Después de Aceptado, un cambio de modelo requerirá un ADR nuevo.
 
@@ -1154,6 +1195,7 @@ Después de Aceptado, un cambio de modelo requerirá un ADR nuevo.
 - [ADR-0001: Tenant isolation](0001-tenant-isolation-model.md)
 - [ADR-0002: Schema baseline](0002-schema-baseline-and-migrations.md)
 - [Arquitectura de seguridad](../security-architecture.md)
+- [Auditoría de autorización de funciones y mutaciones](../../engineering/security-audits/2026-08-03-database-function-authorization.md)
 - [Arquitectura multi-tenant](../multi-tenancy-architecture.md)
 - [Business Core](../business-core.md)
 - [Estrategia de pruebas](../testing-strategy.md)

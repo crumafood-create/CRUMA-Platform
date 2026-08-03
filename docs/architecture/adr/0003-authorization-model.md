@@ -16,7 +16,7 @@
 | Reemplaza | No aplica |
 | Reemplazado por | No aplica |
 | RFC relacionado | No aplica; validación iniciada el 2026-08-03 con baseline y auditoría de autorización; permanecen pendientes el prototipo de evaluación, RLS y revocación |
-| Issues relacionados | [Auditoría de autorización del 2026-08-03](../../engineering/security-audits/2026-08-03-database-function-authorization.md); pendientes la convergencia de modelos actuales, el catálogo de permisos, scopes y la matriz de pruebas |
+| Issues relacionados | [Auditoría de autorización del 2026-08-03](../../engineering/security-audits/2026-08-03-database-function-authorization.md); cardinalidad confirmada; pendientes su implementación, la convergencia de modelos actuales, el catálogo de permisos, scopes y la matriz de pruebas |
 
 ---
 
@@ -485,6 +485,19 @@ Un assignment relaciona:
 - y estado.
 
 La combinación tendrá constraints contra cruces de tenant.
+
+### Cardinalidad confirmada — 2026-08-03
+
+Se confirma que:
+
+- una identidad puede mantener membresías independientes en uno o más tenants;
+- una membresía puede recibir cero, uno o varios roles;
+- cada rol se concede mediante un assignment explícito y scoped;
+- los permisos efectivos son la unión de los grants vigentes y aplicables al scope;
+- la ausencia de un grant aplicable deniega;
+- y la primera versión no incorpora reglas configurables de `explicit deny`.
+
+Los roles no se asignarán globalmente a la identidad. La membresía, el tenant y el scope forman parte inseparable del grant.
 
 ---
 
@@ -991,12 +1004,15 @@ No se eliminará el control actual antes de activar el reemplazo.
 
 Durante transición:
 
-- roles actuales se mapearán a templates;
+- `user_roles` será una fuente de compatibilidad temporal, no la autoridad del modelo objetivo;
+- el adaptador leerá todos los roles legacy aplicables y nunca usará `.single()` para imponer cardinalidad única;
+- `admin` y `customer` se mapearán explícitamente a roles o templates transitorios;
+- `manager` se retirará de las comparaciones actuales y no recibirá un mapeo implícito;
 - las rutas nuevas usarán permisos;
 - las rutas antiguas mantendrán un adaptador temporal;
 - y la telemetría medirá decisiones divergentes.
 
-El adaptador temporal tendrá fecha de retiro.
+El adaptador temporal tendrá propietario, fecha de retiro y pruebas de equivalencia y denegación.
 
 No se mantendrán dos fuentes autoritativas indefinidamente.
 
@@ -1009,8 +1025,8 @@ No se mantendrán dos fuentes autoritativas indefinidamente.
 | Evidencia | Resultado | Conformidad |
 |---|---|---|
 | Baseline versionado | 124 tablas, 12 vistas, 188 policies y RLS habilitado en 124 tablas de `public` | Conforme como base verificable; ADR-0002 continúa sujeto a sus propios criterios |
-| Inventario de roles actuales | `user_roles` admite `admin` y `customer`; el código también compara `manager` | No conforme; contrato inconsistente |
-| Cardinalidad de roles | El esquema permite varias filas por usuario, mientras `getUserRole()` exige una sola | No conforme; requiere decisión explícita |
+| Inventario de roles actuales | `user_roles` admite `admin` y `customer`; el código también compara `manager` | Decisión confirmada: retirar `manager`; implementación pendiente |
+| Cardinalidad de roles | Una membresía puede recibir varios roles mediante assignments scoped; el esquema legacy permite varias filas, pero `getUserRole()` exige una sola | Decisión conforme a la propuesta; contrato e implementación pendientes |
 | Modelos de autorización coexistentes | `user_roles`, `tenant_members` y `admin_permissions`/`user_admin_permissions` representan conceptos superpuestos | No conforme; no existe autoridad canónica |
 | Consumo por la aplicación | Los controles revisados dependen de `user_roles`; los guards, permisos y políticas objetivo son marcadores vacíos | No conforme |
 | Persistencia tenant-scoped | Existen `tenants` y `tenant_members`, pero no roles, assignments y scopes canónicos integrados | Parcial |
@@ -1028,7 +1044,8 @@ Este ADR podrá pasar a Aceptado cuando:
 
 - ADR-0001 y ADR-0002 tengan evidencia suficiente para el modelo;
 - se defina cómo convergen o se retiran los tres modelos actuales;
-- exista un contrato único de cardinalidad y asignación de roles;
+- se implemente y pruebe el contrato confirmado de múltiples roles por membresía;
+- se retire `manager` de las comparaciones legacy;
 - exista catálogo inicial por módulo;
 - el prototipo evalúe tenant, warehouse y location;
 - una revocación invalide acceso;
@@ -1133,8 +1150,7 @@ La optimización no reducirá seguridad.
 Antes de Aceptado se resolverá:
 
 - ¿cómo convergen o se retiran `user_roles`, `tenant_members` y `admin_permissions`/`user_admin_permissions`?;
-- ¿una membresía puede recibir varios roles simultáneos y cómo se resuelven sus assignments?;
-- ¿`manager` debe existir, mapearse a un permiso o eliminarse?;
+- ¿cómo se migran `admin` y `customer` a roles o templates tenant-scoped sin ampliar privilegios?;
 - ¿qué permisos iniciales posee cada módulo?;
 - ¿qué scopes son necesarios en el primer rollout?;
 - ¿cómo se relaciona Sucursal con Almacén?;
@@ -1167,7 +1183,7 @@ Fecha de revisión sugerida: después del piloto multi-tenant y antes de permiso
 
 | Rol | Decisión | Fecha | Evidencia |
 |---|---|---|---|
-| Product Owner | Pendiente | — | — |
+| Product Owner | Decisión de cardinalidad confirmada; aprobación integral pendiente | 2026-08-03 | Confirmación explícita durante la validación de ADR-0003 |
 | Responsable de arquitectura | Pendiente | — | — |
 | Responsable de seguridad | Pendiente | — | — |
 | Responsable de Identity & Access | Pendiente | — | — |
@@ -1183,6 +1199,7 @@ El estado permanecerá Propuesto hasta completar validación y aprobaciones.
 |---|---|---|
 | 2026-07-12 | Propuesta inicial | Responsable de arquitectura |
 | 2026-08-03 | Incorporación del baseline, inventario del estado actual y auditoría de autorización; la decisión permanece Propuesto | Responsable de arquitectura y seguridad |
+| 2026-08-03 | Confirmación de múltiples roles por membresía, unión de permisos scoped, compatibilidad temporal de `user_roles` y retiro de `manager` | Product Owner y responsable de arquitectura |
 
 Después de Aceptado, un cambio de modelo requerirá un ADR nuevo.
 

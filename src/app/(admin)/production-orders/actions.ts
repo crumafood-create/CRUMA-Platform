@@ -271,7 +271,9 @@ export async function createProductionOrder(formData: FormData) {
  * Libera una orden de producción (draft → released)
  */
 export async function releaseProductionOrder(orderId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.PRODUCTION_ORDER_RELEASE,
+  );
 
   const order = await getProductionOrder(supabase, orderId);
 
@@ -299,7 +301,9 @@ export async function releaseProductionOrder(orderId: string) {
  * Inicia la producción de una orden (released → in_progress)
  */
 export async function startProductionOrder(orderId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.PRODUCTION_ORDER_START,
+  );
 
   const order = await getProductionOrder(supabase, orderId);
 
@@ -329,7 +333,9 @@ export async function startProductionOrder(orderId: string) {
  * Solo se puede cancelar desde estado 'draft' o 'released'
  */
 export async function cancelProductionOrder(orderId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.PRODUCTION_ORDER_CANCEL,
+  );
 
   const order = await getProductionOrder(supabase, orderId);
 
@@ -371,7 +377,9 @@ export async function cancelProductionOrder(orderId: string) {
  * 5. Marca la orden como completada
  */
 export async function completeProductionOrder(orderId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.PRODUCTION_ORDER_COMPLETE,
+  );
 
   const order = await getProductionOrder(supabase, orderId);
 

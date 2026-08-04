@@ -1,24 +1,29 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import {
   AlertTriangle,
   CheckCircle,
   Clock,
-} from 'lucide-react'
+} from 'lucide-react';
 
-import { StatCard } from './stat-card'
+import { StatCard } from './stat-card';
 
-export default {
+const meta = {
   title: 'Data Display/Stat Card',
   component: StatCard,
-}
+} satisfies Meta<typeof StatCard>;
 
-export const Default = {
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
   args: {
     title: 'Pedidos',
     value: 42,
   },
-}
+};
 
-export const Success = {
+export const Success: Story = {
   args: {
     title: 'Pedidos Entregados',
     value: 124,
@@ -26,9 +31,9 @@ export const Success = {
     variant: 'success',
     icon: <CheckCircle />,
   },
-}
+};
 
-export const Warning = {
+export const Warning: Story = {
   args: {
     title: 'Pendientes',
     value: 18,
@@ -36,9 +41,9 @@ export const Warning = {
     variant: 'warning',
     icon: <Clock />,
   },
-}
+};
 
-export const Danger = {
+export const Danger: Story = {
   args: {
     title: 'Inventario Bajo',
     value: 8,
@@ -46,4 +51,4 @@ export const Danger = {
     variant: 'danger',
     icon: <AlertTriangle />,
   },
-}
+};

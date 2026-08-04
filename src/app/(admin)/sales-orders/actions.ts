@@ -6,6 +6,8 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 
 type SalesOrderStatus =
   | 'draft'
@@ -337,7 +339,9 @@ export async function markSalesOrderReady(orderId: string) {
 }
 
 export async function deliverSalesOrder(orderId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.SALES_ORDER_DELIVER,
+  );
 
   //
   // Pedido

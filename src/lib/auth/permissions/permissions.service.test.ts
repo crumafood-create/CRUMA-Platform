@@ -30,13 +30,24 @@ test('admin recibe la unión de permisos legacy', () => {
   );
 });
 
-test('customer se deniega por defecto en permisos administrativos', () => {
-  expect(
-    hasPermission(
-      actor(['customer']),
-      PERMISSIONS.CATALOG_PRODUCT_MANAGE,
-    ),
-  ).toBe(false);
+test('el catálogo conserva los permisos confirmados de producción y ventas', () => {
+  expect(PERMISSIONS).toMatchObject({
+    PRODUCTION_ORDER_CREATE: 'production.order.create',
+    PRODUCTION_ORDER_RELEASE: 'production.order.release',
+    PRODUCTION_ORDER_START: 'production.order.start',
+    PRODUCTION_ORDER_CANCEL: 'production.order.cancel',
+    PRODUCTION_ORDER_COMPLETE: 'production.order.complete',
+    SALES_ORDER_CREATE: 'sales.order.create',
+    SALES_ORDER_CONFIRM: 'sales.order.confirm',
+    SALES_ORDER_PREPARE: 'sales.order.prepare',
+    SALES_ORDER_DELIVER: 'sales.order.deliver',
+  });
+});
+
+test('customer se deniega por defecto en todos los permisos administrativos', () => {
+  for (const permission of Object.values(PERMISSIONS)) {
+    expect(hasPermission(actor(['customer']), permission)).toBe(false);
+  }
 });
 
 test('varios roles producen una unión determinista de permisos', () => {

@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 import { getSuggestedRawMaterialLot } from '@/modules/production/application/production-lot';
 import { consumeProductionItem } from '@/modules/production/application/production-service';
 import {
@@ -211,7 +213,9 @@ function revalidateProductionRoutes(orderId: string): void {
  *    vía la función de base de datos `create_production_order_items`
  */
 export async function createProductionOrder(formData: FormData) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.PRODUCTION_ORDER_CREATE,
+  );
 
   const recipeId = formData.get('recipe_id')?.toString().trim() ?? '';
   const plannedQuantity = Number(formData.get('planned_quantity'));

@@ -5,3 +5,5 @@ node_modules
 coverage/
 # TypeScript incremental build information
 *.tsbuildinfo
+*storybook.log
+storybook-static

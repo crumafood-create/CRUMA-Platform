@@ -1,11 +1,17 @@
-import { ActivityFeed } from './activity-feed'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
-export default {
+import { ActivityFeed } from './activity-feed';
+
+const meta = {
   title: 'Data Display/Activity Feed',
   component: ActivityFeed,
-}
+} satisfies Meta<typeof ActivityFeed>;
 
-export const Default = {
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
   args: {
     items: [
       {
@@ -31,4 +37,4 @@ export const Default = {
       },
     ],
   },
-}
+};

@@ -1323,10 +1323,77 @@ El texto no equivale a aprobación.
 | Fecha | Cambio |
 |---|---|
 | 2026-07-12 | Creación de la propuesta ADR-0012 |
+| 2026-08-03 | Ejecución del spike técnico de Storybook, Vitest y Playwright; el ADR permanece Propuesto |
 
 ---
 
-## 79. Referencias
+## 79. Evidencia del spike ejecutable
+
+El spike técnico se ejecutó el 2026-08-03 sobre:
+
+- Next.js 15.5.19;
+- React 19.1.0;
+- Node 24.14.0;
+- pnpm 10.34.5;
+- Storybook 10.5.6;
+- `@storybook/nextjs-vite` 10.5.6;
+- Vitest 4.1.10;
+- Vite 8.2.0;
+- Playwright 1.62.1;
+- y Chromium headless en Linux/Codespaces.
+
+La implementación comprobó:
+
+- arranque y build estático de Storybook;
+- integración de `@storybook/nextjs-vite`;
+- carga de `src/app/globals.css`;
+- carga de los tokens existentes del design system;
+- seis archivos de stories junto a sus componentes;
+- migración de las seis stories a CSF tipado con `Meta` y `StoryObj`;
+- separación entre el proyecto Vitest `unit` y el proyecto `storybook`;
+- ejecución de stories en Chromium mediante `@vitest/browser-playwright`;
+- integración de `addon-a11y` con política inicial `todo`;
+- reglas ESLint específicas para Storybook sin imponer una migración global del código existente;
+- y ausencia de Chromatic en dependencias y configuración.
+
+Resultados reproducidos localmente:
+
+| Validación | Resultado |
+|---|---|
+| `pnpm typecheck` | Aprobado |
+| `pnpm lint` | Aprobado |
+| `pnpm test` | 5 archivos, 17 pruebas unitarias aprobadas |
+| `pnpm test:storybook` | 6 archivos, 17 pruebas de stories aprobadas en Chromium |
+| `pnpm build-storybook` | Build estático aprobado |
+| `pnpm build` | Build de Next.js aprobado |
+| `git diff --check` | Sin errores |
+
+El spike confirmó los siguientes supuestos:
+
+- Storybook 10 es compatible con el Node y gestor fijados actualmente;
+- Next.js/Vite compila los imports y componentes presentacionales existentes;
+- Chromium puede ejecutar las stories en el entorno Linux seleccionado;
+- los estilos globales y tokens pueden compartirse con Production;
+- las pruebas unitarias pueden permanecer aisladas de las pruebas de Storybook;
+- y no es necesario adoptar Chromatic para obtener el catálogo y component tests iniciales.
+
+Hallazgos y límites:
+
+- Playwright requirió instalar dependencias Linux del navegador en Codespaces;
+- Vitest/Vite emite una advertencia de configuración ESM cargada como CommonJS;
+- la integración Next.js emite una advertencia por uso interno de `next/config`, deprecado hacia Next.js 16;
+- `addon-a11y` se mantiene en modo gradual y todavía no existe una violación canaria;
+- las stories actuales validan render, pero todavía no incorporan una `play function` explícita;
+- no se implementaron snapshots, regresión visual canaria ni artifacts `expected/actual/diff`;
+- no se añadió todavía ejecución de Storybook al workflow de CI;
+- no se validaron secretos mediante artifact scan;
+- y las aprobaciones de Diseño, Frontend, Accesibilidad, Calidad y Operación continúan pendientes.
+
+Por lo tanto, el spike demuestra viabilidad técnica de las fases 1 y parte de la fase 2, pero no autoriza aún cambiar este ADR a `Aceptado`.
+
+---
+
+## 80. Referencias
 
 - [Arquitectura del Design System](../design-system-architecture.md)
 - [Estrategia de pruebas](../testing-strategy.md)
@@ -1346,7 +1413,7 @@ Las capacidades se verificaron el 2026-07-12 contra Storybook 10.5 y la document
 
 ---
 
-## 80. Resultado de la propuesta
+## 81. Resultado de la propuesta
 
 La propuesta convierte las stories existentes en el inicio de una plataforma verificable, sin afirmar que hoy exista Storybook funcional.
 
@@ -1354,6 +1421,6 @@ Storybook documentará y probará estados aislados; Vitest y axe aportarán evid
 
 ---
 
-## 81. Declaración final
+## 82. Declaración final
 
 > **CRUMAFOOD hará visible y ejecutable su lenguaje de interfaz: cada componente estable mostrará sus estados, demostrará su interacción y accesibilidad, y protegerá los cambios visuales importantes mediante baselines revisadas, no mediante capturas accidentales ni aprobaciones automáticas.**

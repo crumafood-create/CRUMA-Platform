@@ -5,7 +5,6 @@ import crypto from 'crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
 import { requireAuthorizedAction } from '@/lib/auth/guards/action.guard';
 import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 
@@ -56,7 +55,9 @@ function generateOrderNumber() {
 }
 
 export async function createSalesOrder(formData: FormData) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.SALES_ORDER_CREATE,
+  );
 
   const customer_id =
     formData.get('customer_id')?.toString().trim() ?? '';
@@ -92,7 +93,9 @@ export async function createSalesOrder(formData: FormData) {
 }
 
 export async function confirmSalesOrder(orderId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.SALES_ORDER_CONFIRM,
+  );
 
   //
   // Pedido
@@ -301,7 +304,9 @@ for (const item of items) {
 }
 
 export async function startPreparingSalesOrder(orderId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.SALES_ORDER_PREPARE,
+  );
 
   const { error } = await supabase
     .from('sales_orders')
@@ -320,7 +325,9 @@ export async function startPreparingSalesOrder(orderId: string) {
 }
 
 export async function markSalesOrderReady(orderId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireAuthorizedAction(
+    PERMISSIONS.SALES_ORDER_PREPARE,
+  );
 
   const { error } = await supabase
     .from('sales_orders')

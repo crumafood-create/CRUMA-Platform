@@ -7,3 +7,7 @@ coverage/
 *.tsbuildinfo
 *storybook.log
 storybook-static
+
+# Playwright visual test artifacts
+playwright-report/
+test-results/

@@ -1324,6 +1324,7 @@ El texto no equivale a aprobación.
 |---|---|
 | 2026-07-12 | Creación de la propuesta ADR-0012 |
 | 2026-08-03 | Ejecución del spike técnico de Storybook, Vitest y Playwright; el ADR permanece Propuesto |
+| 2026-08-04 | Incorporación y validación de la primera `play function` en Chromium; el ADR permanece Propuesto |
 
 ---
 
@@ -1363,7 +1364,7 @@ Resultados reproducidos localmente:
 | `pnpm typecheck` | Aprobado |
 | `pnpm lint` | Aprobado |
 | `pnpm test` | 5 archivos, 17 pruebas unitarias aprobadas |
-| `pnpm test:storybook` | 6 archivos, 17 pruebas de stories aprobadas en Chromium |
+| `pnpm test:storybook` | 7 archivos, 20 pruebas de stories aprobadas en Chromium |
 | `pnpm build-storybook` | Build estático aprobado |
 | `pnpm build` | Build de Next.js aprobado |
 | `git diff --check` | Sin errores |
@@ -1383,7 +1384,7 @@ Hallazgos y límites:
 - Vitest/Vite emite una advertencia de configuración ESM cargada como CommonJS;
 - la integración Next.js emite una advertencia por uso interno de `next/config`, deprecado hacia Next.js 16;
 - `addon-a11y` se mantiene en modo gradual y todavía no existe una violación canaria;
-- las stories actuales validan render, pero todavía no incorporan una `play function` explícita;
+- una story de `Button` incorpora una `play function` explícita que valida visibilidad, estado habilitado, interacción de clic y ejecución del callback;
 - no se implementaron snapshots, regresión visual canaria ni artifacts `expected/actual/diff`;
 - no se añadió todavía ejecución de Storybook al workflow de CI;
 - no se validaron secretos mediante artifact scan;

@@ -62,3 +62,27 @@ export const Disabled: Story = {
     await expect(button).toBeDisabled();
   },
 };
+
+export const AccessibilityCanaryRemediated: Story = {
+  args: {
+    children: '',
+    'aria-label': 'Confirmar pedido',
+    variant: 'default',
+    size: 'default',
+  },
+  parameters: {
+    a11y: {
+      test: 'error',
+    },
+  },
+  play: async ({ canvas }) => {
+    const button = canvas.getByRole('button', {
+      name: 'Confirmar pedido',
+    });
+
+    await expect(button).toBeVisible();
+    await expect(button).toHaveAccessibleName(
+      'Confirmar pedido'
+    );
+  },
+};

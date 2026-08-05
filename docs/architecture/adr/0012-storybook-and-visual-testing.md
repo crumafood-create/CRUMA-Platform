@@ -1325,6 +1325,7 @@ El texto no equivale a aprobación.
 | 2026-07-12 | Creación de la propuesta ADR-0012 |
 | 2026-08-03 | Ejecución del spike técnico de Storybook, Vitest y Playwright; el ADR permanece Propuesto |
 | 2026-08-04 | Incorporación y validación de la primera `play function` en Chromium; el ADR permanece Propuesto |
+| 2026-08-04 | Validación de una violación canaria `button-name` con axe y comprobación de su remediación; el ADR permanece Propuesto |
 
 ---
 
@@ -1364,7 +1365,7 @@ Resultados reproducidos localmente:
 | `pnpm typecheck` | Aprobado |
 | `pnpm lint` | Aprobado |
 | `pnpm test` | 5 archivos, 17 pruebas unitarias aprobadas |
-| `pnpm test:storybook` | 7 archivos, 20 pruebas de stories aprobadas en Chromium |
+| `pnpm test:storybook` | 7 archivos, 21 pruebas de stories aprobadas en Chromium |
 | `pnpm build-storybook` | Build estático aprobado |
 | `pnpm build` | Build de Next.js aprobado |
 | `git diff --check` | Sin errores |
@@ -1383,7 +1384,7 @@ Hallazgos y límites:
 - Playwright requirió instalar dependencias Linux del navegador en Codespaces;
 - Vitest/Vite emite una advertencia de configuración ESM cargada como CommonJS;
 - la integración Next.js emite una advertencia por uso interno de `next/config`, deprecado hacia Next.js 16;
-- `addon-a11y` se mantiene en modo gradual y todavía no existe una violación canaria;
+- `addon-a11y` detectó y bloqueó una violación canaria `button-name` con código de salida 1; después de añadir un nombre accesible, la misma story quedó aprobada;
 - una story de `Button` incorpora una `play function` explícita que valida visibilidad, estado habilitado, interacción de clic y ejecución del callback;
 - no se implementaron snapshots, regresión visual canaria ni artifacts `expected/actual/diff`;
 - no se añadió todavía ejecución de Storybook al workflow de CI;

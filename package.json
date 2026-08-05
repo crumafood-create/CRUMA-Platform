@@ -21,7 +21,9 @@
     "db:inventory": "node scripts/database/inventory-supabase-references.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test:storybook": "vitest run --project storybook"
+    "test:storybook": "vitest run --project storybook",
+    "storybook:test:visual": "playwright test --config=playwright.visual.config.ts",
+    "storybook:update-visual": "playwright test --config=playwright.visual.config.ts --update-snapshots"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -48,6 +50,7 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "15.5.19",
+    "@playwright/test": "1.62.1",
     "@storybook/addon-a11y": "^10.5.6",
     "@storybook/addon-docs": "^10.5.6",
     "@storybook/addon-vitest": "^10.5.6",

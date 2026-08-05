@@ -1326,6 +1326,7 @@ El texto no equivale a aprobación.
 | 2026-08-03 | Ejecución del spike técnico de Storybook, Vitest y Playwright; el ADR permanece Propuesto |
 | 2026-08-04 | Incorporación y validación de la primera `play function` en Chromium; el ADR permanece Propuesto |
 | 2026-08-04 | Validación de una violación canaria `button-name` con axe y comprobación de su remediación; el ADR permanece Propuesto |
+| 2026-08-04 | Validación de una regresión visual canaria con Playwright y generación de artifacts `expected/actual/diff`; el ADR permanece Propuesto |
 
 ---
 
@@ -1386,7 +1387,8 @@ Hallazgos y límites:
 - la integración Next.js emite una advertencia por uso interno de `next/config`, deprecado hacia Next.js 16;
 - `addon-a11y` detectó y bloqueó una violación canaria `button-name` con código de salida 1; después de añadir un nombre accesible, la misma story quedó aprobada;
 - una story de `Button` incorpora una `play function` explícita que valida visibilidad, estado habilitado, interacción de clic y ejecución del callback;
-- no se implementaron snapshots, regresión visual canaria ni artifacts `expected/actual/diff`;
+- Playwright generó una baseline versionada para `Button Default — light` en Chromium/Linux;
+- una modificación canaria de `Guardar` a `Guardar cambios` produjo código de salida 1, detectó 178 píxeles distintos y generó artifacts `expected`, `actual` y `diff` sin actualizar la baseline;
 - no se añadió todavía ejecución de Storybook al workflow de CI;
 - no se validaron secretos mediante artifact scan;
 - y las aprobaciones de Diseño, Frontend, Accesibilidad, Calidad y Operación continúan pendientes.

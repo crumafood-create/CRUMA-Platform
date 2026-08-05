@@ -65,3 +65,116 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  storybook:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Reject snapshot updates in CI
+        shell: bash
+        run: |
+          expected_command="playwright test --config=playwright.visual.config.ts"
+          actual_command="$(node -p "require('./package.json').scripts['storybook:test:visual']")"
+
+          test "$actual_command" = "$expected_command"
+
+          update_flag="--update""-snapshots"
+          update_script="storybook:update""-visual"
+
+          if grep -RInE             --include='*.yml'             --include='*.yaml'             "(run:.*${update_flag}|run:.*${update_script}|pnpm (run )?${update_script})"             .github/workflows
+          then
+            echo "CI must not update visual baselines."
+            exit 1
+          fi
+
+          echo "CI only compares committed visual baselines."
+
+      - name: Test Storybook
+        run: pnpm run test:storybook
+
+      - name: Build Storybook
+        run: pnpm run build-storybook
+
+      - name: Test visual baselines
+        id: visual
+        continue-on-error: true
+        run: pnpm run storybook:test:visual
+
+      - name: Scan visual artifacts for secrets
+        id: artifact_scan
+        if: steps.visual.outcome == 'failure'
+        shell: bash
+        run: |
+          artifact_paths=(
+            test-results/visual-storybook
+            playwright-report/visual-storybook
+          )
+
+          existing=()
+
+          for path in "${artifact_paths[@]}"; do
+            if test -e "$path"; then
+              existing+=("$path")
+            fi
+          done
+
+          if test "${#existing[@]}" -eq 0; then
+            echo "No visual artifacts were generated."
+            exit 0
+          fi
+
+          forbidden_pattern='(SUPABASE_SERVICE_ROLE_KEY|SUPABASE_ANON_KEY|DATABASE_URL|POSTGRES_PASSWORD|JWT_SECRET|PRIVATE_KEY|BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+)'
+
+          if grep -RInE \
+            --binary-files=without-match \
+            "$forbidden_pattern" \
+            "${existing[@]}"
+          then
+            echo "Potential secret detected in visual artifacts."
+            exit 1
+          fi
+
+          echo "No configured secret patterns found in visual artifacts."
+
+      - name: Upload visual failure artifacts
+        if: >-
+          always() &&
+          steps.visual.outcome == 'failure' &&
+          steps.artifact_scan.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-visual-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results/visual-storybook
+            playwright-report/visual-storybook
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Fail on visual regression
+        if: always() && steps.visual.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "Visual baseline comparison failed."
+          exit 1

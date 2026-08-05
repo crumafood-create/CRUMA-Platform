@@ -45,8 +45,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command:
-      'pnpm storybook --ci --host 127.0.0.1',
+    command: process.env.CI
+      ? 'python3 -m http.server 6006 --bind 127.0.0.1 --directory storybook-static'
+      : 'pnpm storybook --ci --host 127.0.0.1',
     url: 'http://127.0.0.1:6006',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

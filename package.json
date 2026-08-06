@@ -23,7 +23,11 @@
     "build-storybook": "storybook build",
     "test:storybook": "vitest run --project storybook",
     "storybook:test:visual": "playwright test --config=playwright.visual.config.ts",
-    "storybook:update-visual": "playwright test --config=playwright.visual.config.ts --update-snapshots"
+    "storybook:update-visual": "playwright test --config=playwright.visual.config.ts --update-snapshots",
+    "db:reset": "supabase db reset --network-id cruma-supabase-local",
+    "db:lint": "supabase db lint --local --level error",
+    "db:test:function-security": "bash scripts/database/run-function-security.sh",
+    "db:verify": "pnpm run db:reset && pnpm run db:lint && pnpm run db:test:function-security"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -15,7 +15,7 @@ test.describe('Storybook visual baselines', () => {
     await expect(storyRoot).toBeVisible();
     await expect(
       storyRoot.getByRole('button', {
-        name: 'Guardar',
+        name: 'Guardar cambios',
       })
     ).toBeVisible();
 

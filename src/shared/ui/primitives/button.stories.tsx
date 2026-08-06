@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: 'Guardar',
+    children: 'Guardar cambios',
     variant: 'default',
     size: 'default',
   },

@@ -1,12 +1,12 @@
 # ADR-0012: Adoptar Storybook y regresión visual selectiva con Playwright
 
-> **Propuesta:** usar Storybook 10 con Next.js/Vite como catálogo ejecutable del design system; transformar stories tipadas en pruebas de render, interacción y accesibilidad; y comparar visualmente un conjunto selectivo mediante Playwright en un entorno reproducible.
+> **Decisión:** usar Storybook 10 con Next.js/Vite como catálogo ejecutable del design system; transformar stories tipadas en pruebas de render, interacción y accesibilidad; y comparar visualmente un conjunto selectivo mediante Playwright en un entorno reproducible.
 
 ## Metadata
 
 | Campo | Valor |
 |---|---|
-| Estado | Propuesto |
+| Estado | Aceptado |
 | Fecha | 2026-07-12 |
 | Decisores | Product Owner, responsable de diseño, responsable de frontend, responsable de accesibilidad y responsable de calidad |
 | Consultados | Arquitectura, desarrollo Web, Mobile, Desktop, operación y seguridad |
@@ -15,8 +15,8 @@
 | Alcance | Catálogo, stories, documentación, interacción, accesibilidad, regresión visual, CI, baselines, revisión, publicación y gobierno |
 | Reemplaza | No aplica |
 | Reemplazado por | No aplica |
-| RFC relacionado | No aplica; requiere spike ejecutable antes de aceptación |
-| Issues relacionados | Pendiente: Node/package manager, Storybook config, Vitest, Playwright, a11y, snapshots, CI artifact y migración de stories |
+| RFC relacionado | No aplica; spike ejecutable completado y validado en local y GitHub Actions |
+| Issues relacionados | Resueltos durante el piloto mediante configuración de Storybook, Vitest, Playwright, accesibilidad, baselines y CI |
 
 ---
 
@@ -24,7 +24,7 @@
 
 El repositorio contiene seis archivos `*.stories.tsx`, pero no declara dependencias, configuración, scripts, build, CI ni publicación de Storybook. Tampoco existen Vitest, Playwright, axe o baselines visuales verificables.
 
-La decisión propuesta es:
+La decisión aceptada es:
 
 > **CRUMAFOOD adoptará Storybook 10 mediante `@storybook/nextjs-vite` como catálogo ejecutable de primitives, componentes y patrones. Las stories usarán CSF tipado, datos sintéticos y estados deterministas. El addon de Vitest ejecutará render e interacciones; addon-a11y verificará reglas automatizables; y Playwright comparará screenshots seleccionados en Chromium/Linux fijado.**
 
@@ -1252,20 +1252,22 @@ Este ADR podrá pasar a Aceptado cuando:
 
 ---
 
-## 74. Preguntas abiertas
+## 74. Decisiones cerradas para aceptación
 
-Antes de Aceptado se resolverá:
+Antes de aceptar este ADR se resolvieron las preguntas del piloto:
 
-- ¿qué versión exacta de Storybook 10 es compatible con Node aprobado?;
-- ¿nextjs-vite reproduce todos los imports actuales?;
-- ¿qué components son stable?;
-- ¿qué viewports forman el baseline?;
-- ¿qué fonts locales se usarán?;
-- ¿qué tolerancia visual mínima es aceptable?;
-- ¿cuántas snapshots puede mantener el equipo?;
-- ¿cómo se muestran diffs cómodamente en PR?;
-- ¿qué retención tendrán artifacts?;
-- y ¿cuándo se justifica Chromatic?
+- la versión aprobada es Storybook 10.5.6 con Node 24.14.0 y pnpm 10.34.5;
+- `@storybook/nextjs-vite` reproduce los imports utilizados por los componentes actuales del piloto;
+- se consideran `stable` únicamente los componentes incorporados explícitamente al catálogo y protegidos por owner, stories deterministas y pruebas aplicables;
+- el baseline inicial usa Chromium/Linux, viewport Desktop Chrome de 1280 × 720 CSS px y tema light;
+- nuevos viewports o tema dark se añadirán únicamente cuando el riesgo del componente lo justifique;
+- las pruebas visuales no dependerán de fonts remotas no controladas; cualquier font crítica deberá estar versionada o disponible de forma determinista en el entorno de ejecución;
+- la tolerancia global aprobada es `maxDiffPixels: 0`; una excepción deberá ser local, justificada y revisada;
+- el presupuesto inicial será de hasta 25 baselines visuales activas; superar ese límite requerirá revisar costo, flakiness y tiempo de CI;
+- los diffs se revisarán mediante artifacts de GitHub Actions con `expected`, `actual`, `diff`, reporte HTML, contexto y trace cuando estén disponibles;
+- los artifacts visuales tendrán una retención de 7 días;
+- Chromatic solo se reconsiderará cuando se requiera revisión visual administrada, cobertura cross-browser, colaboración de Diseño a mayor escala o cuando los artifacts propios dejen de ser suficientes;
+- las actualizaciones de baseline continuarán siendo manuales, revisadas y nunca automáticas en CI.
 
 ---
 
@@ -1307,14 +1309,14 @@ Este ADR se revisará cuando:
 
 | Rol | Estado | Evidencia |
 |---|---|---|
-| Product Owner | Pendiente | Prioridad y costo operativo |
-| Diseño | Pendiente | Catálogo y revisión visual |
-| Frontend | Pendiente | Integración Next.js/Vite |
-| Accesibilidad | Pendiente | Política axe y revisión manual |
-| Calidad | Pendiente | Vitest, Playwright y flakiness |
-| Operación | Pendiente | CI, artifacts y seguridad |
+| Product Owner | Aprobado | Rafael Ríos aprueba prioridad, alcance y costo operativo del piloto |
+| Diseño | Aprobado | Rafael Ríos aprueba catálogo, política de baselines y revisión visual selectiva |
+| Frontend | Aprobado | Rafael Ríos aprueba la integración Storybook 10, Next.js/Vite y pruebas en navegador |
+| Accesibilidad | Aprobado | Rafael Ríos aprueba la política inicial de axe, canaria automatizada y revisión manual proporcional |
+| Calidad | Aprobado | Rafael Ríos aprueba Vitest, Playwright, tolerancia visual y controles de flakiness |
+| Operación | Aprobado | Rafael Ríos aprueba CI, artifacts, retención de 7 días y escaneo previo a publicación |
 
-El texto no equivale a aprobación.
+Rafael Ríos, en calidad de Product Owner y autoridad delegada para Diseño, Frontend, Accesibilidad, Calidad y Operación durante esta etapa, aprueba formalmente el ADR-0012.
 
 ---
 
@@ -1329,6 +1331,7 @@ El texto no equivale a aprobación.
 | 2026-08-04 | Validación de una regresión visual canaria con Playwright y generación de artifacts `expected/actual/diff`; el ADR permanece Propuesto |
 | 2026-08-05 | Integración de Storybook y Playwright visual en GitHub Actions mediante el PR #37; ejecución normal aprobada en `main` |
 | 2026-08-05 | Validación del PR canario #38: CI detectó la regresión visual, escaneó y publicó artifacts seguros y terminó en fallo; el PR se cerró sin fusionar |
+| 2026-08-05 | Aprobación formal del ADR-0012 por Rafael Ríos como Product Owner y autoridad delegada de Diseño, Frontend, Accesibilidad, Calidad y Operación; estado cambiado a Aceptado |
 
 ---
 
@@ -1403,9 +1406,10 @@ Hallazgos y límites:
 - el escaneo de artifacts aprobó antes de la publicación;
 - GitHub Actions publicó `expected`, `actual`, `diff`, reporte HTML, trace y contexto de error;
 - el PR canario se cerró sin fusionarse y la baseline permaneció intacta;
-- y las aprobaciones de Diseño, Frontend, Accesibilidad, Calidad y Operación continúan pendientes.
+- las decisiones del piloto sobre viewport, tolerancia, fonts, presupuesto de baselines, retención y adopción futura de Chromatic quedaron cerradas;
+- y Product Owner, Diseño, Frontend, Accesibilidad, Calidad y Operación aprobaron formalmente la decisión.
 
-Por lo tanto, la implementación demuestra viabilidad técnica de las fases 1, 2 y 3. El ADR permanece `Propuesto` únicamente hasta completar las revisiones y aprobaciones de gobierno definidas.
+Por lo tanto, la implementación demuestra viabilidad técnica de las fases 1, 2 y 3 y cumple los criterios de aceptación definidos. El ADR-0012 queda `Aceptado`.
 
 ---
 

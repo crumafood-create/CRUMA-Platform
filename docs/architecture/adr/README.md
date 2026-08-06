@@ -11,7 +11,7 @@
 | Propietarios | Product Owner y responsable de arquitectura |
 | Aprobado por | Product Owner de CRUMAFOOD Platform |
 | Fecha de aprobación | 2026-08-01 |
-| Estado de implementación | Operativo de forma manual; existen índice, plantilla y quince ADR numerados: ADR-0013 está Aceptado y los catorce restantes continúan Propuestos; permanece pendiente automatizar las validaciones ADR en CI |
+| Estado de implementación | Operativo de forma manual; existen índice, plantilla y quince ADR numerados: ADR-0012 y ADR-0013 están Aceptados y los trece restantes continúan Propuestos; permanece pendiente automatizar las validaciones ADR en CI |
 | Base de evidencia | Revisión de `docs/architecture/adr/README.md`, `0000-template.md`, los ADR 0001–0015 y `.github/workflows/ci.yml`; numeración e índice presentes, sin verificaciones automatizadas de nombres, metadata, estados, enlaces o reemplazos |
 | Alcance | Registro, numeración, estados, creación, aprobación, reemplazo y mantenimiento de ADR |
 | Autoridad | Derivado de `docs/engineering/constitution.md`, `docs/engineering/engineering-principles.md`, `docs/engineering/engineering-operating-system.md`, `docs/architecture/README.md`, `docs/vision.md` y el CES |

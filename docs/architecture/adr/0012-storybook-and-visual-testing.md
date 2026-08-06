@@ -1327,6 +1327,8 @@ El texto no equivale a aprobación.
 | 2026-08-04 | Incorporación y validación de la primera `play function` en Chromium; el ADR permanece Propuesto |
 | 2026-08-04 | Validación de una violación canaria `button-name` con axe y comprobación de su remediación; el ADR permanece Propuesto |
 | 2026-08-04 | Validación de una regresión visual canaria con Playwright y generación de artifacts `expected/actual/diff`; el ADR permanece Propuesto |
+| 2026-08-05 | Integración de Storybook y Playwright visual en GitHub Actions mediante el PR #37; ejecución normal aprobada en `main` |
+| 2026-08-05 | Validación del PR canario #38: CI detectó la regresión visual, escaneó y publicó artifacts seguros y terminó en fallo; el PR se cerró sin fusionar |
 
 ---
 
@@ -1368,6 +1370,11 @@ Resultados reproducidos localmente:
 | `pnpm test` | 5 archivos, 17 pruebas unitarias aprobadas |
 | `pnpm test:storybook` | 7 archivos, 21 pruebas de stories aprobadas en Chromium |
 | `pnpm build-storybook` | Build estático aprobado |
+| `pnpm storybook:test:visual` | 1 baseline visual aprobada en Chromium/Linux |
+| `CI=true pnpm storybook:test:visual` | Comparación aprobada contra Storybook estático |
+| GitHub Actions run `30979332466` | Jobs `build` y `storybook` aprobados sobre `main` |
+| GitHub Actions run `31065774017` | Canaria visual detectada; job `storybook` fallido de forma controlada |
+| Artifact `storybook-visual-failure-31065774017-1` | `expected`, `actual`, `diff`, reporte HTML, trace y contexto publicados después del escaneo |
 | `pnpm build` | Build de Next.js aprobado |
 | `git diff --check` | Sin errores |
 
@@ -1389,11 +1396,16 @@ Hallazgos y límites:
 - una story de `Button` incorpora una `play function` explícita que valida visibilidad, estado habilitado, interacción de clic y ejecución del callback;
 - Playwright generó una baseline versionada para `Button Default — light` en Chromium/Linux;
 - una modificación canaria de `Guardar` a `Guardar cambios` produjo código de salida 1, detectó 178 píxeles distintos y generó artifacts `expected`, `actual` y `diff` sin actualizar la baseline;
-- no se añadió todavía ejecución de Storybook al workflow de CI;
-- no se validaron secretos mediante artifact scan;
+- GitHub Actions ejecuta en un job separado las pruebas de stories, el build estático y la comparación visual;
+- CI valida que el comando de comparación no actualice snapshots;
+- una ejecución normal sobre `main` aprobó los jobs `build` y `storybook`;
+- el PR canario #38 produjo una regresión visual controlada y dejó `build` aprobado y `storybook` fallido;
+- el escaneo de artifacts aprobó antes de la publicación;
+- GitHub Actions publicó `expected`, `actual`, `diff`, reporte HTML, trace y contexto de error;
+- el PR canario se cerró sin fusionarse y la baseline permaneció intacta;
 - y las aprobaciones de Diseño, Frontend, Accesibilidad, Calidad y Operación continúan pendientes.
 
-Por lo tanto, el spike demuestra viabilidad técnica de las fases 1 y parte de la fase 2, pero no autoriza aún cambiar este ADR a `Aceptado`.
+Por lo tanto, la implementación demuestra viabilidad técnica de las fases 1, 2 y 3. El ADR permanece `Propuesto` únicamente hasta completar las revisiones y aprobaciones de gobierno definidas.
 
 ---
 

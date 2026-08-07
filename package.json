@@ -29,7 +29,8 @@
     "db:test:function-security": "bash scripts/database/run-database-test.sh supabase/tests/database/function_security.sql",
     "db:verify": "pnpm run db:reset && pnpm run db:lint && pnpm run db:test:security",
     "db:test:table-privileges": "bash scripts/database/run-database-test.sh supabase/tests/database/table_privileges.sql",
-    "db:test:security": "pnpm run db:test:function-security && pnpm run db:test:table-privileges"
+    "db:test:security": "pnpm run db:test:function-security && pnpm run db:test:table-privileges && pnpm run db:test:rls-behavior",
+    "db:test:rls-behavior": "bash scripts/database/run-database-test.sh supabase/tests/database/rls_behavior.sql"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

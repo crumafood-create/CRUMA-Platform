@@ -12,7 +12,7 @@ Su propósito es avanzar la validación de [ADR-0002](../docs/architecture/adr/0
 - Baseline del esquema versionado.
 - Reconstrucción local desde cero validada.
 - Lint del esquema validado con nivel `error`.
-- Suite de seguridad para funciones y privilegios de tablas.
+- Suite de seguridad para funciones, privilegios de tablas y comportamiento RLS.
 - Inventario reproducible de referencias Supabase usadas por la aplicación.
 
 Migraciones actuales:
@@ -21,6 +21,7 @@ Migraciones actuales:
 - `20260802000000_schema_baseline.sql`
 - `20260804000000_harden_function_execution.sql`
 - `20260806000000_harden_table_privileges.sql`
+- `20260807000000_scope_admin_rls_policies.sql`
 
 La reconstrucción local validada contiene:
 
@@ -97,6 +98,12 @@ Ejecutar la prueba de privilegios de tablas:
 pnpm db:test:table-privileges
 ```
 
+Ejecutar las pruebas conductuales de RLS:
+
+```bash
+pnpm db:test:rls-behavior
+```
+
 Ejecutar todas las pruebas de seguridad de base de datos:
 
 ```bash
@@ -113,7 +120,7 @@ pnpm db:verify
 
 1. reconstrucción de la base local;
 2. lint del esquema;
-3. pruebas de seguridad de funciones y privilegios de tablas.
+3. pruebas de seguridad de funciones, privilegios de tablas y comportamiento RLS.
 
 ## Pruebas de seguridad de base de datos
 
@@ -122,6 +129,7 @@ Las pruebas se encuentran en:
 ```text
 supabase/tests/database/function_security.sql
 supabase/tests/database/table_privileges.sql
+supabase/tests/database/rls_behavior.sql
 ```
 
 La prueba de funciones valida que:
@@ -142,7 +150,17 @@ La prueba de privilegios de tablas valida que:
 - esos privilegios tampoco sean concedidos por defecto a tablas futuras;
 - y `service_role` conserve el acceso privilegiado previsto.
 
-Esta suite todavía no sustituye las pruebas conductuales positivas y negativas de RLS por usuario y tenant.
+La prueba de comportamiento RLS valida de forma transaccional:
+
+- visibilidad pública de productos activos y ocultamiento de productos inactivos o eliminados;
+- bloqueo de escritura de productos para usuarios normales y acceso para administradores;
+- acceso de cada usuario a su propio perfil y aislamiento de perfiles ajenos;
+- lectura de roles propios y administración de roles por usuarios autorizados;
+- lectura de tenants por miembros y aislamiento frente a usuarios externos;
+- operaciones de creación, actualización y eliminación reservadas al propietario;
+- y visibilidad exclusiva de la membresía propia.
+
+La migración `20260807000000_scope_admin_rls_policies.sql` limita las políticas administrativas de productos y roles al rol `authenticated`, evitando que las lecturas anónimas evalúen funciones administrativas.
 
 ## Guardas
 
@@ -156,7 +174,7 @@ Esta suite todavía no sustituye las pruebas conductuales positivas y negativas 
 
 ## Trabajo pendiente para ADR-0002
 
-- pruebas positivas y negativas representativas de RLS;
+- ampliar las pruebas RLS a tablas operativas y contratos multi-tenant adicionales;
 - estrategia de seeds;
 - integración de la verificación de base de datos en CI;
 - reconciliación segura del historial remoto;

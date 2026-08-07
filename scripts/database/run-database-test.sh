@@ -2,6 +2,18 @@
 
 set -euo pipefail
 
+if [[ $# -ne 1 ]]; then
+  echo "Uso: $0 <archivo-sql>" >&2
+  exit 2
+fi
+
+sql_file="$1"
+
+if [[ ! -f "$sql_file" ]]; then
+  echo "No existe el archivo SQL: $sql_file" >&2
+  exit 2
+fi
+
 database_container="$(
   docker ps \
     --filter 'name=^/supabase_db_' \
@@ -15,11 +27,11 @@ if [[ -z "$database_container" ]]; then
   exit 1
 fi
 
-echo "Ejecutando pruebas en: $database_container"
+echo "Ejecutando $(basename "$sql_file") en: $database_container"
 
 docker exec -i "$database_container" \
   psql \
   -U postgres \
   -d postgres \
   -v ON_ERROR_STOP=1 \
-  < supabase/tests/database/function_security.sql
+  < "$sql_file"

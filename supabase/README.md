@@ -13,6 +13,7 @@ Su propósito es avanzar la validación de [ADR-0002](../docs/architecture/adr/0
 - Reconstrucción local desde cero validada.
 - Lint del esquema validado con nivel `error`.
 - Suite de seguridad para funciones, privilegios de tablas y comportamiento RLS.
+- Job `database` de CI para reconstrucción, lint y pruebas de base de datos desde cero.
 - Inventario reproducible de referencias Supabase usadas por la aplicación.
 
 Migraciones actuales:
@@ -162,6 +163,18 @@ La prueba de comportamiento RLS valida de forma transaccional:
 
 La migración `20260807000000_scope_admin_rls_policies.sql` limita las políticas administrativas de productos y roles al rol `authenticated`, evitando que las lecturas anónimas evalúen funciones administrativas.
 
+## Verificación en CI
+
+El workflow `.github/workflows/ci.yml` contiene un job `database` que:
+
+1. instala la versión fijada de Supabase CLI;
+2. crea la red Docker local aislada;
+3. inicia Supabase excluyendo `vector` y `logflare`;
+4. ejecuta `pnpm db:verify`;
+5. y detiene el entorno local incluso si una verificación falla.
+
+El job no utiliza credenciales ni datos de Production.
+
 ## Guardas
 
 - No añadir contraseñas, tokens, connection strings ni datos productivos.
@@ -176,7 +189,6 @@ La migración `20260807000000_scope_admin_rls_policies.sql` limita las política
 
 - ampliar las pruebas RLS a tablas operativas y contratos multi-tenant adicionales;
 - estrategia de seeds;
-- integración de la verificación de base de datos en CI;
 - reconciliación segura del historial remoto;
 - comparación gobernada de drift;
 - y aprobaciones formales del ADR.

@@ -12,7 +12,7 @@ Su propósito es avanzar la validación de [ADR-0002](../docs/architecture/adr/0
 - Baseline del esquema versionado.
 - Reconstrucción local desde cero validada.
 - Lint del esquema validado con nivel `error`.
-- Suite inicial de seguridad para funciones y privilegios.
+- Suite de seguridad para funciones y privilegios de tablas.
 - Inventario reproducible de referencias Supabase usadas por la aplicación.
 
 Migraciones actuales:
@@ -20,6 +20,7 @@ Migraciones actuales:
 - `20260801000000_required_extensions.sql`
 - `20260802000000_schema_baseline.sql`
 - `20260804000000_harden_function_execution.sql`
+- `20260806000000_harden_table_privileges.sql`
 
 La reconstrucción local validada contiene:
 
@@ -90,6 +91,18 @@ Ejecutar la prueba de seguridad de funciones:
 pnpm db:test:function-security
 ```
 
+Ejecutar la prueba de privilegios de tablas:
+
+```bash
+pnpm db:test:table-privileges
+```
+
+Ejecutar todas las pruebas de seguridad de base de datos:
+
+```bash
+pnpm db:test:security
+```
+
 Ejecutar la validación completa:
 
 ```bash
@@ -100,17 +113,18 @@ pnpm db:verify
 
 1. reconstrucción de la base local;
 2. lint del esquema;
-3. prueba de seguridad de funciones y privilegios.
+3. pruebas de seguridad de funciones y privilegios de tablas.
 
-## Seguridad de funciones
+## Pruebas de seguridad de base de datos
 
-La prueba se encuentra en:
+Las pruebas se encuentran en:
 
 ```text
 supabase/tests/database/function_security.sql
+supabase/tests/database/table_privileges.sql
 ```
 
-Valida que:
+La prueba de funciones valida que:
 
 - las funciones endurecidas tengan un `search_path` vacío;
 - `PUBLIC`, `anon` y `service_role` no tengan permisos de ejecución;
@@ -118,7 +132,17 @@ Valida que:
 - las funciones de aplicación previstas conserven `SECURITY INVOKER`;
 - y las funciones privilegiadas previstas conserven `SECURITY DEFINER`.
 
-La prueba se ejecuta dentro de una transacción y finaliza con `ROLLBACK`.
+Las pruebas se ejecutan dentro de transacciones y finalizan con `ROLLBACK`.
+
+La prueba de privilegios de tablas valida que:
+
+- `anon` y `authenticated` no tengan `TRUNCATE`;
+- `anon` y `authenticated` no tengan `REFERENCES`;
+- `anon` y `authenticated` no tengan `TRIGGER`;
+- esos privilegios tampoco sean concedidos por defecto a tablas futuras;
+- y `service_role` conserve el acceso privilegiado previsto.
+
+Esta suite todavía no sustituye las pruebas conductuales positivas y negativas de RLS por usuario y tenant.
 
 ## Guardas
 

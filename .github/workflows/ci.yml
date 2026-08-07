@@ -66,6 +66,67 @@ jobs:
       - name: Build
         run: pnpm run build
 
+  database:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Supabase CLI
+        shell: bash
+        run: |
+          actual_version="$(pnpm exec supabase --version)"
+          expected_version="2.109.1"
+
+          echo "Supabase CLI: ${actual_version}"
+          test "${actual_version}" = "${expected_version}"
+
+      - name: Create local Supabase network
+        shell: bash
+        run: |
+          docker network create \
+            -o 'com.docker.network.bridge.host_binding_ipv4=127.0.0.1' \
+            cruma-supabase-local
+
+      - name: Start local Supabase
+        shell: bash
+        run: |
+          if ! pnpm exec supabase start \
+            --network-id cruma-supabase-local \
+            -x vector,logflare \
+            > /tmp/supabase-start.log 2>&1
+          then
+            echo "Supabase local failed to start."
+            exit 1
+          fi
+
+          echo "Supabase local started successfully."
+
+      - name: Verify database baseline and security
+        run: pnpm db:verify
+
+      - name: Stop local Supabase
+        if: always()
+        shell: bash
+        run: pnpm exec supabase stop --no-backup || true
+
   storybook:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

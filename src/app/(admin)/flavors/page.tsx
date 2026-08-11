@@ -6,33 +6,16 @@ type Flavor = {
   id: string;
   name: string;
   slug: string | null;
-  family_id: string | null;
-};
-
-type Family = {
-  id: string;
-  name: string;
 };
 
 export default async function FlavorsPage() {
   const supabase = await createClient();
 
-  const [
-    { data: flavors, error },
-    { data: families },
-  ] = await Promise.all([
-    supabase
-      .from('flavors')
-      .select('id, name, slug, family_id')
-      .is('deleted_at', null)
-      .order('name'),
-
-    supabase
-      .from('product_families')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name'),
-  ]);
+  const { data: flavors, error } = await supabase
+    .from('flavors')
+    .select('id, name, slug')
+    .is('deleted_at', null)
+    .order('name');
 
   if (error) {
     return (
@@ -53,13 +36,6 @@ export default async function FlavorsPage() {
       </main>
     );
   }
-
-  const familyMap = new Map(
-    (families ?? []).map((family: Family) => [
-      family.id,
-      family.name,
-    ])
-  );
 
   return (
     <main className="space-y-6">
@@ -90,15 +66,6 @@ export default async function FlavorsPage() {
 
                 <div className="text-sm text-gray-500">
                   {flavor.slug}
-                </div>
-
-                <div className="text-sm text-gray-500">
-                  Familia:{' '}
-                  {flavor.family_id
-                    ? familyMap.get(
-                        flavor.family_id
-                      ) ?? '-'
-                    : '-'}
                 </div>
 
                 <Link

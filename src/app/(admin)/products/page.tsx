@@ -64,7 +64,7 @@ export default async function ProductsPage() {
     supabase.from('categories').select('id, name').is('deleted_at', null).order('name'),
     supabase.from('product_families').select('id, name').is('deleted_at', null).order('name'),
     supabase.from('flavors').select('id, name').is('deleted_at', null).order('name'),
-    supabase.from('preparation_types').select('id, name').is('deleted_at', null).order('name'),
+    supabase.from('preparation_types').select('id, name').order('name'),
   ]);
 
   if (productsError) {

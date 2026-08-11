@@ -13,7 +13,6 @@ export async function createFlavor(
   const { error } = await supabase
     .from('flavors')
     .insert({
-      family_id: formData.get('family_id'),
       name: formData.get('name'),
       slug: formData.get('slug'),
       description: formData.get('description'),
@@ -39,7 +38,6 @@ export async function updateFlavor(
   const { error } = await supabase
     .from('flavors')
     .update({
-      family_id: formData.get('family_id'),
       name: formData.get('name'),
       slug: formData.get('slug'),
       description: formData.get('description'),

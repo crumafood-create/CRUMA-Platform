@@ -1,0 +1,2 @@
+-- Staging-specific synthetic seed data.
+-- Intentionally empty until ADR-0014 Staging provisioning is implemented.

@@ -1,4 +1,9 @@
-# Configuración mínima para el spike de ADR-0002.
-# Las versiones y puertos no se fijarán hasta comparar el proyecto alojado
-# con el stack local de Supabase CLI 2.109.1.
+# Configuración local versionada para ADR-0002.
 project_id = "cruma-platform"
+
+[db.seed]
+enabled = true
+sql_paths = [
+  "./seeds/base.sql",
+  "./seeds/local.sql"
+]

@@ -7,13 +7,7 @@ import { toSlug } from '@/modules/inventory/application/utils/product-code';
 interface FlavorFormProps {
   action: (formData: FormData) => Promise<void>;
 
-  families: {
-    id: string;
-    name: string;
-  }[];
-
   initialValues?: {
-    family_id?: string;
     name?: string;
     slug?: string;
     description?: string;
@@ -23,7 +17,6 @@ interface FlavorFormProps {
 
 export function FlavorForm({
   action,
-  families,
   initialValues,
 }: FlavorFormProps) {
   const [slug, setSlug] = useState(
@@ -35,34 +28,6 @@ export function FlavorForm({
       action={action}
       className="space-y-6 rounded-2xl border p-6"
     >
-      <div>
-        <label className="mb-2 block font-medium">
-          Familia
-        </label>
-
-        <select
-          name="family_id"
-          defaultValue={
-            initialValues?.family_id ?? ''
-          }
-          className="w-full rounded border p-3"
-          required
-        >
-          <option value="">
-            Selecciona familia
-          </option>
-
-          {families.map((family) => (
-            <option
-              key={family.id}
-              value={family.id}
-            >
-              {family.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <div>
         <label className="mb-2 block font-medium">
           Nombre
@@ -120,9 +85,9 @@ export function FlavorForm({
         <select
           name="is_active"
           defaultValue={
-            initialValues?.is_active
-              ? 'true'
-              : 'false'
+            initialValues?.is_active === false
+              ? 'false'
+              : 'true'
           }
           className="w-full rounded border p-3"
         >

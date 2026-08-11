@@ -38,7 +38,7 @@ export default async function EditProductPage({
 
   const { data: families } =
   await supabase
-    .from('families')
+    .from('product_families')
     .select('id, name, category_id')
     .is('deleted_at', null)
     .order('name');
@@ -53,8 +53,7 @@ export default async function EditProductPage({
   const { data: preparationTypes } =
     await supabase
       .from('preparation_types')
-      .select('id, name, category_id')
-      .is('deleted_at', null)
+      .select('id, name')
       .order('name');
 
   const { data: unitsOfMeasure } =

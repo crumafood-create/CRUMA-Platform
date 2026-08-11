@@ -970,6 +970,7 @@ El estado permanecerá Propuesto hasta completar validación y aprobaciones.
 |---|---|---|
 | 2026-07-12 | Propuesta inicial | Responsable de arquitectura |
 | 2026-08-02 | Extracción autorizada, baseline reproducible y actualización de evidencia del spike | Responsable de datos y arquitectura |
+| 2026-08-10 | Runbook gobernado y comparador determinista para historial remoto; inventario de Production bloqueado por falta de acceso autorizado y sin escrituras | Responsable de datos y arquitectura |
 
 Después de Aceptado, las correcciones decisorias requerirán un ADR nuevo.
 

@@ -1,0 +1,2 @@
+-- Preview-specific synthetic seed data.
+-- Intentionally empty until ADR-0014 Preview provisioning is implemented.

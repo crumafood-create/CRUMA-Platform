@@ -14,6 +14,8 @@ Su propósito es avanzar la validación de [ADR-0002](../docs/architecture/adr/0
 - Lint del esquema validado con nivel `error`.
 - Suite de seguridad para funciones, privilegios de tablas y comportamiento RLS.
 - Job `database` de CI para reconstrucción, lint y pruebas de base de datos desde cero.
+- Estrategia de seeds sintéticos, deterministas e idempotentes separada por propósito.
+- Contrato automatizado de esquema y estrategia de seeds integrado en `db:verify`.
 - Inventario reproducible de referencias Supabase usadas por la aplicación.
 
 Migraciones actuales:
@@ -23,6 +25,8 @@ Migraciones actuales:
 - `20260804000000_harden_function_execution.sql`
 - `20260806000000_harden_table_privileges.sql`
 - `20260807000000_scope_admin_rls_policies.sql`
+- `20260809000000_reconcile_catalog_schema_contract.sql`
+- `20260809010000_enforce_product_family_category_consistency.sql`
 
 La reconstrucción local validada contiene:
 
@@ -119,9 +123,55 @@ pnpm db:verify
 
 `db:verify` ejecuta en orden:
 
-1. reconstrucción de la base local;
-2. lint del esquema;
-3. pruebas de seguridad de funciones, privilegios de tablas y comportamiento RLS.
+1. reconstrucción limpia de la base con `--no-seed`;
+2. carga explícita de `base.sql` + `test.sql`;
+3. lint del esquema;
+4. pruebas de seguridad de funciones, privilegios de tablas y comportamiento RLS;
+5. prueba del contrato de esquema;
+6. reaplicación idempotente de `base.sql` + `test.sql`;
+7. y prueba automatizada de la estrategia de seeds.
+
+## Seeds por entorno
+
+Los datos sintéticos se mantienen separados de las migraciones y se organizan por propósito:
+
+```text
+supabase/seeds/
+├── base.sql
+├── local.sql
+├── test.sql
+├── preview.sql
+└── staging.sql
+```
+
+- `base.sql`: catálogo mínimo compartido por los perfiles no productivos.
+- `local.sql`: datos adicionales para desarrollo local.
+- `test.sql`: datos controlados para pruebas automatizadas.
+- `preview.sql` y `staging.sql`: perfiles explícitos para esos entornos.
+- Production no recibe seeds automáticos ni datos demo.
+
+Los seeds usan identificadores deterministas y operaciones idempotentes. Pueden reaplicarse sin duplicar registros ni alterar claves estables.
+
+`supabase/config.toml` configura el reset local para cargar, en orden, `base.sql` y `local.sql`. El perfil de pruebas evita el seed automático y carga explícitamente `base.sql` + `test.sql`:
+
+```bash
+pnpm db:reset
+pnpm db:reset:test
+```
+
+También pueden cargarse los perfiles de forma explícita:
+
+```bash
+pnpm db:seed:base
+pnpm db:seed:local
+pnpm db:seed:test
+```
+
+La prueba automatizada valida el aislamiento entre perfiles, los identificadores esperados y la reaplicación idempotente:
+
+```bash
+pnpm db:test:seed-strategy
+```
 
 ## Pruebas de seguridad de base de datos
 
@@ -131,6 +181,8 @@ Las pruebas se encuentran en:
 supabase/tests/database/function_security.sql
 supabase/tests/database/table_privileges.sql
 supabase/tests/database/rls_behavior.sql
+supabase/tests/database/schema_contract.sql
+supabase/tests/database/seed_strategy.sql
 ```
 
 La prueba de funciones valida que:
@@ -188,7 +240,6 @@ El job no utiliza credenciales ni datos de Production.
 ## Trabajo pendiente para ADR-0002
 
 - ampliar las pruebas RLS a tablas operativas y contratos multi-tenant adicionales;
-- estrategia de seeds;
 - reconciliación segura del historial remoto;
 - comparación gobernada de drift;
 - y aprobaciones formales del ADR.

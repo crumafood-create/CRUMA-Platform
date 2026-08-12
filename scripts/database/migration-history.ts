@@ -22,15 +22,10 @@ function validateVersions(versions: readonly string[]): void {
   }
 }
 
-function requireCollections(
-  localVersions: readonly string[] | null | undefined,
-  remoteVersions: readonly string[] | null | undefined,
-): void {
-  if (localVersions === null || localVersions === undefined) {
-    throw new Error('Las versiones deben ser colecciones.');
-  }
-
-  if (remoteVersions === null || remoteVersions === undefined) {
+function requireCollection(
+  versions: readonly string[] | null | undefined,
+): asserts versions is readonly string[] {
+  if (versions === null || versions === undefined) {
     throw new Error('Las versiones deben ser colecciones.');
   }
 }
@@ -56,7 +51,8 @@ export function compareMigrationVersions(
   localInput: readonly string[] | null | undefined,
   remoteInput: readonly string[] | null | undefined,
 ): MigrationComparison {
-  requireCollections(localInput, remoteInput);
+  requireCollection(localInput);
+  requireCollection(remoteInput);
   const localVersions = uniqueSorted(localInput);
   const remoteVersions = uniqueSorted(remoteInput);
   validateVersions(localVersions);

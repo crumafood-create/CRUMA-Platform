@@ -6,14 +6,14 @@
     "allowJs": false,
     "skipLibCheck": true,
 
-    "strict": true,
+    "strict": true,\n    "noImplicitAny": true,\n    "strictNullChecks": true,\n    "noUnusedLocals": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
 
-    "noEmit": true,
+    "noEmit": true,\n    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

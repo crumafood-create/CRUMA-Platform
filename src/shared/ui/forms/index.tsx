@@ -1,6 +1,5 @@
 import type {
   ButtonHTMLAttributes,
-  HTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
   TextareaHTMLAttributes,
@@ -18,11 +17,6 @@ export function Textarea(
   return <textarea {...props} />;
 }
 
-type SelectProps = {
-  value?: any;
-  onValueChange?: (value: any) => void;
-  children?: ReactNode;
-};
 
 export function FormInput(props: any) {
   return <Input {...props} />;

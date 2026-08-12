@@ -11,7 +11,6 @@ import {
   getReceivingLocations,
   type InventoryLocation,
   type ReceivingDetail,
-  type ReceivingItem,
 } from './actions';
 
 type Props = {

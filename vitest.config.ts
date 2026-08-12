@@ -19,6 +19,7 @@ export default defineConfig({
     coverage: {
       include: [
         'src/modules/inventory/application/utils/product-code.ts',
+        'scripts/database/migration-history.ts',
       ],
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

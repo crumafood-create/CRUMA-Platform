@@ -14,24 +14,6 @@ import {
   cancelProductionOrder,
 } from '../actions';
 
-type ProductionOrder = {
-  id: string;
-  order_number: string;
-  recipe_id: string;
-  planned_quantity: number;
-  produced_quantity: number | null;
-  status: string;
-  notes: string | null;
-  started_at: string | null;
-  completed_at: string | null;
-  created_at: string;
-};
-
-type Recipe = {
-  id: string;
-  name: string;
-  description: string | null;
-};
 
 type RecipeItem = {
   id: string;

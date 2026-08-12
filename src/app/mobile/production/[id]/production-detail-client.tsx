@@ -844,14 +844,6 @@ function isCompleted(
   return item.status === 'completed';
 }
 
-function pendingItems(
-  items: ProductionDetailItem[],
-) {
-  return items.filter(
-    (item) => !isCompleted(item),
-  );
-}
-
 function completedItemsCount(
   items: ProductionDetailItem[],
 ) {

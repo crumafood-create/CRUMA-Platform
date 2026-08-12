@@ -15,7 +15,6 @@ export function analyzeInventoryRisk(
   input: InventoryRiskInput,
 ): ExecutiveDecision | null {
   const {
-    productId,
     productName,
     currentStock,
     minimumStock,

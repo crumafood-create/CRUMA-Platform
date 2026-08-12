@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react';
-
 export function DropdownMenu(props: any) {
   return <div>{props.children}</div>;
 }

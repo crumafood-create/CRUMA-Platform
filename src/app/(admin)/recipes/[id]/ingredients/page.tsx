@@ -4,11 +4,6 @@ import { createClient } from '@/infrastructure/integrations/supabase/server';
 
 import { createRecipeItem } from './actions';
 
-type RecipeRow = {
-  id: string;
-  name: string;
-  product_id: string | null;
-};
 
 type RawMaterialRow = {
   id: string;

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   compareMigrationVersions,
   parseRemoteVersions,
+  resolveMigrationHistoryInput,
 } from '../../../scripts/database/migration-history';
 
 describe('parseRemoteVersions', () => {
@@ -37,6 +38,24 @@ describe('parseRemoteVersions', () => {
   it('ignora valores que exceden catorce dígitos', () => {
     expect(parseRemoteVersions(' | 999999999999999 | overflow')).toEqual([]);
   });
+});
+
+describe('resolveMigrationHistoryInput', () => {
+  it.each([
+    [['migration-list.txt'], 'migration-list.txt'],
+    [['--', 'migration-list.txt'], 'migration-list.txt'],
+  ])('resuelve argumentos %j', (args, expected) => {
+    expect(resolveMigrationHistoryInput(args)).toBe(expected);
+  });
+
+  it.each([[[]], [['--']]])(
+    'rechaza argumentos incompletos: %j',
+    (args) => {
+      expect(() => resolveMigrationHistoryInput(args)).toThrow(
+        'Uso: compare-migration-history <migration-list.txt>',
+      );
+    },
+  );
 });
 
 describe('compareMigrationVersions', () => {

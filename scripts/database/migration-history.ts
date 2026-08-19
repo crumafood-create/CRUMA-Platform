@@ -1,9 +1,23 @@
 const MIGRATION_VERSION = /^\d{14}$/;
+const INPUT_USAGE =
+  'Uso: compare-migration-history <migration-list.txt>';
 
 export interface MigrationComparison {
   readonly shared: readonly string[];
   readonly localOnly: readonly string[];
   readonly remoteOnly: readonly string[];
+}
+
+export function resolveMigrationHistoryInput(
+  args: readonly string[],
+): string {
+  const inputPath = args[0] === '--' ? args[1] : args[0];
+
+  if (inputPath === undefined) {
+    throw new Error(INPUT_USAGE);
+  }
+
+  return inputPath;
 }
 
 function isMigrationVersion(value: string): boolean {

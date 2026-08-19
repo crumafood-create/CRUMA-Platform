@@ -122,6 +122,28 @@ Despu茅s de una reparaci贸n aprobada:
 5. adjuntar la evidencia revisada al PR o ticket de cambio;
 6. actualizar el estado del ADR 煤nicamente tras las aprobaciones requeridas.
 
+## Ensayo local reproducible
+
+Antes de autorizar cualquier reparaci髇 remota, ejecutar:
+
+```bash
+pnpm db:reconciliation:rehearse
+```
+
+El script solo acepta `127.0.0.1:54322/cruma_reconciliation_rehearsal`, crea esa
+base desechable dentro del contenedor local de Supabase y la elimina mediante un
+trap incluso si el ensayo falla. No consume el proyecto vinculado ni credenciales
+de Production.
+
+La ejecuci髇 verificada el 2026-08-18 produjo:
+
+- `LEDGER_BEFORE=ABSENT`;
+- `REMOTE_VERSION_COUNT=7`;
+- `PUBLIC_SCHEMA_MATCH=OK`;
+- SHA-256 del esquema p鷅lico
+  `d7588443a96f968eceb8e92dbe55b26a4cc16708f4b43ad2cae66ea0e93d3b7e`;
+- `REHEARSAL_DATABASE_REMAINING=0` despu閟 de la limpieza.
+
 ## Reversi贸n
 
 Si una reparaci贸n aprobada produce un estado inesperado, detener despliegues, conservar la evidencia, notificar a datos y arquitectura y aplicar exclusivamente el plan de reversi贸n aprobado. Nunca improvisar cambios sobre Production.

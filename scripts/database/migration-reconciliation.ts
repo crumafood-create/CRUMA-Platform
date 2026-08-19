@@ -97,3 +97,30 @@ export function createReconciliationDryRun(
     ...plan,
   };
 }
+
+const DISPOSABLE_DATABASE_ERROR =
+  'El ensayo solo admite la base local desechable.';
+
+function parseDatabaseUrl(input: string): URL {
+  try {
+    return new URL(input);
+  } catch {
+    throw new Error(DISPOSABLE_DATABASE_ERROR);
+  }
+}
+
+export function assertDisposableDatabaseUrl(input: string): string {
+  const url = parseDatabaseUrl(input);
+  const isDisposable =
+    url.protocol === 'postgresql:' &&
+    url.hostname === '127.0.0.1' &&
+    url.port === '54322' &&
+    url.pathname === '/cruma_reconciliation_rehearsal' &&
+    url.username === 'postgres';
+
+  if (!isDisposable) {
+    throw new Error(DISPOSABLE_DATABASE_ERROR);
+  }
+
+  return input;
+}

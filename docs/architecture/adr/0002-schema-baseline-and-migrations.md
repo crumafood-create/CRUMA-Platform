@@ -1027,6 +1027,18 @@ Si se acepta, Git serÃ¡ la fuente verificable de evoluciÃ³n del esquema y cualqu
 
 Si se rechaza, deberÃ¡ elegirse una alternativa que ofrezca la misma reproducibilidad, revisiÃ³n de seguridad, control de drift y recuperaciÃ³n antes de modificar el modelo multi-tenant.
 
+### Ensayo de reconciliación verificado (2026-08-18)
+
+El procedimiento gobernado se ejecutó sobre la base local desechable
+`cruma_reconciliation_rehearsal`, sin credenciales ni escrituras en Production:
+
+- el ledger remoto comenzó ausente;
+- las dos versiones del baseline se marcaron como aplicadas;
+- las cinco migraciones incrementales se aplicaron mediante el flujo normal;
+- el ledger terminó con las siete versiones de Git;
+- el esquema público coincidió exactamente con la referencia local, con SHA-256
+  `d7588443a96f968eceb8e92dbe55b26a4cc16708f4b43ad2cae66ea0e93d3b7e`;
+- la base desechable fue eliminada automáticamente al finalizar.
 ---
 
 ## 54. DeclaraciÃ³n final

@@ -144,6 +144,7 @@ La ejecuci髇 verificada el 2026-08-18 produjo:
   `d7588443a96f968eceb8e92dbe55b26a4cc16708f4b43ad2cae66ea0e93d3b7e`;
 - `REHEARSAL_DATABASE_REMAINING=0` despu閟 de la limpieza.
 
+Preparaci贸n: [autorizaci贸n de reconciliaci贸n](./production-migration-reconciliation-authorization.md).
 ## Reversi贸n
 
 Si una reparaci贸n aprobada produce un estado inesperado, detener despliegues, conservar la evidencia, notificar a datos y arquitectura y aplicar exclusivamente el plan de reversi贸n aprobado. Nunca improvisar cambios sobre Production.

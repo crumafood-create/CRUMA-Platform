@@ -851,8 +851,40 @@ Se alertará por:
 | Seeds | No existe todavía un seed canónico | Pendiente |
 | Pruebas de seguridad | No se han ejecutado pruebas positivas y negativas de RLS, grants y funciones | Pendiente |
 | CI de base de datos | Aún no reconstruye el baseline ni verifica tipos y seguridad | Pendiente |
-| Historial remoto | No se ha definido ni ensayado el procedimiento para marcar el baseline como aplicado sin ejecutarlo sobre Production | Pendiente |
-| Drift | No se ha completado la comparación gobernada entre el baseline, el inventario remoto y los entornos alojados | Pendiente |
+| Historial remoto | Inventario linked completado; la tabla `supabase_migrations.schema_migrations` no existe y ninguna de las siete versiones figura en Remote | Evidencia capturada; reconciliación pendiente |
+| Drift | Diff gobernado de `public` capturado y sanitizado; Production conserva diferencias estructurales y de privilegios respecto de Git | Evidencia capturada; remediación pendiente |
+
+### Evidencia gobernada de Production — 2026-08-18
+
+La captura se realizó durante una ventana autorizada, con operaciones de solo lectura y evidencia temporal fuera del repositorio. El token temporal se revocó al finalizar.
+
+| Control | Resultado | Conformidad |
+|---|---|---|
+| Inventario de migraciones | `migration list --linked` terminó con código 0; siete versiones Local y ninguna Remote | Conforme como captura; no demuestra alineación |
+| Ledger remoto | `to_regclass('supabase_migrations.schema_migrations')` devolvió `NULL` | No conforme; historial remoto no inicializado |
+| Comparador determinista | Rechazó el inventario sin versiones remotas con código 1 | Conforme; no asumió historial vacío |
+| Drift de `public` | `db diff --linked --schema public` terminó con código 0; 1,600 líneas y 56,630 bytes | Conforme como evidencia de solo lectura |
+| Integridad de evidencia | SHA-256 `112eaa0b8899c0f3f489f9d3d7c950688171a8b40085085fc76c3d5b52a7b524` | Conforme |
+| Revisión de secretos | Sin URLs con credenciales, tokens, service-role keys, JWT secrets ni placeholders de contraseña | Conforme |
+| Resumen estructural | 4 `CREATE`, 11 `ALTER`, 3 `DROP`, 744 `GRANT` y 0 `REVOKE` | Requiere reconciliación |
+| Contrato de catálogo | Production no contiene las columnas, constraints y consistencia familia-categoría añadidas el 2026-08-09 | No conforme |
+| Privilegios | Persisten 248 grants de `REFERENCES`, 248 de `TRIGGER` y 248 de `TRUNCATE` | No conforme con mínimo privilegio |
+| Policies administrativas | `admin_all_products` y `admin_all_user_roles` continúan concedidas a `public` | No conforme |
+| Escrituras remotas | No se ejecutaron `migration repair`, `db push`, `migration up` ni SQL de mutación | Conforme |
+
+Clasificación por versión:
+
+| Versión | Estado estructural observado | Tratamiento propuesto |
+|---|---|---|
+| `20260801000000_required_extensions` | Representada en Production; no registrada en ledger | Candidata a reconciliación individual después de aprobación |
+| `20260802000000_schema_baseline` | Representada como estado histórico de Production; no registrada en ledger | Candidata a reconciliación individual después de aprobación |
+| `20260804000000_harden_function_execution` | No representada | Aplicar mediante el flujo normal después de controles |
+| `20260806000000_harden_table_privileges` | No representada; persisten grants amplios | Aplicar mediante el flujo normal después de controles |
+| `20260807000000_scope_admin_rls_policies` | No representada; policies siguen dirigidas a `public` | Aplicar mediante el flujo normal después de controles |
+| `20260809000000_reconcile_catalog_schema_contract` | No representada | Aplicar mediante el flujo normal después de controles |
+| `20260809010000_enforce_product_family_category_consistency` | No representada | Aplicar mediante el flujo normal después de controles |
+
+Esta evidencia no autoriza escrituras. Nunca se marcarán las siete versiones como aplicadas: únicamente las dos versiones estructuralmente representadas podrán evaluarse para `migration repair --status applied`, una por una y con aprobación explícita. Las cinco versiones restantes deberán desplegarse y verificarse como migraciones reales.
 
 **Resultado del spike:** el esquema real de Production fue extraído de forma autorizada y sin datos, convertido en migraciones versionadas y reconstruido con éxito sobre una base local vacía. El baseline reproduce los objetos principales observados y permite generar tipos TypeScript. No se realizaron escrituras ni se vinculó el CLI con Production.
 
@@ -971,6 +1003,7 @@ El estado permanecerá Propuesto hasta completar validación y aprobaciones.
 | 2026-07-12 | Propuesta inicial | Responsable de arquitectura |
 | 2026-08-02 | Extracción autorizada, baseline reproducible y actualización de evidencia del spike | Responsable de datos y arquitectura |
 | 2026-08-10 | Runbook gobernado y comparador determinista para historial remoto; inventario de Production bloqueado por falta de acceso autorizado y sin escrituras | Responsable de datos y arquitectura |
+| 2026-08-18 | Inventario remoto y drift sanitizado de Production; ledger ausente, dos versiones representadas y cinco no aplicadas; sin escrituras y con token temporal revocado | Responsable de datos y arquitectura |
 
 Después de Aceptado, las correcciones decisorias requerirán un ADR nuevo.
 

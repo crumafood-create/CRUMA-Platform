@@ -4,6 +4,7 @@ import process from 'node:process';
 import {
   compareMigrationVersions,
   parseRemoteVersions,
+  resolveMigrationHistoryInput,
 } from './migration-history.ts';
 
 const MIGRATION_FILE = /^(\d{14})_.+\.sql$/;
@@ -42,22 +43,12 @@ function printGroup(label: string, versions: readonly string[]): void {
   versions.forEach((version) => console.log(`  - ${version}`));
 }
 
-function requireInputPath(inputPath: string | undefined): string {
-  if (inputPath === undefined) {
-    throw new Error(
-      'Uso: node scripts/database/compare-migration-history.ts <migration-list.txt>',
-    );
-  }
-
-  return inputPath;
-}
-
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Error no identificado.';
 }
 
 async function main(): Promise<void> {
-  const inputPath = requireInputPath(process.argv[2]);
+  const inputPath = resolveMigrationHistoryInput(process.argv.slice(2));
   const [localVersions, remoteText] = await Promise.all([
     readLocalVersions(),
     withTimeout(readFile(inputPath, 'utf8'), 'leer el inventario remoto'),

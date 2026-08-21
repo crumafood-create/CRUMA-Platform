@@ -1,5 +1,9 @@
 export type ExecutionMode = 'dry-run' | 'execute';
-export type Checkpoint = 'before' | 'after-repair' | 'after-push';
+export type Checkpoint =
+  | 'before'
+  | 'after-first-repair'
+  | 'after-repair'
+  | 'after-push';
 
 export interface ProductionExecutionRequest {
   readonly mode: ExecutionMode;

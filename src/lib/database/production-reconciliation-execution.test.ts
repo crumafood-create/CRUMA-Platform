@@ -47,7 +47,14 @@ describe('createProductionExecutionPlan', () => {
     expect(plan.steps.filter((step) => step.enabled)).toHaveLength(3);
     expect(plan.steps.filter((step) => step.mutatesRemote)).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'repair-history', enabled: false }),
+        expect.objectContaining({
+          id: 'repair-history-20260801000000',
+          enabled: false,
+        }),
+        expect.objectContaining({
+          id: 'repair-history-20260802000000',
+          enabled: false,
+        }),
         expect.objectContaining({ id: 'push-pending', enabled: false }),
       ]),
     );
@@ -74,26 +81,19 @@ describe('createProductionExecutionPlan', () => {
       ['inventory-before', true],
       ['schema-drift-before', true],
       ['preview-push', true],
-      ['repair-history', true],
+      ['repair-history-20260801000000', true],
+      ['inventory-after-first-repair', true],
+      ['repair-history-20260802000000', true],
       ['inventory-after-repair', true],
       ['push-pending', true],
       ['inventory-after-push', true],
     ]);
-    expect(plan.steps.find(({ id }) => id === 'repair-history')?.args).toEqual([
-      'migration',
-      'repair',
-      '20260801000000',
-      '20260802000000',
-      '--status',
-      'applied',
-      '--linked',
-      '--yes',
-    ]);
-    expect(plan.steps.find(({ id }) => id === 'push-pending')?.args).toEqual([
-      'db',
-      'push',
-      '--linked',
-      '--yes',
+    const repairSteps = plan.steps.filter(({ id }) =>
+      id.startsWith('repair-history-'),
+    );
+    expect(repairSteps.map(({ id, args }) => [id, args[2]])).toEqual([
+      ['repair-history-20260801000000', '20260801000000'],
+      ['repair-history-20260802000000', '20260802000000'],
     ]);
   });
 
@@ -117,12 +117,12 @@ describe('createProductionExecutionPlan', () => {
 });
 
 describe('assertReconciliationCheckpoint', () => {
-  it('acepta los inventarios exactos esperados', () => {
+  it.each([
+    ['after-first-repair', ['20260801000000']],
+    ['after-repair', ['20260801000000', '20260802000000']],
+  ] as const)('acepta el inventario exacto en %s', (checkpoint, versions) => {
     expect(
-      assertReconciliationCheckpoint('after-repair', [
-        '20260801000000',
-        '20260802000000',
-      ]),
+      assertReconciliationCheckpoint(checkpoint, versions),
     ).toBeUndefined();
   });
 

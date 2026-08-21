@@ -86,6 +86,7 @@ export function assertReconciliationCheckpoint(
 ): void {
   const expected = {
     before: [],
+    'after-first-repair': [REPAIR_VERSIONS[0]],
     'after-repair': REPAIR_VERSIONS,
     'after-push': ALL_VERSIONS,
   }[checkpoint];

@@ -41,17 +41,58 @@ function createMutationSteps(
   execute: boolean,
   repairVersions: readonly string[],
 ): readonly ProductionExecutionStep[] {
+  const [firstVersion, secondVersion] = requireRepairVersions(repairVersions);
+
   return [
-    createStep(
-      'repair-history',
-      ['migration', 'repair', ...repairVersions, '--status', 'applied', '--linked', '--yes'],
-      true,
+    createRepairStep(firstVersion, execute),
+    createInventoryStep(
+      'inventory-after-first-repair',
+      'after-first-repair',
       execute,
     ),
-    createStep('inventory-after-repair', ['migration', 'list', '--linked'], false, execute, 'after-repair'),
+    createRepairStep(secondVersion, execute),
+    createInventoryStep('inventory-after-repair', 'after-repair', execute),
     createStep('push-pending', ['db', 'push', '--linked', '--yes'], true, execute),
-    createStep('inventory-after-push', ['migration', 'list', '--linked'], false, execute, 'after-push'),
+    createInventoryStep('inventory-after-push', 'after-push', execute),
   ];
+}
+
+function createRepairStep(
+  version: string,
+  execute: boolean,
+): ProductionExecutionStep {
+  return createStep(
+    `repair-history-${version}`,
+    ['migration', 'repair', version, '--status', 'applied', '--linked', '--yes'],
+    true,
+    execute,
+  );
+}
+
+function createInventoryStep(
+  id: string,
+  checkpoint: Checkpoint,
+  enabled: boolean,
+): ProductionExecutionStep {
+  return createStep(
+    id,
+    ['migration', 'list', '--linked'],
+    false,
+    enabled,
+    checkpoint,
+  );
+}
+
+function requireRepairVersions(
+  versions: readonly string[],
+): readonly [string, string] {
+  const [firstVersion, secondVersion] = versions;
+
+  if (versions.length !== 2 || !firstVersion || !secondVersion) {
+    throw new Error('La ejecución requiere dos reparaciones individuales.');
+  }
+
+  return [firstVersion, secondVersion];
 }
 
 export function createProductionSteps(

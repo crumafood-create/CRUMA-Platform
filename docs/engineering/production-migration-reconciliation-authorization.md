@@ -51,10 +51,11 @@ CRUMA_PRODUCTION_EXECUTION_CONFIRMATION=AUTORIZO_RECONCILIACION_PRODUCTION
 La secuencia protegida verifica que el inventario remoto esté vacío, vuelve a
 capturar el drift de `public` y exige el SHA-256 aprobado
 `112eaa0b8899c0f3f489f9d3d7c950688171a8b40085085fc76c3d5b52a7b524`
-antes de ejecutar un preflight `db push --dry-run`. Después registra como aplicadas
-exclusivamente las versiones `20260801000000` y `20260802000000`, confirma ese
-checkpoint, aplica las cinco migraciones pendientes y exige las siete versiones
-al finalizar.
+antes de ejecutar un preflight `db push --dry-run`. Después registra como
+aplicadas exclusivamente las versiones `20260801000000` y `20260802000000`,
+cada una en un comando independiente y con verificación inmediata. Después
+aplica las cinco
+migraciones pendientes y exige las siete versiones al finalizar.
 
 Este cambio implementa y prueba el ejecutor, pero no autoriza su uso. Datos y
 arquitectura deben aprobar el fingerprint y se requiere una autorización humana

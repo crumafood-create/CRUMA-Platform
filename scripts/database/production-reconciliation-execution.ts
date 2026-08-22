@@ -56,6 +56,10 @@ function assertAuthorization(
     throw new Error('Paquete de Production no autorizado.');
   }
 
+  if (request.resumeFrom && request.resumeFrom !== 'after-first-repair') {
+    throw new Error('Checkpoint de reanudación Production inválido.');
+  }
+
   if (
     request.mode === 'execute' &&
     request.confirmation !== EXPECTED_EXECUTION_CONFIRMATION
@@ -76,7 +80,8 @@ export function createProductionExecutionPlan(
     projectRef: request.projectRef,
     planFingerprint: request.planFingerprint,
     remoteWritesAuthorized: execute,
-    steps: createProductionSteps(execute, REPAIR_VERSIONS),
+    ...(request.resumeFrom ? { resumeFrom: request.resumeFrom } : {}),
+    steps: createProductionSteps(execute, REPAIR_VERSIONS, request.resumeFrom),
   });
 }
 

@@ -8,6 +8,7 @@ import {
 import type {
   ExecutionMode,
   ProductionExecutionRequest,
+  ResumeCheckpoint,
 } from './production-reconciliation-execution.types.ts';
 import { recordProductionStep } from './production-reconciliation-runner.ts';
 import type { ProductionReconciliationPacket } from './production-reconciliation.ts';
@@ -36,14 +37,24 @@ function resolveMode(input: string | undefined): ExecutionMode {
   return mode;
 }
 
+function resolveResumeFrom(input: string | undefined): ResumeCheckpoint | undefined {
+  if (input !== undefined && input !== 'after-first-repair') {
+    throw new Error('CRUMA_PRODUCTION_RESUME_FROM inválido.');
+  }
+
+  return input;
+}
+
 function createRequest(): ProductionExecutionRequest {
   const confirmation = process.env.CRUMA_PRODUCTION_EXECUTION_CONFIRMATION;
+  const resumeFrom = resolveResumeFrom(process.env.CRUMA_PRODUCTION_RESUME_FROM);
 
   return {
     mode: resolveMode(process.env.CRUMA_PRODUCTION_EXECUTION_MODE),
     projectRef: process.env.CRUMA_PRODUCTION_PROJECT_REF ?? '',
     planFingerprint: process.env.CRUMA_PRODUCTION_PLAN_FINGERPRINT ?? '',
     ...(confirmation ? { confirmation } : {}),
+    ...(resumeFrom ? { resumeFrom } : {}),
   };
 }
 

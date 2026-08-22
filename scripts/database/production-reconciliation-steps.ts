@@ -2,6 +2,7 @@ import { EXPECTED_SCHEMA_DRIFT_FINGERPRINT } from './production-reconciliation-e
 import type {
   Checkpoint,
   ProductionExecutionStep,
+  ResumeCheckpoint,
 } from './production-reconciliation-execution.types.ts';
 
 function createStep(
@@ -22,9 +23,17 @@ function createStep(
   });
 }
 
-function createPreflightSteps(): readonly ProductionExecutionStep[] {
+function createPreflightSteps(
+  resumeFrom?: ResumeCheckpoint,
+): readonly ProductionExecutionStep[] {
   return [
-    createStep('inventory-before', ['migration', 'list', '--linked'], false, true, 'before'),
+    createStep(
+      'inventory-before',
+      ['migration', 'list', '--linked'],
+      false,
+      true,
+      resumeFrom ?? 'before',
+    ),
     createStep(
       'schema-drift-before',
       ['db', 'diff', '--linked', '--schema', 'public'],
@@ -40,11 +49,12 @@ function createPreflightSteps(): readonly ProductionExecutionStep[] {
 function createMutationSteps(
   execute: boolean,
   repairVersions: readonly string[],
+  resumeFrom?: ResumeCheckpoint,
 ): readonly ProductionExecutionStep[] {
   const [firstVersion, secondVersion] = requireRepairVersions(repairVersions);
 
   return [
-    createRepairStep(firstVersion, execute),
+    createRepairStep(firstVersion, execute && !resumeFrom),
     createInventoryStep(
       'inventory-after-first-repair',
       'after-first-repair',
@@ -98,9 +108,10 @@ function requireRepairVersions(
 export function createProductionSteps(
   execute: boolean,
   repairVersions: readonly string[],
+  resumeFrom?: ResumeCheckpoint,
 ): readonly ProductionExecutionStep[] {
   return Object.freeze([
-    ...createPreflightSteps(),
-    ...createMutationSteps(execute, repairVersions),
+    ...createPreflightSteps(resumeFrom),
+    ...createMutationSteps(execute, repairVersions, resumeFrom),
   ]);
 }

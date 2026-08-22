@@ -52,7 +52,10 @@ export function parseRemoteVersions(
   }
 
   const versions = input.split(/\r?\n/).flatMap((line) => {
-    const remoteVersion = line.split('|')[1]?.trim();
+    const remoteVersion = line
+      .split('|')[1]
+      ?.trim()
+      .replace(/^`(\d{14})`$/, '$1');
     return remoteVersion !== undefined && isMigrationVersion(remoteVersion)
       ? [remoteVersion]
       : [];

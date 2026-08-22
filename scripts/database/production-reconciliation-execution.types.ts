@@ -4,12 +4,14 @@ export type Checkpoint =
   | 'after-first-repair'
   | 'after-repair'
   | 'after-push';
+export type ResumeCheckpoint = 'after-first-repair';
 
 export interface ProductionExecutionRequest {
   readonly mode: ExecutionMode;
   readonly projectRef: string;
   readonly planFingerprint: string;
   readonly confirmation?: string;
+  readonly resumeFrom?: ResumeCheckpoint;
 }
 
 export interface ProductionExecutionStep {
@@ -26,5 +28,6 @@ export interface ProductionExecutionPlan {
   readonly projectRef: string;
   readonly planFingerprint: string;
   readonly remoteWritesAuthorized: boolean;
+  readonly resumeFrom?: ResumeCheckpoint;
   readonly steps: readonly ProductionExecutionStep[];
 }

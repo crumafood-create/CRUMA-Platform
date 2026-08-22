@@ -57,6 +57,22 @@ cada una en un comando independiente y con verificación inmediata. Después
 aplica las cinco
 migraciones pendientes y exige las siete versiones al finalizar.
 
+## Reanudación después de la primera reparación
+
+Si la versión `20260801000000` ya fue registrada y la reconciliación se detuvo,
+la reanudación debe declararse explícitamente mediante:
+
+```text
+CRUMA_PRODUCTION_RESUME_FROM=after-first-repair
+```
+
+Este modo acepta exclusivamente un inventario remoto con esa versión, vuelve a
+verificar el drift aprobado y omite únicamente su reparación ya aplicada. La
+segunda reparación conserva su verificación individual; las migraciones
+pendientes y el inventario final mantienen los controles originales. Sin
+`CRUMA_PRODUCTION_EXECUTION_MODE=execute` y su confirmación exacta, cualquier
+reanudación continúa funcionando solo como `dry-run` sin escrituras remotas.
+
 Este cambio implementa y prueba el ejecutor, pero no autoriza su uso. Datos y
 arquitectura deben aprobar el fingerprint y se requiere una autorización humana
 independiente justo antes de cualquier escritura en Production.

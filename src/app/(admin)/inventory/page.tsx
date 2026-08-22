@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function InventoryPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: stock, error: stockError } = await supabase
     .from('inventory_stock')
@@ -16,18 +16,16 @@ export default async function InventoryPage() {
     throw new Error(stockError.message);
   }
 
-  const productIds =
-    stock?.map((row) => row.product_id) ?? [];
+  const productIds = (stock ?? [])
+    .map((row) => row.product_id)
+    .filter((productId): productId is string => productId !== null);
 
-  const { data: products, error: productsError } =
-    await supabase
-      .from('products')
-      .select(`
-        id,
-        name,
-        internal_code
-      `)
-      .in('id', productIds);
+  const { data: products, error: productsError } = productIds.length
+    ? await supabase
+        .from('products')
+        .select('id, name, internal_code')
+        .in('id', productIds)
+    : { data: [], error: null };
 
   if (productsError) {
     throw new Error(productsError.message);
@@ -42,7 +40,7 @@ export default async function InventoryPage() {
 
   const inventoryRows = (stock ?? []).map((row) => ({
     quantity: row.quantity,
-    product: productMap.get(row.product_id),
+    product: row.product_id ? productMap.get(row.product_id) : undefined,
   }));
 
   return (

@@ -173,6 +173,15 @@ contrato generado. Validar sus transformaciones y reglas de presentación:
 pnpm production:test:mobile
 ```
 
+Los movimientos manuales de inventario utilizan el cliente tipado y conservan
+simultáneamente `product_id` y el contrato canónico `item_type`/`item_id`.
+Los ajustes de materias primas mantienen `product_id` vacío; Kardex y stock
+comparten una única regla explícita de saldo. Validar el contrato:
+
+```bash
+pnpm inventory:test:movements
+```
+
 Validar la configuración pública y el aislamiento de credenciales:
 
 ```bash

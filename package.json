@@ -19,6 +19,7 @@
     "auth:test:roles": "vitest run --project unit src/lib/auth/legacy-role-contract.test.ts src/lib/auth/get-user-role.test.ts src/lib/auth/guards/auth.guard.test.ts src/lib/auth/guards/action.guard.test.ts",
     "production:test:orders": "vitest run --project unit src/modules/production/application/production-order-contract.test.ts",
     "production:test:mobile": "vitest run --project unit src/modules/production/application/mobile-production-contract.test.ts src/modules/production/application/mobile-production-repository.test.ts",
+    "inventory:test:movements": "vitest run --project unit src/modules/inventory/application/inventory-movement-contract.test.ts",
     "verify": "pnpm run typecheck && pnpm run lint && pnpm run test:coverage",
     "db:toolchain": "supabase --version",
     "db:inventory": "node scripts/database/inventory-supabase-references.mjs",

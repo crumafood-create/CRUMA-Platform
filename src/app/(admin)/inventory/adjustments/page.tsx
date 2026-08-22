@@ -1,10 +1,10 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function InventoryAdjustmentsPage() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const { data: movements } =
     await supabase

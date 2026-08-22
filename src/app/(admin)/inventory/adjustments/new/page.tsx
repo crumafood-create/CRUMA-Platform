@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { InventoryAdjustmentForm } from '@/app/(admin)/_components/inventory-adjustment-form';
 
@@ -10,7 +10,7 @@ import {
 
 export default async function NewInventoryAdjustmentPage() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const [
     { data: products },

@@ -2,7 +2,8 @@ import Link from 'next/link';
 
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { calculateInventoryBalances } from '@/modules/inventory/application/inventory-movement-contract';
 
 export default async function ProductInventoryPage({
   params,
@@ -11,7 +12,7 @@ export default async function ProductInventoryPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: product } =
     await supabase
@@ -24,34 +25,43 @@ export default async function ProductInventoryPage({
     notFound();
   }
 
-  const { data: movements } =
+  const { data: movements, error: movementsError } =
     await supabase
       .from('inventory_movements')
-      .select(`
-        *,
-        inventory_locations (
-          name
-        )
-      `)
+      .select('id, created_at, movement_type, quantity, warehouse_id')
       .eq('product_id', id)
       .order('created_at', {
         ascending: true,
       });
 
-  let stock = 0;
+  if (movementsError) {
+    throw new Error(movementsError.message);
+  }
 
-  const rows =
-    movements?.map(movement => {
-      stock +=
-        movement.movement_type === 'entry'
-          ? movement.quantity
-          : -movement.quantity;
+  const warehouseIds = Array.from(
+    new Set(
+      (movements ?? [])
+        .map((movement) => movement.warehouse_id)
+        .filter((warehouseId): warehouseId is string => warehouseId !== null),
+    ),
+  );
 
-      return {
-        ...movement,
-        balance: stock,
-      };
-    }) ?? [];
+  const { data: warehouses, error: warehousesError } = warehouseIds.length
+    ? await supabase
+        .from('warehouses')
+        .select('id, name')
+        .in('id', warehouseIds)
+    : { data: [], error: null };
+
+  if (warehousesError) {
+    throw new Error(warehousesError.message);
+  }
+
+  const warehouseNames = new Map(
+    (warehouses ?? []).map((warehouse) => [warehouse.id, warehouse.name]),
+  );
+  const rows = calculateInventoryBalances(movements ?? []);
+  const stock = rows.at(-1)?.balance ?? 0;
 
   return (
     <main className="space-y-6">
@@ -129,7 +139,7 @@ export default async function ProductInventoryPage({
                 </td>
 
                 <td className="p-3">
-                  {row.inventory_locations?.name}
+                  {row.warehouse_id ? warehouseNames.get(row.warehouse_id) ?? '-' : '-'}
                 </td>
 
                 <td className="p-3 font-semibold">

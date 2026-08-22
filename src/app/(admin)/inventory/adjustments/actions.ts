@@ -3,53 +3,25 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { buildInventoryAdjustment } from '@/modules/inventory/application/inventory-movement-contract';
 
 export async function createInventoryAdjustment(
   formData: FormData
 ) {
-  const supabase = await createClient();
-
-  const item_type =
-    String(formData.get('item_type'));
-
-  const item_id =
-    String(formData.get('item_id'));
-
-  const movement_type =
-    String(formData.get('movement_type'));
-
-  const quantity =
-    Number(formData.get('quantity'));
-
-  const notes =
-    formData.get('notes')?.toString() ??
-    null;
-
-  if (
-    !item_type ||
-    !item_id ||
-    !movement_type ||
-    quantity <= 0
-  ) {
-    throw new Error(
-      'Todos los campos son obligatorios.'
-    );
-  }
+  const supabase = await createTypedClient();
+  const movement = buildInventoryAdjustment({
+    itemType: formData.get('item_type'),
+    itemId: formData.get('item_id')?.toString() ?? '',
+    movementType: formData.get('movement_type'),
+    quantity: Number(formData.get('quantity')),
+    notes: formData.get('notes')?.toString() || null,
+  });
 
   const { error } =
     await supabase
       .from('inventory_movements')
-      .insert({
-        item_type,
-        item_id,
-        movement_type,
-        quantity,
-        reference_type:
-          'manual_adjustment',
-        reference_id: null,
-        notes,
-      });
+      .insert(movement);
 
   if (error) {
     throw new Error(error.message);

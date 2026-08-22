@@ -112,7 +112,7 @@ function ProductionCard({
       <div className="flex items-start justify-between">
         <div>
           <div className="text-xl font-bold">
-            {order.order_number}
+            {order.production_number}
           </div>
 
           <div className="mt-1 text-sm text-gray-500">
@@ -122,10 +122,10 @@ function ProductionCard({
 
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadge(
-            order.status,
+            order.production_status,
           )}`}
         >
-          {getStatusLabel(order.status)}
+          {getStatusLabel(order.production_status)}
         </span>
       </div>
 

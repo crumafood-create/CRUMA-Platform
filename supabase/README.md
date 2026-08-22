@@ -164,10 +164,14 @@ el cliente tipado y los nombres canónicos `production_number`,
 pnpm production:test:orders
 ```
 
-Las consultas móviles de producción permanecen como siguiente etapa de la
-migración gradual. Sus llamadas a servicios compartidos ya usan el cliente
-tipado, mientras las consultas legacy conservan temporalmente el cliente de
-compatibilidad.
+Las pantallas móviles de producción usan el mismo cliente tipado y los campos
+canónicos `production_number` y `production_status`. Recetas, materias primas e
+items se consultan explícitamente sin depender de relaciones ausentes en el
+contrato generado. Validar sus transformaciones y reglas de presentación:
+
+```bash
+pnpm production:test:mobile
+```
 
 Validar la configuración pública y el aislamiento de credenciales:
 

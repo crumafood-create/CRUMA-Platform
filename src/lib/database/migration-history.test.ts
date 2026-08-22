@@ -21,6 +21,24 @@ describe('parseRemoteVersions', () => {
     ]);
   });
 
+  it('reconoce el formato real con acentos graves del CLI de Supabase', () => {
+    const input = [
+      '   Local            | Remote           | Time (UTC)',
+      '  ------------------|------------------|-----------------------',
+      '   `20260801000000` | `20260801000000` | `2026-08-01 00:00:00`',
+      '   `20260802000000` | ` `              | `2026-08-02 00:00:00`',
+    ].join('\n');
+
+    expect(parseRemoteVersions(input)).toEqual(['20260801000000']);
+  });
+
+  it.each(['`20260801000000', '20260801000000`', '`202608010000000`'])(
+    'rechaza versiones con formato incompleto o inválido: %s',
+    (version) => {
+      expect(parseRemoteVersions(`local | ${version} | now`)).toEqual([]);
+    },
+  );
+
   it.each([null, undefined])('rechaza entradas nulas: %s', (input) => {
     expect(() => parseRemoteVersions(input)).toThrow(
       'El inventario remoto debe ser texto.',

@@ -119,7 +119,7 @@ jobs:
 
           echo "Supabase local started successfully."
 
-      - name: Verify database baseline and security
+      - name: Verify database baseline, security, and generated types
         run: pnpm db:verify
 
       - name: Stop local Supabase

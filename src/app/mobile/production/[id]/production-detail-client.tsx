@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import MobileScanner from '@/app/mobile/components/mobile-scanner';
+import type { ProductionStatus } from '@/modules/production/domain/constants';
 
 import {
   confirmProductionItem,
@@ -25,13 +26,6 @@ type PageState =
 type Props = {
   productionOrderId: string;
 };
-
-type ProductionOrderStatus =
-  | 'draft'
-  | 'released'
-  | 'in_progress'
-  | 'completed'
-  | 'cancelled';
 
 // ============================================================================
 // HELPERS
@@ -259,14 +253,14 @@ export default function ProductionDetailClient({
   }
 
   const status =
-    detail.order.status as ProductionOrderStatus;
+    detail.order.production_status;
 
   return (
     <main className="space-y-6 p-6 pb-24">
 
       <PageHeader
         orderNumber={
-          detail.order.order_number
+          detail.order.production_number
         }
         recipeName={
           detail.order.recipe_name
@@ -323,7 +317,7 @@ export default function ProductionDetailClient({
 type PageHeaderProps = {
   orderNumber: string;
   recipeName: string;
-  status: ProductionOrderStatus;
+  status: ProductionStatus;
 };
 
 function PageHeader({

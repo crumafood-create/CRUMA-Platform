@@ -1,32 +1,23 @@
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-export const LEGACY_ROLES = ['admin', 'customer'] as const;
+import {
+  LegacyRoleLookupError,
+  normalizeLegacyRoles,
+  type LegacyRole,
+} from './legacy-role-contract';
 
-export type LegacyRole = (typeof LEGACY_ROLES)[number];
+export { LEGACY_ROLES, LegacyRoleLookupError } from './legacy-role-contract';
+export type { LegacyRole } from './legacy-role-contract';
 
 export type SupabaseServerClient = Awaited<
-  ReturnType<typeof createClient>
+  ReturnType<typeof createTypedClient>
 >;
-
-export class LegacyRoleLookupError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'LegacyRoleLookupError';
-  }
-}
-
-function isLegacyRole(value: unknown): value is LegacyRole {
-  return (
-    typeof value === 'string' &&
-    LEGACY_ROLES.some((role) => role === value)
-  );
-}
 
 export async function getUserRoles(
   userId: string,
   supabaseClient?: SupabaseServerClient,
 ): Promise<LegacyRole[]> {
-  const supabase = supabaseClient ?? (await createClient());
+  const supabase = supabaseClient ?? (await createTypedClient());
 
   const { data, error } = await supabase
     .from('user_roles')
@@ -40,14 +31,5 @@ export async function getUserRoles(
     );
   }
 
-  const rows = (data ?? []) as Array<{ role: unknown }>;
-  const roles = rows.map(({ role }) => role);
-
-  if (!roles.every(isLegacyRole)) {
-    throw new LegacyRoleLookupError(
-      'Se encontró un rol legacy fuera del contrato autorizado.',
-    );
-  }
-
-  return [...new Set(roles)];
+  return normalizeLegacyRoles(data ?? []);
 }

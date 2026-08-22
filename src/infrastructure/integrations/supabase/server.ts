@@ -1,16 +1,21 @@
 import { cookies } from 'next/headers';
 
 import { createServerClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export async function createClient() {
+import { getPublicSupabaseConfiguration } from './configuration';
+import type { ApplicationDatabase } from './database.types';
+
+export async function createTypedClient() {
 
   const cookieStore = await cookies();
+  const { url, anonymousKey } = getPublicSupabaseConfiguration();
 
-  return createServerClient(
+  return createServerClient<ApplicationDatabase>(
 
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    url,
 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    anonymousKey,
 
     {
       cookies: {
@@ -40,4 +45,8 @@ export async function createClient() {
       }
     }
   );
+}
+
+export async function createClient(): Promise<SupabaseClient> {
+  return (await createTypedClient()) as unknown as SupabaseClient;
 }

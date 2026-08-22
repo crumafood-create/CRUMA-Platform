@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
+import { getPublicSupabaseConfiguration } from '@/infrastructure/integrations/supabase/configuration';
+import type { ApplicationDatabase } from '@/infrastructure/integrations/supabase/database.types';
+
 export async function middleware(
   request: NextRequest
 ) {
@@ -22,9 +25,11 @@ export async function middleware(
 
   const response = NextResponse.next();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  const { url, anonymousKey } = getPublicSupabaseConfiguration();
+
+  const supabase = createServerClient<ApplicationDatabase>(
+    url,
+    anonymousKey,
     {
 cookies: {
   getAll() {

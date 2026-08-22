@@ -139,6 +139,19 @@ La verificación falla si el contrato versionado no coincide con el generado.
 Después de crear o modificar una migración, reconstruir Supabase local,
 regenerar los tipos y revisar ambos cambios en el mismo Pull Request.
 
+Los clientes browser y middleware utilizan directamente el contrato generado.
+En servidor, `createTypedClient()` expone consultas estrictamente tipadas y
+`createClient()` conserva temporalmente la interfaz heredada mientras se migran
+los consumidores existentes. Los contratos `TypedSupabaseClient`,
+`PublicTableRow`, `PublicTableInsert` y `PublicTableUpdate` pertenecen
+exclusivamente a infraestructura; no sustituyen modelos de dominio.
+
+Validar la configuración pública y el aislamiento de credenciales:
+
+```bash
+pnpm db:test:client-contract
+```
+
 Ejecutar la validación completa:
 
 ```bash
@@ -155,7 +168,8 @@ pnpm db:verify
 6. reaplicación idempotente de `base.sql` + `test.sql`;
 7. prueba automatizada de la estrategia de seeds;
 8. contratos de generación segura de tipos;
-9. y comparación reproducible de tipos versionados contra el esquema local.
+9. contratos de configuración pública para clientes Supabase;
+10. y comparación reproducible de tipos versionados contra el esquema local.
 
 ## Seeds por entorno
 

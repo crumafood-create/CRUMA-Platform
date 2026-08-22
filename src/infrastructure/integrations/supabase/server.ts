@@ -4,9 +4,12 @@ import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { getPublicSupabaseConfiguration } from './configuration';
-import type { ApplicationDatabase } from './database.types';
+import type {
+  ApplicationDatabase,
+  TypedSupabaseClient,
+} from './database.types';
 
-export async function createTypedClient() {
+export async function createTypedClient(): Promise<TypedSupabaseClient> {
 
   const cookieStore = await cookies();
   const { url, anonymousKey } = getPublicSupabaseConfiguration();
@@ -44,7 +47,7 @@ export async function createTypedClient() {
         }
       }
     }
-  );
+  ) as unknown as TypedSupabaseClient;
 }
 
 export async function createClient(): Promise<SupabaseClient> {

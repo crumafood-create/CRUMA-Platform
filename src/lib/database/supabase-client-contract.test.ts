@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
+import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
+import type { SupabaseServerClient } from '@/lib/auth/get-user-role';
 import { resolvePublicSupabaseConfiguration } from '../../infrastructure/integrations/supabase/configuration';
 
 const validEnvironment: NodeJS.ProcessEnv = {
@@ -9,6 +11,10 @@ const validEnvironment: NodeJS.ProcessEnv = {
 };
 
 describe('configuración pública de clientes Supabase', () => {
+  it('mantiene el cliente servidor dentro del contrato tipado canónico', () => {
+    expectTypeOf<SupabaseServerClient>().toEqualTypeOf<TypedSupabaseClient>();
+  });
+
   it('resuelve exclusivamente la URL y la clave pública', () => {
     expect(
       resolvePublicSupabaseConfiguration({

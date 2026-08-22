@@ -146,6 +146,16 @@ los consumidores existentes. Los contratos `TypedSupabaseClient`,
 `PublicTableRow`, `PublicTableInsert` y `PublicTableUpdate` pertenecen
 exclusivamente a infraestructura; no sustituyen modelos de dominio.
 
+Autenticación y consulta de `user_roles` utilizan `createTypedClient()` y el
+contrato real de la tabla. El contexto entregado a acciones históricas mantiene
+una frontera de compatibilidad explícita hasta migrar sus consumidores.
+
+Validar autenticación, roles y autorización existentes:
+
+```bash
+pnpm auth:test:roles
+```
+
 Validar la configuración pública y el aislamiento de credenciales:
 
 ```bash

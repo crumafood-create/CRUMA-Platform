@@ -1,4 +1,6 @@
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import {
   getUserRoles,
   LegacyRoleLookupError,
@@ -16,13 +18,13 @@ export type AuthorizationActor = {
 
 export type AuthorizationContext = {
   actor: AuthorizationActor;
-  supabase: SupabaseServerClient;
+  supabase: SupabaseClient;
 };
 
 export async function requireAuthenticatedUser(
   supabaseClient?: SupabaseServerClient,
 ): Promise<AuthorizationContext> {
-  const supabase = supabaseClient ?? (await createClient());
+  const supabase = supabaseClient ?? (await createTypedClient());
   const {
     data: { user },
     error,
@@ -45,7 +47,7 @@ export async function requireAuthenticatedUser(
         roles,
         authorizationSource: 'legacy_user_roles',
       },
-      supabase,
+      supabase: supabase as unknown as SupabaseClient,
     };
   } catch (roleError) {
     if (roleError instanceof LegacyRoleLookupError) {

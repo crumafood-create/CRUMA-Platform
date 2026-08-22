@@ -1,13 +1,13 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { InventoryMovementForm } from '@/app/(admin)/_components/inventory-movement-form';
 
 import { createInventoryMovement } from '../actions';
 
 export default async function NewInventoryMovementPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: products } = await supabase
     .from('products')

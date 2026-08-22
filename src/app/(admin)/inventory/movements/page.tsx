@@ -1,31 +1,13 @@
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import type { PublicTableRow } from '@/infrastructure/integrations/supabase/database.types';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { createInventoryMovement } from '../actions';
 
-type ProductRow = {
-  id: string;
-  name: string;
-  internal_code: string | null;
-};
-
-type WarehouseRow = {
-  id: string;
-  code: string | null;
-  name: string;
-};
-
-type MovementRow = {
-  id: string;
-  product_id: string | null;
-  warehouse_id: string | null;
-  movement_type: string;
-  quantity: number;
-  notes: string | null;
-  created_at: string;
-};
+type ProductRow = Pick<PublicTableRow<'products'>, 'id' | 'name' | 'internal_code'>;
+type WarehouseRow = Pick<PublicTableRow<'warehouses'>, 'id' | 'code' | 'name'>;
 
 export default async function MovementsPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const [
     { data: products, error: productsError },
@@ -60,7 +42,7 @@ export default async function MovementsPage() {
     (warehouses ?? []).map((warehouse) => [warehouse.id, warehouse]),
   );
 
-  const rows = (movements ?? []).map((movement: MovementRow) => ({
+  const rows = (movements ?? []).map((movement) => ({
     ...movement,
     product: movement.product_id ? productMap.get(movement.product_id) ?? null : null,
     warehouse: movement.warehouse_id ? warehouseMap.get(movement.warehouse_id) ?? null : null,

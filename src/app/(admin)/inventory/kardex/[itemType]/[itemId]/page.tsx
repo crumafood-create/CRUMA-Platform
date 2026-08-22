@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { calculateInventoryBalances } from '@/modules/inventory/application/inventory-movement-contract';
 
 type Params = {
   params: Promise<{
@@ -10,24 +11,16 @@ type Params = {
   }>;
 };
 
-type Movement = {
-  id: string;
-  item_type: 'product' | 'raw_material';
-  item_id: string;
-  movement_type: 'entry' | 'exit' | 'adjustment';
-  quantity: number;
-  reference_type: string | null;
-  reference_id: string | null;
-  notes: string | null;
-  created_at: string;
-};
-
 export default async function KardexPage({
   params,
 }: Params) {
   const { itemType, itemId } = await params;
 
-  const supabase = await createClient();
+  if (itemType !== 'product' && itemType !== 'raw_material') {
+    notFound();
+  }
+
+  const supabase = await createTypedClient();
 
   let itemName = '-';
   let internalCode = '-';
@@ -96,31 +89,7 @@ export default async function KardexPage({
     throw new Error(error.message);
   }
 
-  let runningStock = 0;
-
-  const rows = (
-    (movements ?? []) as Movement[]
-  ).map((movement) => {
-    const quantity =
-      Number(movement.quantity);
-
-    if (
-      movement.movement_type ===
-      'entry'
-    ) {
-      runningStock += quantity;
-    } else if (
-      movement.movement_type ===
-      'exit'
-    ) {
-      runningStock -= quantity;
-    }
-
-    return {
-      ...movement,
-      stock: runningStock,
-    };
-  });
+  const rows = calculateInventoryBalances(movements ?? []);
 
   return (
     <main className="space-y-6">
@@ -217,7 +186,7 @@ export default async function KardexPage({
                   </td>
 
                   <td className="p-4 font-semibold">
-                    {movement.stock}
+                    {movement.balance}
                   </td>
 
                   <td className="p-4">

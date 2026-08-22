@@ -4,6 +4,9 @@ import { NextResponse } from 'next/server';
 
 import type { NextRequest } from 'next/server';
 
+import { getPublicSupabaseConfiguration } from './configuration';
+import type { ApplicationDatabase } from './database.types';
+
 export async function updateSession(
   request: NextRequest
 ) {
@@ -12,11 +15,13 @@ export async function updateSession(
     request
   });
 
-  const supabase = createServerClient(
+  const { url, anonymousKey } = getPublicSupabaseConfiguration();
 
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  const supabase = createServerClient<ApplicationDatabase>(
 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+
+    anonymousKey,
 
     {
 

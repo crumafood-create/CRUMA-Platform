@@ -1,7 +1,7 @@
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function TestSupabasePage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data, error } = await supabase
     .from('products')

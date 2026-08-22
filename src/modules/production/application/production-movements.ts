@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
 
 import type {
   FEFOAllocation,
@@ -14,7 +14,7 @@ import {
 // ============================================================================
 
 export async function createInventoryMovement(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   movement: InventoryMovementInput,
 ): Promise<void> {
   const { error } =
@@ -56,7 +56,7 @@ export async function createInventoryMovement(
 // ============================================================================
 
 export async function consumeRawMaterialLot(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   allocation: FEFOAllocation,
 ): Promise<void> {
   const { error } =
@@ -84,7 +84,7 @@ export async function consumeRawMaterialLot(
 // ============================================================================
 
 export async function registerConsumption(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   productionOrderItemId: string,
   allocation: FEFOAllocation,
 ): Promise<void> {
@@ -117,7 +117,7 @@ export async function registerConsumption(
 // ============================================================================
 
 export async function completeProductionItem(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   itemId: string,
   consumedQuantity: number,
 ): Promise<void> {
@@ -151,7 +151,7 @@ export async function completeProductionItem(
 // ============================================================================
 
 export async function registerMaterialExit(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   rawMaterialId: string,
   productionOrderId: string,
   allocation: FEFOAllocation,

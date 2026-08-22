@@ -1,21 +1,6 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-
-type ProductionOrder = {
-  id: string;
-  order_number: string;
-  recipe_id: string;
-  planned_quantity: number;
-  produced_quantity: number | null;
-  status: string;
-  created_at: string;
-};
-
-type Recipe = {
-  id: string;
-  name: string;
-};
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 function getStatusLabel(status: string): string {
   switch (status) {
@@ -35,7 +20,7 @@ function getStatusLabel(status: string): string {
 }
 
 export default async function ProductionOrdersPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const [
     { data: orders, error },
@@ -43,7 +28,7 @@ export default async function ProductionOrdersPage() {
   ] = await Promise.all([
     supabase
       .from('production_orders')
-      .select('id, order_number, recipe_id, planned_quantity, produced_quantity, status, created_at')
+      .select('id, production_number, recipe_id, planned_quantity, produced_quantity, production_status, created_at')
       .order('created_at', { ascending: false }),
 
     supabase
@@ -73,7 +58,7 @@ export default async function ProductionOrdersPage() {
   }
 
   const recipeMap = new Map(
-    (recipes ?? []).map((recipe: Recipe) => [
+    (recipes ?? []).map((recipe) => [
       recipe.id,
       recipe.name,
     ])
@@ -97,13 +82,13 @@ export default async function ProductionOrdersPage() {
       <div className="rounded-2xl border p-6">
         {orders?.length ? (
           <div className="space-y-3">
-            {orders.map((order: ProductionOrder) => (
+            {orders.map((order) => (
               <div
                 key={order.id}
                 className="rounded border p-4"
               >
                 <div className="font-semibold">
-                  {order.order_number}
+                  {order.production_number}
                 </div>
 
                 <div className="text-sm text-gray-500">
@@ -121,7 +106,7 @@ export default async function ProductionOrdersPage() {
                 </div>
 
                 <div className="text-sm text-gray-500">
-                  Estado: {getStatusLabel(order.status)}
+                  Estado: {getStatusLabel(order.production_status)}
                 </div>
 
                 <div className="mt-3 flex gap-2">

@@ -1,18 +1,13 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { ProductionOrderForm } from '@/app/(admin)/_components/production-order-form';
 
 import { createProductionOrder } from '../actions';
 
-type Recipe = {
-  id: string;
-  name: string;
-};
-
 export default async function NewProductionOrderPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: recipes, error } = await supabase
     .from('recipes')
@@ -57,7 +52,7 @@ export default async function NewProductionOrderPage() {
 
       <ProductionOrderForm
         action={createProductionOrder}
-        recipes={(recipes ?? []) as Recipe[]}
+        recipes={recipes ?? []}
       />
     </main>
   );

@@ -5,51 +5,23 @@ import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-import { requireAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
+import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
 import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 import { getSuggestedRawMaterialLot } from '@/modules/production/application/production-lot';
+import {
+  canCancelProductionOrder,
+  calculateRequiredQuantity,
+  sumAvailableStock,
+  toProductionOrderState,
+  type ProductionOrderState,
+} from '@/modules/production/application/production-order-contract';
 import { consumeProductionItem } from '@/modules/production/application/production-service';
 import {
   INVENTORY_MOVEMENT,
   INVENTORY_REFERENCE,
   PRODUCTION_STATUS,
 } from '@/modules/production/domain/constants';
-
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
-
-type RecipeItemRow = {
-  raw_material_id: string;
-  quantity: number | null;
-};
-
-type ProductionOrderRow = {
-  id: string;
-  recipe_id: string;
-  planned_quantity: number | null;
-  produced_quantity: number | null;
-  status: string;
-  notes: string | null;
-};
-
-type ProductionOrderWithRecipe = {
-  recipe_id: string;
-  recipes:
-    | {
-        product_id: string | null;
-      }
-    | {
-        product_id: string | null;
-      }[]
-    | null;
-};
-
-function unwrapSingle<T>(
-  value: T | T[] | null | undefined,
-): T | null {
-  if (!value) return null;
-  return Array.isArray(value) ? value[0] ?? null : value;
-}
 
 /**
  * Genera un número de orden único
@@ -69,9 +41,9 @@ function generateOrderNumber(): string {
  * Obtiene el estado actual de una orden de producción
  */
 async function getProductionOrder(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   orderId: string,
-): Promise<ProductionOrderRow> {
+): Promise<ProductionOrderState> {
   const { data: order, error } = await supabase
     .from('production_orders')
     .select(`
@@ -79,7 +51,7 @@ async function getProductionOrder(
       recipe_id,
       planned_quantity,
       produced_quantity,
-      status,
+      production_status,
       notes
     `)
     .eq('id', orderId)
@@ -89,7 +61,7 @@ async function getProductionOrder(
     throw new Error(error?.message ?? 'Orden de producción no encontrada');
   }
 
-  return order as ProductionOrderRow;
+  return toProductionOrderState(order);
 }
 
 /**
@@ -97,7 +69,7 @@ async function getProductionOrder(
  * usando raw_material_lots como fuente de verdad.
  */
 async function validateRecipeStockAvailability(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   recipeId: string,
   plannedQuantity: number,
 ) {
@@ -120,15 +92,17 @@ async function validateRecipeStockAvailability(
     throw new Error(itemsError.message);
   }
 
-  const items = (recipeItems ?? []) as RecipeItemRow[];
+  const items = recipeItems ?? [];
 
   if (items.length === 0) {
     return true;
   }
 
   for (const item of items) {
-    const requiredPerUnit = Number(item.quantity ?? 0);
-    const required = requiredPerUnit * plannedQuantity;
+    const required = calculateRequiredQuantity(
+      item.quantity,
+      plannedQuantity,
+    );
 
     const { data: lots, error: lotsError } = await supabase
       .from('raw_material_lots')
@@ -142,9 +116,7 @@ async function validateRecipeStockAvailability(
       );
     }
 
-    const available = (lots ?? []).reduce((sum, lot) => {
-      return sum + Number(lot.quantity ?? 0);
-    }, 0);
+    const available = sumAvailableStock(lots ?? []);
 
     if (available < required) {
       throw new Error(
@@ -160,7 +132,7 @@ async function validateRecipeStockAvailability(
  * Registra un movimiento de inventario
  */
 async function createInventoryMovement(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   movement: {
     item_type: 'product' | 'raw_material';
     item_id: string;
@@ -213,7 +185,7 @@ function revalidateProductionRoutes(orderId: string): void {
  *    vía la función de base de datos `create_production_order_items`
  */
 export async function createProductionOrder(formData: FormData) {
-  const { supabase } = await requireAuthorizedAction(
+  const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.PRODUCTION_ORDER_CREATE,
   );
 
@@ -235,10 +207,10 @@ export async function createProductionOrder(formData: FormData) {
     .from('production_orders')
     .insert({
       recipe_id: recipeId,
-      order_number: generateOrderNumber(),
+      production_number: generateOrderNumber(),
       planned_quantity: plannedQuantity,
       produced_quantity: 0,
-      status: PRODUCTION_STATUS.DRAFT,
+      production_status: PRODUCTION_STATUS.DRAFT,
       notes,
     })
     .select('id')
@@ -271,20 +243,22 @@ export async function createProductionOrder(formData: FormData) {
  * Libera una orden de producción (draft → released)
  */
 export async function releaseProductionOrder(orderId: string) {
-  const { supabase } = await requireAuthorizedAction(
+  const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.PRODUCTION_ORDER_RELEASE,
   );
 
   const order = await getProductionOrder(supabase, orderId);
 
-  if (order.status !== PRODUCTION_STATUS.DRAFT) {
-    throw new Error(`No se puede liberar una orden en estado ${order.status}`);
+  if (order.production_status !== PRODUCTION_STATUS.DRAFT) {
+    throw new Error(
+      `No se puede liberar una orden en estado ${order.production_status}`,
+    );
   }
 
   const { error } = await supabase
     .from('production_orders')
     .update({
-      status: PRODUCTION_STATUS.RELEASED,
+      production_status: PRODUCTION_STATUS.RELEASED,
       updated_at: new Date().toISOString(),
     })
     .eq('id', orderId);
@@ -301,20 +275,22 @@ export async function releaseProductionOrder(orderId: string) {
  * Inicia la producción de una orden (released → in_progress)
  */
 export async function startProductionOrder(orderId: string) {
-  const { supabase } = await requireAuthorizedAction(
+  const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.PRODUCTION_ORDER_START,
   );
 
   const order = await getProductionOrder(supabase, orderId);
 
-  if (order.status !== PRODUCTION_STATUS.RELEASED) {
-    throw new Error(`No se puede iniciar una orden en estado ${order.status}`);
+  if (order.production_status !== PRODUCTION_STATUS.RELEASED) {
+    throw new Error(
+      `No se puede iniciar una orden en estado ${order.production_status}`,
+    );
   }
 
   const { error } = await supabase
     .from('production_orders')
     .update({
-      status: PRODUCTION_STATUS.IN_PROGRESS,
+      production_status: PRODUCTION_STATUS.IN_PROGRESS,
       started_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -333,27 +309,22 @@ export async function startProductionOrder(orderId: string) {
  * Solo se puede cancelar desde estado 'draft' o 'released'
  */
 export async function cancelProductionOrder(orderId: string) {
-  const { supabase } = await requireAuthorizedAction(
+  const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.PRODUCTION_ORDER_CANCEL,
   );
 
   const order = await getProductionOrder(supabase, orderId);
 
-  const cancelableStates = [
-    PRODUCTION_STATUS.DRAFT,
-    PRODUCTION_STATUS.RELEASED,
-  ];
-
-  if (!cancelableStates.includes(order.status as any)) {
+  if (!canCancelProductionOrder(order.production_status)) {
     throw new Error(
-      `No se puede cancelar una orden en estado ${order.status}`,
+      `No se puede cancelar una orden en estado ${order.production_status}`,
     );
   }
 
   const { error } = await supabase
     .from('production_orders')
     .update({
-      status: PRODUCTION_STATUS.CANCELLED,
+      production_status: PRODUCTION_STATUS.CANCELLED,
       updated_at: new Date().toISOString(),
     })
     .eq('id', orderId);
@@ -377,27 +348,21 @@ export async function cancelProductionOrder(orderId: string) {
  * 5. Marca la orden como completada
  */
 export async function completeProductionOrder(orderId: string) {
-  const { supabase } = await requireAuthorizedAction(
+  const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.PRODUCTION_ORDER_COMPLETE,
   );
 
   const order = await getProductionOrder(supabase, orderId);
 
-  if (order.status !== PRODUCTION_STATUS.IN_PROGRESS) {
+  if (order.production_status !== PRODUCTION_STATUS.IN_PROGRESS) {
     throw new Error(
-      `No se puede completar una orden en estado ${order.status}`,
+      `No se puede completar una orden en estado ${order.production_status}`,
     );
   }
 
   const { data: productionOrder, error: orderError } = await supabase
     .from('production_orders')
-    .select(`
-      recipe_id,
-      planned_quantity,
-      recipes (
-        product_id
-      )
-    `)
+    .select('recipe_id')
     .eq('id', orderId)
     .single();
 
@@ -405,15 +370,13 @@ export async function completeProductionOrder(orderId: string) {
     throw new Error('No se pudo obtener la receta de la orden');
   }
 
-  const typedProductionOrder = productionOrder as ProductionOrderWithRecipe & {
-    planned_quantity: number;
-  };
+  const { data: recipe, error: recipeError } = await supabase
+    .from('recipes')
+    .select('product_id')
+    .eq('id', productionOrder.recipe_id)
+    .single();
 
-  const recipe = unwrapSingle(
-    typedProductionOrder.recipes,
-  );
-
-  if (!recipe?.product_id) {
+  if (recipeError || !recipe?.product_id) {
     throw new Error('La receta no tiene producto asociado');
   }
 
@@ -462,7 +425,7 @@ export async function completeProductionOrder(orderId: string) {
   const { error: updateError } = await supabase
     .from('production_orders')
     .update({
-      status: PRODUCTION_STATUS.COMPLETED,
+      production_status: PRODUCTION_STATUS.COMPLETED,
       produced_quantity: Number(order.planned_quantity ?? 0),
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -474,4 +437,4 @@ export async function completeProductionOrder(orderId: string) {
   }
 
   revalidateProductionRoutes(orderId);
-  }
+}

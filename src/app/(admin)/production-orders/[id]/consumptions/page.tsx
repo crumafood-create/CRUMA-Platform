@@ -1,26 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-
-type Consumption = {
-  id: string;
-  quantity: number;
-  raw_material_id: string;
-  inventory_lot_id: string;
-};
-
-type RawMaterial = {
-  id: string;
-  name: string;
-  internal_code: string | null;
-};
-
-type InventoryLot = {
-  id: string;
-  lot_number: string;
-  expiration_date: string | null;
-};
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function ProductionConsumptionsPage({
   params,
@@ -31,14 +12,14 @@ export default async function ProductionConsumptionsPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: order } =
     await supabase
       .from('production_orders')
       .select(`
         id,
-        order_number
+        production_number
       `)
       .eq('id', id)
       .single();
@@ -141,7 +122,7 @@ export default async function ProductionConsumptionsPage({
         []
       ).map(
         (
-          material: RawMaterial
+          material
         ) => [
           material.id,
           material,
@@ -155,7 +136,7 @@ export default async function ProductionConsumptionsPage({
         lots ??
         []
       ).map(
-        (lot: InventoryLot) => [
+        (lot) => [
           lot.id,
           lot,
         ]
@@ -171,7 +152,7 @@ export default async function ProductionConsumptionsPage({
           </h1>
 
           <p className="mt-1 text-sm text-gray-500">
-            {order.order_number}
+            {order.production_number}
           </p>
         </div>
 
@@ -188,7 +169,7 @@ export default async function ProductionConsumptionsPage({
           <div className="space-y-4">
             {consumptions.map(
               (
-                consumption: Consumption
+                consumption
               ) => {
                 const material =
                   materialMap.get(

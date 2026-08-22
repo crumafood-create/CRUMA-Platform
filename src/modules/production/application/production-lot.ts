@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
 
 import type {
   RawMaterialLot,
@@ -17,7 +17,7 @@ export type SuggestedRawMaterialLot = {
 // ============================================================================
 
 export async function getAvailableLots(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   rawMaterialId: string,
 ): Promise<RawMaterialLot[]> {
   const { data, error } = await supabase
@@ -44,7 +44,7 @@ export async function getAvailableLots(
     throw new Error(error.message);
   }
 
-  return (data ?? []).map((lot: any) => ({
+  return (data ?? []).map((lot) => ({
     id: lot.id,
     raw_material_id: lot.raw_material_id,
     lot_number: lot.lot_number,
@@ -59,7 +59,7 @@ export async function getAvailableLots(
 // ============================================================================
 
 export async function getSuggestedRawMaterialLot(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   rawMaterialId: string,
 ): Promise<SuggestedRawMaterialLot | null> {
   const { data, error } = await supabase
@@ -115,7 +115,7 @@ export async function getSuggestedRawMaterialLot(
 // ============================================================================
 
 export async function validateSuggestedLot(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   rawMaterialId: string,
   scannedLotNumber: string,
 ): Promise<SuggestedRawMaterialLot> {

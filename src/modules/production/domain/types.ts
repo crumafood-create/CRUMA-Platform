@@ -15,17 +15,17 @@ export type ProductionOrderStatus =
 
 export interface ProductionOrder {
   id: string;
-  order_number: string;
+  production_number: string;
   recipe_id: string;
 
   planned_quantity: number;
-  produced_quantity: number;
+  produced_quantity: number | null;
 
-  status: ProductionOrderStatus;
+  production_status: ProductionOrderStatus;
 
   created_at: string;
 
-  updated_at: string | null;
+  updated_at: string;
 
   started_at: string | null;
 

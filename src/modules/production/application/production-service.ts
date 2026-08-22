@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
 
 import { buildFEFOAllocation } from './production-fefo';
 
@@ -23,7 +23,7 @@ import {
 // ============================================================================
 
 export async function consumeProductionItem(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   productionOrderItemId: string,
   scannedLotNumber?: string,
 ): Promise<void> {
@@ -132,7 +132,7 @@ export async function consumeProductionItem(
 // ============================================================================
 
 export async function updateProductionStatus(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   productionOrderId: string,
 ): Promise<void> {
   const {
@@ -163,7 +163,7 @@ export async function updateProductionStatus(
   await supabase
     .from('production_orders')
     .update({
-      status: completed
+      production_status: completed
         ? PRODUCTION_STATUS.COMPLETED
         : PRODUCTION_STATUS.IN_PROGRESS,
 
@@ -185,7 +185,7 @@ export async function updateProductionStatus(
 // ============================================================================
 
 export async function getNextProductionItem(
-  supabase: SupabaseClient,
+  supabase: TypedSupabaseClient,
   productionOrderId: string,
 ) {
   const {

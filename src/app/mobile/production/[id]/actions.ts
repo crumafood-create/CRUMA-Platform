@@ -2,7 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import {
+  createClient,
+  createTypedClient,
+} from '@/infrastructure/integrations/supabase/server';
 
 import {
   consumeProductionItem,
@@ -62,7 +65,7 @@ export async function confirmProductionItem(
   scannedLotNumber: string,
 ) {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   await consumeProductionItem(
     supabase,
@@ -130,6 +133,8 @@ export async function getProductionDetail(
 ): Promise<ProductionDetail> {
   const supabase =
     await createClient();
+  const typedSupabase =
+    await createTypedClient();
 
   const {
     data: order,
@@ -222,7 +227,7 @@ export async function getProductionDetail(
 
     const suggestedLot =
       await getSuggestedRawMaterialLot(
-        supabase,
+        typedSupabase,
         row.raw_material_id,
       );
 

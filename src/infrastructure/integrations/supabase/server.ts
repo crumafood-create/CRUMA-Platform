@@ -48,5 +48,5 @@ export async function createTypedClient() {
 }
 
 export async function createClient(): Promise<SupabaseClient> {
-  return createTypedClient();
+  return (await createTypedClient()) as unknown as SupabaseClient;
 }

@@ -41,6 +41,7 @@ describe('contrato canónico de tipos Supabase', () => {
 
   it('retira credenciales remotas del proceso de generación', () => {
     const environment = createLocalTypeGenerationEnvironment({
+      NODE_ENV: 'test',
       PATH: '/usr/bin',
       SUPABASE_ACCESS_TOKEN: 'sbp_secret',
       SUPABASE_DB_PASSWORD: 'secret',
@@ -48,7 +49,7 @@ describe('contrato canónico de tipos Supabase', () => {
       PRODUCTION_DATABASE_URL: 'postgresql://production',
     });
 
-    expect(environment).toEqual({ PATH: '/usr/bin' });
+    expect(environment).toEqual({ NODE_ENV: 'test', PATH: '/usr/bin' });
   });
 
   it('normaliza finales de línea y conserva un único salto final', () => {

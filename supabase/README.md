@@ -240,6 +240,9 @@ El job no utiliza credenciales ni datos de Production.
 ## Trabajo pendiente para ADR-0002
 
 - ampliar las pruebas RLS a tablas operativas y contratos multi-tenant adicionales;
-- reconciliación segura del historial remoto;
-- comparación gobernada de drift;
 - y aprobaciones formales del ADR.
+
+La reconciliación remota y la comparación gobernada de drift quedaron
+verificadas con siete migraciones compartidas y cero diferencias de esquema.
+La auditoría posterior aprobó nueve controles de RLS, privilegios y funciones;
+el detalle consta en el [cierre productivo](../docs/engineering/security-audits/2026-08-21-production-migration-reconciliation-closeout.md).

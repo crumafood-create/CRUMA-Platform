@@ -76,3 +76,9 @@ reanudación continúa funcionando solo como `dry-run` sin escrituras remotas.
 Este cambio implementa y prueba el ejecutor, pero no autoriza su uso. Datos y
 arquitectura deben aprobar el fingerprint y se requiere una autorización humana
 independiente justo antes de cualquier escritura en Production.
+
+## Evidencia de cierre
+
+La ejecución autorizada, la reanudación gobernada, la comparación sin drift y
+los nueve controles productivos verificados se registraron en el [cierre de
+reconciliación y verificación de Production](./security-audits/2026-08-21-production-migration-reconciliation-closeout.md).

@@ -16,6 +16,7 @@ Su propósito es avanzar la validación de [ADR-0002](../docs/architecture/adr/0
 - Job `database` de CI para reconstrucción, lint y pruebas de base de datos desde cero.
 - Estrategia de seeds sintéticos, deterministas e idempotentes separada por propósito.
 - Contrato automatizado de esquema y estrategia de seeds integrado en `db:verify`.
+- Tipos TypeScript generados desde Supabase local y verificados contra Git en CI.
 - Inventario reproducible de referencias Supabase usadas por la aplicación.
 
 Migraciones actuales:
@@ -115,6 +116,29 @@ Ejecutar todas las pruebas de seguridad de base de datos:
 pnpm db:test:security
 ```
 
+Generar los tipos canónicos únicamente desde el esquema local `public`:
+
+```bash
+pnpm db:types:generate
+```
+
+El resultado versionado se conserva en
+`src/types/database/database.generated.ts`. El generador usa exclusivamente
+`supabase gen types typescript --local --schema public --network-id cruma-supabase-local`
+y elimina credenciales remotas del proceso hijo; no requiere acceso ni conexión
+a Production. La red explícita permite al generador resolver la base local en
+Codespaces y CI.
+
+Verificar que los tipos comprometidos coinciden con la base local:
+
+```bash
+pnpm db:types:check
+```
+
+La verificación falla si el contrato versionado no coincide con el generado.
+Después de crear o modificar una migración, reconstruir Supabase local,
+regenerar los tipos y revisar ambos cambios en el mismo Pull Request.
+
 Ejecutar la validación completa:
 
 ```bash
@@ -129,7 +153,9 @@ pnpm db:verify
 4. pruebas de seguridad de funciones, privilegios de tablas y comportamiento RLS;
 5. prueba del contrato de esquema;
 6. reaplicación idempotente de `base.sql` + `test.sql`;
-7. y prueba automatizada de la estrategia de seeds.
+7. prueba automatizada de la estrategia de seeds;
+8. contratos de generación segura de tipos;
+9. y comparación reproducible de tipos versionados contra el esquema local.
 
 ## Seeds por entorno
 

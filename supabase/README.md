@@ -156,6 +156,19 @@ Validar autenticación, roles y autorización existentes:
 pnpm auth:test:roles
 ```
 
+Las órdenes de producción administrativas y sus servicios compartidos utilizan
+el cliente tipado y los nombres canónicos `production_number`,
+`production_status` y `raw_material_id`. Validar sus reglas puras:
+
+```bash
+pnpm production:test:orders
+```
+
+Las consultas móviles de producción permanecen como siguiente etapa de la
+migración gradual. Sus llamadas a servicios compartidos ya usan el cliente
+tipado, mientras las consultas legacy conservan temporalmente el cliente de
+compatibilidad.
+
 Validar la configuración pública y el aislamiento de credenciales:
 
 ```bash

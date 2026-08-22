@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import {
   calculateProductionCost,
@@ -17,7 +17,7 @@ import {
 
 type RecipeItem = {
   id: string;
-  ingredient_id: string;
+  raw_material_id: string;
   quantity: number;
 };
 
@@ -28,7 +28,7 @@ type RawMaterial = {
 };
 
 type InventoryStockRow = {
-  item_id: string;
+  item_id: string | null;
   quantity: number | null;
 };
 
@@ -55,12 +55,12 @@ export default async function ProductionOrderPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: order } = await supabase
     .from('production_orders')
     .select(
-      'id, order_number, recipe_id, planned_quantity, produced_quantity, status, notes, started_at, completed_at, created_at'
+      'id, production_number, recipe_id, planned_quantity, produced_quantity, production_status, notes, started_at, completed_at, created_at'
     )
     .eq('id', id)
     .single();
@@ -77,12 +77,12 @@ export default async function ProductionOrderPage({
 
   const { data: ingredients } = await supabase
     .from('recipe_items')
-    .select('id, ingredient_id, quantity')
+    .select('id, raw_material_id, quantity')
     .eq('recipe_id', order.recipe_id)
     .order('created_at', { ascending: true });
 
   const ingredientIds =
-    (ingredients ?? []).map((item: RecipeItem) => item.ingredient_id);
+    (ingredients ?? []).map((item: RecipeItem) => item.raw_material_id);
 
   let materials: RawMaterial[] = [];
   if (ingredientIds.length > 0) {
@@ -91,7 +91,7 @@ export default async function ProductionOrderPage({
       .select('id, name, internal_code')
       .in('id', ingredientIds);
 
-    materials = (data ?? []) as RawMaterial[];
+    materials = data ?? [];
   }
 
   let stockRows: InventoryStockRow[] = [];
@@ -105,13 +105,15 @@ export default async function ProductionOrderPage({
       .eq('item_type', 'raw_material')
       .in('item_id', ingredientIds);
 
-    stockRows = (data ?? []) as InventoryStockRow[];
+    stockRows = data ?? [];
   }
 
   const stockMap = stockRows.reduce<Record<string, number>>(
     (acc, row) => {
-      acc[row.item_id] =
-        (acc[row.item_id] ?? 0) + Number(row.quantity ?? 0);
+      if (row.item_id) {
+        acc[row.item_id] =
+          (acc[row.item_id] ?? 0) + Number(row.quantity ?? 0);
+      }
 
       return acc;
     },
@@ -128,7 +130,7 @@ export default async function ProductionOrderPage({
         Number(item.quantity) * Number(order.planned_quantity);
 
       const available =
-        stockMap[item.ingredient_id] ?? 0;
+        stockMap[item.raw_material_id] ?? 0;
 
       return available >= required;
     });
@@ -142,7 +144,7 @@ export default async function ProductionOrderPage({
           </h1>
 
           <p className="mt-1 text-sm text-gray-500">
-            {order.order_number}
+            {order.production_number}
           </p>
         </div>
 
@@ -187,7 +189,7 @@ export default async function ProductionOrderPage({
             Estado
           </div>
           <div className="font-semibold">
-            {getStatusLabel(order.status)}
+            {getStatusLabel(order.production_status)}
           </div>
         </div>
 
@@ -227,14 +229,14 @@ export default async function ProductionOrderPage({
           <div className="space-y-3">
             {ingredients.map((item: RecipeItem) => {
               const material =
-                materialMap.get(item.ingredient_id);
+                materialMap.get(item.raw_material_id);
 
               const required =
                 Number(item.quantity) *
                 Number(order.planned_quantity);
 
               const available =
-                stockMap[item.ingredient_id] ?? 0;
+                stockMap[item.raw_material_id] ?? 0;
 
               const enough = available >= required;
 
@@ -292,7 +294,7 @@ export default async function ProductionOrderPage({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {order.status === 'draft' && (
+        {order.production_status === 'draft' && (
           <form
             action={releaseProductionOrder.bind(null, order.id)}
           >
@@ -305,7 +307,7 @@ export default async function ProductionOrderPage({
           </form>
         )}
 
-        {order.status === 'released' && (
+        {order.production_status === 'released' && (
           <form
             action={startProductionOrder.bind(null, order.id)}
           >
@@ -318,7 +320,7 @@ export default async function ProductionOrderPage({
           </form>
         )}
 
-        {order.status === 'in_progress' && (
+        {order.production_status === 'in_progress' && (
           <form
             action={completeProductionOrder.bind(null, order.id)}
           >
@@ -331,8 +333,8 @@ export default async function ProductionOrderPage({
           </form>
         )}
 
-        {order.status !== 'completed' &&
-          order.status !== 'cancelled' && (
+        {order.production_status !== 'completed' &&
+          order.production_status !== 'cancelled' && (
             <form
               action={cancelProductionOrder.bind(null, order.id)}
             >

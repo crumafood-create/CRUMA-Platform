@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { ProductForm } from '@/app/(admin)/_components/product-form';
+import { normalizeProductFormValues } from '@/modules/inventory/application/product-catalog-contract';
+import { fetchProductFormCatalog } from '@/modules/inventory/application/product-catalog-repository';
 
 import {
   updateProduct,
@@ -16,7 +18,7 @@ export default async function EditProductPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: product } =
     await supabase
@@ -29,39 +31,7 @@ export default async function EditProductPage({
     notFound();
   }
 
-  const { data: categories } =
-    await supabase
-      .from('categories')
-      .select('id, name, code_prefix')
-      .is('deleted_at', null)
-      .order('name');
-
-  const { data: families } =
-  await supabase
-    .from('product_families')
-    .select('id, name, category_id')
-    .is('deleted_at', null)
-    .order('name');
-
-  const { data: flavors } =
-    await supabase
-      .from('flavors')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name');
-
-  const { data: preparationTypes } =
-    await supabase
-      .from('preparation_types')
-      .select('id, name')
-      .order('name');
-
-  const { data: unitsOfMeasure } =
-  await supabase
-    .from('units_of_measure')
-    .select('id, name, code')
-    .eq('is_active', true)
-    .order('name');
+  const catalog = await fetchProductFormCatalog(supabase);
 
   return (
     <main className="max-w-5xl space-y-6">
@@ -70,12 +40,12 @@ export default async function EditProductPage({
       </h1>
 
       <ProductForm
-        initialValues={product}
-        categories={categories ?? []}
-        families={families ?? []}
-        flavors={flavors ?? []}
-        preparationTypes={preparationTypes ?? []}
-        unitsOfMeasure={unitsOfMeasure ?? []}
+        initialValues={normalizeProductFormValues(product)}
+        categories={catalog.categories}
+        families={catalog.families}
+        flavors={catalog.flavors}
+        preparationTypes={catalog.preparationTypes}
+        unitsOfMeasure={catalog.unitsOfMeasure}
         action={updateProduct.bind(
           null,
           product.id

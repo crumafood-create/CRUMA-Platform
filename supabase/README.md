@@ -193,6 +193,17 @@ pnpm inventory:test:materials
 pnpm inventory:test:alerts
 ```
 
+El catálogo de productos utiliza contratos tipados para altas y ediciones,
+valida estados y existencias mínimas, y comprueba explícitamente que cada
+familia pertenezca a su categoría antes de escribir. Las tres operaciones de
+escritura exigen el permiso `catalog.product.manage`; categorías, familias,
+sabores, preparaciones y unidades se obtienen desde un repositorio compartido.
+Validar el límite del catálogo:
+
+```bash
+pnpm inventory:test:products
+```
+
 Validar la configuración pública y el aislamiento de credenciales:
 
 ```bash

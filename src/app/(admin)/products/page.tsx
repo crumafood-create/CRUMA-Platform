@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { requireAuthenticatedUser } from '@/lib/auth/guards/auth.guard';
 import {
   isAuthorizationError,
@@ -8,27 +9,10 @@ import {
 } from '@/lib/auth/guards/permission.guard';
 import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 
-type LookupRow = {
-  id: string;
-  name: string;
-};
-
-type ProductRow = {
-  id: string;
-  category_id: string | null;
-  family_id: string | null;
-  flavor_id: string | null;
-  preparation_type_id: string | null;
-  slug: string | null;
-  internal_code: string | null;
-  name: string;
-  status: string | null;
-  is_featured: boolean | null;
-};
-
 export default async function ProductsPage() {
-  const { actor, supabase } =
-    await requireAuthenticatedUser().catch((error: unknown) => {
+  const supabase = await createTypedClient();
+  const { actor } =
+    await requireAuthenticatedUser(supabase).catch((error: unknown) => {
       if (
         isAuthorizationError(error) &&
         error.reason === 'unauthenticated'
@@ -51,10 +35,10 @@ export default async function ProductsPage() {
 
   const [
     { data: products, error: productsError },
-    { data: categories },
-    { data: families },
-    { data: flavors },
-    { data: preparationTypes },
+    { data: categories, error: categoriesError },
+    { data: families, error: familiesError },
+    { data: flavors, error: flavorsError },
+    { data: preparationTypes, error: preparationTypesError },
   ] = await Promise.all([
     supabase
       .from('products')
@@ -67,31 +51,34 @@ export default async function ProductsPage() {
     supabase.from('preparation_types').select('id, name').order('name'),
   ]);
 
-  if (productsError) {
+  if (
+    productsError ||
+    categoriesError ||
+    familiesError ||
+    flavorsError ||
+    preparationTypesError
+  ) {
     return (
       <main className="p-6">
         <h1 className="text-4xl font-bold">Productos</h1>
         <div className="mt-6 rounded-2xl border p-6">
           <p className="text-red-600">Error al cargar productos.</p>
-          <pre className="mt-4 whitespace-pre-wrap rounded border bg-gray-50 p-4 text-xs">
-            {JSON.stringify(productsError, null, 2)}
-          </pre>
         </div>
       </main>
     );
   }
 
   const categoryMap = new Map(
-    (categories ?? []).map((item: LookupRow) => [item.id, item.name])
+    (categories ?? []).map((item) => [item.id, item.name])
   );
   const familyMap = new Map(
-    (families ?? []).map((item: LookupRow) => [item.id, item.name])
+    (families ?? []).map((item) => [item.id, item.name])
   );
   const flavorMap = new Map(
-    (flavors ?? []).map((item: LookupRow) => [item.id, item.name])
+    (flavors ?? []).map((item) => [item.id, item.name])
   );
   const preparationTypeMap = new Map(
-    (preparationTypes ?? []).map((item: LookupRow) => [item.id, item.name])
+    (preparationTypes ?? []).map((item) => [item.id, item.name])
   );
 
   return (
@@ -110,7 +97,7 @@ export default async function ProductsPage() {
       <div className="rounded-2xl border p-6">
         {products?.length ? (
           <div className="space-y-3">
-            {products.map((product: ProductRow) => (
+            {products.map((product) => (
               <div
                 key={product.id}
                 className="rounded-xl border p-4"

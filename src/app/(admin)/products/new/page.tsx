@@ -1,47 +1,15 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { fetchProductFormCatalog } from '@/modules/inventory/application/product-catalog-repository';
 
 import { ProductForm } from '../../_components/product-form';
 
 import { createProduct } from '../actions';
 
 export default async function NewProductPage() {
-  const supabase = await createClient();
-
-  const { data: categories } =
-    await supabase
-      .from('categories')
-.select('id, name, code_prefix')
-      .is('deleted_at', null)
-      .order('name');
-
-  const { data: families } =
-  await supabase
-    .from('product_families')
-    .select('id, name, category_id')
-    .is('deleted_at', null)
-    .order('name');
-
-  const { data: flavors } =
-    await supabase
-      .from('flavors')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name');
-
-  const { data: preparationTypes } =
-  await supabase
-    .from('preparation_types')
-    .select('id, name')
-    .order('name');
-
-  const { data: unitsOfMeasure } =
-  await supabase
-    .from('units_of_measure')
-    .select('id, name, code')
-    .eq('is_active', true)
-    .order('name');
+  const supabase = await createTypedClient();
+  const catalog = await fetchProductFormCatalog(supabase);
 
   return (
     <main className="max-w-5xl space-y-6">
@@ -59,13 +27,13 @@ export default async function NewProductPage() {
       </div>
 
       <ProductForm
-  action={createProduct}
-  categories={categories ?? []}
-  families={families ?? []}
-  flavors={flavors ?? []}
-  preparationTypes={preparationTypes ?? []}
-  unitsOfMeasure={unitsOfMeasure ?? []}
-/>
+        action={createProduct}
+        categories={catalog.categories}
+        families={catalog.families}
+        flavors={catalog.flavors}
+        preparationTypes={catalog.preparationTypes}
+        unitsOfMeasure={catalog.unitsOfMeasure}
+      />
     </main>
   );
 }

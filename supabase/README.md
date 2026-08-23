@@ -182,6 +182,17 @@ comparten una única regla explícita de saldo. Validar el contrato:
 pnpm inventory:test:movements
 ```
 
+Las materias primas validan nombres, slugs, relaciones opcionales, costos y
+cantidades mediante el contrato generado. Categorías, familias y unidades se
+consultan con un repositorio tipado compartido. Las alertas de inventario
+descartan identificadores inválidos, normalizan cantidades nulas y consultan
+únicamente los catálogos necesarios. Validar ambos límites:
+
+```bash
+pnpm inventory:test:materials
+pnpm inventory:test:alerts
+```
+
 Validar la configuración pública y el aislamiento de credenciales:
 
 ```bash

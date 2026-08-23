@@ -1,29 +1,13 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-
-type RawMaterial = {
-  id: string;
-  name: string;
-  internal_code: string | null;
-  current_stock: number | null;
-  average_cost: number | null;
-  unit_of_measure_id: string | null;
-  is_active: boolean | null;
-};
-
-type UnitOfMeasure = {
-  id: string;
-  name: string;
-  code: string;
-};
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function RawMaterialsPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const [
     { data: materials, error: materialsError },
-    { data: units },
+    { data: units, error: unitsError },
   ] = await Promise.all([
     supabase
       .from('raw_materials')
@@ -39,7 +23,7 @@ export default async function RawMaterialsPage() {
       .eq('is_active', true),
   ]);
 
-  if (materialsError) {
+  if (materialsError || unitsError) {
     return (
       <main className="space-y-6">
         <h1 className="text-4xl font-bold">
@@ -51,16 +35,13 @@ export default async function RawMaterialsPage() {
             Error al cargar materias primas.
           </p>
 
-          <pre className="mt-4 whitespace-pre-wrap rounded border bg-gray-50 p-4 text-xs">
-            {JSON.stringify(materialsError, null, 2)}
-          </pre>
         </div>
       </main>
     );
   }
 
   const unitMap = new Map(
-    (units ?? []).map((unit: UnitOfMeasure) => [
+    (units ?? []).map((unit) => [
       unit.id,
       `${unit.code} - ${unit.name}`,
     ])
@@ -99,7 +80,7 @@ export default async function RawMaterialsPage() {
             </thead>
 
             <tbody>
-              {materials.map((material: RawMaterial) => (
+              {materials.map((material) => (
                 <tr key={material.id} className="border-b">
                   <td className="p-4">
                     {material.internal_code ?? '-'}

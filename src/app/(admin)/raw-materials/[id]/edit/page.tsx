@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { normalizeRawMaterialFormValues } from '@/modules/inventory/application/raw-material-contract';
+import { fetchRawMaterialFormCatalog } from '@/modules/inventory/application/raw-material-repository';
 
 import { RawMaterialForm } from '@/app/(admin)/_components/raw-material-form';
 
@@ -16,7 +18,7 @@ export default async function EditRawMaterialPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: material } = await supabase
     .from('raw_materials')
@@ -28,23 +30,8 @@ export default async function EditRawMaterialPage({
     notFound();
   }
 
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name, code_prefix')
-    .is('deleted_at', null)
-    .order('name');
-
-  const { data: families } = await supabase
-    .from('families')
-    .select('id, name, category_id')
-    .is('deleted_at', null)
-    .order('name');
-
-  const { data: unitsOfMeasure } = await supabase
-    .from('units_of_measure')
-    .select('id, name, code')
-    .eq('is_active', true)
-    .order('name');
+  const { categories, families, unitsOfMeasure } =
+    await fetchRawMaterialFormCatalog(supabase);
 
   return (
     <main className="max-w-5xl space-y-6">
@@ -53,10 +40,10 @@ export default async function EditRawMaterialPage({
       </h1>
 
       <RawMaterialForm
-        initialValues={material}
-        categories={categories ?? []}
-        families={families ?? []}
-        unitsOfMeasure={unitsOfMeasure ?? []}
+        initialValues={normalizeRawMaterialFormValues(material)}
+        categories={categories}
+        families={families}
+        unitsOfMeasure={unitsOfMeasure}
         action={updateRawMaterial.bind(null, material.id)}
       />
 

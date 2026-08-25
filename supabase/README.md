@@ -204,6 +204,17 @@ Validar el límite del catálogo:
 pnpm inventory:test:products
 ```
 
+Las categorías y familias de materias primas utilizan contratos estrictamente
+tipados y exigen `catalog.product.manage` para crear, editar y eliminar. Las
+familias comprueban que su categoría exista; la eliminación de categorías
+verifica independientemente `families`, `product_families`, productos y materias
+primas. Las familias con materias primas activas tampoco pueden eliminarse.
+Validar estas relaciones sin mezclar los dos catálogos de familias:
+
+```bash
+pnpm inventory:test:categories
+```
+
 Validar la configuración pública y el aislamiento de credenciales:
 
 ```bash

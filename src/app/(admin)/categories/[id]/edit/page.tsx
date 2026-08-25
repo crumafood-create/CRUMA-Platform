@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { CategoryForm } from '@/app/(admin)/_components/category-form';
+import { normalizeCategoryFormValues } from '@/modules/inventory/application/category-family-contract';
 
 import {
   updateCategory,
@@ -16,7 +17,7 @@ export default async function EditCategoryPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: category, error } =
     await supabase
@@ -36,17 +37,9 @@ export default async function EditCategoryPage({
       </h1>
 
       <CategoryForm
-  initialValues={{
-    name: category.name,
-    slug: category.slug,
-    description: category.description ?? '',
-    is_active: category.is_active ?? true,
-  }}
-  action={updateCategory.bind(
-    null,
-    category.id
-  )}
-/>
+        initialValues={normalizeCategoryFormValues(category)}
+        action={updateCategory.bind(null, category.id)}
+      />
 
       <form
         action={deleteCategory.bind(

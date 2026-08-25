@@ -215,6 +215,17 @@ Validar estas relaciones sin mezclar los dos catálogos de familias:
 pnpm inventory:test:categories
 ```
 
+Las escrituras de materias primas, movimientos y ajustes exigen permisos
+independientes: `inventory.material.manage`, `inventory.movement.create` e
+`inventory.adjustment.create`. Cada acción resuelve una sesión autenticada,
+verifica su permiso antes de modificar datos y reutiliza el cliente tipado del
+contexto autorizado. El rol legacy `admin` conserva acceso y `customer` se
+deniega por defecto. Validar estas guardas:
+
+```bash
+pnpm inventory:test:authorization
+```
+
 Validar la configuración pública y el aislamiento de credenciales:
 
 ```bash

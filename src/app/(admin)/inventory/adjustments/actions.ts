@@ -1,15 +1,18 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
-import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 import { buildInventoryAdjustment } from '@/modules/inventory/application/inventory-movement-contract';
 
 export async function createInventoryAdjustment(
   formData: FormData
 ) {
-  const supabase = await createTypedClient();
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE,
+  );
   const movement = buildInventoryAdjustment({
     itemType: formData.get('item_type'),
     itemId: formData.get('item_id')?.toString() ?? '',

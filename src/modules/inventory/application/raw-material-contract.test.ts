@@ -67,6 +67,19 @@ describe('contrato tipado de materias primas', () => {
     expect(result.internal_code).toBe(null);
   });
 
+  it('permite seleccionar una categoría sin familia', () => {
+    const result = buildRawMaterialInsert(materialForm({ family_id: '' }));
+
+    expect(result.category_id).toBe('category-1');
+    expect(result.family_id).toBe(null);
+  });
+
+  it('rechaza seleccionar una familia sin categoría', () => {
+    expect(() => buildRawMaterialInsert(materialForm({ category_id: '' }))).toThrow(
+      'La familia de una materia prima requiere una categoría.',
+    );
+  });
+
   it.each(['current_stock', 'minimum_stock', 'average_cost', 'last_cost'])(
     'rechaza cantidades negativas: %s',
     (field) => {

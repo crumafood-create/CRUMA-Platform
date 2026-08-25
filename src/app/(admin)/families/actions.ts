@@ -12,6 +12,7 @@ import {
 import {
   assertCategoryExists,
   assertFamilyCanBeDeleted,
+  assertFamilyCategoryCanBeChanged,
 } from '@/modules/inventory/application/category-family-repository';
 
 export async function createFamily(formData: FormData) {
@@ -37,6 +38,7 @@ export async function updateFamily(familyId: string, formData: FormData) {
   const family = buildFamilyUpdate(formData, new Date().toISOString());
 
   await assertCategoryExists(supabase, family.category_id);
+  await assertFamilyCategoryCanBeChanged(supabase, familyId, family.category_id);
 
   const { error } = await supabase
     .from('families')

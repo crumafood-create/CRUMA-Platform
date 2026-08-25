@@ -9,14 +9,21 @@ import {
   buildRawMaterialInsert,
   buildRawMaterialUpdate,
 } from '@/modules/inventory/application/raw-material-contract';
+import { assertRawMaterialFamilyBelongsToCategory } from '@/modules/inventory/application/raw-material-repository';
 
 export async function createRawMaterial(formData: FormData) {
   const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.INVENTORY_MATERIAL_MANAGE,
   );
-  const { error } = await supabase
-    .from('raw_materials')
-    .insert(buildRawMaterialInsert(formData));
+  const material = buildRawMaterialInsert(formData);
+
+  await assertRawMaterialFamilyBelongsToCategory(
+    supabase,
+    material.category_id ?? null,
+    material.family_id ?? null,
+  );
+
+  const { error } = await supabase.from('raw_materials').insert(material);
 
   if (error) throw new Error(error.message);
 
@@ -28,9 +35,17 @@ export async function updateRawMaterial(materialId: string, formData: FormData) 
   const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.INVENTORY_MATERIAL_MANAGE,
   );
+  const material = buildRawMaterialUpdate(formData, new Date().toISOString());
+
+  await assertRawMaterialFamilyBelongsToCategory(
+    supabase,
+    material.category_id ?? null,
+    material.family_id ?? null,
+  );
+
   const { error } = await supabase
     .from('raw_materials')
-    .update(buildRawMaterialUpdate(formData, new Date().toISOString()))
+    .update(material)
     .eq('id', materialId);
 
   if (error) throw new Error(error.message);

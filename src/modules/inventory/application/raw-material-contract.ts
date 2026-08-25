@@ -46,12 +46,19 @@ function nonNegativeNumber(form: FormData, field: string): number {
 }
 
 export function buildRawMaterialInsert(form: FormData): RawMaterialInsert {
+  const categoryId = optionalText(form, 'category_id');
+  const familyId = optionalText(form, 'family_id');
+
+  if (familyId && !categoryId) {
+    throw new Error('La familia de una materia prima requiere una categoría.');
+  }
+
   return {
     name: requiredText(form, 'name'),
     slug: requiredText(form, 'slug'),
     internal_code: optionalText(form, 'internal_code'),
-    category_id: optionalText(form, 'category_id'),
-    family_id: optionalText(form, 'family_id'),
+    category_id: categoryId,
+    family_id: familyId,
     unit_of_measure_id: optionalText(form, 'unit_of_measure_id'),
     current_stock: nonNegativeNumber(form, 'current_stock'),
     minimum_stock: nonNegativeNumber(form, 'minimum_stock'),

@@ -90,3 +90,37 @@ export async function assertFamilyCanBeDeleted(
 
   if (data?.length) throw new Error('La familia tiene materias primas activas.');
 }
+
+export async function assertFamilyCategoryCanBeChanged(
+  supabase: TypedSupabaseClient,
+  familyId: string,
+  categoryId: string,
+): Promise<void> {
+  const { data: family, error } = await supabase
+    .from('families')
+    .select('id, category_id')
+    .eq('id', familyId)
+    .is('deleted_at', null)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  if (!family) throw new Error('Familia no encontrada.');
+
+  if (family.category_id === categoryId) return;
+
+  const { data: materials, error: materialsError } = await supabase
+    .from('raw_materials')
+    .select('id')
+    .eq('family_id', familyId)
+    .is('deleted_at', null)
+    .limit(1);
+
+  if (materialsError) throw new Error(materialsError.message);
+
+  if (materials?.length) {
+    throw new Error(
+      'No se puede cambiar la categoría de una familia con materias primas activas.',
+    );
+  }
+}

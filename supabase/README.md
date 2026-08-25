@@ -193,6 +193,16 @@ pnpm inventory:test:materials
 pnpm inventory:test:alerts
 ```
 
+Las materias primas pueden asociarse únicamente a una categoría o a una
+categoría con una familia activa perteneciente a ella. Crear y editar rechaza
+familias inexistentes, eliminadas, sin categoría o pertenecientes a otra
+categoría. Cambiar la categoría de una familia con materias primas activas se
+bloquea para conservar la integridad de asociaciones existentes. Validar:
+
+```bash
+pnpm inventory:test:integrity
+```
+
 El catálogo de productos utiliza contratos tipados para altas y ediciones,
 valida estados y existencias mínimas, y comprueba explícitamente que cada
 familia pertenezca a su categoría antes de escribir. Las tres operaciones de

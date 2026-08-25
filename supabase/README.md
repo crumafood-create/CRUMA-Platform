@@ -182,6 +182,16 @@ comparten una única regla explícita de saldo. Validar el contrato:
 pnpm inventory:test:movements
 ```
 
+Las ubicaciones físicas de inventario utilizan clientes y contratos tipados,
+normalizan códigos y exigen coordenadas enteras no negativas dentro del rango
+seguro. Crear, editar y eliminar requiere `inventory.location.manage`; los
+códigos duplicados se rechazan y la eliminación verifica lotes de productos,
+lotes de materias primas e items de picking. Validar:
+
+```bash
+pnpm inventory:test:locations
+```
+
 Las materias primas validan nombres, slugs, relaciones opcionales, costos y
 cantidades mediante el contrato generado. Categorías, familias y unidades se
 consultan con un repositorio tipado compartido. Las alertas de inventario

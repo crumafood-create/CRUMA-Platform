@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
 import InventoryLocationForm from '@/app/(admin)/_components/inventory-location-form';
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { normalizeInventoryLocationFormValues } from '@/modules/inventory/application/inventory-location-contract';
 
 import {
   updateInventoryLocation,
@@ -20,7 +21,7 @@ export default async function EditInventoryLocationPage({
 }: Props) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: location, error } = await supabase
     .from('inventory_locations')
@@ -83,7 +84,7 @@ export default async function EditInventoryLocationPage({
       {/* ===================================================== */}
 
       <InventoryLocationForm
-        location={location}
+        location={normalizeInventoryLocationFormValues(location)}
         action={updateInventoryLocation.bind(
           null,
           location.id,

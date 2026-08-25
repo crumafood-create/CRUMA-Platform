@@ -6,6 +6,7 @@ import {
   assertCategoryCanBeDeleted,
   assertCategoryExists,
   assertFamilyCanBeDeleted,
+  assertFamilyCategoryCanBeChanged,
   fetchFamilyCategories,
 } from './category-family-repository';
 
@@ -131,5 +132,69 @@ describe('repositorio tipado de categorías y familias', () => {
     await expect(assertFamilyCanBeDeleted(client, 'family-1')).rejects.toThrow(
       'La familia tiene materias primas activas.',
     );
+  });
+
+  it('conserva la categoría de una familia sin consultar materias primas', async () => {
+    const { client, calls } = clientWith({
+      families: { data: { id: 'family-1', category_id: 'category-1' }, error: null },
+    });
+
+    await assertFamilyCategoryCanBeChanged(client, 'family-1', 'category-1');
+
+    expect(calls).toEqual(['families']);
+  });
+
+  it('permite cambiar la categoría de familias sin materias primas activas', async () => {
+    const { client, calls } = clientWith({
+      families: { data: { id: 'family-1', category_id: 'category-1' }, error: null },
+    });
+
+    await assertFamilyCategoryCanBeChanged(client, 'family-1', 'category-2');
+
+    expect(calls).toEqual(['families', 'raw_materials']);
+  });
+
+  it('bloquea recategorizar familias con materias primas activas', async () => {
+    const { client } = clientWith({
+      families: { data: { id: 'family-1', category_id: 'category-1' }, error: null },
+      raw_materials: { data: [{ id: 'material-1' }], error: null },
+    });
+
+    await expect(
+      assertFamilyCategoryCanBeChanged(client, 'family-1', 'category-2'),
+    ).rejects.toThrow(
+      'No se puede cambiar la categoría de una familia con materias primas activas.',
+    );
+  });
+
+  it('rechaza recategorizar familias eliminadas o inexistentes', async () => {
+    const { client } = clientWith({
+      families: { data: null, error: { message: 'Familia no encontrada.' } },
+    });
+
+    await expect(
+      assertFamilyCategoryCanBeChanged(client, 'family-1', 'category-2'),
+    ).rejects.toThrow('Familia no encontrada.');
+  });
+
+  it('rechaza respuestas sin una familia activa al recategorizar', async () => {
+    const { client } = clientWith({
+      families: { data: null, error: null },
+    });
+
+    await expect(
+      assertFamilyCategoryCanBeChanged(client, 'family-1', 'category-2'),
+    ).rejects.toThrow('Familia no encontrada.');
+  });
+
+  it('propaga errores al consultar materias primas de una familia', async () => {
+    const { client } = clientWith({
+      families: { data: { id: 'family-1', category_id: 'category-1' }, error: null },
+      raw_materials: { data: null, error: { message: 'Materias primas no disponibles.' } },
+    });
+
+    await expect(
+      assertFamilyCategoryCanBeChanged(client, 'family-1', 'category-2'),
+    ).rejects.toThrow('Materias primas no disponibles.');
   });
 });

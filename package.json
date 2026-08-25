@@ -25,6 +25,7 @@
     "inventory:test:products": "vitest run --project unit src/modules/inventory/application/product-catalog-contract.test.ts src/modules/inventory/application/product-catalog-repository.test.ts",
     "inventory:test:categories": "vitest run --project unit src/modules/inventory/application/category-family-contract.test.ts src/modules/inventory/application/category-family-repository.test.ts",
     "inventory:test:authorization": "vitest run --project unit src/modules/inventory/application/inventory-write-authorization.test.ts",
+    "inventory:test:integrity": "vitest run --project unit src/modules/inventory/application/raw-material-integrity.test.ts src/modules/inventory/application/raw-material-contract.test.ts src/modules/inventory/application/raw-material-repository.test.ts src/modules/inventory/application/category-family-repository.test.ts",
     "verify": "pnpm run typecheck && pnpm run lint && pnpm run test:coverage",
     "db:toolchain": "supabase --version",
     "db:inventory": "node scripts/database/inventory-supabase-references.mjs",

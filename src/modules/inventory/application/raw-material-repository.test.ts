@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
 
-import { fetchRawMaterialFormCatalog } from './raw-material-repository';
+import {
+  assertRawMaterialFamilyBelongsToCategory,
+  fetchRawMaterialFormCatalog,
+} from './raw-material-repository';
 
 type TableName = 'categories' | 'families' | 'units_of_measure';
 type Result = { data: unknown; error: { message: string } | null };
@@ -11,6 +14,7 @@ type QueryBuilder = Promise<Result> & {
   is: () => QueryBuilder;
   eq: () => QueryBuilder;
   order: () => QueryBuilder;
+  single: () => Promise<Result>;
 };
 
 function clientWith(fixtures: Partial<Record<TableName, Result>>) {
@@ -28,6 +32,7 @@ function clientWith(fixtures: Partial<Record<TableName, Result>>) {
         is() { return query; },
         eq() { return query; },
         order() { return query; },
+        single() { return Promise.resolve(result); },
       });
 
       return query;
@@ -70,4 +75,65 @@ describe('repositorio tipado de catálogos para materias primas', () => {
       'Familias no disponibles.',
     );
   });
+
+  it('acepta familias activas pertenecientes a la categoría seleccionada', async () => {
+    const { client, calls } = clientWith({
+      families: { data: { id: 'family-1', category_id: 'category-1' }, error: null },
+    });
+
+    await assertRawMaterialFamilyBelongsToCategory(client, 'category-1', 'family-1');
+
+    expect(calls).toEqual(['families']);
+  });
+
+  it('rechaza familias pertenecientes a otra categoría', async () => {
+    const { client } = clientWith({
+      families: { data: { id: 'family-1', category_id: 'category-2' }, error: null },
+    });
+
+    await expect(
+      assertRawMaterialFamilyBelongsToCategory(client, 'category-1', 'family-1'),
+    ).rejects.toThrow('La familia no pertenece a la categoría seleccionada.');
+  });
+
+  it('rechaza familias inexistentes o eliminadas', async () => {
+    const { client } = clientWith({
+      families: { data: null, error: { message: 'Familia no disponible.' } },
+    });
+
+    await expect(
+      assertRawMaterialFamilyBelongsToCategory(client, 'category-1', 'family-1'),
+    ).rejects.toThrow('Familia no disponible.');
+  });
+
+  it('rechaza respuestas sin una familia activa', async () => {
+    const { client } = clientWith({
+      families: { data: null, error: null },
+    });
+
+    await expect(
+      assertRawMaterialFamilyBelongsToCategory(client, 'category-1', 'family-1'),
+    ).rejects.toThrow('Familia de materia prima no encontrada.');
+  });
+
+  it('rechaza una familia sin categoría antes de consultar', async () => {
+    const { client, calls } = clientWith({});
+
+    await expect(
+      assertRawMaterialFamilyBelongsToCategory(client, null, 'family-1'),
+    ).rejects.toThrow('La familia de una materia prima requiere una categoría.');
+
+    expect(calls).toEqual([]);
+  });
+
+  it.each([null, 'category-1'])(
+    'omite consultas cuando la categoría %j no tiene familia',
+    async (categoryId) => {
+      const { client, calls } = clientWith({});
+
+      await assertRawMaterialFamilyBelongsToCategory(client, categoryId, null);
+
+      expect(calls).toEqual([]);
+    },
+  );
 });

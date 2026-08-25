@@ -47,3 +47,30 @@ export async function fetchRawMaterialFormCatalog(
     unitsOfMeasure: units.data ?? [],
   };
 }
+
+export async function assertRawMaterialFamilyBelongsToCategory(
+  supabase: TypedSupabaseClient,
+  categoryId: string | null,
+  familyId: string | null,
+): Promise<void> {
+  if (!familyId) return;
+
+  if (!categoryId) {
+    throw new Error('La familia de una materia prima requiere una categoría.');
+  }
+
+  const { data: family, error } = await supabase
+    .from('families')
+    .select('id, category_id')
+    .eq('id', familyId)
+    .is('deleted_at', null)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  if (!family) throw new Error('Familia de materia prima no encontrada.');
+
+  if (family.category_id !== categoryId) {
+    throw new Error('La familia no pertenece a la categoría seleccionada.');
+  }
+}

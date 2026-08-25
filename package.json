@@ -23,6 +23,7 @@
     "inventory:test:materials": "vitest run --project unit src/modules/inventory/application/raw-material-contract.test.ts src/modules/inventory/application/raw-material-repository.test.ts",
     "inventory:test:alerts": "vitest run --project unit src/modules/inventory/application/inventory-alert-contract.test.ts src/modules/inventory/application/inventory-alert-repository.test.ts",
     "inventory:test:products": "vitest run --project unit src/modules/inventory/application/product-catalog-contract.test.ts src/modules/inventory/application/product-catalog-repository.test.ts",
+    "inventory:test:flavors": "vitest run --project unit src/modules/inventory/application/flavor-catalog-contract.test.ts src/modules/inventory/application/flavor-catalog-repository.test.ts src/modules/inventory/application/flavor-catalog-authorization.test.ts",
     "inventory:test:categories": "vitest run --project unit src/modules/inventory/application/category-family-contract.test.ts src/modules/inventory/application/category-family-repository.test.ts",
     "inventory:test:authorization": "vitest run --project unit src/modules/inventory/application/inventory-write-authorization.test.ts",
     "inventory:test:integrity": "vitest run --project unit src/modules/inventory/application/raw-material-integrity.test.ts src/modules/inventory/application/raw-material-contract.test.ts src/modules/inventory/application/raw-material-repository.test.ts src/modules/inventory/application/category-family-repository.test.ts",

@@ -214,6 +214,16 @@ Validar el límite del catálogo:
 pnpm inventory:test:products
 ```
 
+El catálogo de sabores utiliza contratos derivados de los tipos generados,
+normaliza nombres, slugs y descripciones, y registra fechas ISO explícitas.
+Crear, editar y eliminar exige `catalog.product.manage`; la eliminación se
+bloquea cuando existen productos activos asociados. Listado y edición emplean
+exclusivamente el cliente Supabase tipado. Validar estas guardas:
+
+```bash
+pnpm inventory:test:flavors
+```
+
 Las categorías y familias de materias primas utilizan contratos estrictamente
 tipados y exigen `catalog.product.manage` para crear, editar y eliminar. Las
 familias comprueban que su categoría exista; la eliminación de categorías

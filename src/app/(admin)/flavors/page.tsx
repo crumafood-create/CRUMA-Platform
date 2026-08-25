@@ -1,15 +1,9 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-
-type Flavor = {
-  id: string;
-  name: string;
-  slug: string | null;
-};
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function FlavorsPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: flavors, error } = await supabase
     .from('flavors')
@@ -55,7 +49,7 @@ export default async function FlavorsPage() {
       <div className="rounded-2xl border p-6">
         {flavors?.length ? (
           <div className="space-y-3">
-            {flavors.map((flavor: Flavor) => (
+            {flavors.map((flavor) => (
               <div
                 key={flavor.id}
                 className="rounded border p-4"

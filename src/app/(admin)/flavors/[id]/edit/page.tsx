@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { normalizeFlavorFormValues } from '@/modules/inventory/application/flavor-catalog-contract';
 
 import { FlavorForm } from '@/app/(admin)/_components/flavor-form';
 
@@ -16,7 +17,7 @@ export default async function EditFlavorPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: flavor } = await supabase
     .from('flavors')
@@ -36,7 +37,7 @@ export default async function EditFlavorPage({
       </h1>
 
       <FlavorForm
-        initialValues={flavor}
+        initialValues={normalizeFlavorFormValues(flavor)}
         action={updateFlavor.bind(null, flavor.id)}
       />
 

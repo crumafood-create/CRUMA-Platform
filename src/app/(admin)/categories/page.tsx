@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function CategoriesPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const {
     data: categories,
@@ -15,17 +15,11 @@ export default async function CategoriesPage() {
     .order('name');
 
   if (error) {
-    console.error(error);
-
     return (
       <main className="p-6">
         <h1 className="text-2xl font-bold text-red-600">
           Error al cargar categorías
         </h1>
-
-        <pre className="mt-4 rounded border p-4 text-sm">
-          {JSON.stringify(error, null, 2)}
-        </pre>
       </main>
     );
   }

@@ -1,15 +1,11 @@
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { FamilyForm } from '@/app/(admin)/_components/family-form';
+import { fetchFamilyCategories } from '@/modules/inventory/application/category-family-repository';
 import { createFamily } from '../actions';
 
 export default async function NewFamilyPage() {
-  const supabase = await createClient();
-
-  const { data: categories } = await supabase
-  .from('categories')
-  .select('id, name, code_prefix')
-  .is('deleted_at', null)
-  .order('name');
+  const supabase = await createTypedClient();
+  const categories = await fetchFamilyCategories(supabase);
 
   return (
     <main className="space-y-6">
@@ -20,7 +16,7 @@ export default async function NewFamilyPage() {
         <h1 className="mt-2 text-4xl font-bold">Nueva Familia</h1>
       </div>
 
-      <FamilyForm categories={categories ?? []} action={createFamily} />
+      <FamilyForm categories={categories} action={createFamily} />
     </main>
   );
 }

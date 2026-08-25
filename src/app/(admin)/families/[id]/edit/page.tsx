@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { FamilyForm } from '@/app/(admin)/_components/family-form';
+import { normalizeFamilyFormValues } from '@/modules/inventory/application/category-family-contract';
+import { fetchFamilyCategories } from '@/modules/inventory/application/category-family-repository';
 import { updateFamily, deleteFamily } from '../../actions';
 
 export default async function EditFamilyPage({
@@ -11,7 +13,7 @@ export default async function EditFamilyPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: family } = await supabase
     .from('families')
@@ -21,11 +23,7 @@ export default async function EditFamilyPage({
 
   if (!family) notFound();
 
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name')
-    .is('deleted_at', null)
-    .order('name');
+  const categories = await fetchFamilyCategories(supabase);
 
   return (
     <main className="space-y-6">
@@ -37,8 +35,8 @@ export default async function EditFamilyPage({
       </div>
 
       <FamilyForm
-        categories={categories ?? []}
-        initialValues={family}
+        categories={categories}
+        initialValues={normalizeFamilyFormValues(family)}
         familyId={family.id}
         onDelete={deleteFamily}
         action={updateFamily.bind(null, family.id)}

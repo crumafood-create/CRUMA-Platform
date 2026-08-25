@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function FamiliesPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: families, error } = await supabase
     .from('families')
@@ -16,7 +16,7 @@ export default async function FamiliesPage() {
       <main className="space-y-6">
         <h1 className="text-4xl font-bold">Familias</h1>
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-          <p className="text-red-700">Error al cargar familias: {error.message}</p>
+          <p className="text-red-700">Error al cargar familias.</p>
         </div>
       </main>
     );
@@ -52,7 +52,7 @@ export default async function FamiliesPage() {
               </thead>
 
               <tbody>
-                {familyList.map((family: any) => (
+                {familyList.map((family) => (
                   <tr key={family.id} className="border-b hover:bg-gray-50">
                     <td className="p-4">
                       <code className="rounded bg-gray-100 px-2 py-1 text-sm font-medium">

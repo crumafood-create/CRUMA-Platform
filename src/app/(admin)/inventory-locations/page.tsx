@@ -1,22 +1,10 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-
-type InventoryLocation = {
-  id: string;
-  slug: string;
-  name: string;
-  description: string | null;
-  zone: string;
-  aisle: number | null;
-  rack: number | null;
-  level: number | null;
-  position: number | null;
-  is_active: boolean;
-};
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { normalizeInventoryLocationFormValues } from '@/modules/inventory/application/inventory-location-contract';
 
 export default async function InventoryLocationsPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data, error } = await supabase
     .from('inventory_locations')
@@ -43,7 +31,7 @@ export default async function InventoryLocationsPage() {
     throw new Error(error.message);
   }
 
-  const locations: InventoryLocation[] = data ?? [];
+  const locations = (data ?? []).map(normalizeInventoryLocationFormValues);
 
   return (
     <main className="space-y-6">

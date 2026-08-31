@@ -138,6 +138,23 @@ VALUES
     now()
   );
 
+INSERT INTO public.units_of_measure (
+  id,
+  name,
+  code
+)
+VALUES
+  (
+    '94000000-0000-0000-0000-000000000001',
+    'RLS Main Unit',
+    'RLS-U1'
+  ),
+  (
+    '94000000-0000-0000-0000-000000000004',
+    'RLS Delete Unit',
+    'RLS-U4'
+  );
+
 INSERT INTO public.tenants (
   id,
   name,
@@ -264,6 +281,43 @@ BEGIN
     WHEN insufficient_privilege THEN
       NULL;
   END;
+
+  UPDATE public.units_of_measure
+  SET name = 'Unexpected normal-user unit update'
+  WHERE id = '94000000-0000-0000-0000-000000000001';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 0 THEN
+    RAISE EXCEPTION
+      'normal user unexpectedly updated % unit rows',
+      affected_rows;
+  END IF;
+
+  DELETE FROM public.units_of_measure
+  WHERE id = '94000000-0000-0000-0000-000000000004';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 0 THEN
+    RAISE EXCEPTION
+      'normal user unexpectedly deleted % unit rows',
+      affected_rows;
+  END IF;
+
+  BEGIN
+    INSERT INTO public.units_of_measure (id, name, code)
+    VALUES (
+      '94000000-0000-0000-0000-000000000002',
+      'Unexpected Normal User Unit',
+      'RLS-U2'
+    );
+
+    RAISE EXCEPTION 'normal user unexpectedly inserted a unit';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
 END;
 $test$;
 
@@ -306,6 +360,36 @@ BEGIN
     'RLS Admin Product',
     'draft'
   );
+
+  UPDATE public.units_of_measure
+  SET name = 'RLS Main Unit Updated By Admin'
+  WHERE id = '94000000-0000-0000-0000-000000000001';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 1 THEN
+    RAISE EXCEPTION
+      'admin expected to update 1 unit row, updated %',
+      affected_rows;
+  END IF;
+
+  INSERT INTO public.units_of_measure (id, name, code)
+  VALUES (
+    '94000000-0000-0000-0000-000000000003',
+    'RLS Admin Unit',
+    'RLS-U3'
+  );
+
+  DELETE FROM public.units_of_measure
+  WHERE id = '94000000-0000-0000-0000-000000000004';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 1 THEN
+    RAISE EXCEPTION
+      'admin expected to delete 1 unit row, deleted %',
+      affected_rows;
+  END IF;
 END;
 $test$;
 
@@ -676,6 +760,34 @@ BEGIN
     WHERE id = '92000000-0000-0000-0000-000000000002'
   ) THEN
     RAISE EXCEPTION 'owner tenant delete was not persisted';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.units_of_measure
+    WHERE id = '94000000-0000-0000-0000-000000000001'
+      AND name = 'RLS Main Unit Updated By Admin'
+  ) THEN
+    RAISE EXCEPTION 'admin unit update was not persisted';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.units_of_measure
+    WHERE id = '94000000-0000-0000-0000-000000000003'
+  ) THEN
+    RAISE EXCEPTION 'admin unit insert was not persisted';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.units_of_measure
+    WHERE id IN (
+      '94000000-0000-0000-0000-000000000002',
+      '94000000-0000-0000-0000-000000000004'
+    )
+  ) THEN
+    RAISE EXCEPTION 'unit RLS write outcomes are inconsistent';
   END IF;
 END;
 $test$;

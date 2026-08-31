@@ -3,6 +3,7 @@ export const PERMISSIONS = {
   IDENTITY_USER_MANAGE: 'identity.user.manage',
   INVENTORY_MATERIAL_MANAGE: 'inventory.material.manage',
   INVENTORY_LOCATION_MANAGE: 'inventory.location.manage',
+  INVENTORY_UNIT_MANAGE: 'inventory.unit.manage',
   INVENTORY_MOVEMENT_CREATE: 'inventory.movement.create',
   INVENTORY_ADJUSTMENT_CREATE: 'inventory.adjustment.create',
   PRODUCTION_ORDER_CREATE: 'production.order.create',

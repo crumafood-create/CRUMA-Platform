@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
-import { createClient }
-from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { normalizeUnitOfMeasureFormValues } from '@/modules/inventory/application/unit-of-measure-contract';
 
 import { UnitOfMeasureForm }
 from '@/app/(admin)/_components/unit-of-measure-form';
@@ -18,16 +18,16 @@ export default async function EditUnitOfMeasurePage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
-  const { data: unit } =
+  const { data: unit, error } =
     await supabase
       .from('units_of_measure')
       .select('*')
       .eq('id', id)
       .single();
 
-  if (!unit) {
+  if (error || !unit) {
     notFound();
   }
 
@@ -38,7 +38,7 @@ export default async function EditUnitOfMeasurePage({
       </h1>
 
       <UnitOfMeasureForm
-        initialValues={unit}
+        initialValues={normalizeUnitOfMeasureFormValues(unit)}
         action={updateUnitOfMeasure.bind(
           null,
           unit.id

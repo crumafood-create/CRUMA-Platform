@@ -28,12 +28,13 @@ Migraciones actuales:
 - `20260807000000_scope_admin_rls_policies.sql`
 - `20260809000000_reconcile_catalog_schema_contract.sql`
 - `20260809010000_enforce_product_family_category_consistency.sql`
+- `20260810000000_harden_unit_of_measure_rls.sql`
 
 La reconstrucción local validada contiene:
 
 - 124 tablas en `public`;
 - 12 vistas;
-- 188 policies;
+- 186 policies;
 - RLS habilitado en las 124 tablas de aplicación;
 - y los demás objetos incluidos en las migraciones versionadas.
 
@@ -357,6 +358,7 @@ La prueba de comportamiento RLS valida de forma transaccional:
 
 - visibilidad pública de productos activos y ocultamiento de productos inactivos o eliminados;
 - bloqueo de escritura de productos para usuarios normales y acceso para administradores;
+- bloqueo de escritura de unidades de medida para usuarios normales y acceso para administradores;
 - acceso de cada usuario a su propio perfil y aislamiento de perfiles ajenos;
 - lectura de roles propios y administración de roles por usuarios autorizados;
 - lectura de tenants por miembros y aislamiento frente a usuarios externos;
@@ -364,6 +366,8 @@ La prueba de comportamiento RLS valida de forma transaccional:
 - y visibilidad exclusiva de la membresía propia.
 
 La migración `20260807000000_scope_admin_rls_policies.sql` limita las políticas administrativas de productos y roles al rol `authenticated`, evitando que las lecturas anónimas evalúen funciones administrativas.
+
+La migración `20260810000000_harden_unit_of_measure_rls.sql` sustituye las políticas abiertas de escritura de unidades de medida por una política administrativa autenticada y conserva la lectura pública.
 
 ## Verificación en CI
 

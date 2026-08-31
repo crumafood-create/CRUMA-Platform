@@ -155,6 +155,34 @@ VALUES
     'RLS-U4'
   );
 
+INSERT INTO public.raw_materials (
+  id,
+  name,
+  slug,
+  unit_of_measure_id
+)
+VALUES (
+  '95000000-0000-0000-0000-000000000001',
+  'RLS Main Material',
+  'rls-main-material',
+  '94000000-0000-0000-0000-000000000001'
+);
+
+INSERT INTO public.recipes (
+  id,
+  product_id,
+  name,
+  yield_quantity,
+  unit_of_measure_id
+)
+VALUES (
+  '96000000-0000-0000-0000-000000000001',
+  '91000000-0000-0000-0000-000000000001',
+  'RLS Main Recipe',
+  100,
+  '94000000-0000-0000-0000-000000000001'
+);
+
 INSERT INTO public.tenants (
   id,
   name,
@@ -318,6 +346,48 @@ BEGIN
     WHEN insufficient_privilege THEN
       NULL;
   END;
+
+  BEGIN
+    INSERT INTO public.recipes (
+      id,
+      product_id,
+      name,
+      yield_quantity,
+      unit_of_measure_id
+    )
+    VALUES (
+      '96000000-0000-0000-0000-000000000002',
+      '91000000-0000-0000-0000-000000000001',
+      'Unexpected Normal User Recipe',
+      100,
+      '94000000-0000-0000-0000-000000000001'
+    );
+
+    RAISE EXCEPTION 'normal user unexpectedly inserted a recipe';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.recipe_items (
+      id,
+      recipe_id,
+      raw_material_id,
+      quantity
+    )
+    VALUES (
+      '97000000-0000-0000-0000-000000000001',
+      '96000000-0000-0000-0000-000000000001',
+      '95000000-0000-0000-0000-000000000001',
+      1
+    );
+
+    RAISE EXCEPTION 'normal user unexpectedly inserted a recipe item';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
 END;
 $test$;
 
@@ -378,6 +448,34 @@ BEGIN
     '94000000-0000-0000-0000-000000000003',
     'RLS Admin Unit',
     'RLS-U3'
+  );
+
+  INSERT INTO public.recipes (
+    id,
+    product_id,
+    name,
+    yield_quantity,
+    unit_of_measure_id
+  )
+  VALUES (
+    '96000000-0000-0000-0000-000000000003',
+    '91000000-0000-0000-0000-000000000001',
+    'RLS Admin Recipe',
+    100,
+    '94000000-0000-0000-0000-000000000001'
+  );
+
+  INSERT INTO public.recipe_items (
+    id,
+    recipe_id,
+    raw_material_id,
+    quantity
+  )
+  VALUES (
+    '97000000-0000-0000-0000-000000000002',
+    '96000000-0000-0000-0000-000000000003',
+    '95000000-0000-0000-0000-000000000001',
+    1
   );
 
   DELETE FROM public.units_of_measure
@@ -788,6 +886,34 @@ BEGIN
     )
   ) THEN
     RAISE EXCEPTION 'unit RLS write outcomes are inconsistent';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.recipes
+    WHERE id = '96000000-0000-0000-0000-000000000003'
+  ) THEN
+    RAISE EXCEPTION 'admin recipe insert was not persisted';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.recipe_items
+    WHERE id = '97000000-0000-0000-0000-000000000002'
+  ) THEN
+    RAISE EXCEPTION 'admin recipe item insert was not persisted';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.recipes
+    WHERE id = '96000000-0000-0000-0000-000000000002'
+  ) OR EXISTS (
+    SELECT 1
+    FROM public.recipe_items
+    WHERE id = '97000000-0000-0000-0000-000000000001'
+  ) THEN
+    RAISE EXCEPTION 'recipe RLS write outcomes are inconsistent';
   END IF;
 END;
 $test$;

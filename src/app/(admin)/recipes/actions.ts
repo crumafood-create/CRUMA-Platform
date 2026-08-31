@@ -3,33 +3,24 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { buildRecipeInsert } from '@/modules/production/application/recipe-contract';
+import { assertRecipeReferencesAvailable } from '@/modules/production/application/recipe-repository';
 
 export async function createRecipe(formData: FormData) {
-  const supabase = await createClient();
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.PRODUCTION_RECIPE_MANAGE,
+  );
+  const recipe = buildRecipeInsert(formData);
 
-  const product_id = formData.get('product_id')?.toString().trim() ?? '';
-  const name = formData.get('name')?.toString().trim() ?? '';
-  const description = formData.get('description')?.toString().trim() || null;
-  const yield_quantity = Number(formData.get('yield_quantity')) || 1;
-  const unit_of_measure_id =
-    formData.get('unit_of_measure_id')?.toString().trim() || null;
-  const is_active = formData.get('is_active')?.toString() === 'true';
+  await assertRecipeReferencesAvailable(
+    supabase,
+    recipe.product_id,
+    recipe.unit_of_measure_id,
+  );
 
-  if (!product_id || !name) {
-    throw new Error('Producto y nombre son obligatorios');
-  }
-
-  const { error } = await supabase
-    .from('recipes')
-    .insert({
-      product_id,
-      name,
-      description,
-      yield_quantity,
-      unit_of_measure_id,
-      is_active,
-    });
+  const { error } = await supabase.from('recipes').insert(recipe);
 
   if (error) {
     throw new Error(error.message);

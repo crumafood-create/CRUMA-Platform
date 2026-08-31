@@ -1,11 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-
-type Product = {
-  name: string;
-};
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function RecipePage({
   params,
@@ -16,7 +12,7 @@ export default async function RecipePage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: recipe } = await supabase
     .from('recipes')
@@ -39,8 +35,8 @@ export default async function RecipePage({
 
   const product =
     Array.isArray(recipe.products)
-      ? (recipe.products as Product[])[0]
-      : (recipe.products as Product | null);
+      ? recipe.products[0]
+      : recipe.products;
 
   return (
     <main className="space-y-6">
@@ -123,12 +119,6 @@ export default async function RecipePage({
           Ingredientes
         </Link>
 
-        <Link
-          href={`/recipes/${recipe.id}/edit`}
-          className="rounded-lg border px-4 py-2"
-        >
-          Editar
-        </Link>
       </div>
     </main>
   );

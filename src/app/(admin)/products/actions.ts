@@ -10,6 +10,7 @@ import {
   buildProductUpdate,
 } from '@/modules/inventory/application/product-catalog-contract';
 import {
+  assertPreparationTypeExists,
   assertProductFamilyBelongsToCategory,
 } from '@/modules/inventory/application/product-catalog-repository';
 
@@ -23,6 +24,10 @@ export async function updateProduct(productId: string, formData: FormData) {
     supabase,
     product.category_id ?? null,
     product.family_id ?? null,
+  );
+  await assertPreparationTypeExists(
+    supabase,
+    product.preparation_type_id ?? null,
   );
 
   const { error } = await supabase
@@ -48,6 +53,10 @@ export async function createProduct(formData: FormData) {
     supabase,
     product.category_id ?? null,
     product.family_id ?? null,
+  );
+  await assertPreparationTypeExists(
+    supabase,
+    product.preparation_type_id ?? null,
   );
 
   const { error } = await supabase.from('products').insert(product);

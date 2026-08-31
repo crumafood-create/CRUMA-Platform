@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
 
 import {
+  assertPreparationTypeExists,
   assertProductFamilyBelongsToCategory,
   fetchProductFormCatalog,
 } from './product-catalog-repository';
@@ -19,6 +20,7 @@ type QueryBuilder = Promise<Result> & {
   is: () => QueryBuilder;
   eq: () => QueryBuilder;
   order: () => QueryBuilder;
+  maybeSingle: () => Promise<Result>;
   single: () => Promise<Result>;
 };
 
@@ -37,6 +39,7 @@ function clientWith(fixtures: Partial<Record<TableName, Result>>) {
         is() { return query; },
         eq() { return query; },
         order() { return query; },
+        maybeSingle() { return Promise.resolve(result); },
         single() { return Promise.resolve(result); },
       });
 
@@ -126,6 +129,50 @@ describe('repositorio tipado del catálogo de productos', () => {
     const { client, calls } = clientWith({});
 
     await assertProductFamilyBelongsToCategory(client, null, null);
+
+    expect(calls).toEqual([]);
+  });
+
+  it('acepta un tipo de preparación existente', async () => {
+    const { client } = clientWith({
+      preparation_types: {
+        data: { id: 'preparation-1' },
+        error: null,
+      },
+    });
+
+    await expect(
+      assertPreparationTypeExists(client, 'preparation-1'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rechaza un tipo de preparación inexistente', async () => {
+    const { client } = clientWith({
+      preparation_types: { data: null, error: null },
+    });
+
+    await expect(
+      assertPreparationTypeExists(client, 'preparation-1'),
+    ).rejects.toThrow('Tipo de preparación no encontrado.');
+  });
+
+  it('propaga errores al validar el tipo de preparación', async () => {
+    const { client } = clientWith({
+      preparation_types: {
+        data: null,
+        error: { message: 'Tipos de preparación no disponibles.' },
+      },
+    });
+
+    await expect(
+      assertPreparationTypeExists(client, 'preparation-1'),
+    ).rejects.toThrow('Tipos de preparación no disponibles.');
+  });
+
+  it('omite la consulta cuando el tipo de preparación está vacío', async () => {
+    const { client, calls } = clientWith({});
+
+    await assertPreparationTypeExists(client, null);
 
     expect(calls).toEqual([]);
   });

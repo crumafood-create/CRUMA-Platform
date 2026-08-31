@@ -19,6 +19,7 @@
     "auth:test:roles": "vitest run --project unit src/lib/auth/legacy-role-contract.test.ts src/lib/auth/get-user-role.test.ts src/lib/auth/guards/auth.guard.test.ts src/lib/auth/guards/action.guard.test.ts",
     "production:test:orders": "vitest run --project unit src/modules/production/application/production-order-contract.test.ts",
     "production:test:mobile": "vitest run --project unit src/modules/production/application/mobile-production-contract.test.ts src/modules/production/application/mobile-production-repository.test.ts",
+    "production:test:recipes": "vitest run --project unit src/modules/production/application/recipe-contract.test.ts src/modules/production/application/recipe-repository.test.ts src/modules/production/application/recipe-authorization.test.ts src/lib/database/recipe-rls.test.ts",
     "inventory:test:movements": "vitest run --project unit src/modules/inventory/application/inventory-movement-contract.test.ts",
     "inventory:test:locations": "vitest run --project unit src/modules/inventory/application/inventory-location-contract.test.ts src/modules/inventory/application/inventory-location-repository.test.ts src/modules/inventory/application/inventory-location-authorization.test.ts",
     "inventory:test:units": "vitest run --project unit src/modules/inventory/application/unit-of-measure-contract.test.ts src/modules/inventory/application/unit-of-measure-repository.test.ts src/modules/inventory/application/unit-of-measure-authorization.test.ts src/lib/database/unit-of-measure-rls.test.ts",

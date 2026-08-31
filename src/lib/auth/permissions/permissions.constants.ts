@@ -6,6 +6,7 @@ export const PERMISSIONS = {
   INVENTORY_UNIT_MANAGE: 'inventory.unit.manage',
   INVENTORY_MOVEMENT_CREATE: 'inventory.movement.create',
   INVENTORY_ADJUSTMENT_CREATE: 'inventory.adjustment.create',
+  PRODUCTION_RECIPE_MANAGE: 'production.recipe.manage',
   PRODUCTION_ORDER_CREATE: 'production.order.create',
   PRODUCTION_ORDER_RELEASE: 'production.order.release',
   PRODUCTION_ORDER_START: 'production.order.start',

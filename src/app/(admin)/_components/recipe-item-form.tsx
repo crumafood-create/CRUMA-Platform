@@ -37,7 +37,7 @@ export function RecipeItemForm({
         </label>
 
         <select
-          name="ingredient_id"
+          name="raw_material_id"
           required
           className="w-full rounded border p-3"
         >

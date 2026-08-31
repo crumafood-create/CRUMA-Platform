@@ -2,28 +2,28 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { buildRecipeItemInsert } from '@/modules/production/application/recipe-contract';
+import { assertRecipeItemReferencesAvailable } from '@/modules/production/application/recipe-repository';
 
 export async function createRecipeItem(formData: FormData) {
-  const supabase = await createClient();
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.PRODUCTION_RECIPE_MANAGE,
+  );
+  const item = buildRecipeItemInsert(formData);
 
-  const recipeId = formData.get('recipe_id')?.toString() ?? '';
-  const ingredientId = formData.get('ingredient_id')?.toString() ?? '';
-  const quantity = Number(formData.get('quantity'));
+  await assertRecipeItemReferencesAvailable(
+    supabase,
+    item.recipe_id,
+    item.raw_material_id,
+  );
 
-  if (!recipeId || !ingredientId || !quantity) {
-    throw new Error('Datos incompletos');
-  }
-
-  const { error } = await supabase.from('recipe_items').insert({
-    recipe_id: recipeId,
-    ingredient_id: ingredientId,
-    quantity,
-  });
+  const { error } = await supabase.from('recipe_items').insert(item);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  revalidatePath(`/recipes/${recipeId}/ingredients`);
+  revalidatePath(`/recipes/${item.recipe_id}/ingredients`);
 }

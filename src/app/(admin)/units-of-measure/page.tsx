@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function UnitsOfMeasurePage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: units, error } = await supabase
     .from('units_of_measure')
@@ -13,9 +13,9 @@ export default async function UnitsOfMeasurePage() {
 
   if (error) {
     return (
-      <pre>
-        {JSON.stringify(error, null, 2)}
-      </pre>
+      <main className="p-6">
+        <p className="text-red-600">No se pudieron cargar las unidades de medida.</p>
+      </main>
     );
   }
 
@@ -39,7 +39,7 @@ export default async function UnitsOfMeasurePage() {
       <div className="rounded-2xl border p-6">
         {unitList.length > 0 ? (
           <div className="space-y-3">
-            {unitList.map((unit: any) => (
+            {unitList.map((unit) => (
               <div
                 key={unit.id}
                 className="flex items-center justify-between rounded-lg border p-4 hover:bg-gray-50"

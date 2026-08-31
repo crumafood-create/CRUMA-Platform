@@ -86,3 +86,20 @@ export async function assertProductFamilyBelongsToCategory(
     throw new Error('La familia no pertenece a la categoría seleccionada.');
   }
 }
+
+export async function assertPreparationTypeExists(
+  supabase: TypedSupabaseClient,
+  preparationTypeId: string | null,
+): Promise<void> {
+  if (!preparationTypeId) return;
+
+  const { data, error } = await supabase
+    .from('preparation_types')
+    .select('id')
+    .eq('id', preparationTypeId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  if (!data) throw new Error('Tipo de preparación no encontrado.');
+}

@@ -2,161 +2,48 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { assertPurchaseOrderStatus, type PurchaseOrderStatus } from '@/modules/procurement/application/purchase-order-contract';
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
-export type SuggestedLocation = {
-  id: string;
-  name: string;
-} | null;
-
+export type InventoryLocation = { id: string; code: string; name: string; zone: string | null };
 export type ReceivingItem = {
-  id: string;
-  purchase_order_id: string;
-
-  raw_material_id: string;
-
-  quantity: number;
-
-  received_quantity: number;
-
-  unit_cost: number;
-
-  raw_material: {
-    id: string;
-    name: string;
-  } | null;
-
-  suggested_location: SuggestedLocation;
+  id: string; purchase_order_id: string; raw_material_id: string;
+  quantity: number; received_quantity: number; unit_cost: number;
+  raw_material: { id: string; name: string } | null;
+  suggested_location: { id: string; name: string } | null;
 };
-
 export type ReceivingDetail = {
-  purchaseOrder: {
-    id: string;
-
-    order_number: string;
-
-    supplier_id: string;
-
-    status: string;
-  };
-
+  purchaseOrder: { id: string; order_number: string; supplier_id: string; status: PurchaseOrderStatus };
   items: ReceivingItem[];
 };
 
-// ============================================================================
-// GET RECEIVING DETAIL
-// ============================================================================
-
-export async function getReceivingDetail(
-  purchaseOrderId: string,
-): Promise<ReceivingDetail> {
-  const supabase =
-    await createClient();
-
-  //
-  // Orden
-  //
-  const {
-    data: purchaseOrder,
-    error: purchaseOrderError,
-  } = await supabase
-    .from('purchase_orders')
-    .select(`
-      id,
-      order_number,
-      supplier_id,
-      status
-    `)
-    .eq('id', purchaseOrderId)
-    .single();
-
-  if (
-    purchaseOrderError ||
-    !purchaseOrder
-  ) {
-    throw new Error(
-      'Orden de compra no encontrada.',
-    );
-  }
-
-  //
-  // Partidas
-  //
-  const {
-    data: items,
-    error: itemsError,
-  } = await supabase
+export async function getReceivingDetail(purchaseOrderId: string): Promise<ReceivingDetail> {
+  const supabase = await createTypedClient();
+  const { data: purchaseOrder, error } = await supabase
+    .from('purchase_orders').select('id, order_number, supplier_id, status')
+    .eq('id', purchaseOrderId).is('deleted_at', null).maybeSingle();
+  if (error || !purchaseOrder) throw new Error('Orden de compra no encontrada.');
+  const { data: items, error: itemsError } = await supabase
     .from('purchase_order_items')
-    .select(`
-      id,
-      purchase_order_id,
-      raw_material_id,
-      quantity,
-      received_quantity,
-      unit_cost,
-
-      raw_material:raw_materials(
-        id,
-        name
-      )
-    `)
-    .eq(
-      'purchase_order_id',
-      purchaseOrderId,
-    )
-    .order('id');
-
-  if (itemsError) {
-    throw new Error(
-      itemsError.message,
-    );
-  }
-
+    .select('id, purchase_order_id, raw_material_id, quantity, received_quantity, unit_cost')
+    .eq('purchase_order_id', purchaseOrderId).order('id');
+  if (itemsError) throw new Error('No fue posible cargar los renglones de compra.');
+  const materialIds = (items ?? []).map((item) => item.raw_material_id);
+  const { data: materials } = materialIds.length
+    ? await supabase.from('raw_materials').select('id, name').in('id', materialIds)
+    : { data: [] };
+  const materialMap = new Map((materials ?? []).map((row) => [row.id, row]));
   return {
-    purchaseOrder,
-
-    items:
-      (items ?? []).map(
-        (item: any) => ({
-          id: item.id,
-
-          purchase_order_id:
-            item.purchase_order_id,
-
-          raw_material_id:
-            item.raw_material_id,
-
-          quantity: Number(
-            item.quantity,
-          ),
-
-          received_quantity:
-            Number(
-              item.received_quantity ??
-                0,
-            ),
-
-          unit_cost: Number(
-            item.unit_cost ?? 0,
-          ),
-
-          raw_material:
-            item.raw_material,
-
-          suggested_location:
-            null,
-        }),
-      ),
+    purchaseOrder: { ...purchaseOrder, status: assertPurchaseOrderStatus(purchaseOrder.status) },
+    items: (items ?? []).map((item) => ({
+      ...item,
+      raw_material: materialMap.get(item.raw_material_id) ?? null,
+      suggested_location: null,
+    })),
   };
 }
-
-// ============================================================================
-// CONFIRM RECEIVING
-// ============================================================================
 
 export async function confirmReceiving(
   purchaseOrderItemId: string,
@@ -164,360 +51,44 @@ export async function confirmReceiving(
   expirationDate: string,
   inventoryLocationId: string,
 ) {
-  const supabase =
-    await createClient();
-
-  //
-  // Item
-  //
-  const {
-    data: item,
-    error: itemError,
-  } = await supabase
-    .from('purchase_order_items')
-    .select(`
-      *,
-      purchase_orders(
-        id,
-        order_number,
-        status
-      )
-    `)
-    .eq('id', purchaseOrderItemId)
-    .single();
-
-  if (itemError || !item) {
-    throw new Error(
-      'Partida no encontrada.',
-    );
-  }
-
-  const quantity =
-    Number(item.quantity);
-
-  //
-  // Crear lote
-  //
-  const {
-    data: lot,
-    error: lotError,
-  } = await supabase
-    .from('raw_material_lots')
-    .insert({
-      raw_material_id:
-        item.raw_material_id,
-
-      lot_number:
-        lotNumber.trim(),
-
-      expiration_date:
-        expirationDate,
-
-      quantity:
-        quantity,
-
-      inventory_location_id:
-        inventoryLocationId,
-
-      status:
-        'available',
-
-      unit_cost:
-        item.unit_cost,
-    })
-    .select()
-    .single();
-
-  if (lotError || !lot) {
-    throw new Error(
-      lotError?.message ??
-        'No fue posible crear el lote.',
-    );
-  }
-
-  //
-  // Movimiento inventario
-  //
-  const {
-    error: movementError,
-  } = await supabase
-    .from(
-      'inventory_movements',
-    )
-    .insert({
-      warehouse_id: null,
-
-      product_id: null,
-
-      variant_id: null,
-
-      movement_type: 'IN',
-
-      quantity: quantity,
-
-      previous_stock: 0,
-
-      new_stock: quantity,
-
-      reference_type:
-        'purchase_order',
-
-      reference_id:
-        item.purchase_order_id,
-
-      item_type:
-        'raw_material',
-
-      item_id:
-        item.raw_material_id,
-
-      notes:
-        `Recepción OC ${item.purchase_orders.order_number}`,
-    });
-
-  if (movementError) {
-    throw new Error(
-      movementError.message,
-    );
-  }
-
-  //
-  // Actualizar partida
-  //
-  const {
-    error: updateItemError,
-  } = await supabase
-    .from(
-      'purchase_order_items',
-    )
-    .update({
-      received_quantity:
-        quantity,
-    })
-    .eq(
-      'id',
-      purchaseOrderItemId,
-    );
-
-  if (updateItemError) {
-    throw new Error(
-      updateItemError.message,
-    );
-  }
-
-  //
-  // Revisar si terminó toda la OC
-  //
-  const {
-    data: rows,
-    error: rowsError,
-  } = await supabase
-    .from(
-      'purchase_order_items',
-    )
-    .select(`
-      quantity,
-      received_quantity
-    `)
-    .eq(
-      'purchase_order_id',
-      item.purchase_order_id,
-    );
-
-  if (rowsError) {
-    throw new Error(
-      rowsError.message,
-    );
-  }
-
-  const completed =
-    (rows ?? []).every(
-      (row) =>
-        Number(
-          row.received_quantity,
-        ) >=
-        Number(
-          row.quantity,
-        ),
-    );
-
-  //
-  // Actualizar OC
-  //
-  await supabase
-    .from(
-      'purchase_orders',
-    )
-    .update({
-      status: completed
-        ? 'received'
-        : 'partial',
-
-      updated_at:
-        new Date().toISOString(),
-    })
-    .eq(
-      'id',
-      item.purchase_order_id,
-    );
-
-  //
-  // Refresh
-  //
-  revalidatePath(
-    '/mobile/receiving',
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.PROCUREMENT_ORDER_RECEIVE,
   );
-
-  revalidatePath(
-    `/mobile/receiving/${item.purchase_order_id}`,
-  );
-
-  revalidatePath(
-    '/purchase-orders',
-  );
-
-  revalidatePath(
-    `/purchase-orders/${item.purchase_order_id}`,
-  );
+  if (!lotNumber.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(expirationDate) || !inventoryLocationId) {
+    throw new Error('Lote, caducidad y ubicación son obligatorios.');
+  }
+  const { data: orderId, error } = await supabase.rpc('receive_purchase_order_lot', {
+    p_item_id: purchaseOrderItemId,
+    p_lot_number: lotNumber.trim(),
+    p_expiration_date: expirationDate,
+    p_inventory_location_id: inventoryLocationId,
+  });
+  if (error || !orderId) throw new Error('No fue posible confirmar la recepción.');
+  revalidatePath('/mobile/receiving');
+  revalidatePath(`/mobile/receiving/${orderId}`);
+  revalidatePath(`/purchase-orders/${orderId}`);
 }
 
-// ============================================================================
-// INVENTORY LOCATIONS
-// ============================================================================
-
-export type InventoryLocation = {
-  id: string;
-  code: string;
-  name: string;
-  zone: string | null;
-};
-
-export async function getReceivingLocations(): Promise<
-  InventoryLocation[]
-> {
-  const supabase =
-    await createClient();
-
-  const {
-    data,
-    error,
-  } = await supabase
-    .from(
-      'inventory_locations',
-    )
-    .select(`
-      id,
-      name,
-      zone
-    `)
-    .eq(
-      'is_active',
-      true,
-    )
-    .order(
-      'name',
-      {
-        ascending: true,
-      },
-    );
-
-  if (error) {
-    throw new Error(
-      error.message,
-    );
-  }
-
-  return (
-    data ?? []
-  ).map(
-    (location: any) => ({
-      id: location.id,
-
-      // Tu tabla no tiene "code",
-      // por eso usamos el nombre como código visual.
-      code:
-        location.name,
-
-      name:
-        location.name,
-
-      zone:
-        location.zone,
-    }),
-  );
+export async function getReceivingLocations(): Promise<InventoryLocation[]> {
+  const supabase = await createTypedClient();
+  const { data, error } = await supabase.from('inventory_locations')
+    .select('id, name, zone').eq('is_active', true).is('deleted_at', null).order('name');
+  if (error) throw new Error('No fue posible cargar las ubicaciones.');
+  return (data ?? []).map((row) => ({ ...row, code: row.name }));
 }
 
-// ============================================================================
-// VALIDATE LOT
-// ============================================================================
-
-export async function validateLotNumber(
-  rawMaterialId: string,
-  lotNumber: string,
-): Promise<boolean> {
-  const supabase =
-    await createClient();
-
-  const {
-    data,
-    error,
-  } = await supabase
-    .from(
-      'raw_material_lots',
-    )
-    .select('id')
-    .eq(
-      'raw_material_id',
-      rawMaterialId,
-    )
-    .eq(
-      'lot_number',
-      lotNumber.trim(),
-    )
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(
-      error.message,
-    );
-  }
-
-  return !data;
+export async function validateLotNumber(rawMaterialId: string, lotNumber: string): Promise<boolean> {
+  const supabase = await createTypedClient();
+  const { data, error } = await supabase.from('raw_material_lots').select('id')
+    .eq('raw_material_id', rawMaterialId).ilike('lot_number', lotNumber.trim()).limit(1);
+  if (error) throw new Error('No fue posible validar el lote.');
+  return !data?.length;
 }
 
-// ============================================================================
-// GET LOCATION
-// ============================================================================
-
-export async function getLocation(
-  id: string,
-) {
-  const supabase =
-    await createClient();
-
-  const {
-    data,
-    error,
-  } = await supabase
-    .from(
-      'inventory_locations',
-    )
-    .select(`
-      id,
-      name,
-      zone
-    `)
-    .eq(
-      'id',
-      id,
-    )
-    .single();
-
-  if (error || !data) {
-    throw new Error(
-      'Ubicación no encontrada.',
-    );
-  }
-
+export async function getLocation(id: string) {
+  const supabase = await createTypedClient();
+  const { data, error } = await supabase.from('inventory_locations')
+    .select('id, name, zone').eq('id', id).eq('is_active', true).is('deleted_at', null).maybeSingle();
+  if (error || !data) throw new Error('Ubicación no encontrada.');
   return data;
 }

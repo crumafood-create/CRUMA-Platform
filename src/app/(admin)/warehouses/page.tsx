@@ -1,33 +1,18 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-
-type Warehouse = {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  is_active: boolean | null;
-};
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function WarehousesPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: warehouses, error } = await supabase
     .from('warehouses')
-    .select('*')
-    .is('deleted_at', null)
+    .select('id, name, code, description, is_active')
     .order('name');
 
-  if (error) {
-    return (
-      <pre>
-        {JSON.stringify(error, null, 2)}
-      </pre>
-    );
-  }
+  if (error) throw new Error('No se pudieron cargar los almacenes.');
 
-  const warehouseList = (warehouses ?? []) as Warehouse[];
+  const warehouseList = warehouses ?? [];
 
   return (
     <main className="space-y-6">

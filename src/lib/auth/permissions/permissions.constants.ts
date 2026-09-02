@@ -4,6 +4,7 @@ export const PERMISSIONS = {
   INVENTORY_MATERIAL_MANAGE: 'inventory.material.manage',
   INVENTORY_LOCATION_MANAGE: 'inventory.location.manage',
   INVENTORY_UNIT_MANAGE: 'inventory.unit.manage',
+  INVENTORY_WAREHOUSE_MANAGE: 'inventory.warehouse.manage',
   INVENTORY_MOVEMENT_CREATE: 'inventory.movement.create',
   INVENTORY_ADJUSTMENT_CREATE: 'inventory.adjustment.create',
   PRODUCTION_RECIPE_MANAGE: 'production.recipe.manage',

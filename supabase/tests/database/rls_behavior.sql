@@ -183,6 +183,23 @@ VALUES (
   '94000000-0000-0000-0000-000000000001'
 );
 
+INSERT INTO public.warehouses (
+  id,
+  code,
+  name
+)
+VALUES
+  (
+    '98000000-0000-0000-0000-000000000001',
+    'RLS-W1',
+    'RLS Main Warehouse'
+  ),
+  (
+    '98000000-0000-0000-0000-000000000004',
+    'RLS-W4',
+    'RLS Delete Warehouse'
+  );
+
 INSERT INTO public.tenants (
   id,
   name,
@@ -388,6 +405,43 @@ BEGIN
     WHEN insufficient_privilege THEN
       NULL;
   END;
+
+  UPDATE public.warehouses
+  SET name = 'Unexpected normal-user warehouse update'
+  WHERE id = '98000000-0000-0000-0000-000000000001';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 0 THEN
+    RAISE EXCEPTION
+      'normal user unexpectedly updated % warehouse rows',
+      affected_rows;
+  END IF;
+
+  DELETE FROM public.warehouses
+  WHERE id = '98000000-0000-0000-0000-000000000004';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 0 THEN
+    RAISE EXCEPTION
+      'normal user unexpectedly deleted % warehouse rows',
+      affected_rows;
+  END IF;
+
+  BEGIN
+    INSERT INTO public.warehouses (id, code, name)
+    VALUES (
+      '98000000-0000-0000-0000-000000000002',
+      'RLS-W2',
+      'Unexpected Normal User Warehouse'
+    );
+
+    RAISE EXCEPTION 'normal user unexpectedly inserted a warehouse';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
 END;
 $test$;
 
@@ -477,6 +531,36 @@ BEGIN
     '95000000-0000-0000-0000-000000000001',
     1
   );
+
+  UPDATE public.warehouses
+  SET name = 'RLS Main Warehouse Updated By Admin'
+  WHERE id = '98000000-0000-0000-0000-000000000001';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 1 THEN
+    RAISE EXCEPTION
+      'admin expected to update 1 warehouse row, updated %',
+      affected_rows;
+  END IF;
+
+  INSERT INTO public.warehouses (id, code, name)
+  VALUES (
+    '98000000-0000-0000-0000-000000000003',
+    'RLS-W3',
+    'RLS Admin Warehouse'
+  );
+
+  DELETE FROM public.warehouses
+  WHERE id = '98000000-0000-0000-0000-000000000004';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 1 THEN
+    RAISE EXCEPTION
+      'admin expected to delete 1 warehouse row, deleted %',
+      affected_rows;
+  END IF;
 
   DELETE FROM public.units_of_measure
   WHERE id = '94000000-0000-0000-0000-000000000004';
@@ -914,6 +998,30 @@ BEGIN
     WHERE id = '97000000-0000-0000-0000-000000000001'
   ) THEN
     RAISE EXCEPTION 'recipe RLS write outcomes are inconsistent';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.warehouses
+    WHERE id = '98000000-0000-0000-0000-000000000001'
+      AND name = 'RLS Main Warehouse Updated By Admin'
+  ) OR NOT EXISTS (
+    SELECT 1
+    FROM public.warehouses
+    WHERE id = '98000000-0000-0000-0000-000000000003'
+  ) THEN
+    RAISE EXCEPTION 'admin warehouse insert was not persisted';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.warehouses
+    WHERE id IN (
+      '98000000-0000-0000-0000-000000000002',
+      '98000000-0000-0000-0000-000000000004'
+    )
+  ) THEN
+    RAISE EXCEPTION 'warehouse RLS write outcomes are inconsistent';
   END IF;
 END;
 $test$;

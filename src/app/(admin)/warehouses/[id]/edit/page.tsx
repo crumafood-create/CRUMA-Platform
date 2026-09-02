@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { normalizeWarehouseFormValues } from '@/modules/inventory/application/warehouse-contract';
 
 import { WarehouseForm } from '@/app/(admin)/_components/warehouse-form';
 
@@ -16,17 +17,15 @@ export default async function EditWarehousePage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
-  const { data: warehouse } = await supabase
+  const { data: warehouse, error } = await supabase
     .from('warehouses')
-    .select('*')
+    .select('id, name, code, description, is_active')
     .eq('id', id)
     .single();
 
-  if (!warehouse) {
-    notFound();
-  }
+  if (error || !warehouse) notFound();
 
   return (
     <main className="space-y-6">
@@ -35,7 +34,7 @@ export default async function EditWarehousePage({
       </h1>
 
       <WarehouseForm
-        initialValues={warehouse}
+        initialValues={normalizeWarehouseFormValues(warehouse)}
         action={updateWarehouse.bind(null, warehouse.id)}
       />
 

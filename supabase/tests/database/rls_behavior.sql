@@ -200,6 +200,23 @@ VALUES
     'RLS Delete Warehouse'
   );
 
+INSERT INTO public.suppliers (
+  id,
+  name,
+  tax_id
+)
+VALUES
+  (
+    '99000000-0000-0000-0000-000000000001',
+    'RLS Main Supplier',
+    'RLS-S1'
+  ),
+  (
+    '99000000-0000-0000-0000-000000000004',
+    'RLS Delete Supplier',
+    'RLS-S4'
+  );
+
 INSERT INTO public.tenants (
   id,
   name,
@@ -442,6 +459,43 @@ BEGIN
     WHEN insufficient_privilege THEN
       NULL;
   END;
+
+  UPDATE public.suppliers
+  SET name = 'Unexpected normal-user supplier update'
+  WHERE id = '99000000-0000-0000-0000-000000000001';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 0 THEN
+    RAISE EXCEPTION
+      'normal user unexpectedly updated % supplier rows',
+      affected_rows;
+  END IF;
+
+  DELETE FROM public.suppliers
+  WHERE id = '99000000-0000-0000-0000-000000000004';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 0 THEN
+    RAISE EXCEPTION
+      'normal user unexpectedly deleted % supplier rows',
+      affected_rows;
+  END IF;
+
+  BEGIN
+    INSERT INTO public.suppliers (id, name, tax_id)
+    VALUES (
+      '99000000-0000-0000-0000-000000000002',
+      'Unexpected Normal User Supplier',
+      'RLS-S2'
+    );
+
+    RAISE EXCEPTION 'normal user unexpectedly inserted a supplier';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      NULL;
+  END;
 END;
 $test$;
 
@@ -559,6 +613,36 @@ BEGIN
   IF affected_rows <> 1 THEN
     RAISE EXCEPTION
       'admin expected to delete 1 warehouse row, deleted %',
+      affected_rows;
+  END IF;
+
+  UPDATE public.suppliers
+  SET name = 'RLS Main Supplier Updated By Admin'
+  WHERE id = '99000000-0000-0000-0000-000000000001';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 1 THEN
+    RAISE EXCEPTION
+      'admin expected to update 1 supplier row, updated %',
+      affected_rows;
+  END IF;
+
+  INSERT INTO public.suppliers (id, name, tax_id)
+  VALUES (
+    '99000000-0000-0000-0000-000000000003',
+    'RLS Admin Supplier',
+    'RLS-S3'
+  );
+
+  DELETE FROM public.suppliers
+  WHERE id = '99000000-0000-0000-0000-000000000004';
+
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+
+  IF affected_rows <> 1 THEN
+    RAISE EXCEPTION
+      'admin expected to delete 1 supplier row, deleted %',
       affected_rows;
   END IF;
 
@@ -1022,6 +1106,30 @@ BEGIN
     )
   ) THEN
     RAISE EXCEPTION 'warehouse RLS write outcomes are inconsistent';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.suppliers
+    WHERE id = '99000000-0000-0000-0000-000000000001'
+      AND name = 'RLS Main Supplier Updated By Admin'
+  ) OR NOT EXISTS (
+    SELECT 1
+    FROM public.suppliers
+    WHERE id = '99000000-0000-0000-0000-000000000003'
+  ) THEN
+    RAISE EXCEPTION 'admin supplier insert was not persisted';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.suppliers
+    WHERE id IN (
+      '99000000-0000-0000-0000-000000000002',
+      '99000000-0000-0000-0000-000000000004'
+    )
+  ) THEN
+    RAISE EXCEPTION 'supplier RLS write outcomes are inconsistent';
   END IF;
 END;
 $test$;

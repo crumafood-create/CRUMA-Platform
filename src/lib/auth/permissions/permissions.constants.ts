@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   INVENTORY_WAREHOUSE_MANAGE: 'inventory.warehouse.manage',
   INVENTORY_MOVEMENT_CREATE: 'inventory.movement.create',
   INVENTORY_ADJUSTMENT_CREATE: 'inventory.adjustment.create',
+  PROCUREMENT_SUPPLIER_MANAGE: 'procurement.supplier.manage',
   PRODUCTION_RECIPE_MANAGE: 'production.recipe.manage',
   PRODUCTION_ORDER_CREATE: 'production.order.create',
   PRODUCTION_ORDER_RELEASE: 'production.order.release',

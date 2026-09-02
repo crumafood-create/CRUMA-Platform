@@ -1,17 +1,17 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function SuppliersPage() {
-  const supabase =
-    await createClient();
+  const supabase = await createTypedClient();
 
-  const { data: suppliers } =
-    await supabase
-      .from('suppliers')
-      .select('*')
-      .is('deleted_at', null)
-      .order('name');
+  const { data: suppliers, error } = await supabase
+    .from('suppliers')
+    .select('id, name, contact_name, phone, is_active')
+    .is('deleted_at', null)
+    .order('name');
+
+  if (error) throw new Error('No se pudieron cargar los proveedores.');
 
   return (
     <main className="space-y-6">
@@ -32,7 +32,7 @@ export default async function SuppliersPage() {
         {suppliers?.length ? (
           <div className="space-y-3">
             {suppliers.map(
-              (supplier: any) => (
+              (supplier) => (
                 <div
                   key={supplier.id}
                   className="rounded border p-4"
@@ -50,6 +50,13 @@ export default async function SuppliersPage() {
                   <div className="text-sm text-gray-500">
                     {supplier.phone}
                   </div>
+
+                  <Link
+                    href={`/suppliers/${supplier.id}/edit`}
+                    className="mt-3 inline-block text-sm text-blue-600"
+                  >
+                    Editar
+                  </Link>
                 </div>
               )
             )}

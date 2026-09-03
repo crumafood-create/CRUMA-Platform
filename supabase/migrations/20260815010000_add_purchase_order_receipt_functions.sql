@@ -1,5 +1,6 @@
 -- Receive purchase quantities atomically and retain four decimal places in the audit trail.
 DROP VIEW public.inventory_available_to_promise;
+DROP VIEW public.mrp_purchase_requirements;
 DROP VIEW public.inventory_stock_by_item;
 DROP VIEW public.inventory_stock;
 
@@ -13,6 +14,15 @@ SELECT warehouse_id, COALESCE(item_type, 'product') AS item_type,
            WHEN movement_type = 'exit' THEN -quantity ELSE 0 END) AS quantity
 FROM public.inventory_movements
 GROUP BY warehouse_id, COALESCE(item_type, 'product'), COALESCE(item_id, product_id);
+
+CREATE VIEW public.mrp_purchase_requirements AS
+SELECT mrp.raw_material_id, mrp.raw_material_name, mrp.required_quantity,
+  COALESCE(stock.quantity, 0::numeric) AS available_quantity,
+  GREATEST(mrp.required_quantity - COALESCE(stock.quantity, 0::numeric), 0::numeric) AS purchase_quantity
+FROM public.mrp_requirements mrp LEFT JOIN public.inventory_stock_by_item stock
+  ON stock.item_type = 'raw_material' AND stock.item_id = mrp.raw_material_id
+WHERE GREATEST(mrp.required_quantity - COALESCE(stock.quantity, 0::numeric), 0::numeric) > 0::numeric
+ORDER BY mrp.raw_material_name;
 
 CREATE VIEW public.inventory_available_to_promise AS
 SELECT s.item_type, s.item_id, s.quantity AS stock_quantity,
@@ -32,9 +42,11 @@ SELECT product_id,
 FROM public.inventory_movements GROUP BY product_id;
 
 ALTER VIEW public.inventory_stock_by_item OWNER TO postgres;
+ALTER VIEW public.mrp_purchase_requirements OWNER TO postgres;
 ALTER VIEW public.inventory_available_to_promise OWNER TO postgres;
 ALTER VIEW public.inventory_stock OWNER TO postgres;
 GRANT ALL ON TABLE public.inventory_stock_by_item TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.mrp_purchase_requirements TO anon, authenticated, service_role;
 GRANT ALL ON TABLE public.inventory_available_to_promise TO anon, authenticated, service_role;
 GRANT ALL ON TABLE public.inventory_stock TO anon, authenticated, service_role;
 

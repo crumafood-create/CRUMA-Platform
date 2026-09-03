@@ -45,6 +45,7 @@ describe('RLS de órdenes de compra', () => {
   it('recrea las vistas dependientes y restaura sus permisos', () => {
     const migration = source(RECEIPT);
     for (const view of [
+      'mrp_purchase_requirements',
       'inventory_available_to_promise',
       'inventory_stock_by_item',
       'inventory_stock',

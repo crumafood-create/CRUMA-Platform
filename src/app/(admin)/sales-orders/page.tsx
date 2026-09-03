@@ -1,10 +1,10 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function SalesOrdersPage() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const {
     data: orders,
@@ -37,7 +37,7 @@ export default async function SalesOrdersPage() {
         {orders?.length ? (
           <div className="space-y-3">
             {orders.map(
-              (order: any) => (
+              (order) => (
                 <div
                   key={
                     order.id

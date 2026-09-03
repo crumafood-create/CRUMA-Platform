@@ -20,6 +20,7 @@ export const PERMISSIONS = {
   SALES_ORDER_CONFIRM: 'sales.order.confirm',
   SALES_ORDER_PREPARE: 'sales.order.prepare',
   SALES_ORDER_DELIVER: 'sales.order.deliver',
+  SALES_ORDER_PROFIT_CALCULATE: 'sales.order.profit.calculate',
 } as const;
 
 export type Permission =

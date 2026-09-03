@@ -1,19 +1,14 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { SalesOrderForm } from '@/app/(admin)/_components/sales-order-form';
 
 import { createSalesOrder } from '../actions';
 
-type Customer = {
-  id: string;
-  name: string;
-};
-
 export default async function NewSalesOrderPage() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const {
     data: customers,
@@ -50,8 +45,7 @@ export default async function NewSalesOrderPage() {
           createSalesOrder
         }
         customers={
-          (customers ??
-            []) as Customer[]
+          customers ?? []
         }
       />
     </main>

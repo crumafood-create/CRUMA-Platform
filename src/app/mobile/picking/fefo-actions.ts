@@ -1,21 +1,21 @@
 'use server';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export async function getSuggestedLot(
   productId: string,
 ) {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const {
     data,
     error,
   } = await supabase
     .from(
-      'inventory_stock_by_lot_location',
+      'inventory_pick_suggestions',
     )
-    .select('*')
+    .select('lot_id, product_id, lot_number, quantity, location_name, expiration_date')
     .eq(
       'product_id',
       productId,

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import {
   calculateSalesOrderProfit,
@@ -17,7 +17,7 @@ export default async function SalesOrderProfitPage({
     await params;
 
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const {
     data: profit,

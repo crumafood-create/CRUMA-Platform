@@ -1,6 +1,42 @@
 -- Receive purchase quantities atomically and retain four decimal places in the audit trail.
+DROP VIEW public.inventory_available_to_promise;
+DROP VIEW public.inventory_stock_by_item;
+DROP VIEW public.inventory_stock;
+
 ALTER TABLE public.inventory_movements
   ALTER COLUMN quantity TYPE numeric(18,4) USING quantity::numeric(18,4);
+
+CREATE VIEW public.inventory_stock_by_item AS
+SELECT warehouse_id, COALESCE(item_type, 'product') AS item_type,
+  COALESCE(item_id, product_id) AS item_id,
+  sum(CASE WHEN movement_type = 'entry' THEN quantity
+           WHEN movement_type = 'exit' THEN -quantity ELSE 0 END) AS quantity
+FROM public.inventory_movements
+GROUP BY warehouse_id, COALESCE(item_type, 'product'), COALESCE(item_id, product_id);
+
+CREATE VIEW public.inventory_available_to_promise AS
+SELECT s.item_type, s.item_id, s.quantity AS stock_quantity,
+  COALESCE(r.reserved_quantity, 0::numeric) AS reserved_quantity,
+  s.quantity::numeric - COALESCE(r.reserved_quantity, 0::numeric) AS available_quantity
+FROM public.inventory_stock_by_item s
+LEFT JOIN (
+  SELECT item_type, item_id, sum(quantity) AS reserved_quantity
+  FROM public.inventory_reservations WHERE status = 'active'
+  GROUP BY item_type, item_id
+) r ON r.item_type = s.item_type AND r.item_id = s.item_id;
+
+CREATE VIEW public.inventory_stock AS
+SELECT product_id,
+  sum(CASE WHEN movement_type = 'entry' THEN quantity
+           WHEN movement_type = 'exit' THEN -quantity ELSE 0 END) AS quantity
+FROM public.inventory_movements GROUP BY product_id;
+
+ALTER VIEW public.inventory_stock_by_item OWNER TO postgres;
+ALTER VIEW public.inventory_available_to_promise OWNER TO postgres;
+ALTER VIEW public.inventory_stock OWNER TO postgres;
+GRANT ALL ON TABLE public.inventory_stock_by_item TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.inventory_available_to_promise TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.inventory_stock TO anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.receive_purchase_order_item(
   p_item_id uuid,

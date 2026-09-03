@@ -7,6 +7,7 @@ const RECEIPT = '../../../supabase/migrations/20260815010000_add_purchase_order_
 const LOT_RECEIPT = '../../../supabase/migrations/20260815020000_add_purchase_order_lot_receipt.sql';
 const ADD_ITEM = '../../../supabase/migrations/20260815030000_add_purchase_order_item_function.sql';
 const RLS_BEHAVIOR = '../../../supabase/tests/database/rls_behavior.sql';
+const CI_WORKFLOW = '../../../.github/workflows/ci.yml';
 
 function source(path: string): string {
   return readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -39,6 +40,24 @@ describe('RLS de órdenes de compra', () => {
     expect(migration).toContain("order_status NOT IN ('released', 'partially_received')");
     expect(migration).toContain('SECURITY DEFINER');
     expect(migration).toContain('public.is_admin(auth.uid())');
+  });
+
+  it('recrea las vistas dependientes y restaura sus permisos', () => {
+    const migration = source(RECEIPT);
+    for (const view of [
+      'inventory_available_to_promise',
+      'inventory_stock_by_item',
+      'inventory_stock',
+    ]) {
+      expect(migration).toContain(`DROP VIEW public.${view}`);
+      expect(migration).toContain(`CREATE VIEW public.${view}`);
+      expect(migration).toContain(`GRANT ALL ON TABLE public.${view}`);
+    }
+  });
+
+  it('expone el diagnóstico de Supabase cuando el arranque falla', () => {
+    const workflow = source(CI_WORKFLOW);
+    expect(workflow).toContain('cat /tmp/supabase-start.log');
   });
 
   it('crea lote y recepción móvil en una misma transacción protegida', () => {

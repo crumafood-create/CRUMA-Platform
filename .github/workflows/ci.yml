@@ -114,6 +114,7 @@ jobs:
             > /tmp/supabase-start.log 2>&1
           then
             echo "Supabase local failed to start."
+            cat /tmp/supabase-start.log
             exit 1
           fi
 

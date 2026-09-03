@@ -6628,10 +6628,7 @@ export type Database = {
       }
       generate_purchase_requisition_number: { Args: never; Returns: string }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
-      receive_purchase_order: {
-        Args: { p_order_id: string }
-        Returns: string
-      }
+      receive_purchase_order: { Args: { p_order_id: string }; Returns: string }
       receive_purchase_order_item: {
         Args: { p_item_id: string; p_quantity: number }
         Returns: string

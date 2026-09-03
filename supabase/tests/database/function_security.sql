@@ -14,7 +14,11 @@ DECLARE
     'public.create_production_order_items(uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
     'public.handle_new_user()',
-    'public.is_admin(uuid)'
+    'public.is_admin(uuid)',
+    'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
+    'public.receive_purchase_order(uuid)',
+    'public.receive_purchase_order_item(uuid,numeric)',
+    'public.receive_purchase_order_lot(uuid,text,date,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY hardened_functions LOOP
@@ -59,6 +63,10 @@ DECLARE
     'public.handle_new_user()',
     'public.is_admin(uuid)',
     'public.log_order_status_change()',
+    'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
+    'public.receive_purchase_order(uuid)',
+    'public.receive_purchase_order_item(uuid,numeric)',
+    'public.receive_purchase_order_lot(uuid,text,date,uuid)',
     'public.recalculate_cart_totals()',
     'public.set_updated_at()',
     'public.sync_order_payment_status()',
@@ -67,7 +75,11 @@ DECLARE
   authenticated_functions constant text[] := ARRAY[
     'public.create_production_order_items(uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
-    'public.is_admin(uuid)'
+    'public.is_admin(uuid)',
+    'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
+    'public.receive_purchase_order(uuid)',
+    'public.receive_purchase_order_item(uuid,numeric)',
+    'public.receive_purchase_order_lot(uuid,text,date,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY all_functions LOOP
@@ -162,6 +174,28 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'is_admin must remain SECURITY DEFINER';
   END IF;
+END;
+$test$;
+
+DO $test$
+DECLARE
+  signature text;
+  secured_functions constant text[] := ARRAY[
+    'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
+    'public.receive_purchase_order(uuid)',
+    'public.receive_purchase_order_item(uuid,numeric)',
+    'public.receive_purchase_order_lot(uuid,text,date,uuid)'
+  ];
+BEGIN
+  FOREACH signature IN ARRAY secured_functions LOOP
+    IF NOT (
+      SELECT procedure.prosecdef
+      FROM pg_proc AS procedure
+      WHERE procedure.oid = to_regprocedure(signature)
+    ) THEN
+      RAISE EXCEPTION '% must remain SECURITY DEFINER', signature;
+    END IF;
+  END LOOP;
 END;
 $test$;
 

@@ -1,19 +1,13 @@
 'use server';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-
-export type ReceivingOrderStatus =
-  | 'draft'
-  | 'pending'
-  | 'partial'
-  | 'received'
-  | 'cancelled';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { assertPurchaseOrderStatus, type PurchaseOrderStatus } from '@/modules/procurement/application/purchase-order-contract';
 
 export type ReceivingOrder = {
   id: string;
   order_number: string;
   supplier_name: string;
-  status: ReceivingOrderStatus;
+  status: PurchaseOrderStatus;
   order_date: string;
   expected_date: string | null;
   total_items: number;
@@ -21,63 +15,35 @@ export type ReceivingOrder = {
 };
 
 export async function getReceivingOrders(): Promise<ReceivingOrder[]> {
-  const supabase = await createClient();
-
-  const { data: purchaseOrders, error } = await supabase
+  const supabase = await createTypedClient();
+  const { data: orders, error } = await supabase
     .from('purchase_orders')
-    .select(`
-      id,
-      order_number,
-      status,
-      order_date,
-      expected_date,
-      suppliers (
-        name
-      ),
-      purchase_order_items (
-        id,
-        quantity,
-        received_quantity
-      )
-    `)
-    .neq('status', 'received')
+    .select('id, order_number, supplier_id, status, order_date, expected_date')
+    .in('status', ['released', 'partially_received'])
     .is('deleted_at', null)
-    .order('created_at', {
-      ascending: false,
-    });
+    .order('created_at', { ascending: false });
+  if (error) throw new Error('No fue posible cargar las recepciones.');
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  const orderIds = (orders ?? []).map((order) => order.id);
+  const supplierIds = (orders ?? []).map((order) => order.supplier_id);
+  const [{ data: suppliers }, { data: items }] = await Promise.all([
+    supplierIds.length
+      ? supabase.from('suppliers').select('id, name').in('id', supplierIds)
+      : Promise.resolve({ data: [], error: null }),
+    orderIds.length
+      ? supabase.from('purchase_order_items').select('purchase_order_id, quantity, received_quantity').in('purchase_order_id', orderIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  const supplierNames = new Map((suppliers ?? []).map((row) => [row.id, row.name]));
 
-  return (purchaseOrders ?? []).map((order: any) => {
-    const items = order.purchase_order_items ?? [];
-
-    const receivedItems = items.filter(
-      (item: any) =>
-        Number(item.received_quantity ?? 0) >=
-        Number(item.quantity ?? 0),
-    ).length;
-
+  return (orders ?? []).map((order) => {
+    const orderItems = (items ?? []).filter((item) => item.purchase_order_id === order.id);
     return {
-      id: order.id,
-
-      order_number: order.order_number,
-
-      supplier_name:
-        order.suppliers?.name ??
-        'Sin proveedor',
-
-      status: order.status,
-
-      order_date: order.order_date,
-
-      expected_date:
-        order.expected_date,
-
-      total_items: items.length,
-
-      received_items: receivedItems,
+      ...order,
+      status: assertPurchaseOrderStatus(order.status),
+      supplier_name: supplierNames.get(order.supplier_id) ?? 'Sin proveedor',
+      total_items: orderItems.length,
+      received_items: orderItems.filter((item) => item.received_quantity >= item.quantity).length,
     };
   });
 }

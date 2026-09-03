@@ -217,6 +217,14 @@ VALUES
     'RLS-S4'
   );
 
+INSERT INTO public.inventory_locations (id, slug, name, is_active)
+VALUES (
+  '9c000000-0000-0000-0000-000000000001',
+  'rls-receiving-location',
+  'RLS Receiving Location',
+  true
+);
+
 INSERT INTO public.tenants (
   id,
   name,
@@ -658,6 +666,69 @@ BEGIN
   END IF;
 END;
 $test$;
+
+RESET ROLE;
+
+-- Purchase order writes are restricted to administrators.
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '90000000-0000-0000-0000-000000000003', true);
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO public.purchase_orders (id, order_number, supplier_id)
+    VALUES (
+      '9a000000-0000-0000-0000-000000000001',
+      'RLS-PO-NORMAL',
+      '99000000-0000-0000-0000-000000000001'
+    );
+    RAISE EXCEPTION 'normal user unexpectedly inserted a purchase order';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    PERFORM public.add_purchase_order_item(
+      '9a000000-0000-0000-0000-000000000002',
+      '95000000-0000-0000-0000-000000000001',
+      1,
+      1
+    );
+    RAISE EXCEPTION 'normal user unexpectedly managed a purchase order';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+END;
+$test$;
+
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '90000000-0000-0000-0000-000000000001', true);
+
+INSERT INTO public.purchase_orders (id, order_number, supplier_id)
+VALUES (
+  '9a000000-0000-0000-0000-000000000002',
+  'RLS-PO-ADMIN',
+  '99000000-0000-0000-0000-000000000001'
+);
+
+INSERT INTO public.purchase_order_items (
+  id, purchase_order_id, raw_material_id, quantity, unit_cost, total
+)
+VALUES (
+  '9b000000-0000-0000-0000-000000000001',
+  '9a000000-0000-0000-0000-000000000002',
+  '95000000-0000-0000-0000-000000000001',
+  2, 5, 10
+);
+
+UPDATE public.purchase_orders SET status = 'released'
+WHERE id = '9a000000-0000-0000-0000-000000000002';
+
+SELECT public.receive_purchase_order_lot(
+  '9b000000-0000-0000-0000-000000000001',
+  'RLS-LOT-1',
+  '2027-09-02',
+  '9c000000-0000-0000-0000-000000000001'
+);
 
 RESET ROLE;
 
@@ -1130,6 +1201,37 @@ BEGIN
     )
   ) THEN
     RAISE EXCEPTION 'supplier RLS write outcomes are inconsistent';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.purchase_orders
+    WHERE id = '9a000000-0000-0000-0000-000000000002'
+      AND status = 'received'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.purchase_order_items
+    WHERE id = '9b000000-0000-0000-0000-000000000001'
+      AND received_quantity = 2
+  ) THEN
+    RAISE EXCEPTION 'admin purchase order insert was not persisted';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.raw_material_lots
+    WHERE raw_material_id = '95000000-0000-0000-0000-000000000001'
+      AND lot_number = 'RLS-LOT-1' AND quantity = 2
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.inventory_movements
+    WHERE reference_id = '9a000000-0000-0000-0000-000000000002'
+      AND quantity = 2
+  ) THEN
+    RAISE EXCEPTION 'purchase order receipt transaction was not persisted';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.purchase_orders
+    WHERE id = '9a000000-0000-0000-0000-000000000001'
+  ) THEN
+    RAISE EXCEPTION 'purchase order RLS write outcomes are inconsistent';
   END IF;
 END;
 $test$;

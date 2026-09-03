@@ -6609,6 +6609,15 @@ export type Database = {
       }
     }
     Functions: {
+      add_purchase_order_item: {
+        Args: {
+          p_order_id: string
+          p_quantity: number
+          p_raw_material_id: string
+          p_unit_cost: number
+        }
+        Returns: string
+      }
       create_production_order_items: {
         Args: { p_production_order_id: string }
         Returns: undefined
@@ -6619,6 +6628,20 @@ export type Database = {
       }
       generate_purchase_requisition_number: { Args: never; Returns: string }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
+      receive_purchase_order: { Args: { p_order_id: string }; Returns: string }
+      receive_purchase_order_item: {
+        Args: { p_item_id: string; p_quantity: number }
+        Returns: string
+      }
+      receive_purchase_order_lot: {
+        Args: {
+          p_expiration_date: string
+          p_inventory_location_id: string
+          p_item_id: string
+          p_lot_number: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       payment_method_type:

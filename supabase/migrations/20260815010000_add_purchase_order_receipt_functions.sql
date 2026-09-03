@@ -45,10 +45,14 @@ ALTER VIEW public.inventory_stock_by_item OWNER TO postgres;
 ALTER VIEW public.mrp_purchase_requirements OWNER TO postgres;
 ALTER VIEW public.inventory_available_to_promise OWNER TO postgres;
 ALTER VIEW public.inventory_stock OWNER TO postgres;
-GRANT ALL ON TABLE public.inventory_stock_by_item TO anon, authenticated, service_role;
-GRANT ALL ON TABLE public.mrp_purchase_requirements TO anon, authenticated, service_role;
-GRANT ALL ON TABLE public.inventory_available_to_promise TO anon, authenticated, service_role;
-GRANT ALL ON TABLE public.inventory_stock TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.inventory_stock_by_item TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.mrp_purchase_requirements TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.inventory_available_to_promise TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.inventory_stock TO anon, authenticated;
+GRANT ALL ON TABLE public.inventory_stock_by_item TO service_role;
+GRANT ALL ON TABLE public.mrp_purchase_requirements TO service_role;
+GRANT ALL ON TABLE public.inventory_available_to_promise TO service_role;
+GRANT ALL ON TABLE public.inventory_stock TO service_role;
 
 CREATE OR REPLACE FUNCTION public.receive_purchase_order_item(
   p_item_id uuid,

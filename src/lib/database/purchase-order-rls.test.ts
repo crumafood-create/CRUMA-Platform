@@ -52,7 +52,13 @@ describe('RLS de órdenes de compra', () => {
     ]) {
       expect(migration).toContain(`DROP VIEW public.${view}`);
       expect(migration).toContain(`CREATE VIEW public.${view}`);
-      expect(migration).toContain(`GRANT ALL ON TABLE public.${view}`);
+      expect(migration).toContain(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.${view} TO anon, authenticated`,
+      );
+      expect(migration).toContain(`GRANT ALL ON TABLE public.${view} TO service_role`);
+      expect(migration).not.toContain(
+        `GRANT ALL ON TABLE public.${view} TO anon, authenticated, service_role`,
+      );
     }
   });
 

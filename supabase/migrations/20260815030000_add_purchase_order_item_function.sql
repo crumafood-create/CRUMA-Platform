@@ -51,5 +51,5 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.add_purchase_order_item(uuid, uuid, numeric, numeric) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.add_purchase_order_item(uuid, uuid, numeric, numeric) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.add_purchase_order_item(uuid, uuid, numeric, numeric) TO authenticated;

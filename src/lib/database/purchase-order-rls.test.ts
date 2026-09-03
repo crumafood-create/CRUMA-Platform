@@ -61,6 +61,12 @@ describe('RLS de órdenes de compra', () => {
     expect(workflow).toContain('cat /tmp/supabase-start.log');
   });
 
+  it('revoca ejecución directa a roles no autorizados', () => {
+    for (const migration of [source(RECEIPT), source(LOT_RECEIPT), source(ADD_ITEM)]) {
+      expect(migration).toContain('FROM PUBLIC, anon, service_role');
+    }
+  });
+
   it('crea lote y recepción móvil en una misma transacción protegida', () => {
     const migration = source(LOT_RECEIPT);
     expect(migration).toContain('pg_advisory_xact_lock');

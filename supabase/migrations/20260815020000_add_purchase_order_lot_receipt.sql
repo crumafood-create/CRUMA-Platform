@@ -47,5 +47,5 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.receive_purchase_order_lot(uuid, text, date, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.receive_purchase_order_lot(uuid, text, date, uuid) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.receive_purchase_order_lot(uuid, text, date, uuid) TO authenticated;

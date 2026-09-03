@@ -138,7 +138,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.receive_purchase_order_item(uuid, numeric) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.receive_purchase_order(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.receive_purchase_order_item(uuid, numeric) FROM PUBLIC, anon, service_role;
+REVOKE ALL ON FUNCTION public.receive_purchase_order(uuid) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.receive_purchase_order_item(uuid, numeric) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.receive_purchase_order(uuid) TO authenticated;

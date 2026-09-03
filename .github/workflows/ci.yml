@@ -121,7 +121,14 @@ jobs:
           echo "Supabase local started successfully."
 
       - name: Verify database baseline, security, and generated types
-        run: pnpm db:verify
+        shell: bash
+        run: |
+          if ! pnpm db:verify
+          then
+            pnpm db:types:generate || true
+            git diff -- src/types/database/database.generated.ts
+            exit 1
+          fi
 
       - name: Stop local Supabase
         if: always()

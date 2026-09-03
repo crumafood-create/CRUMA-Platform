@@ -65,6 +65,8 @@ describe('RLS de órdenes de compra', () => {
   it('expone el diagnóstico de Supabase cuando el arranque falla', () => {
     const workflow = source(CI_WORKFLOW);
     expect(workflow).toContain('cat /tmp/supabase-start.log');
+    expect(workflow).toContain('pnpm db:types:generate');
+    expect(workflow).toContain('git diff -- src/types/database/database.generated.ts');
   });
 
   it('revoca ejecución directa a roles no autorizados', () => {

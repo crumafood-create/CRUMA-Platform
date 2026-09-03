@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { SalesOrderItemForm } from '@/app/(admin)/_components/sales-order-item-form';
 
@@ -17,7 +17,7 @@ export default async function SalesOrderItemsPage({
     await params;
 
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const [
     { data: order },
@@ -73,7 +73,7 @@ export default async function SalesOrderItemsPage({
         []
       ).map(
         (
-          product: any,
+          product,
         ) => [
           product.id,
           product.name,
@@ -128,7 +128,7 @@ export default async function SalesOrderItemsPage({
           <div className="space-y-3">
             {items.map(
               (
-                item: any,
+                item,
               ) => (
                 <div
                   key={

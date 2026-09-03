@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 // ============================================================================
 // TIPOS
@@ -52,7 +52,7 @@ function getStatusBadgeClass(status: string): string {
 // ============================================================================
 
 export default async function MobilePickingListPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { data: pickings, error } = await supabase
     .from('picking_orders')

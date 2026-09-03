@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import {
   confirmSalesOrder,
@@ -20,7 +20,7 @@ export default async function SalesOrderPage({
   const { id } = await params;
 
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const {
     data: order,
@@ -163,12 +163,7 @@ export default async function SalesOrderPage({
           </form>
         )}
 
-        {(
-          order.status ===
-            'confirmed' ||
-          order.status ===
-            'ready'
-        ) && (
+        {order.status === 'ready' && (
           <form
             action={deliverSalesOrder.bind(
               null,

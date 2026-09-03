@@ -2,13 +2,15 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
 
 export async function calculateSalesOrderProfit(
   orderId: string,
 ) {
-  const supabase =
-    await createClient();
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.SALES_ORDER_PROFIT_CALCULATE,
+  );
 
   const { data: order } =
     await supabase

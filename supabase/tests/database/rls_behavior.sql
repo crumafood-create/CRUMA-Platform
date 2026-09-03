@@ -217,6 +217,15 @@ VALUES
     'RLS-S4'
   );
 
+INSERT INTO public.customers (
+  id, customer_code, name, is_active
+) VALUES (
+  '9d000000-0000-0000-0000-000000000001',
+  'RLS-C1',
+  'RLS Main Customer',
+  true
+);
+
 INSERT INTO public.inventory_locations (id, slug, name, is_active)
 VALUES (
   '9c000000-0000-0000-0000-000000000001',
@@ -732,6 +741,56 @@ SELECT public.receive_purchase_order_lot(
 
 RESET ROLE;
 
+-- Sales order writes and RPCs are restricted to administrators.
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '90000000-0000-0000-0000-000000000003', true);
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO public.sales_orders (id, order_number, customer_id)
+    VALUES (
+      '9e000000-0000-0000-0000-000000000001',
+      'RLS-SO-NORMAL',
+      '9d000000-0000-0000-0000-000000000001'
+    );
+    RAISE EXCEPTION 'normal user unexpectedly inserted a sales order';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    PERFORM public.add_sales_order_item(
+      '9e000000-0000-0000-0000-000000000002',
+      '91000000-0000-0000-0000-000000000001',
+      1,
+      10
+    );
+    RAISE EXCEPTION 'normal user unexpectedly managed a sales order';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+END;
+$test$;
+
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '90000000-0000-0000-0000-000000000001', true);
+
+INSERT INTO public.sales_orders (id, order_number, customer_id)
+VALUES (
+  '9e000000-0000-0000-0000-000000000002',
+  'RLS-SO-ADMIN',
+  '9d000000-0000-0000-0000-000000000001'
+);
+
+SELECT public.add_sales_order_item(
+  '9e000000-0000-0000-0000-000000000002',
+  '91000000-0000-0000-0000-000000000001',
+  2,
+  10
+);
+
+RESET ROLE;
+
 -- A user can read and update only their own profile.
 SET LOCAL ROLE authenticated;
 
@@ -1232,6 +1291,25 @@ BEGIN
     WHERE id = '9a000000-0000-0000-0000-000000000001'
   ) THEN
     RAISE EXCEPTION 'purchase order RLS write outcomes are inconsistent';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.sales_orders
+    WHERE id = '9e000000-0000-0000-0000-000000000002'
+      AND total = 20
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.sales_order_items
+    WHERE sales_order_id = '9e000000-0000-0000-0000-000000000002'
+      AND quantity = 2
+  ) THEN
+    RAISE EXCEPTION 'admin sales order insert was not persisted';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.sales_orders
+    WHERE id = '9e000000-0000-0000-0000-000000000001'
+  ) THEN
+    RAISE EXCEPTION 'sales order RLS write outcomes are inconsistent';
   END IF;
 END;
 $test$;

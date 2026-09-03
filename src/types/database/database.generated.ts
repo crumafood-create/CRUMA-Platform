@@ -6618,6 +6618,20 @@ export type Database = {
         }
         Returns: string
       }
+      add_sales_order_item: {
+        Args: {
+          p_order_id: string
+          p_product_id: string
+          p_quantity: number
+          p_unit_price: number
+        }
+        Returns: string
+      }
+      confirm_picking_item: {
+        Args: { p_lot_number: string; p_picking_item_id: string }
+        Returns: string
+      }
+      confirm_sales_order: { Args: { p_order_id: string }; Returns: string }
       create_production_order_items: {
         Args: { p_production_order_id: string }
         Returns: undefined
@@ -6626,6 +6640,7 @@ export type Database = {
         Args: { p_lot_id: string; p_quantity: number }
         Returns: undefined
       }
+      deliver_sales_order: { Args: { p_order_id: string }; Returns: string }
       generate_purchase_requisition_number: { Args: never; Returns: string }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
       receive_purchase_order: { Args: { p_order_id: string }; Returns: string }
@@ -6639,6 +6654,14 @@ export type Database = {
           p_inventory_location_id: string
           p_item_id: string
           p_lot_number: string
+        }
+        Returns: string
+      }
+      transition_sales_order: {
+        Args: {
+          p_expected_status: string
+          p_next_status: string
+          p_order_id: string
         }
         Returns: string
       }

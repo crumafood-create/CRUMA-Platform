@@ -6661,7 +6661,7 @@ export type Database = {
         Args: {
           p_account_id: string
           p_amount: number
-          p_notes?: string | null
+          p_notes?: string
           p_payment_date: string
           p_payment_method: string
           p_reference: string

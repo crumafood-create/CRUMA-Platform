@@ -1,17 +1,16 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function CustomersPage() {
-  const supabase =
-    await createClient();
+  const supabase = await createTypedClient();
 
   const {
     data: customers,
     error,
   } = await supabase
     .from('customers')
-    .select('*')
+    .select('id, name, customer_code, company_name')
     .is(
       'deleted_at',
       null,
@@ -44,7 +43,7 @@ export default async function CustomersPage() {
           <div className="space-y-3">
             {customers.map(
               (
-                customer: any,
+                customer,
               ) => (
                 <div
                   key={

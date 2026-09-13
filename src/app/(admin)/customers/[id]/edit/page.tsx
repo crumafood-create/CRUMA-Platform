@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { normalizeCustomerFormValues } from '@/modules/sales/application/customer-contract';
 
 import { CustomerForm } from '@/app/(admin)/_components/customer-form';
 
@@ -19,15 +20,15 @@ export default async function EditCustomerPage({
   const { id } =
     await params;
 
-  const supabase =
-    await createClient();
+  const supabase = await createTypedClient();
 
   const {
     data: customer,
   } = await supabase
     .from('customers')
-    .select('*')
+    .select('id, customer_code, customer_type, name, company_name, tax_id, email, phone, mobile, address, city, state, postal_code, notes, credit_limit, is_active')
     .eq('id', id)
+    .is('deleted_at', null)
     .single();
 
   if (!customer) {
@@ -42,7 +43,7 @@ export default async function EditCustomerPage({
 
       <CustomerForm
         initialValues={
-          customer
+          normalizeCustomerFormValues(customer)
         }
         action={updateCustomer.bind(
           null,

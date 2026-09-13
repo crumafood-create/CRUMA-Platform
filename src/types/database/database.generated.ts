@@ -5549,6 +5549,168 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_invoice_items: {
+        Row: {
+          created_at: string
+          description: string
+          discount: number
+          id: string
+          invoice_id: string
+          line_total: number
+          product_code: string | null
+          product_id: string | null
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          discount?: number
+          id?: string
+          invoice_id: string
+          line_total: number
+          product_code?: string | null
+          product_id?: string | null
+          quantity: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discount?: number
+          id?: string
+          invoice_id?: string
+          line_total?: number
+          product_code?: string | null
+          product_id?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "sales_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_invoices: {
+        Row: {
+          account_receivable_id: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          customer_id: string
+          discount: number
+          due_date: string | null
+          fiscal_external_id: string | null
+          fiscal_metadata: Json
+          fiscal_provider: string | null
+          fiscal_status: string
+          id: string
+          invoice_number: string
+          issued_on: string
+          notes: string | null
+          sales_order_id: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          account_receivable_id: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          customer_id: string
+          discount?: number
+          due_date?: string | null
+          fiscal_external_id?: string | null
+          fiscal_metadata?: Json
+          fiscal_provider?: string | null
+          fiscal_status?: string
+          id?: string
+          invoice_number: string
+          issued_on?: string
+          notes?: string | null
+          sales_order_id: string
+          status?: string
+          subtotal: number
+          tax_amount?: number
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          account_receivable_id?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          customer_id?: string
+          discount?: number
+          due_date?: string | null
+          fiscal_external_id?: string | null
+          fiscal_metadata?: Json
+          fiscal_provider?: string | null
+          fiscal_status?: string
+          id?: string
+          invoice_number?: string
+          issued_on?: string
+          notes?: string | null
+          sales_order_id?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_invoices_account_receivable_id_fkey"
+            columns: ["account_receivable_id"]
+            isOneToOne: true
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoices_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_order_items: {
         Row: {
           created_at: string | null
@@ -6627,6 +6789,10 @@ export type Database = {
         }
         Returns: string
       }
+      cancel_sales_invoice: {
+        Args: { p_invoice_id: string; p_reason: string }
+        Returns: undefined
+      }
       confirm_picking_item: {
         Args: { p_lot_number: string; p_picking_item_id: string }
         Returns: string
@@ -6643,6 +6809,14 @@ export type Database = {
       deliver_sales_order: { Args: { p_order_id: string }; Returns: string }
       generate_purchase_requisition_number: { Args: never; Returns: string }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
+      issue_sales_invoice: {
+        Args: {
+          p_due_date?: string
+          p_notes?: string
+          p_sales_order_id: string
+        }
+        Returns: string
+      }
       receive_purchase_order: { Args: { p_order_id: string }; Returns: string }
       receive_purchase_order_item: {
         Args: { p_item_id: string; p_quantity: number }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { InvoiceIssueForm } from '@/app/(admin)/_components/invoice-issue-form';
 
 import {
   confirmSalesOrder,
@@ -34,6 +35,12 @@ export default async function SalesOrderPage({
   if (error || !order) {
     notFound();
   }
+
+  const { data: invoice } = await supabase
+    .from('sales_invoices')
+    .select('id, invoice_number')
+    .eq('sales_order_id', order.id)
+    .maybeSingle();
 
   return (
     <main className="space-y-6">
@@ -179,6 +186,14 @@ export default async function SalesOrderPage({
           </form>
         )}
       </div>
+
+      {invoice ? (
+        <Link href={`/invoices/${invoice.id}`} className="inline-block rounded border px-4 py-2">
+          Ver factura {invoice.invoice_number}
+        </Link>
+      ) : order.status === 'delivered' ? (
+        <InvoiceIssueForm salesOrderId={order.id} />
+      ) : null}
     </main>
   );
 }

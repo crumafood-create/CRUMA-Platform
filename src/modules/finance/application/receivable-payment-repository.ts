@@ -11,7 +11,7 @@ export async function registerReceivablePayment(
     p_amount: payment.amount,
     p_payment_method: payment.paymentMethod,
     p_reference: payment.reference,
-    p_notes: payment.notes,
+    ...(payment.notes ? { p_notes: payment.notes } : {}),
   });
   if (error) throw new Error(error.message);
   if (!data) throw new Error('El pago no devolvió un identificador.');

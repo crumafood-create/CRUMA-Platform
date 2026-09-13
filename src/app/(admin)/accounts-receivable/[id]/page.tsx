@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function AccountsReceivableDetailPage({
   params,
@@ -13,20 +13,19 @@ export default async function AccountsReceivableDetailPage({
   const { id } =
     await params;
 
-  const supabase =
-    await createClient();
+  const supabase = await createTypedClient();
 
   const {
-    data: account,
+    data: account, error,
   } = await supabase
     .from(
       'accounts_receivable',
     )
-    .select('*')
+    .select('id, document_number, amount, paid_amount, balance, status')
     .eq('id', id)
     .single();
 
-  if (!account) {
+  if (error || !account) {
     notFound();
   }
 
@@ -71,12 +70,14 @@ export default async function AccountsReceivableDetailPage({
         </div>
       </div>
 
-      <Link
-        href={`/accounts-receivable/${id}/payments`}
-        className="rounded border px-4 py-2"
-      >
-        Registrar Pago
-      </Link>
+      {(account.status === 'pending' || account.status === 'partial') && (
+        <Link
+          href={`/accounts-receivable/${id}/payments`}
+          className="rounded border px-4 py-2"
+        >
+          Registrar Pago
+        </Link>
+      )}
     </main>
   );
 }

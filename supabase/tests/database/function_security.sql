@@ -22,6 +22,7 @@ DECLARE
     'public.deliver_sales_order(uuid)',
     'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
     'public.receive_purchase_order(uuid)',
+    'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
     'public.receive_purchase_order_lot(uuid,text,date,uuid)'
   ];
@@ -75,6 +76,7 @@ DECLARE
     'public.deliver_sales_order(uuid)',
     'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
     'public.receive_purchase_order(uuid)',
+    'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
     'public.receive_purchase_order_lot(uuid,text,date,uuid)',
     'public.recalculate_cart_totals()',
@@ -93,6 +95,7 @@ DECLARE
     'public.deliver_sales_order(uuid)',
     'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
     'public.receive_purchase_order(uuid)',
+    'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
     'public.receive_purchase_order_lot(uuid,text,date,uuid)'
   ];
@@ -203,6 +206,7 @@ DECLARE
     'public.deliver_sales_order(uuid)',
     'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
     'public.receive_purchase_order(uuid)',
+    'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
     'public.receive_purchase_order_lot(uuid,text,date,uuid)'
   ];

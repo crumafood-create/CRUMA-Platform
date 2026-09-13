@@ -1,18 +1,17 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function AccountsReceivablePage() {
-  const supabase =
-    await createClient();
+  const supabase = await createTypedClient();
 
   const {
-    data: accounts,
+    data: accounts, error,
   } = await supabase
     .from(
       'accounts_receivable',
     )
-    .select('*')
+    .select('id, document_number, amount, paid_amount, balance, status')
     .order(
       'created_at',
       {
@@ -20,6 +19,7 @@ export default async function AccountsReceivablePage() {
       },
     );
 
+  if (error) throw new Error('No se pudieron cargar las cuentas por cobrar.');
   return (
     <main className="space-y-6">
       <h1 className="text-4xl font-bold">
@@ -31,7 +31,7 @@ export default async function AccountsReceivablePage() {
           <div className="space-y-3">
             {accounts.map(
               (
-                account: any,
+                account,
               ) => (
                 <div
                   key={

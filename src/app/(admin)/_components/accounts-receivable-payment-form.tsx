@@ -31,6 +31,8 @@ export function AccountsReceivablePaymentForm({
         <input
           type="date"
           name="payment_date"
+          required
+          max={new Date().toISOString().slice(0, 10)}
           defaultValue={
             new Date()
               .toISOString()
@@ -60,11 +62,18 @@ export function AccountsReceivablePaymentForm({
           Método de Pago
         </label>
 
-        <input
+        <select
           name="payment_method"
+          required
           className="w-full rounded border p-3"
-          placeholder="Transferencia"
-        />
+          defaultValue="transfer"
+        >
+          <option value="cash">Efectivo</option>
+          <option value="transfer">Transferencia</option>
+          <option value="card">Tarjeta</option>
+          <option value="mercado_pago">Mercado Pago</option>
+          <option value="other">Otro</option>
+        </select>
       </div>
 
       <div>
@@ -74,6 +83,7 @@ export function AccountsReceivablePaymentForm({
 
         <input
           name="reference"
+          required
           className="w-full rounded border p-3"
         />
       </div>

@@ -6657,6 +6657,17 @@ export type Database = {
         }
         Returns: string
       }
+      register_receivable_payment: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_notes?: string
+          p_payment_date: string
+          p_payment_method: string
+          p_reference: string
+        }
+        Returns: string
+      }
       transition_sales_order: {
         Args: {
           p_expected_status: string

@@ -5876,6 +5876,152 @@ export type Database = {
           },
         ]
       }
+      sales_quote_items: {
+        Row: {
+          created_at: string
+          description: string
+          discount: number
+          id: string
+          line_subtotal: number
+          line_total: number
+          product_code: string | null
+          product_id: string
+          quantity: number
+          quote_id: string
+          tax_amount: number
+          tax_rate: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          discount?: number
+          id?: string
+          line_subtotal: number
+          line_total: number
+          product_code?: string | null
+          product_id: string
+          quantity: number
+          quote_id: string
+          tax_amount: number
+          tax_rate?: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discount?: number
+          id?: string
+          line_subtotal?: number
+          line_total?: number
+          product_code?: string | null
+          product_id?: string
+          quantity?: number
+          quote_id?: string
+          tax_amount?: number
+          tax_rate?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "sales_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_quotes: {
+        Row: {
+          created_at: string
+          customer_id: string
+          discount: number
+          id: string
+          notes: string | null
+          quote_date: string
+          quote_number: string
+          sales_order_id: string | null
+          status: string
+          subtotal: number
+          tax_amount: number
+          terms: string | null
+          total_amount: number
+          updated_at: string
+          valid_until: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          discount?: number
+          id?: string
+          notes?: string | null
+          quote_date?: string
+          quote_number: string
+          sales_order_id?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          terms?: string | null
+          total_amount?: number
+          updated_at?: string
+          valid_until: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          discount?: number
+          id?: string
+          notes?: string | null
+          quote_date?: string
+          quote_number?: string
+          sales_order_id?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          terms?: string | null
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotes_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_jobs: {
         Row: {
           created_at: string
@@ -6789,6 +6935,17 @@ export type Database = {
         }
         Returns: string
       }
+      add_sales_quote_item: {
+        Args: {
+          p_discount?: number
+          p_product_id: string
+          p_quantity: number
+          p_quote_id: string
+          p_tax_rate?: number
+          p_unit_price: number
+        }
+        Returns: string
+      }
       cancel_sales_invoice: {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: undefined
@@ -6798,9 +6955,19 @@ export type Database = {
         Returns: string
       }
       confirm_sales_order: { Args: { p_order_id: string }; Returns: string }
+      convert_sales_quote_to_order: { Args: { p_quote_id: string }; Returns: string }
       create_production_order_items: {
         Args: { p_production_order_id: string }
         Returns: undefined
+      }
+      create_sales_quote: {
+        Args: {
+          p_customer_id: string
+          p_notes?: string
+          p_terms?: string
+          p_valid_until: string
+        }
+        Returns: string
       }
       decrease_product_lot_quantity: {
         Args: { p_lot_id: string; p_quantity: number }
@@ -6849,6 +7016,10 @@ export type Database = {
           p_order_id: string
         }
         Returns: string
+      }
+      transition_sales_quote: {
+        Args: { p_expected_status: string; p_next_status: string; p_quote_id: string }
+        Returns: undefined
       }
     }
     Enums: {

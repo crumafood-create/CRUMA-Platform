@@ -113,6 +113,10 @@ export default async function AdminSidebar() {
           ✅ Control de calidad
         </Link>
 
+        <Link href="/lots" className="rounded px-2 py-1 hover:bg-gray-100">
+          🧊 Lotes producidos
+        </Link>
+
         <div className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Administración
         </div>

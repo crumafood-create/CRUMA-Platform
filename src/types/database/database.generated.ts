@@ -6955,7 +6955,10 @@ export type Database = {
         Returns: string
       }
       confirm_sales_order: { Args: { p_order_id: string }; Returns: string }
-      convert_sales_quote_to_order: { Args: { p_quote_id: string }; Returns: string }
+      convert_sales_quote_to_order: {
+        Args: { p_quote_id: string }
+        Returns: string
+      }
       create_production_order_items: {
         Args: { p_production_order_id: string }
         Returns: undefined
@@ -7018,7 +7021,11 @@ export type Database = {
         Returns: string
       }
       transition_sales_quote: {
-        Args: { p_expected_status: string; p_next_status: string; p_quote_id: string }
+        Args: {
+          p_expected_status: string
+          p_next_status: string
+          p_quote_id: string
+        }
         Returns: undefined
       }
     }

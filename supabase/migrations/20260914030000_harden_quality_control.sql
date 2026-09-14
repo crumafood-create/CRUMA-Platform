@@ -104,7 +104,7 @@ SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
   production_output public.production_outputs%ROWTYPE;
-  inspection_id uuid;
+  v_inspection_id uuid;
   v_failed_criteria integer;
   v_critical_defects integer;
   v_rejected_quantity integer;
@@ -178,12 +178,12 @@ BEGIN
   ) VALUES (
     production_output.production_order_id, production_output.id, auth.uid(),
     p_sampled_quantity, NULLIF(btrim(p_notes), '')
-  ) RETURNING id INTO inspection_id;
+  ) RETURNING id INTO v_inspection_id;
 
   INSERT INTO public.quality_inspection_items (
     inspection_id, criterion, expected_value, actual_value, passed, notes
   )
-  SELECT inspection_id, btrim(item->>'criterion'),
+  SELECT v_inspection_id, btrim(item->>'criterion'),
     NULLIF(btrim(item->>'expected_value'), ''),
     NULLIF(btrim(item->>'actual_value'), ''),
     (item->>'passed')::boolean,
@@ -193,7 +193,7 @@ BEGIN
   INSERT INTO public.quality_defects (
     inspection_id, defect_type, severity, quantity, description
   )
-  SELECT inspection_id, btrim(defect->>'defect_type'),
+  SELECT v_inspection_id, btrim(defect->>'defect_type'),
     defect->>'severity', (defect->>'quantity')::integer,
     NULLIF(btrim(defect->>'description'), '')
   FROM jsonb_array_elements(p_defects) defect;
@@ -201,13 +201,13 @@ BEGIN
   SELECT count(*) FILTER (WHERE NOT item.passed)::integer
   INTO v_failed_criteria
   FROM public.quality_inspection_items item
-  WHERE item.inspection_id = inspection_id;
+  WHERE item.inspection_id = v_inspection_id;
 
   SELECT count(*) FILTER (WHERE defect.severity = 'critical')::integer,
     coalesce(sum(defect.quantity), 0)::integer
   INTO v_critical_defects, v_rejected_quantity
   FROM public.quality_defects defect
-  WHERE defect.inspection_id = inspection_id;
+  WHERE defect.inspection_id = v_inspection_id;
 
   v_rejected_quantity := LEAST(v_sampled_quantity, v_rejected_quantity);
   IF v_critical_defects > 0 THEN
@@ -226,7 +226,7 @@ BEGIN
     status = v_status,
     accepted_quantity = p_sampled_quantity - v_rejected_quantity,
     rejected_quantity = v_rejected_quantity
-  WHERE id = inspection_id;
+  WHERE id = v_inspection_id;
 
   UPDATE public.production_outputs
   SET quality_status = CASE
@@ -236,7 +236,7 @@ BEGIN
   END
   WHERE id = production_output.id;
 
-  RETURN inspection_id;
+  RETURN v_inspection_id;
 END;
 $$;
 

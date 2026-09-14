@@ -1,21 +1,5 @@
-import type { ReactNode }
-from 'react';
+import type { ReactNode } from 'react';
 
-interface Props {
-
-  children: ReactNode;
-}
-
-export default function Layout({
-  children
-}: Props) {
-
-  return (
-
-    <div className="space-y-6">
-
-      {children}
-
-    </div>
-  );
+export default function QualityLayout({ children }: { children: ReactNode }) {
+  return <div className="space-y-6">{children}</div>;
 }

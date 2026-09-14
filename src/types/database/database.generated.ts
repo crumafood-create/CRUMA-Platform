@@ -4617,6 +4617,7 @@ export type Database = {
           id: string
           product_id: string
           production_order_id: string
+          quality_status: string
           quantity_produced: number
           total_cost: number | null
           unit_cost: number | null
@@ -4629,6 +4630,7 @@ export type Database = {
           id?: string
           product_id: string
           production_order_id: string
+          quality_status?: string
           quantity_produced: number
           total_cost?: number | null
           unit_cost?: number | null
@@ -4641,6 +4643,7 @@ export type Database = {
           id?: string
           product_id?: string
           production_order_id?: string
+          quality_status?: string
           quantity_produced?: number
           total_cost?: number | null
           unit_cost?: number | null
@@ -5167,6 +5170,234 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quality_defects: {
+        Row: {
+          created_at: string
+          defect_type: string
+          description: string | null
+          id: string
+          inspection_id: string
+          quantity: number
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          defect_type: string
+          description?: string | null
+          id?: string
+          inspection_id: string
+          quantity: number
+          severity: string
+        }
+        Update: {
+          created_at?: string
+          defect_type?: string
+          description?: string | null
+          id?: string
+          inspection_id?: string
+          quantity?: number
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_defects_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_inspection_items: {
+        Row: {
+          actual_value: string | null
+          created_at: string
+          criterion: string
+          expected_value: string | null
+          id: string
+          inspection_id: string
+          notes: string | null
+          passed: boolean
+        }
+        Insert: {
+          actual_value?: string | null
+          created_at?: string
+          criterion: string
+          expected_value?: string | null
+          id?: string
+          inspection_id: string
+          notes?: string | null
+          passed: boolean
+        }
+        Update: {
+          actual_value?: string | null
+          created_at?: string
+          criterion?: string
+          expected_value?: string | null
+          id?: string
+          inspection_id?: string
+          notes?: string | null
+          passed?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_inspection_items_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_inspections: {
+        Row: {
+          accepted_quantity: number
+          created_at: string
+          id: string
+          inspected_at: string
+          inspector_id: string
+          notes: string | null
+          production_order_id: string
+          production_output_id: string
+          rejected_quantity: number
+          result: string | null
+          sampled_quantity: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_quantity?: number
+          created_at?: string
+          id?: string
+          inspected_at?: string
+          inspector_id: string
+          notes?: string | null
+          production_order_id: string
+          production_output_id: string
+          rejected_quantity?: number
+          result?: string | null
+          sampled_quantity: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_quantity?: number
+          created_at?: string
+          id?: string
+          inspected_at?: string
+          inspector_id?: string
+          notes?: string | null
+          production_order_id?: string
+          production_output_id?: string
+          rejected_quantity?: number
+          result?: string | null
+          sampled_quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: false
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_release_decisions: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          created_at: string
+          decision: string
+          id: string
+          inspection_id: string
+          production_order_id: string
+          production_output_id: string
+          reason: string | null
+        }
+        Insert: {
+          approved_at?: string
+          approved_by: string
+          created_at?: string
+          decision: string
+          id?: string
+          inspection_id: string
+          production_order_id: string
+          production_output_id: string
+          reason?: string | null
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          inspection_id?: string
+          production_order_id?: string
+          production_output_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_release_decisions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: true
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: false
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       raw_material_lots: {
         Row: {
@@ -7078,6 +7309,10 @@ export type Database = {
         Args: { p_approval_id: string; p_decision: string }
         Returns: string
       }
+      decide_quality_release: {
+        Args: { p_decision: string; p_inspection_id: string; p_reason: string }
+        Returns: string
+      }
       decrease_product_lot_quantity: {
         Args: { p_lot_id: string; p_quantity: number }
         Returns: undefined
@@ -7104,6 +7339,16 @@ export type Database = {
           p_inventory_location_id: string
           p_item_id: string
           p_lot_number: string
+        }
+        Returns: string
+      }
+      record_quality_inspection: {
+        Args: {
+          p_criteria: Json
+          p_defects: Json
+          p_notes: string
+          p_output_id: string
+          p_sampled_quantity: number
         }
         Returns: string
       }

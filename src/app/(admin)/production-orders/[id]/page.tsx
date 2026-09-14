@@ -386,6 +386,15 @@ export default async function ProductionOrderPage({
             Ver Costos
           </Link>
         )}
+
+        {order.production_status === 'completed' && (
+          <Link
+            href={`/qa/create?production_order_id=${order.id}`}
+            className="rounded border px-4 py-2"
+          >
+            Inspeccionar calidad
+          </Link>
+        )}
       </div>
     </main>
   );

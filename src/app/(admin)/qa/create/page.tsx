@@ -39,7 +39,7 @@ export default async function CreateQualityInspectionPage({
       {options.length ? (
         <QualityInspectionForm
           outputs={options}
-          initialOutputId={options.length === 1 ? options[0].id : undefined}
+          initialOutputId={options.length === 1 ? options[0]?.id ?? '' : ''}
         />
       ) : (
         <p className="rounded border p-6 text-gray-500">

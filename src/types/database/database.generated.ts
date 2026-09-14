@@ -5187,8 +5187,8 @@ export type Database = {
           description?: string | null
           id?: string
           inspection_id: string
-          quantity?: number
-          severity?: string
+          quantity: number
+          severity: string
         }
         Update: {
           created_at?: string
@@ -5228,7 +5228,7 @@ export type Database = {
           id?: string
           inspection_id: string
           notes?: string | null
-          passed?: boolean
+          passed: boolean
         }
         Update: {
           actual_value?: string | null
@@ -5301,6 +5301,13 @@ export type Database = {
             foreignKeyName: "quality_inspections_inspector_id_fkey"
             columns: ["inspector_id"]
             isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -5355,6 +5362,13 @@ export type Database = {
           reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "quality_release_decisions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
           {
             foreignKeyName: "quality_release_decisions_approved_by_fkey"
             columns: ["approved_by"]
@@ -7296,11 +7310,7 @@ export type Database = {
         Returns: string
       }
       decide_quality_release: {
-        Args: {
-          p_decision: string
-          p_inspection_id: string
-          p_reason: string
-        }
+        Args: { p_decision: string; p_inspection_id: string; p_reason: string }
         Returns: string
       }
       decrease_product_lot_quantity: {

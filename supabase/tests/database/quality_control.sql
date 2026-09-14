@@ -3,6 +3,9 @@ BEGIN;
 INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES
  ('d1000000-0000-0000-0000-000000000001','authenticated','authenticated','quality-admin@example.test',now(),now()),
  ('d1000000-0000-0000-0000-000000000002','authenticated','authenticated','quality-user@example.test',now(),now());
+INSERT INTO public.profiles(id,full_name,email,role) VALUES
+ ('d1000000-0000-0000-0000-000000000001','Quality Admin','quality-admin@example.test','admin'),
+ ('d1000000-0000-0000-0000-000000000002','Quality User','quality-user@example.test','client');
 INSERT INTO public.user_roles(user_id,role)
 VALUES ('d1000000-0000-0000-0000-000000000001','admin');
 INSERT INTO public.products(id,slug,internal_code,name,status)

@@ -1,0 +1,23 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { addQuoteItem, convertQuote, transitionQuote } from '../actions';
+const money = (v: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v);
+export default async function SalesQuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params; const supabase = await createTypedClient();
+  const { data: quote, error } = await supabase.from('sales_quotes').select('*').eq('id', id).single();
+  if (error || !quote) notFound();
+  const [customer, items, products] = await Promise.all([
+    supabase.from('customers').select('name, customer_code').eq('id', quote.customer_id).single(),
+    supabase.from('sales_quote_items').select('*').eq('quote_id', id).order('created_at'),
+    supabase.from('products').select('id, internal_code, name').eq('status', 'active').is('deleted_at', null).order('name'),
+  ]);
+  if (customer.error || items.error || products.error) throw new Error('No se pudo cargar la cotización completa.');
+  const isPastDue = quote.valid_until < new Date().toISOString().slice(0, 10);
+  return <main className="space-y-6"><div className="flex items-center justify-between"><div><h1 className="text-4xl font-bold">{quote.quote_number}</h1><p>{customer.data.customer_code} · {customer.data.name}</p></div><Link href="/sales-quotes" className="rounded border px-4 py-2">Volver</Link></div>
+    <section className="grid gap-3 rounded-2xl border p-6 md:grid-cols-4"><div>Estado<br/><b>{quote.status}</b></div><div>Vigencia<br/><b>{quote.valid_until}</b></div><div>Impuestos<br/><b>{money(Number(quote.tax_amount))}</b></div><div>Total<br/><b>{money(Number(quote.total_amount))}</b></div></section>
+    <section className="rounded-2xl border p-6"><h2 className="mb-4 text-xl font-semibold">Partidas</h2>{items.data.length ? <div className="space-y-2">{items.data.map((item) => <div key={item.id} className="flex justify-between rounded border p-3"><span>{item.product_code ?? '—'} · {item.description} · {Number(item.quantity)} × {money(Number(item.unit_price))} · IVA {Number(item.tax_rate)}%</span><b>{money(Number(item.line_total))}</b></div>)}</div> : <p>Sin partidas.</p>}</section>
+    {quote.status === 'draft' && <form action={addQuoteItem} className="grid gap-3 rounded-2xl border p-6 md:grid-cols-3"><input type="hidden" name="quote_id" value={quote.id}/><select name="product_id" required className="rounded border px-3 py-2"><option value="">Producto</option>{products.data.map((p) => <option key={p.id} value={p.id}>{p.internal_code ?? '—'} · {p.name}</option>)}</select><input name="quantity" type="number" step="0.0001" min="0.0001" placeholder="Cantidad" required className="rounded border px-3 py-2"/><input name="unit_price" type="number" step="0.01" min="0" placeholder="Precio" required className="rounded border px-3 py-2"/><input name="discount" type="number" step="0.01" min="0" defaultValue="0" className="rounded border px-3 py-2"/><input name="tax_rate" type="number" step="0.01" min="0" max="100" defaultValue="16" className="rounded border px-3 py-2"/><button className="rounded bg-blue-600 px-4 py-2 text-white">Agregar partida</button></form>}
+    <div className="flex flex-wrap gap-3">{quote.status === 'draft' && !isPastDue && <form action={transitionQuote.bind(null, quote.id, 'draft', 'sent')}><button className="rounded border px-4 py-2">Enviar</button></form>}{quote.status === 'sent' && !isPastDue && <><form action={transitionQuote.bind(null, quote.id, 'sent', 'accepted')}><button className="rounded bg-green-600 px-4 py-2 text-white">Aceptar</button></form><form action={transitionQuote.bind(null, quote.id, 'sent', 'rejected')}><button className="rounded border px-4 py-2">Rechazar</button></form></>}{(quote.status === 'draft' || quote.status === 'sent') && isPastDue && <form action={transitionQuote.bind(null, quote.id, quote.status, 'expired')}><button className="rounded border px-4 py-2">Marcar vencida</button></form>}{(quote.status === 'draft' || quote.status === 'sent' || quote.status === 'accepted') && <form action={transitionQuote.bind(null, quote.id, quote.status, 'cancelled')}><button className="rounded border border-red-300 px-4 py-2">Cancelar</button></form>}{quote.status === 'accepted' && <form action={convertQuote.bind(null, quote.id)}><button className="rounded bg-blue-600 px-4 py-2 text-white">Convertir a pedido</button></form>}{quote.sales_order_id && <Link href={`/sales-orders/${quote.sales_order_id}`} className="rounded border px-4 py-2">Ver pedido</Link>}</div>
+  </main>;
+}

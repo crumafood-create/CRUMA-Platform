@@ -125,6 +125,10 @@ export default async function AdminSidebar() {
           🛒 Pedidos
         </Link>
 
+        <Link href="/sales-quotes" className="rounded px-2 py-1 hover:bg-gray-100">
+          📝 Cotizaciones
+        </Link>
+
         <Link href="/accounts-receivable" className="rounded px-2 py-1 hover:bg-gray-100">
           💳 Cuentas por Cobrar
         </Link>

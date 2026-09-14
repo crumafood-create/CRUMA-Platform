@@ -10,6 +10,8 @@ export const PERMISSIONS = {
   PROCUREMENT_SUPPLIER_MANAGE: 'procurement.supplier.manage',
   PROCUREMENT_ORDER_MANAGE: 'procurement.order.manage',
   PROCUREMENT_ORDER_RECEIVE: 'procurement.order.receive',
+  PROCUREMENT_REQUISITION_MANAGE: 'procurement.requisition.manage',
+  APPROVAL_DECIDE: 'approval.decide',
   PRODUCTION_RECIPE_MANAGE: 'production.recipe.manage',
   PRODUCTION_ORDER_CREATE: 'production.order.create',
   PRODUCTION_ORDER_RELEASE: 'production.order.release',

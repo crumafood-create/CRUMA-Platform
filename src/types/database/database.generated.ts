@@ -4944,6 +4944,7 @@ export type Database = {
           notes: string | null
           order_date: string
           order_number: string
+          purchase_requisition_id: string | null
           status: string
           subtotal: number
           supplier_id: string
@@ -4958,6 +4959,7 @@ export type Database = {
           notes?: string | null
           order_date?: string
           order_number: string
+          purchase_requisition_id?: string | null
           status?: string
           subtotal?: number
           supplier_id: string
@@ -4972,6 +4974,7 @@ export type Database = {
           notes?: string | null
           order_date?: string
           order_number?: string
+          purchase_requisition_id?: string | null
           status?: string
           subtotal?: number
           supplier_id?: string
@@ -4979,6 +4982,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_orders_purchase_requisition_id_fkey"
+            columns: ["purchase_requisition_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_orders_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -6955,6 +6965,10 @@ export type Database = {
         Returns: string
       }
       confirm_sales_order: { Args: { p_order_id: string }; Returns: string }
+      convert_purchase_requisition_to_orders: {
+        Args: { p_requisition_id: string }
+        Returns: string[]
+      }
       convert_sales_quote_to_order: {
         Args: { p_quote_id: string }
         Returns: string
@@ -6963,6 +6977,8 @@ export type Database = {
         Args: { p_production_order_id: string }
         Returns: undefined
       }
+      create_purchase_approvals: { Args: never; Returns: number }
+      create_purchase_requisition_from_mrp: { Args: never; Returns: string }
       create_sales_quote: {
         Args: {
           p_customer_id: string
@@ -6970,6 +6986,10 @@ export type Database = {
           p_terms?: string
           p_valid_until: string
         }
+        Returns: string
+      }
+      decide_approval: {
+        Args: { p_approval_id: string; p_decision: string }
         Returns: string
       }
       decrease_product_lot_quantity: {
@@ -7010,6 +7030,10 @@ export type Database = {
           p_payment_method: string
           p_reference: string
         }
+        Returns: string
+      }
+      submit_purchase_requisition: {
+        Args: { p_requisition_id: string }
         Returns: string
       }
       transition_sales_order: {

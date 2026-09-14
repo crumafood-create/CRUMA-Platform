@@ -65,6 +65,10 @@ export default async function AdminSidebar() {
           🧾 Recetas
         </Link>
 
+        <Link href="/purchase-requisitions" className="rounded px-2 py-1 hover:bg-gray-100">
+          📋 Solicitudes de compra
+        </Link>
+
         <Link href="/purchase-orders" className="rounded px-2 py-1 hover:bg-gray-100">
           🛒 Compras
         </Link>

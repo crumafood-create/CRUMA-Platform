@@ -103,6 +103,12 @@ export async function registerConsumption(
         quantity:
           allocation.quantity,
 
+        unit_cost:
+          allocation.unit_cost,
+
+        total_cost:
+          allocation.total_cost,
+
         created_at:
           new Date().toISOString(),
       });

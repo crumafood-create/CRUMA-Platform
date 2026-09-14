@@ -27,6 +27,7 @@ export async function getAvailableLots(
       raw_material_id,
       lot_number,
       quantity,
+      unit_cost,
       expiration_date,
       created_at
     `)
@@ -49,6 +50,7 @@ export async function getAvailableLots(
     raw_material_id: lot.raw_material_id,
     lot_number: lot.lot_number,
     quantity: Number(lot.quantity),
+    unit_cost: Number(lot.unit_cost),
     expiration_date: lot.expiration_date,
     created_at: lot.created_at,
   }));

@@ -4228,36 +4228,108 @@ export type Database = {
           },
         ]
       }
+      production_cost_history: {
+        Row: {
+          calculated_at: string
+          calculated_by: string
+          id: string
+          labor_cost: number
+          material_cost: number
+          overhead_cost: number
+          production_cost_id: string
+          production_order_id: string
+          source_consumption_count: number
+          total_cost: number
+          unit_cost: number
+          version: number
+        }
+        Insert: {
+          calculated_at?: string
+          calculated_by: string
+          id?: string
+          labor_cost: number
+          material_cost: number
+          overhead_cost: number
+          production_cost_id: string
+          production_order_id: string
+          source_consumption_count: number
+          total_cost: number
+          unit_cost: number
+          version: number
+        }
+        Update: {
+          calculated_at?: string
+          calculated_by?: string
+          id?: string
+          labor_cost?: number
+          material_cost?: number
+          overhead_cost?: number
+          production_cost_id?: string
+          production_order_id?: string
+          source_consumption_count?: number
+          total_cost?: number
+          unit_cost?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_cost_history_production_cost_id_fkey"
+            columns: ["production_cost_id"]
+            isOneToOne: false
+            referencedRelation: "production_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_cost_history_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_costs: {
         Row: {
+          calculated_at: string
+          calculated_by: string | null
+          calculation_version: number
           created_at: string
           id: string
           labor_cost: number
           material_cost: number
           overhead_cost: number
           production_order_id: string
+          source_consumption_count: number
           total_cost: number
           unit_cost: number
           updated_at: string
         }
         Insert: {
+          calculated_at?: string
+          calculated_by?: string | null
+          calculation_version?: number
           created_at?: string
           id?: string
           labor_cost?: number
           material_cost?: number
           overhead_cost?: number
           production_order_id: string
+          source_consumption_count?: number
           total_cost?: number
           unit_cost?: number
           updated_at?: string
         }
         Update: {
+          calculated_at?: string
+          calculated_by?: string | null
+          calculation_version?: number
           created_at?: string
           id?: string
           labor_cost?: number
           material_cost?: number
           overhead_cost?: number
           production_order_id?: string
+          source_consumption_count?: number
           total_cost?: number
           unit_cost?: number
           updated_at?: string
@@ -4372,6 +4444,8 @@ export type Database = {
           production_order_item_id: string
           quantity: number
           raw_material_lot_id: string
+          total_cost: number
+          unit_cost: number
         }
         Insert: {
           created_at?: string
@@ -4379,6 +4453,8 @@ export type Database = {
           production_order_item_id: string
           quantity?: number
           raw_material_lot_id: string
+          total_cost: number
+          unit_cost: number
         }
         Update: {
           created_at?: string
@@ -4386,6 +4462,8 @@ export type Database = {
           production_order_item_id?: string
           quantity?: number
           raw_material_lot_id?: string
+          total_cost?: number
+          unit_cost?: number
         }
         Relationships: [
           {
@@ -6953,6 +7031,14 @@ export type Database = {
           p_quote_id: string
           p_tax_rate?: number
           p_unit_price: number
+        }
+        Returns: string
+      }
+      calculate_production_cost: {
+        Args: {
+          p_labor_cost: number
+          p_order_id: string
+          p_overhead_cost: number
         }
         Returns: string
       }

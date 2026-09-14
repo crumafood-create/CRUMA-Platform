@@ -24,7 +24,7 @@ export default async function QualityInspectionPage({
       id, status, result, sampled_quantity, accepted_quantity,
       rejected_quantity, notes, inspected_at,
       production_outputs(
-        quality_status,
+        id, quality_status,
         products(name),
         production_orders(id, production_number)
       )
@@ -91,6 +91,14 @@ export default async function QualityInspectionPage({
         <section className="rounded-2xl border p-6">
           <h2 className="text-xl font-semibold">Decisión: {decision.decision}</h2>
           <p className="text-sm text-gray-500">{decision.reason ?? 'Sin observaciones'}</p>
+          {decision.decision === 'release' && inspection.production_outputs?.id ? (
+            <Link
+              href={`/lots/release?output_id=${inspection.production_outputs.id}`}
+              className="mt-4 inline-flex rounded border px-4 py-2"
+            >
+              Liberar a inventario
+            </Link>
+          ) : null}
         </section>
       ) : (
         <section className="grid gap-3 rounded-2xl border p-6 md:grid-cols-3">

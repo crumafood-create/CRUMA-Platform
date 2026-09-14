@@ -5,10 +5,6 @@ INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES
  ('d1000000-0000-0000-0000-000000000002','authenticated','authenticated','quality-user@example.test',now(),now());
 INSERT INTO public.user_roles(user_id,role)
 VALUES ('d1000000-0000-0000-0000-000000000001','admin');
-INSERT INTO public.profiles(id,full_name,role)
-VALUES
- ('d1000000-0000-0000-0000-000000000001','Quality Admin','admin'),
- ('d1000000-0000-0000-0000-000000000002','Quality User','client');
 INSERT INTO public.products(id,slug,internal_code,name,status)
 VALUES ('d2000000-0000-0000-0000-000000000001','quality-product','QA-P1','Quality Product','active');
 INSERT INTO public.recipes(id,product_id,name,is_active)

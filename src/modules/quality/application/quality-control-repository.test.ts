@@ -32,7 +32,7 @@ describe('repositorio de control de calidad', () => {
         actual_value: 'Uniforme', passed: true,
       }],
       p_defects: [],
-      p_notes: null,
+      p_notes: '',
       p_output_id: 'output-1',
       p_sampled_quantity: 5,
     }]]);

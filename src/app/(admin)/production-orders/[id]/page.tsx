@@ -3,9 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-import {
-  calculateProductionCost,
-} from '@/app/(admin)/production-costs/actions';
+import { ProductionCostForm } from '@/app/(admin)/_components/production-cost-form';
 
 import {
   releaseProductionOrder,
@@ -68,6 +66,13 @@ export default async function ProductionOrderPage({
   if (!order) {
     notFound();
   }
+
+  const { data: currentCost, error: currentCostError } = await supabase
+    .from('production_costs')
+    .select('labor_cost, overhead_cost')
+    .eq('production_order_id', order.id)
+    .maybeSingle();
+  if (currentCostError) throw new Error('No fue posible consultar el costo de producción.');
 
   const { data: recipe } = await supabase
     .from('recipes')
@@ -368,26 +373,19 @@ export default async function ProductionOrderPage({
   Ver Trazabilidad
 </Link>
 
-        <form
-  action={calculateProductionCost.bind(
-    null,
-    order.id,
-  )}
->
-  <button
-    type="submit"
-    className="rounded border px-4 py-2"
-  >
-    Calcular Costos
-  </button>
-</form>
+        {order.production_status === 'completed' && (
+          <ProductionCostForm
+            productionOrderId={order.id}
+            laborCost={Number(currentCost?.labor_cost ?? 0)}
+            overheadCost={Number(currentCost?.overhead_cost ?? 0)}
+          />
+        )}
 
-<Link
-  href={`/production-costs/${order.id}`}
-  className="rounded border px-4 py-2"
->
-  Ver Costos
-</Link>
+        {currentCost && (
+          <Link href={`/production-costs/${order.id}`} className="rounded border px-4 py-2">
+            Ver Costos
+          </Link>
+        )}
       </div>
     </main>
   );

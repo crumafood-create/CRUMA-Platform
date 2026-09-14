@@ -37,6 +37,8 @@ export function buildFEFOAllocation(
       quantity: consumed,
       remaining_quantity:
         available - consumed,
+      unit_cost: lot.unit_cost,
+      total_cost: Number((consumed * lot.unit_cost).toFixed(4)),
     });
 
     remaining -= consumed;

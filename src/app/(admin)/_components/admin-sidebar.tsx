@@ -105,7 +105,7 @@ export default async function AdminSidebar() {
           🏭 Órdenes de Producción
         </Link>
 
-        <Link href="/costing" className="rounded px-2 py-1 hover:bg-gray-100">
+        <Link href="/production-costs" className="rounded px-2 py-1 hover:bg-gray-100">
           💰 Costos
         </Link>
 

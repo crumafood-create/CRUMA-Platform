@@ -63,6 +63,8 @@ export interface RawMaterialLot {
 
   quantity: number;
 
+  unit_cost: number;
+
   expiration_date: string | null;
 
   created_at: string;
@@ -80,8 +82,13 @@ export interface FEFOAllocation {
   quantity: number;
 
   remaining_quantity: number;
+
+  unit_cost: number;
+
+  total_cost: number;
 }
 
+// ============================================================================
 // ============================================================================
 // INVENTORY MOVEMENT
 // ============================================================================

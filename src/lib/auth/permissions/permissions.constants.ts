@@ -18,6 +18,7 @@ export const PERMISSIONS = {
   PRODUCTION_ORDER_START: 'production.order.start',
   PRODUCTION_ORDER_CANCEL: 'production.order.cancel',
   PRODUCTION_ORDER_COMPLETE: 'production.order.complete',
+  PRODUCTION_COST_CALCULATE: 'production.cost.calculate',
   SALES_ORDER_CREATE: 'sales.order.create',
   SALES_ORDER_CONFIRM: 'sales.order.confirm',
   SALES_ORDER_PREPARE: 'sales.order.prepare',

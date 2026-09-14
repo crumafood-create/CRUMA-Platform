@@ -14,26 +14,26 @@ export default async function InvoiceDetailPage({ params }: {
 }) {
   const { id } = await params;
   const supabase = await createTypedClient();
+  const db = supabase as any;
 
-  const { data: invoice, error } = await (supabase as any)
+  const { data: invoice, error } = await db
     .from('sales_invoices')
     .select('*')
     .eq('id', id)
     .single();
 
-  // Redirige a página 404 si la factura no existe o falla la consulta principal
   if (error || !invoice) {
     notFound();
   }
 
   const [customerResult, orderResult, accountResult, itemsResult, paymentsResult] = await Promise.all([
-    supabase.from('customers').select('name, company_name, tax_id').eq('id', invoice.customer_id).single(),
-    supabase.from('sales_orders').select('order_number').eq('id', invoice.sales_order_id).single(),
-    supabase.from('accounts_receivable').select('paid_amount, balance, status').eq('id', invoice.account_receivable_id).single(),
-    supabase.from('sales_invoice_items').select('id, product_code, description, quantity, unit_price, discount, line_total').eq('invoice_id', id).order('created_at'),
-    supabase.from('accounts_receivable_payments').select('id, payment_date, amount, payment_method, reference').eq('account_receivable_id', invoice.account_receivable_id).order('payment_date'),
+    db.from('customers').select('name, company_name, tax_id').eq('id', invoice.customer_id).single(),
+    db.from('sales_orders').select('order_number').eq('id', invoice.sales_order_id).single(),
+    db.from('accounts_receivable').select('paid_amount, balance, status').eq('id', invoice.account_receivable_id).single(),
+    db.from('sales_invoice_items').select('id, product_code, description, quantity, unit_price, discount, line_total').eq('invoice_id', id).order('created_at'),
+    db.from('accounts_receivable_payments').select('id, payment_date, amount, payment_method, reference').eq('account_receivable_id', invoice.account_receivable_id).order('payment_date'),
   ]);
-
+  
   if (customerResult.error || orderResult.error || accountResult.error || itemsResult.error || paymentsResult.error) {
     throw new Error('No fue posible cargar el detalle completo de la factura.');
   }

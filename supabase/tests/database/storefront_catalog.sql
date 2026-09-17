@@ -1,7 +1,5 @@
 BEGIN;
 
-SELECT plan(6);
-
 INSERT INTO public.products (id, name, slug)
 VALUES
   ('8f100000-0000-0000-0000-000000000001', 'Ficha publicada', 'ficha-publicada'),
@@ -24,31 +22,39 @@ VALUES
     NULL, '', false, NULL
   );
 
-SELECT has_table('public', 'storefront_products', 'existe la proyección pública');
-
-SELECT ok(
-  has_table_privilege('anon', 'public.storefront_products', 'SELECT'),
-  'anon puede leer la proyección pública'
-);
-
-SELECT ok(
-  NOT has_table_privilege('anon', 'public.storefront_products', 'INSERT'),
-  'anon no puede insertar fichas'
-);
+DO $test$
+BEGIN
+  IF to_regclass('public.storefront_products') IS NULL THEN
+    RAISE EXCEPTION 'storefront_products table does not exist';
+  END IF;
+  IF NOT has_table_privilege('anon', 'public.storefront_products', 'SELECT') THEN
+    RAISE EXCEPTION 'anon can not read storefront_products';
+  END IF;
+  IF has_table_privilege('anon', 'public.storefront_products', 'INSERT') THEN
+    RAISE EXCEPTION 'anon can insert storefront products';
+  END IF;
+END;
+$test$;
 
 SET LOCAL ROLE anon;
 
-SELECT results_eq(
-  $$ SELECT slug FROM public.storefront_products ORDER BY slug $$,
-  ARRAY['ficha-publicada']::text[],
-  'RLS oculta borradores a visitantes'
-);
+DO $test$
+DECLARE
+  visible_slugs text[];
+  published_price numeric;
+BEGIN
+  SELECT array_agg(slug ORDER BY slug), max(price)
+  INTO visible_slugs, published_price
+  FROM public.storefront_products;
 
-SELECT is(
-  (SELECT price FROM public.storefront_products WHERE slug = 'ficha-publicada'),
-  149.90::numeric,
-  'la lectura pública conserva el precio autorizado'
-);
+  IF visible_slugs IS DISTINCT FROM ARRAY['ficha-publicada']::text[] THEN
+    RAISE EXCEPTION 'RLS exposed unexpected storefront products: %', visible_slugs;
+  END IF;
+  IF published_price IS DISTINCT FROM 149.90::numeric THEN
+    RAISE EXCEPTION 'public storefront price is incorrect: %', published_price;
+  END IF;
+END;
+$test$;
 
 RESET ROLE;
 
@@ -56,11 +62,13 @@ UPDATE public.products
 SET status = 'draft'
 WHERE id = '8f100000-0000-0000-0000-000000000001';
 
-SELECT is(
-  (SELECT is_published FROM public.storefront_products WHERE slug = 'ficha-publicada'),
-  false,
-  'desactivar el producto retira automáticamente la ficha'
-);
+DO $test$
+BEGIN
+  IF (SELECT is_published FROM public.storefront_products
+      WHERE slug = 'ficha-publicada') IS DISTINCT FROM false THEN
+    RAISE EXCEPTION 'deactivating a product did not unpublish its storefront product';
+  END IF;
+END;
+$test$;
 
-SELECT * FROM finish();
 ROLLBACK;

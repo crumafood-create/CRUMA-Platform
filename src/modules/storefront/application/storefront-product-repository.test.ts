@@ -8,9 +8,18 @@ import {
   upsertStorefrontProduct,
 } from './storefront-product-repository';
 
+type Result = { data: unknown; error: { message: string } | null };
+type QueryBuilder = Promise<Result> & {
+  select: (columns: string) => QueryBuilder;
+  eq: (column: string, value: unknown) => QueryBuilder;
+  lte: (column: string, value: unknown) => QueryBuilder;
+  order: (column: string, options: unknown) => QueryBuilder;
+  maybeSingle: () => Promise<Result>;
+};
+
 function clientWith(data: unknown, error: { message: string } | null = null) {
   const calls: unknown[] = [];
-  let query: any;
+  let query: QueryBuilder;
   query = Object.assign(Promise.resolve({ data, error }), {
     select(columns: string) { calls.push(['select', columns]); return query; },
     eq(column: string, value: unknown) { calls.push(['eq', column, value]); return query; },

@@ -131,6 +131,7 @@ USING (public.is_admin(auth.uid()))
 WITH CHECK (public.is_admin(auth.uid()));
 
 REVOKE ALL ON public.storefront_products FROM anon;
+REVOKE INSERT, UPDATE, DELETE ON public.storefront_products FROM anon;
 GRANT SELECT ON public.storefront_products TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.storefront_products TO authenticated;
 

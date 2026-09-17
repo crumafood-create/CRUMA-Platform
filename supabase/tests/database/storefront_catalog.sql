@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(5);
+SELECT plan(6);
 
 INSERT INTO public.products (id, name, slug)
 VALUES
@@ -51,6 +51,16 @@ SELECT is(
 );
 
 RESET ROLE;
+
+UPDATE public.products
+SET status = 'draft'
+WHERE id = '8f100000-0000-0000-0000-000000000001';
+
+SELECT is(
+  (SELECT is_published FROM public.storefront_products WHERE slug = 'ficha-publicada'),
+  false,
+  'desactivar el producto retira automáticamente la ficha'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -19,6 +19,7 @@ export const PERMISSIONS = {
   PRODUCTION_ORDER_CANCEL: 'production.order.cancel',
   PRODUCTION_ORDER_COMPLETE: 'production.order.complete',
   PRODUCTION_COST_CALCULATE: 'production.cost.calculate',
+  PRODUCTION_LOT_RELEASE: 'production.lot.release',
   QUALITY_INSPECTION_MANAGE: 'quality.inspection.manage',
   QUALITY_RELEASE_DECIDE: 'quality.release.decide',
   SALES_ORDER_CREATE: 'sales.order.create',

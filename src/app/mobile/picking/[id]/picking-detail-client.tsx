@@ -145,6 +145,7 @@ setGlobalError(null);
 
 try {
 await confirmPicking(currentItem.id, code);
+setScannedLot('');
 await loadDetail();
 } catch (error) {
 setGlobalError(
@@ -331,12 +332,14 @@ Pendiente
 <div className="mt-6 grid gap-4 md:grid-cols-2">
 <div className="rounded-xl bg-white p-6 text-center">
 <div className="text-xs font-medium text-gray-600">
-Cantidad a Surtir
+Restante
 </div>
 <div className="mt-4 text-5xl font-bold text-blue-600">
-{item.quantity}
+{Math.max(item.quantity - item.picked_quantity, 0)}
 </div>
-<div className="mt-2 text-sm text-gray-500">unidades</div>
+<div className="mt-2 text-sm text-gray-500">
+{item.picked_quantity} de {item.quantity} surtidas
+</div>
 </div>
 
 <div className="space-y-3 rounded-xl bg-blue-50 p-6">
@@ -485,10 +488,11 @@ return (
 <span>{item.quantity} unidades</span>
 <span className="mx-2">•</span>
 <span>
-Lote:{' '}
-{item.suggested_lot?.lot_number ??
-item.picked_lot?.lot_number ??
-'N/D'}
+Lotes: {item.allocations.length
+? item.allocations.map((allocation) =>
+`${allocation.lotNumber} (${allocation.quantity})`,
+).join(', ')
+: item.picked_lot?.lot_number ?? 'N/D'}
 </span>
 </div>
 </div>

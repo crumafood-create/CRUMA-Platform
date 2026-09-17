@@ -3183,6 +3183,76 @@ export type Database = {
           },
         ]
       }
+      picking_lot_allocations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          picking_order_item_id: string
+          product_lot_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          picking_order_item_id: string
+          product_lot_id: string
+          quantity: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          picking_order_item_id?: string
+          product_lot_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "picking_lot_allocations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_picking_order_item_id_fkey"
+            columns: ["picking_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "picking_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       picking_order_items: {
         Row: {
           created_at: string
@@ -3753,12 +3823,16 @@ export type Database = {
           created_at: string
           expiration_date: string | null
           id: string
+          initial_quantity: number
           inventory_location_id: string | null
           location_name: string | null
           lot_number: string
           product_id: string
           production_order_id: string | null
+          production_output_id: string | null
           quantity: number
+          released_at: string | null
+          released_by: string | null
           status: string
           updated_at: string
           warehouse_id: string | null
@@ -3767,12 +3841,16 @@ export type Database = {
           created_at?: string
           expiration_date?: string | null
           id?: string
+          initial_quantity?: number
           inventory_location_id?: string | null
           location_name?: string | null
           lot_number: string
           product_id: string
           production_order_id?: string | null
+          production_output_id?: string | null
           quantity?: number
+          released_at?: string | null
+          released_by?: string | null
           status?: string
           updated_at?: string
           warehouse_id?: string | null
@@ -3781,12 +3859,16 @@ export type Database = {
           created_at?: string
           expiration_date?: string | null
           id?: string
+          initial_quantity?: number
           inventory_location_id?: string | null
           location_name?: string | null
           lot_number?: string
           product_id?: string
           production_order_id?: string | null
+          production_output_id?: string | null
           quantity?: number
+          released_at?: string | null
+          released_by?: string | null
           status?: string
           updated_at?: string
           warehouse_id?: string | null
@@ -3825,6 +3907,34 @@ export type Database = {
             columns: ["production_order_id"]
             isOneToOne: false
             referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: true
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_released_by_fkey"
+            columns: ["released_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lots_released_by_fkey"
+            columns: ["released_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -4433,6 +4543,96 @@ export type Database = {
             columns: ["raw_material_id"]
             isOneToOne: false
             referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_lot_traceability: {
+        Row: {
+          consumed_quantity: number
+          created_at: string
+          id: string
+          product_lot_id: string
+          production_order_consumption_id: string
+          raw_material_id: string
+          raw_material_lot_id: string
+          source_lot_number: string
+        }
+        Insert: {
+          consumed_quantity: number
+          created_at?: string
+          id?: string
+          product_lot_id: string
+          production_order_consumption_id: string
+          raw_material_id: string
+          raw_material_lot_id: string
+          source_lot_number: string
+        }
+        Update: {
+          consumed_quantity?: number
+          created_at?: string
+          id?: string
+          product_lot_id?: string
+          production_order_consumption_id?: string
+          raw_material_id?: string
+          raw_material_lot_id?: string
+          source_lot_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_lot_traceability_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_production_order_consumption_i_fkey"
+            columns: ["production_order_consumption_id"]
+            isOneToOne: false
+            referencedRelation: "production_order_consumptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_purchase_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_raw_material_lot_id_fkey"
+            columns: ["raw_material_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
             referencedColumns: ["id"]
           },
         ]
@@ -7360,6 +7560,16 @@ export type Database = {
           p_payment_date: string
           p_payment_method: string
           p_reference: string
+        }
+        Returns: string
+      }
+      release_production_output_to_inventory: {
+        Args: {
+          p_expiration_date: string
+          p_inventory_location_id: string
+          p_lot_number: string
+          p_output_id: string
+          p_warehouse_id: string
         }
         Returns: string
       }

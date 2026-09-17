@@ -7,27 +7,7 @@ import type {
 export type StorefrontProduct = PublicTableRow<'storefront_products'>;
 export type StorefrontProductUpsert = PublicTableInsert<'storefront_products'>;
 
-const PUBLIC_FIELDS = [
-  'product_id',
-  'slug',
-  'name',
-  'short_description',
-  'description',
-  'category_slug',
-  'category_name',
-  'presentation',
-  'price',
-  'currency',
-  'image_url',
-  'image_alt',
-  'seo_title',
-  'seo_description',
-  'is_featured',
-  'is_published',
-  'published_at',
-  'created_at',
-  'updated_at',
-].join(', ');
+const PUBLIC_FIELDS = 'product_id, slug, name, short_description, description, category_slug, category_name, presentation, price, currency, image_url, image_alt, seo_title, seo_description, is_featured, is_published, published_at, created_at, updated_at' as const;
 
 export async function fetchPublishedStorefrontProducts(
   client: TypedSupabaseClient,
@@ -42,7 +22,7 @@ export async function fetchPublishedStorefrontProducts(
     .order('name', { ascending: true });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as StorefrontProduct[];
+  return data ?? [];
 }
 
 export async function fetchPublishedStorefrontProduct(
@@ -59,7 +39,7 @@ export async function fetchPublishedStorefrontProduct(
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data as StorefrontProduct | null;
+  return data;
 }
 
 export async function fetchStorefrontProductForAdmin(
@@ -73,7 +53,7 @@ export async function fetchStorefrontProductForAdmin(
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data as StorefrontProduct | null;
+  return data;
 }
 
 export async function upsertStorefrontProduct(

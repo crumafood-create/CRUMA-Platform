@@ -18,11 +18,12 @@ CREATE TABLE public.storefront_products (
   published_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT storefront_products_publication_check CHECK (
+  CONSTRAINT storefront_products_publication_date_check CHECK (
+    is_published = false OR published_at IS NOT NULL
+  ),
+  CONSTRAINT storefront_products_publication_content_check CHECK (
     is_published = false OR (
-      published_at IS NOT NULL
-      AND image_url IS NOT NULL
-      AND length(trim(image_alt)) > 0
+      image_url IS NOT NULL AND length(trim(image_alt)) > 0
     )
   )
 );

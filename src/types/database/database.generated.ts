@@ -6850,6 +6850,94 @@ export type Database = {
           },
         ]
       }
+      storefront_products: {
+        Row: {
+          category_name: string
+          category_slug: string
+          created_at: string
+          currency: string
+          description: string | null
+          image_alt: string
+          image_url: string | null
+          is_featured: boolean
+          is_published: boolean
+          name: string
+          presentation: string
+          price: number
+          product_id: string
+          published_at: string | null
+          seo_description: string | null
+          seo_title: string | null
+          short_description: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          category_name: string
+          category_slug: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          image_alt?: string
+          image_url?: string | null
+          is_featured?: boolean
+          is_published?: boolean
+          name: string
+          presentation: string
+          price: number
+          product_id: string
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          short_description: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          category_name?: string
+          category_slug?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          image_alt?: string
+          image_url?: string | null
+          is_featured?: boolean
+          is_published?: boolean
+          name?: string
+          presentation?: string
+          price?: number
+          product_id?: string
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          short_description?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storefront_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storefront_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storefront_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null

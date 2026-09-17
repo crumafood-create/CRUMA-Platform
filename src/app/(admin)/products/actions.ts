@@ -13,6 +13,8 @@ import {
   assertPreparationTypeExists,
   assertProductFamilyBelongsToCategory,
 } from '@/modules/inventory/application/product-catalog-repository';
+import { buildStorefrontProductUpsert } from '@/modules/storefront/application/storefront-product-contract';
+import { upsertStorefrontProduct } from '@/modules/storefront/application/storefront-product-repository';
 
 export async function updateProduct(productId: string, formData: FormData) {
   const { supabase } = await requireTypedAuthorizedAction(
@@ -35,9 +37,7 @@ export async function updateProduct(productId: string, formData: FormData) {
     .update(product)
     .eq('id', productId);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath('/products');
   redirect('/products');
@@ -60,11 +60,30 @@ export async function createProduct(formData: FormData) {
   );
 
   const { error } = await supabase.from('products').insert(product);
-
   if (error) throw new Error(error.message);
 
   revalidatePath('/products');
   redirect('/products');
+}
+
+export async function saveStorefrontPublication(
+  productId: string,
+  formData: FormData,
+) {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.CATALOG_PRODUCT_MANAGE,
+  );
+  const publication = buildStorefrontProductUpsert(
+    productId,
+    formData,
+    new Date().toISOString(),
+  );
+
+  await upsertStorefrontProduct(supabase, publication);
+
+  revalidatePath(`/products/${productId}/edit`);
+  revalidatePath('/catalogo');
+  revalidatePath(`/producto/${publication.slug}`);
 }
 
 export async function deleteProduct(productId: string) {
@@ -74,14 +93,10 @@ export async function deleteProduct(productId: string) {
 
   const { error } = await supabase
     .from('products')
-    .update({
-      deleted_at: new Date().toISOString(),
-    })
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', productId);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath('/products');
   redirect('/products');

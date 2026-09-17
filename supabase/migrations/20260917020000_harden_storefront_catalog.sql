@@ -27,6 +27,66 @@ CREATE TABLE public.storefront_products (
   )
 );
 
+CREATE OR REPLACE FUNCTION public.validate_storefront_product_publication()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $
+DECLARE
+  product_status text;
+  product_deleted_at timestamptz;
+  product_is_active boolean;
+BEGIN
+  SELECT status, deleted_at, is_active
+  INTO product_status, product_deleted_at, product_is_active
+  FROM public.products
+  WHERE id = NEW.product_id;
+
+  IF NEW.is_published = true
+    AND (
+      product_status IS DISTINCT FROM 'active'
+      OR product_deleted_at IS NOT NULL
+      OR product_is_active IS DISTINCT FROM true
+    )
+  THEN
+    RAISE EXCEPTION 'Only active products can be published.';
+  END IF;
+
+  RETURN NEW;
+END;
+$;
+
+CREATE TRIGGER storefront_products_validate_publication
+BEFORE INSERT OR UPDATE ON public.storefront_products
+FOR EACH ROW
+EXECUTE FUNCTION public.validate_storefront_product_publication();
+
+CREATE OR REPLACE FUNCTION public.unpublish_storefront_product()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $
+BEGIN
+  IF (
+    NEW.status IS DISTINCT FROM 'active'
+    OR NEW.deleted_at IS NOT NULL
+    OR NEW.is_active IS DISTINCT FROM true
+  ) THEN
+    UPDATE public.storefront_products
+    SET is_published = false, published_at = NULL
+    WHERE product_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$;
+
+CREATE TRIGGER products_unpublish_storefront_product
+AFTER UPDATE OF status, deleted_at, is_active ON public.products
+FOR EACH ROW
+EXECUTE FUNCTION public.unpublish_storefront_product();
+
 CREATE INDEX storefront_products_public_listing_idx
   ON public.storefront_products (is_featured DESC, name)
   WHERE is_published = true;
@@ -75,3 +135,5 @@ GRANT SELECT ON public.storefront_products TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.storefront_products TO authenticated;
 
 REVOKE ALL ON FUNCTION public.set_storefront_product_updated_at() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.validate_storefront_product_publication() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.unpublish_storefront_product() FROM PUBLIC;

@@ -21,8 +21,9 @@ function requiredText(form: FormData, field: string): string {
 }
 
 function publicPrice(form: FormData): number {
-  const price = Number(text(form, 'price'));
-  if (!Number.isFinite(price) || price < 0) {
+  const rawPrice = text(form, 'price');
+  const price = Number(rawPrice);
+  if (!rawPrice || !Number.isFinite(price) || price < 0) {
     throw new Error('El precio público debe ser un número no negativo y finito.');
   }
   return price;

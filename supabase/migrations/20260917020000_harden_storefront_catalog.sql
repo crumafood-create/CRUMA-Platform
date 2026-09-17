@@ -33,7 +33,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $storefront_validate$
 DECLARE
   product_status text;
   product_deleted_at timestamptz;
@@ -56,7 +56,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$storefront_validate$;
 
 CREATE TRIGGER storefront_products_validate_publication
 BEFORE INSERT OR UPDATE ON public.storefront_products
@@ -68,7 +68,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $storefront_unpublish$
 BEGIN
   IF (
     NEW.status IS DISTINCT FROM 'active'
@@ -81,7 +81,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$storefront_unpublish$;
 
 CREATE TRIGGER products_unpublish_storefront_product
 AFTER UPDATE OF status, deleted_at, is_active ON public.products

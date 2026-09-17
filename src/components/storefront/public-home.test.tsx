@@ -17,7 +17,7 @@ describe('portada pública de Crumafood', () => {
   it('ofrece recorridos claros al catálogo y al canal mayorista', () => {
     render(<PublicHome />);
 
-    expect(screen.getByRole('link', { name: /ver catálogo/i }))
+    expect(screen.getByRole('link', { name: /^ver catálogo$/i }))
       .toHaveAttribute('href', '/catalogo');
     expect(screen.getByRole('link', { name: /compras para negocio/i }))
       .toHaveAttribute('href', '/catalogo#mayoreo');

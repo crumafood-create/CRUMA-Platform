@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       abandoned_carts: {
@@ -3183,6 +3208,76 @@ export type Database = {
           },
         ]
       }
+      picking_lot_allocations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          picking_order_item_id: string
+          product_lot_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          picking_order_item_id: string
+          product_lot_id: string
+          quantity: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          picking_order_item_id?: string
+          product_lot_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "picking_lot_allocations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_picking_order_item_id_fkey"
+            columns: ["picking_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "picking_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       picking_order_items: {
         Row: {
           created_at: string
@@ -3753,12 +3848,16 @@ export type Database = {
           created_at: string
           expiration_date: string | null
           id: string
+          initial_quantity: number
           inventory_location_id: string | null
           location_name: string | null
           lot_number: string
           product_id: string
           production_order_id: string | null
+          production_output_id: string | null
           quantity: number
+          released_at: string | null
+          released_by: string | null
           status: string
           updated_at: string
           warehouse_id: string | null
@@ -3767,12 +3866,16 @@ export type Database = {
           created_at?: string
           expiration_date?: string | null
           id?: string
+          initial_quantity?: number
           inventory_location_id?: string | null
           location_name?: string | null
           lot_number: string
           product_id: string
           production_order_id?: string | null
+          production_output_id?: string | null
           quantity?: number
+          released_at?: string | null
+          released_by?: string | null
           status?: string
           updated_at?: string
           warehouse_id?: string | null
@@ -3781,12 +3884,16 @@ export type Database = {
           created_at?: string
           expiration_date?: string | null
           id?: string
+          initial_quantity?: number
           inventory_location_id?: string | null
           location_name?: string | null
           lot_number?: string
           product_id?: string
           production_order_id?: string | null
+          production_output_id?: string | null
           quantity?: number
+          released_at?: string | null
+          released_by?: string | null
           status?: string
           updated_at?: string
           warehouse_id?: string | null
@@ -3825,6 +3932,34 @@ export type Database = {
             columns: ["production_order_id"]
             isOneToOne: false
             referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: true
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_released_by_fkey"
+            columns: ["released_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lots_released_by_fkey"
+            columns: ["released_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -4228,36 +4363,108 @@ export type Database = {
           },
         ]
       }
+      production_cost_history: {
+        Row: {
+          calculated_at: string
+          calculated_by: string
+          id: string
+          labor_cost: number
+          material_cost: number
+          overhead_cost: number
+          production_cost_id: string
+          production_order_id: string
+          source_consumption_count: number
+          total_cost: number
+          unit_cost: number
+          version: number
+        }
+        Insert: {
+          calculated_at?: string
+          calculated_by: string
+          id?: string
+          labor_cost: number
+          material_cost: number
+          overhead_cost: number
+          production_cost_id: string
+          production_order_id: string
+          source_consumption_count: number
+          total_cost: number
+          unit_cost: number
+          version: number
+        }
+        Update: {
+          calculated_at?: string
+          calculated_by?: string
+          id?: string
+          labor_cost?: number
+          material_cost?: number
+          overhead_cost?: number
+          production_cost_id?: string
+          production_order_id?: string
+          source_consumption_count?: number
+          total_cost?: number
+          unit_cost?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_cost_history_production_cost_id_fkey"
+            columns: ["production_cost_id"]
+            isOneToOne: false
+            referencedRelation: "production_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_cost_history_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_costs: {
         Row: {
+          calculated_at: string
+          calculated_by: string | null
+          calculation_version: number
           created_at: string
           id: string
           labor_cost: number
           material_cost: number
           overhead_cost: number
           production_order_id: string
+          source_consumption_count: number
           total_cost: number
           unit_cost: number
           updated_at: string
         }
         Insert: {
+          calculated_at?: string
+          calculated_by?: string | null
+          calculation_version?: number
           created_at?: string
           id?: string
           labor_cost?: number
           material_cost?: number
           overhead_cost?: number
           production_order_id: string
+          source_consumption_count?: number
           total_cost?: number
           unit_cost?: number
           updated_at?: string
         }
         Update: {
+          calculated_at?: string
+          calculated_by?: string | null
+          calculation_version?: number
           created_at?: string
           id?: string
           labor_cost?: number
           material_cost?: number
           overhead_cost?: number
           production_order_id?: string
+          source_consumption_count?: number
           total_cost?: number
           unit_cost?: number
           updated_at?: string
@@ -4365,6 +4572,96 @@ export type Database = {
           },
         ]
       }
+      production_lot_traceability: {
+        Row: {
+          consumed_quantity: number
+          created_at: string
+          id: string
+          product_lot_id: string
+          production_order_consumption_id: string
+          raw_material_id: string
+          raw_material_lot_id: string
+          source_lot_number: string
+        }
+        Insert: {
+          consumed_quantity: number
+          created_at?: string
+          id?: string
+          product_lot_id: string
+          production_order_consumption_id: string
+          raw_material_id: string
+          raw_material_lot_id: string
+          source_lot_number: string
+        }
+        Update: {
+          consumed_quantity?: number
+          created_at?: string
+          id?: string
+          product_lot_id?: string
+          production_order_consumption_id?: string
+          raw_material_id?: string
+          raw_material_lot_id?: string
+          source_lot_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_lot_traceability_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_production_order_consumption_i_fkey"
+            columns: ["production_order_consumption_id"]
+            isOneToOne: false
+            referencedRelation: "production_order_consumptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_purchase_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_raw_material_id_fkey"
+            columns: ["raw_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_raw_material_lot_id_fkey"
+            columns: ["raw_material_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_order_consumptions: {
         Row: {
           created_at: string
@@ -4372,6 +4669,8 @@ export type Database = {
           production_order_item_id: string
           quantity: number
           raw_material_lot_id: string
+          total_cost: number
+          unit_cost: number
         }
         Insert: {
           created_at?: string
@@ -4379,6 +4678,8 @@ export type Database = {
           production_order_item_id: string
           quantity?: number
           raw_material_lot_id: string
+          total_cost: number
+          unit_cost: number
         }
         Update: {
           created_at?: string
@@ -4386,6 +4687,8 @@ export type Database = {
           production_order_item_id?: string
           quantity?: number
           raw_material_lot_id?: string
+          total_cost?: number
+          unit_cost?: number
         }
         Relationships: [
           {
@@ -4539,6 +4842,7 @@ export type Database = {
           id: string
           product_id: string
           production_order_id: string
+          quality_status: string
           quantity_produced: number
           total_cost: number | null
           unit_cost: number | null
@@ -4551,6 +4855,7 @@ export type Database = {
           id?: string
           product_id: string
           production_order_id: string
+          quality_status?: string
           quantity_produced: number
           total_cost?: number | null
           unit_cost?: number | null
@@ -4563,6 +4868,7 @@ export type Database = {
           id?: string
           product_id?: string
           production_order_id?: string
+          quality_status?: string
           quantity_produced?: number
           total_cost?: number | null
           unit_cost?: number | null
@@ -4944,6 +5250,7 @@ export type Database = {
           notes: string | null
           order_date: string
           order_number: string
+          purchase_requisition_id: string | null
           status: string
           subtotal: number
           supplier_id: string
@@ -4958,6 +5265,7 @@ export type Database = {
           notes?: string | null
           order_date?: string
           order_number: string
+          purchase_requisition_id?: string | null
           status?: string
           subtotal?: number
           supplier_id: string
@@ -4972,6 +5280,7 @@ export type Database = {
           notes?: string | null
           order_date?: string
           order_number?: string
+          purchase_requisition_id?: string | null
           status?: string
           subtotal?: number
           supplier_id?: string
@@ -4979,6 +5288,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_orders_purchase_requisition_id_fkey"
+            columns: ["purchase_requisition_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_orders_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -5079,6 +5395,234 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quality_defects: {
+        Row: {
+          created_at: string
+          defect_type: string
+          description: string | null
+          id: string
+          inspection_id: string
+          quantity: number
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          defect_type: string
+          description?: string | null
+          id?: string
+          inspection_id: string
+          quantity: number
+          severity: string
+        }
+        Update: {
+          created_at?: string
+          defect_type?: string
+          description?: string | null
+          id?: string
+          inspection_id?: string
+          quantity?: number
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_defects_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_inspection_items: {
+        Row: {
+          actual_value: string | null
+          created_at: string
+          criterion: string
+          expected_value: string | null
+          id: string
+          inspection_id: string
+          notes: string | null
+          passed: boolean
+        }
+        Insert: {
+          actual_value?: string | null
+          created_at?: string
+          criterion: string
+          expected_value?: string | null
+          id?: string
+          inspection_id: string
+          notes?: string | null
+          passed: boolean
+        }
+        Update: {
+          actual_value?: string | null
+          created_at?: string
+          criterion?: string
+          expected_value?: string | null
+          id?: string
+          inspection_id?: string
+          notes?: string | null
+          passed?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_inspection_items_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_inspections: {
+        Row: {
+          accepted_quantity: number
+          created_at: string
+          id: string
+          inspected_at: string
+          inspector_id: string
+          notes: string | null
+          production_order_id: string
+          production_output_id: string
+          rejected_quantity: number
+          result: string | null
+          sampled_quantity: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_quantity?: number
+          created_at?: string
+          id?: string
+          inspected_at?: string
+          inspector_id: string
+          notes?: string | null
+          production_order_id: string
+          production_output_id: string
+          rejected_quantity?: number
+          result?: string | null
+          sampled_quantity: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_quantity?: number
+          created_at?: string
+          id?: string
+          inspected_at?: string
+          inspector_id?: string
+          notes?: string | null
+          production_order_id?: string
+          production_output_id?: string
+          rejected_quantity?: number
+          result?: string | null
+          sampled_quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: false
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_release_decisions: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          created_at: string
+          decision: string
+          id: string
+          inspection_id: string
+          production_order_id: string
+          production_output_id: string
+          reason: string | null
+        }
+        Insert: {
+          approved_at?: string
+          approved_by: string
+          created_at?: string
+          decision: string
+          id?: string
+          inspection_id: string
+          production_order_id: string
+          production_output_id: string
+          reason?: string | null
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          inspection_id?: string
+          production_order_id?: string
+          production_output_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_release_decisions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: true
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: false
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       raw_material_lots: {
         Row: {
@@ -5549,6 +6093,168 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_invoice_items: {
+        Row: {
+          created_at: string
+          description: string
+          discount: number
+          id: string
+          invoice_id: string
+          line_total: number
+          product_code: string | null
+          product_id: string | null
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          discount?: number
+          id?: string
+          invoice_id: string
+          line_total: number
+          product_code?: string | null
+          product_id?: string | null
+          quantity: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discount?: number
+          id?: string
+          invoice_id?: string
+          line_total?: number
+          product_code?: string | null
+          product_id?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "sales_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_invoices: {
+        Row: {
+          account_receivable_id: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          customer_id: string
+          discount: number
+          due_date: string | null
+          fiscal_external_id: string | null
+          fiscal_metadata: Json
+          fiscal_provider: string | null
+          fiscal_status: string
+          id: string
+          invoice_number: string
+          issued_on: string
+          notes: string | null
+          sales_order_id: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          account_receivable_id: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          customer_id: string
+          discount?: number
+          due_date?: string | null
+          fiscal_external_id?: string | null
+          fiscal_metadata?: Json
+          fiscal_provider?: string | null
+          fiscal_status?: string
+          id?: string
+          invoice_number: string
+          issued_on?: string
+          notes?: string | null
+          sales_order_id: string
+          status?: string
+          subtotal: number
+          tax_amount?: number
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          account_receivable_id?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          customer_id?: string
+          discount?: number
+          due_date?: string | null
+          fiscal_external_id?: string | null
+          fiscal_metadata?: Json
+          fiscal_provider?: string | null
+          fiscal_status?: string
+          id?: string
+          invoice_number?: string
+          issued_on?: string
+          notes?: string | null
+          sales_order_id?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_invoices_account_receivable_id_fkey"
+            columns: ["account_receivable_id"]
+            isOneToOne: true
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_invoices_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_order_items: {
         Row: {
           created_at: string | null
@@ -5710,6 +6416,152 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_quote_items: {
+        Row: {
+          created_at: string
+          description: string
+          discount: number
+          id: string
+          line_subtotal: number
+          line_total: number
+          product_code: string | null
+          product_id: string
+          quantity: number
+          quote_id: string
+          tax_amount: number
+          tax_rate: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          discount?: number
+          id?: string
+          line_subtotal: number
+          line_total: number
+          product_code?: string | null
+          product_id: string
+          quantity: number
+          quote_id: string
+          tax_amount: number
+          tax_rate?: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discount?: number
+          id?: string
+          line_subtotal?: number
+          line_total?: number
+          product_code?: string | null
+          product_id?: string
+          quantity?: number
+          quote_id?: string
+          tax_amount?: number
+          tax_rate?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quote_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "sales_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_quotes: {
+        Row: {
+          created_at: string
+          customer_id: string
+          discount: number
+          id: string
+          notes: string | null
+          quote_date: string
+          quote_number: string
+          sales_order_id: string | null
+          status: string
+          subtotal: number
+          tax_amount: number
+          terms: string | null
+          total_amount: number
+          updated_at: string
+          valid_until: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          discount?: number
+          id?: string
+          notes?: string | null
+          quote_date?: string
+          quote_number: string
+          sales_order_id?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          terms?: string | null
+          total_amount?: number
+          updated_at?: string
+          valid_until: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          discount?: number
+          id?: string
+          notes?: string | null
+          quote_date?: string
+          quote_number?: string
+          sales_order_id?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          terms?: string | null
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotes_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "sales_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -6019,6 +6871,94 @@ export type Database = {
             columns: ["warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storefront_products: {
+        Row: {
+          category_name: string
+          category_slug: string
+          created_at: string
+          currency: string
+          description: string | null
+          image_alt: string
+          image_url: string | null
+          is_featured: boolean
+          is_published: boolean
+          name: string
+          presentation: string
+          price: number
+          product_id: string
+          published_at: string | null
+          seo_description: string | null
+          seo_title: string | null
+          short_description: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          category_name: string
+          category_slug: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          image_alt?: string
+          image_url?: string | null
+          is_featured?: boolean
+          is_published?: boolean
+          name: string
+          presentation: string
+          price: number
+          product_id: string
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          short_description: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          category_name?: string
+          category_slug?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          image_alt?: string
+          image_url?: string | null
+          is_featured?: boolean
+          is_published?: boolean
+          name?: string
+          presentation?: string
+          price?: number
+          product_id?: string
+          published_at?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          short_description?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storefront_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storefront_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storefront_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -6609,16 +7549,163 @@ export type Database = {
       }
     }
     Functions: {
+      add_purchase_order_item: {
+        Args: {
+          p_order_id: string
+          p_quantity: number
+          p_raw_material_id: string
+          p_unit_cost: number
+        }
+        Returns: string
+      }
+      add_sales_order_item: {
+        Args: {
+          p_order_id: string
+          p_product_id: string
+          p_quantity: number
+          p_unit_price: number
+        }
+        Returns: string
+      }
+      add_sales_quote_item: {
+        Args: {
+          p_discount?: number
+          p_product_id: string
+          p_quantity: number
+          p_quote_id: string
+          p_tax_rate?: number
+          p_unit_price: number
+        }
+        Returns: string
+      }
+      calculate_production_cost: {
+        Args: {
+          p_labor_cost: number
+          p_order_id: string
+          p_overhead_cost: number
+        }
+        Returns: string
+      }
+      cancel_sales_invoice: {
+        Args: { p_invoice_id: string; p_reason: string }
+        Returns: undefined
+      }
+      confirm_picking_item: {
+        Args: { p_lot_number: string; p_picking_item_id: string }
+        Returns: string
+      }
+      confirm_sales_order: { Args: { p_order_id: string }; Returns: string }
+      convert_purchase_requisition_to_orders: {
+        Args: { p_requisition_id: string }
+        Returns: string[]
+      }
+      convert_sales_quote_to_order: {
+        Args: { p_quote_id: string }
+        Returns: string
+      }
       create_production_order_items: {
         Args: { p_production_order_id: string }
         Returns: undefined
+      }
+      create_purchase_approvals: { Args: never; Returns: number }
+      create_purchase_requisition_from_mrp: { Args: never; Returns: string }
+      create_sales_quote: {
+        Args: {
+          p_customer_id: string
+          p_notes?: string
+          p_terms?: string
+          p_valid_until: string
+        }
+        Returns: string
+      }
+      decide_approval: {
+        Args: { p_approval_id: string; p_decision: string }
+        Returns: string
+      }
+      decide_quality_release: {
+        Args: { p_decision: string; p_inspection_id: string; p_reason: string }
+        Returns: string
       }
       decrease_product_lot_quantity: {
         Args: { p_lot_id: string; p_quantity: number }
         Returns: undefined
       }
+      deliver_sales_order: { Args: { p_order_id: string }; Returns: string }
       generate_purchase_requisition_number: { Args: never; Returns: string }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
+      issue_sales_invoice: {
+        Args: {
+          p_due_date?: string
+          p_notes?: string
+          p_sales_order_id: string
+        }
+        Returns: string
+      }
+      receive_purchase_order: { Args: { p_order_id: string }; Returns: string }
+      receive_purchase_order_item: {
+        Args: { p_item_id: string; p_quantity: number }
+        Returns: string
+      }
+      receive_purchase_order_lot: {
+        Args: {
+          p_expiration_date: string
+          p_inventory_location_id: string
+          p_item_id: string
+          p_lot_number: string
+        }
+        Returns: string
+      }
+      record_quality_inspection: {
+        Args: {
+          p_criteria: Json
+          p_defects: Json
+          p_notes: string
+          p_output_id: string
+          p_sampled_quantity: number
+        }
+        Returns: string
+      }
+      register_receivable_payment: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_notes?: string
+          p_payment_date: string
+          p_payment_method: string
+          p_reference: string
+        }
+        Returns: string
+      }
+      release_production_output_to_inventory: {
+        Args: {
+          p_expiration_date: string
+          p_inventory_location_id: string
+          p_lot_number: string
+          p_output_id: string
+          p_warehouse_id: string
+        }
+        Returns: string
+      }
+      submit_purchase_requisition: {
+        Args: { p_requisition_id: string }
+        Returns: string
+      }
+      transition_sales_order: {
+        Args: {
+          p_expected_status: string
+          p_next_status: string
+          p_order_id: string
+        }
+        Returns: string
+      }
+      transition_sales_quote: {
+        Args: {
+          p_expected_status: string
+          p_next_status: string
+          p_quote_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       payment_method_type:
@@ -6782,6 +7869,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       payment_method_type: [
@@ -6827,3 +7917,4 @@ export const Constants = {
     },
   },
 } as const
+

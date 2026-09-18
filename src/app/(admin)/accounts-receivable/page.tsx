@@ -1,13 +1,12 @@
 import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { requireRows } from '@/modules/core/application/critical-read';
 
 export default async function AccountsReceivablePage() {
   const supabase = await createTypedClient();
 
-  const {
-    data: accounts, error,
-  } = await supabase
+  const result = await supabase
     .from(
       'accounts_receivable',
     )
@@ -19,7 +18,8 @@ export default async function AccountsReceivablePage() {
       },
     );
 
-  if (error) throw new Error('No se pudieron cargar las cuentas por cobrar.');
+  const accounts = requireRows(result, 'cuentas por cobrar');
+
   return (
     <main className="space-y-6">
       <h1 className="text-4xl font-bold">

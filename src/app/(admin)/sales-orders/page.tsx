@@ -1,14 +1,13 @@
 import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { requireRows } from '@/modules/core/application/critical-read';
 
 export default async function SalesOrdersPage() {
   const supabase =
     await createTypedClient();
 
-  const {
-    data: orders,
-  } = await supabase
+  const result = await supabase
     .from('sales_orders')
     .select('*')
     .order(
@@ -17,6 +16,8 @@ export default async function SalesOrdersPage() {
         ascending: false,
       },
     );
+
+  const orders = requireRows(result, 'órdenes de venta');
 
   return (
     <main className="space-y-6">

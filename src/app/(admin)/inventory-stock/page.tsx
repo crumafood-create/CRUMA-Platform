@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireRows } from '@/modules/core/application/critical-read';
 
 type Product = {
   id: string;
@@ -23,19 +24,14 @@ type StockRow = {
 export default async function InventoryStockPage() {
   const supabase = await createClient();
 
-  const { data: stock, error: stockError } =
-    await supabase
+  const stockResult = await supabase
       .from('inventory_stock_by_item')
       .select('*')
       .order('quantity', {
         ascending: false,
       });
 
-  if (stockError) {
-    throw new Error(stockError.message);
-  }
-
-  const typedStock = (stock ?? []) as StockRow[];
+  const typedStock = requireRows(stockResult, 'stock') as StockRow[];
 
   const productIds =
     typedStock
@@ -48,8 +44,8 @@ export default async function InventoryStockPage() {
       .map((row) => row.item_id) ?? [];
 
   const [
-    { data: products },
-    { data: materials },
+    productsResult,
+    materialsResult,
   ] = await Promise.all([
     productIds.length > 0
       ? supabase
@@ -62,7 +58,7 @@ export default async function InventoryStockPage() {
           `
           )
           .in('id', productIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
 
     materialIds.length > 0
       ? supabase
@@ -75,8 +71,11 @@ export default async function InventoryStockPage() {
           `
           )
           .in('id', materialIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
   ]);
+
+  const products = requireRows(productsResult, 'stock');
+  const materials = requireRows(materialsResult, 'stock');
 
   const productMap = new Map(
     (products ?? []).map((product: Product) => [

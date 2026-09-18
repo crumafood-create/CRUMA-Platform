@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireRows } from '@/modules/core/application/critical-read';
 
 function money(value: number) {
   return new Intl.NumberFormat('es-MX', {
@@ -17,11 +18,11 @@ export default async function DashboardPage() {
 
   // Mantenemos tu óptima consulta paralela a la base de datos
   const [
-    { data: sales },
-    { data: receivables },
-    { data: stock },
-    { data: production },
-    { data: forecasts },
+    salesResult,
+    receivablesResult,
+    stockResult,
+    productionResult,
+    forecastsResult,
   ] = await Promise.all([
     supabase
       .from('sales_orders')
@@ -46,6 +47,21 @@ export default async function DashboardPage() {
       .from('demand_forecasts')
       .select('suggested_production'),
   ]);
+
+  const sales = requireRows(salesResult, 'indicadores del dashboard');
+  const receivables = requireRows(
+    receivablesResult,
+    'indicadores del dashboard',
+  );
+  const stock = requireRows(stockResult, 'indicadores del dashboard');
+  const production = requireRows(
+    productionResult,
+    'indicadores del dashboard',
+  );
+  const forecasts = requireRows(
+    forecastsResult,
+    'indicadores del dashboard',
+  );
 
   // Lógica matemática exacta conservada
   const salesMonth = (sales ?? []).reduce((sum, row) => sum + Number(row.total ?? 0), 0);

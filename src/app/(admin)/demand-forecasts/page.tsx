@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireRows } from '@/modules/core/application/critical-read';
 
 import { calculateDemandForecasts } from './actions';
 
@@ -14,10 +15,7 @@ export default async function DemandForecastsPage() {
   const supabase =
     await createClient();
 
-  const {
-    data: forecasts,
-    error,
-  } = await supabase
+  const forecastsResult = await supabase
     .from('demand_forecasts')
     .select('*')
     .order(
@@ -27,11 +25,10 @@ export default async function DemandForecastsPage() {
       },
     );
 
-  if (error) {
-    throw new Error(
-      error.message,
-    );
-  }
+  const forecasts = requireRows(
+    forecastsResult,
+    'pronósticos de demanda',
+  );
 
   const productIds =
     forecasts?.map(
@@ -39,9 +36,7 @@ export default async function DemandForecastsPage() {
         row.product_id,
     ) ?? [];
 
-  const {
-    data: products,
-  } =
+  const productsResult =
     productIds.length > 0
       ? await supabase
           .from('products')
@@ -56,7 +51,13 @@ export default async function DemandForecastsPage() {
           )
       : {
           data: [],
+          error: null,
         };
+
+  const products = requireRows(
+    productsResult,
+    'pronósticos de demanda',
+  );
 
   const productMap =
     new Map(

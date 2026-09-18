@@ -1,4 +1,5 @@
 export const PERMISSIONS = {
+  ADMIN_PANEL_ACCESS: 'admin.panel.access',
   CATALOG_PRODUCT_MANAGE: 'catalog.product.manage',
   IDENTITY_USER_MANAGE: 'identity.user.manage',
   INVENTORY_MATERIAL_MANAGE: 'inventory.material.manage',
@@ -31,6 +32,7 @@ export const PERMISSIONS = {
   SALES_QUOTE_MANAGE: 'sales.quote.manage',
   FINANCE_INVOICE_MANAGE: 'finance.invoice.manage',
   FINANCE_RECEIVABLE_MANAGE: 'finance.receivable.manage',
+  DEMAND_FORECAST_MANAGE: 'planning.demand-forecast.manage',
 } as const;
 
 export type Permission =

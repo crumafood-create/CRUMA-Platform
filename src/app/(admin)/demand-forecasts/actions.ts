@@ -1,11 +1,23 @@
 'use server';
 
+import crypto from 'node:crypto';
+
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
+import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+
+function generateProductionNumber(): string {
+  const day = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+  const suffix = crypto.randomUUID().slice(0, 6).toUpperCase();
+
+  return `OP-${day}-${suffix}`;
+}
 
 export async function calculateDemandForecasts() {
-  const supabase = await createClient();
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.DEMAND_FORECAST_MANAGE,
+  );
 
   //
   // Productos
@@ -125,7 +137,9 @@ export async function calculateDemandForecasts() {
 }
 
 export async function createProductionOrderFromForecast(productId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.PRODUCTION_ORDER_CREATE,
+  );
 
   //
   // Pronóstico
@@ -168,18 +182,32 @@ export async function createProductionOrderFromForecast(productId: string) {
   //
   // Crear orden
   //
-  const { error: productionError } = await supabase
+  const { data: productionOrder, error: productionError } = await supabase
     .from('production_orders')
     .insert({
       recipe_id: recipe.id,
+      production_number: generateProductionNumber(),
       planned_quantity: quantity,
       produced_quantity: 0,
       production_status: 'draft',
       notes: 'Generada desde Forecast',
+    })
+    .select('id')
+    .single();
+
+  if (productionError || !productionOrder) {
+    throw new Error(
+      productionError?.message ?? 'No fue posible crear la orden.',
+    );
+  }
+
+  const { error: itemsError } = await supabase
+    .rpc('create_production_order_items', {
+      p_production_order_id: productionOrder.id,
     });
 
-  if (productionError) {
-    throw new Error(productionError.message);
+  if (itemsError) {
+    throw new Error(itemsError.message);
   }
 
   revalidatePath('/production-orders');
@@ -187,7 +215,9 @@ export async function createProductionOrderFromForecast(productId: string) {
 }
 
 export async function createForecastApprovals() {
-  const supabase = await createClient();
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.DEMAND_FORECAST_MANAGE,
+  );
 
   const { data: forecasts, error } = await supabase
     .from('demand_forecasts')

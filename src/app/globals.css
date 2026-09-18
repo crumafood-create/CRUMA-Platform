@@ -1,3 +1,24 @@
+@font-face {
+  font-family: 'Arkibal Mono';
+  src: url('/fonts/Arkibal Mono Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Arkibal Mono';
+  src: url('/fonts/Arkibal Mono Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Grocry';
+  src: url('/fonts/GROCKY.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,4 +27,11 @@ html,
 body {
   margin: 0;
   padding: 0;
+  /* Aplica la tipografía corporativa primaria a toda la app */
+  @apply font-arkibal text-brand-black bg-white antialiased;
+}
+
+/* Configuración Senior: Los títulos usan automáticamente la fuente de la marca */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-grocry;
 }

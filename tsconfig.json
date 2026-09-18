@@ -32,7 +32,6 @@
       }
     ],
 
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/modules/*": ["./src/modules/*"],

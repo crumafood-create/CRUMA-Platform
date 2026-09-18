@@ -6,22 +6,25 @@ import Link from 'next/link';
 import { Button } from '@/components/button'; // Tu botón corporativo
 import { createClient } from '@/infrastructure/integrations/supabase/client';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); // Reemplazo de alert()
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
+    setSuccessMsg(null);
 
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signInWithPassword({
+    // Llamada nativa al método signUp de Supabase
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -33,8 +36,12 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/dashboard');
-    router.refresh();
+    setSuccessMsg('¡Cuenta creada con éxito! Verifica tu correo electrónico para confirmar.');
+    
+    // Opcional: Redirigir automáticamente después de unos segundos
+    setTimeout(() => {
+      router.push('/login');
+    }, 3500);
   }
 
   return (
@@ -45,10 +52,10 @@ export default function LoginPage() {
         <div className="text-center space-y-2">
           {/* h1 adopta font-grocry automáticamente del CSS global */}
           <h1 className="text-3xl font-black text-brand-black tracking-tight">
-            Iniciar sesión
+            Crear cuenta
           </h1>
           <p className="text-sm text-brand-gray-75 font-light">
-            Panel de gestión CRUMAFOOD
+            Únete a la plataforma de CRUMAFOOD
           </p>
         </div>
 
@@ -59,8 +66,15 @@ export default function LoginPage() {
           </div>
         )}
 
+        {/* Alerta de Éxito integrada en la UI */}
+        {successMsg && (
+          <div className="p-4 text-xs text-green-600 bg-green-50 border border-green-200 rounded-xl font-light">
+            ✅ {successMsg}
+          </div>
+        )}
+
         {/* Formulario */}
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleRegister} className="space-y-5">
           <div className="space-y-1.5">
             <label className="text-xs font-black uppercase tracking-wider text-brand-gray-75">
               Correo Electrónico
@@ -82,7 +96,7 @@ export default function LoginPage() {
             <input
               type="password"
               required
-              placeholder="••••••••"
+              placeholder="Mínimo 6 caracteres"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 text-sm text-brand-black bg-white border border-brand-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue placeholder:text-brand-gray-50 font-light transition-all"
@@ -90,7 +104,6 @@ export default function LoginPage() {
           </div>
 
           <div className="pt-2">
-            {/* Implementamos tu componente de marca */}
             <Button
               type="submit"
               variant="primary"
@@ -98,14 +111,20 @@ export default function LoginPage() {
               fullWidth
               className="py-3 font-bold"
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? 'Registrando...' : 'Registrarse'}
             </Button>
           </div>
         </form>
 
-        {/* Enlace de retorno o registro */}
-        <div className="text-center pt-4 border-t border-brand-gray-25/50 text-xs text-brand-gray-75 font-light">
-          <Link href="/" className="hover:text-brand-blue transition-colors font-medium">
+        {/* Enlace de retorno o alternancia a Login */}
+        <div className="text-center pt-4 border-t border-brand-gray-25/50 text-xs text-brand-gray-75 font-light space-y-2">
+          <p>
+            ¿Ya tienes una cuenta?{' '}
+            <Link href="/login" className="text-brand-blue font-semibold hover:underline">
+              Inicia sesión
+            </Link>
+          </p>
+          <Link href="/" className="block hover:text-brand-blue transition-colors font-medium pt-1">
             ← Volver al inicio
           </Link>
         </div>

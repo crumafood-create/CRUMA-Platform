@@ -1,13 +1,13 @@
 import { NextResponse }
 from 'next/server';
 
-import { createClient }
+import { createTypedClient }
 from '@/infrastructure/integrations/supabase/server';
 
 export async function GET() {
 
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const { data, error } =
     await supabase

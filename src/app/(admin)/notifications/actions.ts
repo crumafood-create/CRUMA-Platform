@@ -2,12 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export async function markNotificationAsRead(
   notificationId: string,
 ) {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { error } = await supabase
     .from('notifications')
@@ -26,7 +26,7 @@ export async function markNotificationAsRead(
 }
 
 export async function generateSystemNotifications() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   //
   // Limpiar notificaciones no leídas

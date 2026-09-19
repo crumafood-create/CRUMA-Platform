@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export type FindLotResult = {
   type: 'product' | 'raw_material';
@@ -17,7 +17,7 @@ export async function findLot(
   code: string,
 ): Promise<FindLotResult> {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   //
   // Producto

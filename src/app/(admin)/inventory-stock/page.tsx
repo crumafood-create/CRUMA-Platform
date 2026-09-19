@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { requireRows } from '@/modules/core/application/critical-read';
 
 type Product = {
@@ -22,7 +22,7 @@ type StockRow = {
 };
 
 export default async function InventoryStockPage() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const stockResult = await supabase
       .from('inventory_stock_by_item')

@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function AdminSidebar() {
-  const supabase = await createClient();
+  const supabase = await createTypedClient();
 
   const { count } = await supabase
     .from('notifications')

@@ -1,7 +1,7 @@
 import { notFound }
   from 'next/navigation';
 
-import { createClient }
+import { createTypedClient }
   from '@/infrastructure/integrations/supabase/server';
 
 interface Props {
@@ -17,7 +17,7 @@ export default async function LotPage({
     await params;
 
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   //
   // Producto

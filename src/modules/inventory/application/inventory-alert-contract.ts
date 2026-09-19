@@ -26,6 +26,26 @@ export type InventoryAlert = {
   minimum: number;
 };
 
+export type RankedInventoryAlert = InventoryAlert & {
+  severity: 'out' | 'critical';
+  shortage: number;
+};
+
+export function rankInventoryAlerts(
+  alerts: readonly InventoryAlert[],
+): RankedInventoryAlert[] {
+  return alerts
+    .map((alert) => ({
+      ...alert,
+      severity: alert.quantity <= 0 ? 'out' as const : 'critical' as const,
+      shortage: Math.max(0, alert.minimum - alert.quantity),
+    }))
+    .sort((left, right) => {
+      if (left.severity !== right.severity) return left.severity === 'out' ? -1 : 1;
+      return right.shortage - left.shortage;
+    });
+}
+
 export function collectInventoryAlertIds(rows: readonly InventoryAlertStock[]) {
   const productIds = new Set<string>();
   const materialIds = new Set<string>();

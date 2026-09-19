@@ -1,193 +1,152 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
-import { requireRows } from '@/modules/core/application/critical-read';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { parseDashboardFilters } from '@/modules/analytics/application/dashboard-filters';
+import { loadDashboardFilterOptions, loadDashboardSummary } from '@/modules/analytics/application/dashboard-repository';
+import { rankInventoryAlerts } from '@/modules/inventory/application/inventory-alert-contract';
+import { fetchInventoryAlerts } from '@/modules/inventory/application/inventory-alert-repository';
+import { Button } from '@/shared/ui/primitives/button';
+import { Card, CardContent } from '@/shared/ui/primitives/card';
 
-function money(value: number) {
+function money(value: number): string {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: 'MXN',
-    minimumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format(value);
 }
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+type DashboardPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-  // Mantenemos tu óptima consulta paralela a la base de datos
-  const [
-    salesResult,
-    receivablesResult,
-    stockResult,
-    productionResult,
-    forecastsResult,
-  ] = await Promise.all([
-    supabase
-      .from('sales_orders')
-      .select('total, created_at')
-      .gte('created_at', firstDay)
-      .eq('status', 'delivered'),
+function value(params: Record<string, string | string[] | undefined>, key: string) {
+  const current = params[key];
+  return Array.isArray(current) ? current[0] : current;
+}
 
-    supabase
-      .from('accounts_receivable')
-      .select('balance, status')
-      .eq('status', 'pending'),
-
-    supabase
-      .from('inventory_stock_by_item')
-      .select('item_type, quantity'),
-
-    supabase
-      .from('production_orders')
-      .select('production_status'),
-
-    supabase
-      .from('demand_forecasts')
-      .select('suggested_production'),
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const params = await searchParams;
+  const filters = parseDashboardFilters({
+    period: value(params, 'period'),
+    from: value(params, 'from'),
+    to: value(params, 'to'),
+    user: value(params, 'user'),
+    warehouse: value(params, 'warehouse'),
+  });
+  const client = await createTypedClient();
+  const [summary, inventoryAlerts, options] = await Promise.all([
+    loadDashboardSummary(client, filters),
+    fetchInventoryAlerts(client, filters.warehouseId),
+    loadDashboardFilterOptions(client),
   ]);
-
-  const sales = requireRows(salesResult, 'indicadores del dashboard');
-  const receivables = requireRows(
-    receivablesResult,
-    'indicadores del dashboard',
-  );
-  const stock = requireRows(stockResult, 'indicadores del dashboard');
-  const production = requireRows(
-    productionResult,
-    'indicadores del dashboard',
-  );
-  const forecasts = requireRows(
-    forecastsResult,
-    'indicadores del dashboard',
-  );
-
-  // Lógica matemática exacta conservada
-  const salesMonth = (sales ?? []).reduce((sum, row) => sum + Number(row.total ?? 0), 0);
-  const receivableBalance = (receivables ?? []).reduce((sum, row) => sum + Number(row.balance ?? 0), 0);
-  
-  const productCount = (stock ?? []).filter(
-    (row) => row.item_type === 'product' && Number(row.quantity) > 0
-  ).length;
-
-  const materialCount = (stock ?? []).filter(
-    (row) => row.item_type === 'raw_material' && Number(row.quantity) > 0
-  ).length;
-
-  const criticalCount = (stock ?? []).filter((row) => Number(row.quantity) <= 0).length;
-
-  const openProduction = (production ?? []).filter(
-    (row) => row.production_status !== 'completed' && row.production_status !== 'cancelled'
-  ).length;
-
-  const completedProduction = (production ?? []).filter((row) => row.production_status === 'completed').length;
-  const productsToProduce = (forecasts ?? []).filter((row) => Number(row.suggested_production) > 0).length;
-  const suggestedProduction = (forecasts ?? []).reduce((sum, row) => sum + Number(row.suggested_production ?? 0), 0);
-
-  // Mapeamos tus tarjetas con semántica de color e iconos para los KPIs profesionales
-  const cards = [
-    { title: 'Ventas del Mes', value: money(salesMonth), icon: '💰', color: 'text-green-600 bg-green-50' },
-    { title: 'Por Cobrar', value: money(receivableBalance), icon: '⏳', color: 'text-amber-600 bg-amber-50' },
-    { title: 'Productos con Stock', value: productCount.toString(), icon: '📦', color: 'text-brand-blue bg-brand-blue/10' },
-    { title: 'Materias Primas', value: materialCount.toString(), icon: '🌾', color: 'text-brand-black bg-brand-sand/20' },
-    { title: 'Materiales Críticos', value: criticalCount.toString(), icon: '⚠️', color: criticalCount > 0 ? 'text-red-600 bg-red-50' : 'text-brand-gray-50 bg-brand-gray-25' },
-    { title: 'Órdenes Abiertas', value: openProduction.toString(), icon: '🏭', color: 'text-indigo-600 bg-indigo-50' },
-    { title: 'Órdenes Completadas', value: completedProduction.toString(), icon: '✅', color: 'text-emerald-600 bg-emerald-50' },
-    { title: 'Productos por Producir', value: productsToProduce.toString(), icon: '📈', color: 'text-brand-blue bg-brand-blue/10' },
-    { title: 'Producción Sugerida', value: `${suggestedProduction.toFixed(0)} pzas`, icon: '📊', color: 'text-brand-gray-75 bg-brand-gray-25' },
+  const alerts = rankInventoryAlerts(inventoryAlerts);
+  const { warehouses, profiles } = options;
+  const primaryMetrics = [
+    { label: 'Ventas entregadas', value: money(summary.salesMonth), hint: 'En el periodo seleccionado' },
+    { label: 'Cartera pendiente', value: money(summary.receivableBalance), hint: 'Saldo por cobrar actual' },
+    { label: 'Producción abierta', value: summary.openProduction.toString(), hint: `${summary.delayedProduction} con atraso` },
+    { label: 'Producción sugerida', value: `${summary.suggestedProduction.toFixed(0)} pzas`, hint: `${summary.productsToProduce} productos` },
   ];
 
   return (
-    <main className="space-y-8 font-arkibal">
-      {/* Encabezado */}
-      <div className="border-b border-brand-gray-25 pb-4">
-        <h1 className="text-3xl font-black text-brand-black tracking-tight">
-          Dashboard Ejecutivo
-        </h1>
-        <p className="mt-1 text-sm text-brand-gray-75 font-light">
-          Resumen general consolidado de la operación de CRUMAFOOD.
-        </p>
-      </div>
-
-      {/* Grid de KPIs - Tarjetas maestras */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {cards.map((card) => (
-          <div key={card.title} className="rounded-2xl border border-brand-gray-25 bg-white p-6 shadow-sm flex flex-col justify-between space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-brand-gray-75 leading-tight">
-                {card.title}
-              </span>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${card.color}`}>
-                {card.icon}
-              </div>
-            </div>
-            <div className="text-2xl font-black text-brand-black tracking-tight">
-              {card.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bloque de Accesos a Módulos y Alertas Integradas */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        
-        {/* Enlaces de Módulos (2/3 de ancho) */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-black text-brand-black">Módulos del Sistema</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Link href="/sales-orders" className="group rounded-2xl border border-brand-gray-25 bg-white p-5 flex items-center justify-between hover:border-brand-blue hover:shadow-sm transition-all">
-              <span className="font-bold text-brand-black group-hover:text-brand-blue transition-colors">🛒 Ventas / Pedidos</span>
-              <span className="text-brand-gray-50 group-hover:translate-x-1 transition-transform">→</span>
-            </Link>
-
-            <Link href="/production-orders" className="group rounded-2xl border border-brand-gray-25 bg-white p-5 flex items-center justify-between hover:border-brand-blue hover:shadow-sm transition-all">
-              <span className="font-bold text-brand-black group-hover:text-brand-blue transition-colors">🏭 Órdenes de Producción</span>
-              <span className="text-brand-gray-50 group-hover:translate-x-1 transition-transform">→</span>
-            </Link>
-
-            <Link href="/inventory-stock" className="group rounded-2xl border border-brand-gray-25 bg-white p-5 flex items-center justify-between hover:border-brand-blue hover:shadow-sm transition-all">
-              <span className="font-bold text-brand-black group-hover:text-brand-blue transition-colors">📦 Control de Inventario</span>
-              <span className="text-brand-gray-50 group-hover:translate-x-1 transition-transform">→</span>
-            </Link>
-
-            <Link href="/demand-forecasts" className="group rounded-2xl border border-brand-gray-25 bg-white p-5 flex items-center justify-between hover:border-brand-blue hover:shadow-sm transition-all">
-              <span className="font-bold text-brand-black group-hover:text-brand-blue transition-colors">📈 Proyección de Demanda</span>
-              <span className="text-brand-gray-50 group-hover:translate-x-1 transition-transform">→</span>
-            </Link>
-          </div>
+    <main className="space-y-7">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-brand-gray-25 pb-5">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-brand-blue">Centro de mando</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-brand-black">Resumen ejecutivo</h1>
+          <p className="mt-1 text-sm text-brand-gray-75">Decisiones rápidas con ventas, inventario y producción en un solo lugar.</p>
         </div>
+        <Link href="/sales-orders/new"><Button>Nueva venta</Button></Link>
+      </header>
 
-        {/* Panel Lateral de Notificaciones/Alertas Críticas (1/3 de ancho) */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-black text-brand-black">Alertas Operativas</h2>
-          <div className="rounded-2xl border border-brand-gray-25 bg-white p-6 shadow-sm space-y-3">
-            {criticalCount === 0 && productsToProduce === 0 && receivableBalance === 0 ? (
-              <p className="text-xs text-brand-gray-50 font-light text-center py-4">✅ Operación sin incidencias críticas.</p>
-            ) : (
-              <>
-                {criticalCount > 0 && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 font-medium">
-                    ⚠️ Hay <strong className="font-black">{criticalCount}</strong> materiales sin stock disponible.
-                  </div>
-                )}
+      <Card>
+        <CardContent>
+          <form method="get" className="grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label="Filtros del dashboard">
+            <label className="text-sm font-bold text-brand-black">Periodo
+              <select name="period" defaultValue={filters.period} className="mt-2 min-h-11 w-full rounded-lg border border-brand-gray-50/40 px-3 font-normal">
+                <option value="7d">Últimos 7 días</option>
+                <option value="30d">Últimos 30 días</option>
+                <option value="90d">Últimos 90 días</option>
+                <option value="custom">Personalizado</option>
+              </select>
+            </label>
+            <label className="text-sm font-bold text-brand-black">Desde
+              <input type="date" name="from" defaultValue={value(params, 'from')} className="mt-2 min-h-11 w-full rounded-lg border border-brand-gray-50/40 px-3 font-normal" />
+            </label>
+            <label className="text-sm font-bold text-brand-black">Hasta
+              <input type="date" name="to" defaultValue={value(params, 'to')} className="mt-2 min-h-11 w-full rounded-lg border border-brand-gray-50/40 px-3 font-normal" />
+            </label>
+            <label className="text-sm font-bold text-brand-black">Responsable
+              <select name="user" defaultValue={filters.userId ?? ''} className="mt-2 min-h-11 w-full rounded-lg border border-brand-gray-50/40 px-3 font-normal">
+                <option value="">Todos</option>
+                {profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.full_name ?? profile.email ?? 'Usuario'}</option>)}
+              </select>
+            </label>
+            <label className="text-sm font-bold text-brand-black">Almacén / tienda
+              <select name="warehouse" defaultValue={filters.warehouseId ?? ''} className="mt-2 min-h-11 w-full rounded-lg border border-brand-gray-50/40 px-3 font-normal">
+                <option value="">Todos</option>
+                {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
+              </select>
+            </label>
+            <div className="flex items-end gap-2 xl:col-start-5">
+              <Button type="submit" fullWidth>Aplicar filtros</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
-                {productsToProduce > 0 && (
-                  <div className="rounded-xl border border-brand-sand/40 bg-brand-sand/10 p-3 text-xs text-brand-black font-medium">
-                    📈 Hay <strong className="font-black">{productsToProduce}</strong> productos que requieren producción inmediata.
-                  </div>
-                )}
-
-                {receivableBalance > 0 && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 font-medium">
-                    💰 Existen <strong className="font-black">{money(receivableBalance)}</strong> pendientes por cobrar.
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+      <section aria-labelledby="metrics-heading">
+        <h2 id="metrics-heading" className="sr-only">Indicadores principales</h2>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {primaryMetrics.map((metric) => (
+            <Card key={metric.label}>
+              <CardContent>
+                <p className="text-xs font-black uppercase tracking-wider text-brand-gray-75">{metric.label}</p>
+                <p className="mt-3 text-3xl font-black tracking-tight text-brand-black">{metric.value}</p>
+                <p className="mt-2 text-sm text-brand-gray-50">{metric.hint}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
+      </section>
 
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <section aria-labelledby="alerts-heading">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 id="alerts-heading" className="text-xl font-black text-brand-black">Atención requerida</h2>
+            <Link href="/inventory/alerts" className="text-sm font-bold text-brand-blue">Ver todas →</Link>
+          </div>
+          <Card>
+            <CardContent className="space-y-3">
+              {summary.delayedProduction > 0 ? (
+                <Link href="/production-orders?priority=delayed" className="block rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+                  <strong>{summary.delayedProduction} órdenes de producción atrasadas.</strong> Revisar prioridad y fecha planeada.
+                </Link>
+              ) : null}
+              {alerts.slice(0, 4).map((alert) => (
+                <Link key={`${alert.item_type}-${alert.item_id}`} href={`/inventory/kardex/${alert.item_type}/${alert.item_id}`} className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                  <span><strong>{alert.name}</strong><span className="block text-xs">Faltan {alert.shortage} para alcanzar el mínimo.</span></span>
+                  <span className="font-black">{alert.quantity} / {alert.minimum}</span>
+                </Link>
+              ))}
+              {summary.delayedProduction === 0 && alerts.length === 0 ? <p className="py-8 text-center text-sm text-brand-gray-75">Operación sin incidencias críticas.</p> : null}
+            </CardContent>
+          </Card>
+        </section>
+
+        <section aria-labelledby="operation-heading">
+          <h2 id="operation-heading" className="mb-3 text-xl font-black text-brand-black">Pulso operativo</h2>
+          <Card><CardContent className="space-y-4 text-sm">
+            <div className="flex justify-between"><span>Productos con existencia</span><strong>{summary.productCount}</strong></div>
+            <div className="flex justify-between"><span>Materias primas con existencia</span><strong>{summary.materialCount}</strong></div>
+            <div className="flex justify-between"><span>Órdenes completadas</span><strong>{summary.completedProduction}</strong></div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <Link href="/inventory-stock" className="rounded-lg bg-brand-gray-25 p-3 text-center font-bold text-brand-black">Inventario</Link>
+              <Link href="/production-orders" className="rounded-lg bg-brand-gray-25 p-3 text-center font-bold text-brand-black">Producción</Link>
+            </div>
+          </CardContent></Card>
+        </section>
       </div>
     </main>
   );

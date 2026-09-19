@@ -1,11 +1,18 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 import { NextResponse } from 'next/server';
+import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies';
 
 import type { NextRequest } from 'next/server';
 
 import { getPublicSupabaseConfiguration } from './configuration';
 import type { ApplicationDatabase } from './database.types';
+
+type SupabaseCookie = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
 
 export async function updateSession(
   request: NextRequest
@@ -31,7 +38,7 @@ export async function updateSession(
           return request.cookies.getAll();
         },
 
-        setAll(cookiesToSet: any[]) {
+        setAll(cookiesToSet: SupabaseCookie[]) {
 
           cookiesToSet.forEach(
             ({ name, value, options }) =>
@@ -45,9 +52,7 @@ export async function updateSession(
           cookiesToSet.forEach(
             ({ name, value, options }) =>
               response.cookies.set(
-                name,
-                value,
-                options
+                { name, value, ...options } as ResponseCookie,
               )
           );
         }

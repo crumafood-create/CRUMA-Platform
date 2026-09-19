@@ -8,7 +8,7 @@ function source(path: string): string {
 
 describe('lecturas de los flujos P1', () => {
   it.each([
-    ['../../../app/(admin)/dashboard/page.tsx', 'indicadores del dashboard'],
+    ['../../analytics/application/dashboard-repository.ts', 'indicadores del dashboard'],
     ['../../../app/(admin)/sales-orders/page.tsx', 'órdenes de venta'],
     ['../../../app/(admin)/inventory-stock/page.tsx', 'stock'],
     ['../../../app/(admin)/production-orders/page.tsx', 'órdenes de producción'],

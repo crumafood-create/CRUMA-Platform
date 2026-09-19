@@ -1,4 +1,4 @@
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 type Product = {
   id: string;
@@ -14,7 +14,7 @@ type RawMaterial = {
 
 export default async function InventoryAtpPage() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const { data: rows, error } =
     await supabase
@@ -33,36 +33,14 @@ export default async function InventoryAtpPage() {
   }
 
   const productIds =
-    rows
-      ?.filter(
-        (
-          row,
-        ) =>
-          row.item_type ===
-          'product',
-      )
-      .map(
-        (
-          row,
-        ) =>
-          row.item_id,
-      ) ?? [];
+    rows?.flatMap((row) =>
+      row.item_type === 'product' && row.item_id ? [row.item_id] : [],
+    ) ?? [];
 
   const materialIds =
-    rows
-      ?.filter(
-        (
-          row,
-        ) =>
-          row.item_type ===
-          'raw_material',
-      )
-      .map(
-        (
-          row,
-        ) =>
-          row.item_id,
-      ) ?? [];
+    rows?.flatMap((row) =>
+      row.item_type === 'raw_material' && row.item_id ? [row.item_id] : [],
+    ) ?? [];
 
   const [
     { data: products },
@@ -156,15 +134,11 @@ export default async function InventoryAtpPage() {
                 row,
                 index,
               ) => {
-                const item =
-                  row.item_type ===
-                  'raw_material'
-                    ? materialMap.get(
-                        row.item_id,
-                      )
-                    : productMap.get(
-                        row.item_id,
-                      );
+                const item = row.item_id
+                  ? row.item_type === 'raw_material'
+                    ? materialMap.get(row.item_id)
+                    : productMap.get(row.item_id)
+                  : undefined;
 
                 return (
                   <div

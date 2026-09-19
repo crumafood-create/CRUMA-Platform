@@ -8,12 +8,12 @@ import { generateSystemNotifications }
 import { calculateDemandForecasts }
   from '@/app/(admin)/demand-forecasts/actions';
 
-import { createClient }
+import { createTypedClient }
   from '@/infrastructure/integrations/supabase/server';
 
 export async function runSystemJobs() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const {
     data: jobs,

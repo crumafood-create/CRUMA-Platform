@@ -4,7 +4,7 @@ import type { StorefrontProduct } from '@/modules/storefront/application/storefr
 import { storefrontCategories } from '@/modules/storefront/application/storefront-content';
 
 import { CategoryCard } from './category-card';
-import { StorefrontProductGrid } from './storefront-product-grid';
+import { CatalogExplorer } from './catalog-explorer';
 
 function CatalogIntro() {
   return (
@@ -39,7 +39,7 @@ function ProductSection({ products }: { products: StorefrontProduct[] }) {
         <p className="text-sm font-black uppercase tracking-[0.2em] text-[#e85d32]">Presentaciones</p>
         <h2 className="mt-3 text-4xl font-black tracking-[-0.045em] text-[#173b2f]">Productos publicados</h2>
         <div className="mt-8">
-          <StorefrontProductGrid products={products} />
+          <CatalogExplorer products={products} />
         </div>
       </div>
     </section>

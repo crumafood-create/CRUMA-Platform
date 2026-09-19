@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/shared/ui/primitives/button';
+
 interface Customer {
   id: string;
   name: string;
@@ -11,11 +13,13 @@ interface Props {
   ) => Promise<void>;
 
   customers: Customer[];
+  minDeliveryDate: string;
 }
 
 export function SalesOrderForm({
   action,
   customers,
+  minDeliveryDate,
 }: Props) {
   return (
     <form
@@ -32,6 +36,7 @@ export function SalesOrderForm({
           required
           className="w-full rounded border p-3"
           defaultValue=""
+          aria-describedby="customer-help"
         >
           <option value="">
             Seleccionar cliente
@@ -50,6 +55,7 @@ export function SalesOrderForm({
             ),
           )}
         </select>
+        <p id="customer-help" className="mt-1 text-xs text-brand-gray-50">Solo se muestran clientes activos y disponibles para venta.</p>
       </div>
 
       <div>
@@ -61,7 +67,10 @@ export function SalesOrderForm({
           type="date"
           name="delivery_date"
           className="w-full rounded border p-3"
+          min={minDeliveryDate}
+          aria-describedby="delivery-help"
         />
+        <p id="delivery-help" className="mt-1 text-xs text-brand-gray-50">Selecciona hoy o una fecha posterior.</p>
       </div>
 
       <div>
@@ -76,12 +85,7 @@ export function SalesOrderForm({
         />
       </div>
 
-      <button
-        type="submit"
-        className="rounded border px-6 py-2"
-      >
-        Crear Pedido
-      </button>
+      <Button type="submit">Crear pedido</Button>
     </form>
   );
 }

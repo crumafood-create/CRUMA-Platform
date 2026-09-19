@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { requireRows } from '@/modules/core/application/critical-read';
 
 import { calculateDemandForecasts } from './actions';
@@ -13,7 +13,7 @@ type Product = {
 
 export default async function DemandForecastsPage() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const forecastsResult = await supabase
     .from('demand_forecasts')

@@ -1,8 +1,8 @@
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function MrpPage() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const {
     data: requirements,
@@ -82,7 +82,7 @@ export default async function MrpPage() {
           <div className="space-y-3">
             {requirements.map(
               (
-                row: any,
+                row,
               ) => {
                 const required =
                   Number(

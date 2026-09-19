@@ -1,4 +1,4 @@
-import { createClient } from '@/infrastructure/integrations/supabase/server';
+import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import {
   markNotificationAsRead,
@@ -26,7 +26,7 @@ import {
 
 export default async function NotificationsPage() {
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const {
     data: notifications,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   collectInventoryAlertIds,
+  rankInventoryAlerts,
   resolveInventoryAlerts,
 } from './inventory-alert-contract';
 
@@ -92,5 +93,15 @@ describe('contrato tipado de alertas de inventario', () => {
     );
 
     expect(alerts[0]?.minimum).toBe(0);
+  });
+
+  it('prioriza agotados y expone el faltante contra el mínimo', () => {
+    expect(rankInventoryAlerts([
+      { item_type: 'product', item_id: 'low', quantity: 4, minimum: 5, name: 'Bajo', internal_code: null },
+      { item_type: 'raw_material', item_id: 'empty', quantity: 0, minimum: 10, name: 'Agotado', internal_code: null },
+    ])).toEqual([
+      expect.objectContaining({ item_id: 'empty', severity: 'out', shortage: 10 }),
+      expect.objectContaining({ item_id: 'low', severity: 'critical', shortage: 1 }),
+    ]);
   });
 });

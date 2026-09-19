@@ -42,10 +42,13 @@ async function fetchAlertMaterials(
 
 export async function fetchInventoryAlerts(
   supabase: TypedSupabaseClient,
+  warehouseId?: string | null,
 ): Promise<InventoryAlert[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('inventory_stock_by_item')
     .select('item_type, item_id, quantity');
+  if (warehouseId) query = query.eq('warehouse_id', warehouseId);
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
 

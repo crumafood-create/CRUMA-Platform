@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 import { Button } from '@/shared/ui/primitives/button';
 import { cn } from '@/shared/ui/utils/cn';
@@ -34,16 +34,49 @@ export function Modal({
 }: ModalProps) {
   const titleId = useId();
   const descriptionId = useId();
+  const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!open) return undefined;
 
+    const previousFocus = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const focusable = () => Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? [],
+    );
+    (focusable()[0] ?? dialogRef.current)?.focus();
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onOpenChange(false);
+      if (event.key === 'Escape') {
+        onOpenChange(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const elements = focusable();
+      if (elements.length === 0) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+      const first = elements[0];
+      const last = elements.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
   }, [onOpenChange, open]);
 
   if (!open) return null;
@@ -56,6 +89,8 @@ export function Modal({
         onClick={() => closeOnOverlay && onOpenChange(false)}
       />
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

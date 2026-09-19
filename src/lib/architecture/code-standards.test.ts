@@ -63,7 +63,7 @@ describe('estándares P2 ejecutables', () => {
   it('mantiene app como composición en el corte vertical de Dashboard', () => {
     const page = source('src/app/(admin)/dashboard/page.tsx');
 
-    expect(page).toContain('loadDashboardSummary(');
+    expect(page).toContain('loadDashboardView(');
     expect(page).not.toContain(".from('");
   });
 

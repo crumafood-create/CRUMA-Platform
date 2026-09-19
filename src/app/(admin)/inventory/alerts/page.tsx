@@ -2,10 +2,11 @@ import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { fetchInventoryAlerts } from '@/modules/inventory/application/inventory-alert-repository';
+import { rankInventoryAlerts } from '@/modules/inventory/application/inventory-alert-contract';
 
 export default async function InventoryAlertsPage() {
   const supabase = await createTypedClient();
-  const alerts = await fetchInventoryAlerts(supabase);
+  const alerts = rankInventoryAlerts(await fetchInventoryAlerts(supabase));
 
   return (
     <main className="space-y-6">
@@ -21,9 +22,7 @@ export default async function InventoryAlertsPage() {
                 item,
                 index
               ) => {
-                const critical =
-                  item.quantity <=
-                  0;
+                const critical = item.severity === 'out';
 
                 return (
                   <div
@@ -74,6 +73,10 @@ export default async function InventoryAlertsPage() {
                           item.minimum
                         }
                       </strong>
+                    </div>
+
+                    <div className="text-sm text-red-700">
+                      Faltante para mínimo: <strong>{item.shortage}</strong>
                     </div>
 
                     <Link

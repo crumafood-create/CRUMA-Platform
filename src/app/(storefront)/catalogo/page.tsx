@@ -5,7 +5,7 @@ import { createTypedClient } from '@/infrastructure/integrations/supabase/server
 import { fetchPublishedStorefrontProducts } from '@/modules/storefront/application/storefront-product-repository';
 
 export const metadata: Metadata = {
-  title: 'Catálogo',
+  title: 'Catálogo de tequeños, empanadas y masas',
   description: 'Conoce las líneas, presentaciones y precios públicos de Crumafood.',
 };
 

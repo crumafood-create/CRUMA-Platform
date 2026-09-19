@@ -54,6 +54,7 @@ export default async function ProductPage({
       url: `https://crumafood.com.mx/producto/${product.slug}`,
       priceCurrency: product.currency,
       price: product.price.toFixed(2),
+      availability: 'https://schema.org/InStock',
     },
   }).replace(/</g, '\\u003c');
 

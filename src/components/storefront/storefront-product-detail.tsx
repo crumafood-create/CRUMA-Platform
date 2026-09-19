@@ -43,6 +43,12 @@ export function StorefrontProductDetail({ product }: { product: StorefrontProduc
               <p className="mt-3 text-sm leading-6 text-white/65">
                 Precio público. La disponibilidad y entrega se confirman al preparar el pedido.
               </p>
+              <Link
+                href={`/login?next=${encodeURIComponent('/sales-orders/new')}`}
+                className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#f3b64c] px-6 font-black text-[#173b2f] transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#173b2f]"
+              >
+                Iniciar pedido
+              </Link>
             </div>
             {product.description && (
               <div className="mt-8">

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/button';
@@ -18,7 +18,7 @@ function money(value: number, currency: string) {
   }).format(value);
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   return (
     <article className="group overflow-hidden rounded-[2rem] border border-brand-gray-25 bg-white shadow-sm hover:shadow-md hover:border-brand-gray-50 transition-all duration-300 flex flex-col justify-between h-full">
       
@@ -75,4 +75,4 @@ export function ProductCard({ product }: ProductCardProps) {
 
     </article>
   );
-}
+});

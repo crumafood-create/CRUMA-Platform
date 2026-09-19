@@ -2,9 +2,8 @@ import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { parseDashboardFilters } from '@/modules/analytics/application/dashboard-filters';
-import { loadDashboardFilterOptions, loadDashboardSummary } from '@/modules/analytics/application/dashboard-repository';
+import { loadDashboardView } from '@/modules/analytics/application/dashboard-repository';
 import { rankInventoryAlerts } from '@/modules/inventory/application/inventory-alert-contract';
-import { fetchInventoryAlerts } from '@/modules/inventory/application/inventory-alert-repository';
 import { Button } from '@/shared/ui/primitives/button';
 import { Card, CardContent } from '@/shared/ui/primitives/card';
 
@@ -35,12 +34,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     warehouse: value(params, 'warehouse'),
   });
   const client = await createTypedClient();
-  const [summary, inventoryAlerts, options] = await Promise.all([
-    loadDashboardSummary(client, filters),
-    fetchInventoryAlerts(client, filters.warehouseId),
-    loadDashboardFilterOptions(client),
-  ]);
-  const alerts = rankInventoryAlerts(inventoryAlerts);
+  const view = await loadDashboardView(client, filters);
+  const { summary, options } = view;
+  const alerts = rankInventoryAlerts(view.alerts);
   const { warehouses, profiles } = options;
   const primaryMetrics = [
     { label: 'Ventas entregadas', value: money(summary.salesMonth), hint: 'En el periodo seleccionado' },

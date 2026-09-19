@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { StorefrontProduct } from '@/modules/storefront/application/storefront-product-repository';
 
-import { CatalogExplorer } from './catalog-explorer';
+import { CatalogExplorer, filterStorefrontProducts } from './catalog-explorer';
 
 const product = (overrides: Partial<StorefrontProduct>): StorefrontProduct => ({
   product_id: 'product-1',
@@ -50,5 +50,11 @@ describe('explorador del catálogo', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tequeños' }));
 
     expect(screen.getByRole('button', { name: 'Tequeños' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('normaliza acentos sin mutar el arreglo original', () => {
+    const products = [product({ name: 'Tequeños clásicos' })];
+    expect(filterStorefrontProducts(products, 'tequenos', 'all')).toEqual(products);
+    expect(products[0]?.name).toBe('Tequeños clásicos');
   });
 });

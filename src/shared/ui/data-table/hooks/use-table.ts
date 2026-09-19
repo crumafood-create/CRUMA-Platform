@@ -1,12 +1,18 @@
 import {
+  type ColumnDef,
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 
-export function useTable({
+type UseTableOptions<TData> = {
+  data: TData[];
+  columns: ColumnDef<TData>[];
+};
+
+export function useTable<TData>({
   data,
   columns,
-}: any) {
+}: UseTableOptions<TData>) {
   return useReactTable({
     data,
     columns,

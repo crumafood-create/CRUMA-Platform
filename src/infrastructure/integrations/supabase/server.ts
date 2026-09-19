@@ -1,13 +1,19 @@
 import { cookies } from 'next/headers';
+import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies';
 
-import { createServerClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 import { getPublicSupabaseConfiguration } from './configuration';
 import type {
   ApplicationDatabase,
   TypedSupabaseClient,
 } from './database.types';
+
+type SupabaseCookie = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
 
 export async function createTypedClient(): Promise<TypedSupabaseClient> {
 
@@ -27,20 +33,16 @@ export async function createTypedClient(): Promise<TypedSupabaseClient> {
           return cookieStore.getAll();
         },
 
-        setAll(
-  cookiesToSet: Array<{
-    name: string;
-    value: string;
-    options?: any;
-  }>
-) {
+        setAll(cookiesToSet: SupabaseCookie[]) {
 
           try {
 
             cookiesToSet.forEach(
 
               ({ name, value, options }) =>
-                cookieStore.set(name, value, options)
+                cookieStore.set(
+                  { name, value, ...options } as ResponseCookie,
+                )
             );
 
           } catch {}
@@ -48,8 +50,4 @@ export async function createTypedClient(): Promise<TypedSupabaseClient> {
       }
     }
   ) as unknown as TypedSupabaseClient;
-}
-
-export async function createClient(): Promise<SupabaseClient> {
-  return (await createTypedClient()) as unknown as SupabaseClient;
 }

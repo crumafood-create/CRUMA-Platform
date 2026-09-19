@@ -3,21 +3,23 @@
 import {
   createContext,
   useContext,
+  type ReactNode,
 } from 'react';
 
-const ModalContext =
-  createContext<any>(null);
+type ModalContextValue = {
+  closeAll: () => void;
+};
+
+const ModalContext = createContext<ModalContextValue | null>(null);
 
 export function ModalProvider({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return children;
 }
 
-export function useModalContext() {
-  return useContext(
-    ModalContext
-  );
+export function useModalContext(): ModalContextValue | null {
+  return useContext(ModalContext);
 }

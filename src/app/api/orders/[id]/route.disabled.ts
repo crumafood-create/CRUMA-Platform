@@ -1,7 +1,7 @@
 import { NextResponse }
 from 'next/server';
 
-import { createClient }
+import { createTypedClient }
 from '@/infrastructure/integrations/supabase/server';
 
 interface Props {
@@ -20,7 +20,7 @@ export async function GET(
     await params;
 
   const supabase =
-    await createClient();
+    await createTypedClient();
 
   const { data, error } =
     await supabase

@@ -47,6 +47,7 @@ export default async function NewSalesOrderPage() {
         customers={
           customers ?? []
         }
+        minDeliveryDate={new Date().toISOString().slice(0, 10)}
       />
     </main>
   );

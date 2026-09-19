@@ -14,15 +14,15 @@ describe('resumen ejecutivo', () => {
           { item_type: 'raw_material', quantity: 0 },
         ],
         production: [
-          { production_status: 'draft' },
-          { production_status: 'completed' },
-          { production_status: 'cancelled' },
+          { production_status: 'draft', planned_start_at: '2026-09-01T08:00:00Z' },
+          { production_status: 'completed', planned_start_at: null },
+          { production_status: 'cancelled', planned_start_at: null },
         ],
         forecasts: [
           { suggested_production: 12 },
           { suggested_production: 0 },
         ],
-      }),
+      }, new Date('2026-09-19T12:00:00Z')),
     ).toEqual({
       salesMonth: 125.5,
       receivableBalance: 40,
@@ -31,6 +31,7 @@ describe('resumen ejecutivo', () => {
       criticalCount: 1,
       openProduction: 1,
       completedProduction: 1,
+      delayedProduction: 1,
       productsToProduce: 1,
       suggestedProduction: 12,
     });

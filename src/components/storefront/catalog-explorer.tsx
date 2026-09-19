@@ -10,6 +10,19 @@ function normalize(value: string): string {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-MX');
 }
 
+export function filterStorefrontProducts(
+  products: readonly StorefrontProduct[],
+  query: string,
+  category: string,
+): StorefrontProduct[] {
+  const needle = normalize(query.trim());
+  return products.filter((product) => {
+    const matchesCategory = category === 'all' || product.category_slug === category;
+    const haystack = normalize(`${product.name} ${product.short_description ?? ''} ${product.presentation}`);
+    return matchesCategory && (!needle || haystack.includes(needle));
+  });
+}
+
 export function CatalogExplorer({ products }: { products: StorefrontProduct[] }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
@@ -17,18 +30,14 @@ export function CatalogExplorer({ products }: { products: StorefrontProduct[] })
     () => [...new Map(products.map((product) => [product.category_slug, product.category_name])).entries()],
     [products],
   );
-  const categoryOptions: Array<readonly [string, string]> = [
-    ['all', 'Todos'],
-    ...categories,
-  ];
-  const filtered = useMemo(() => {
-    const needle = normalize(query.trim());
-    return products.filter((product) => {
-      const matchesCategory = category === 'all' || product.category_slug === category;
-      const haystack = normalize(`${product.name} ${product.short_description ?? ''} ${product.presentation}`);
-      return matchesCategory && (!needle || haystack.includes(needle));
-    });
-  }, [category, products, query]);
+  const categoryOptions = useMemo<Array<readonly [string, string]>>(
+    () => [['all', 'Todos'], ...categories],
+    [categories],
+  );
+  const filtered = useMemo(
+    () => filterStorefrontProducts(products, query, category),
+    [category, products, query],
+  );
 
   return (
     <div>

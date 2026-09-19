@@ -19,6 +19,7 @@ describe('primitivas canónicas', () => {
     expect(button).toHaveAttribute('type', 'button');
     expect(button).toHaveClass('bg-brand-blue');
     expect(button).toHaveClass('min-h-11');
+    expect(button).toHaveClass('focus-visible:ring-2');
   });
 
   it('permite ancho completo sin perder clases del consumidor', () => {

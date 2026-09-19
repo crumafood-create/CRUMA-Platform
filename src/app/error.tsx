@@ -1,54 +1,21 @@
 'use client';
 
-interface Props {
-
-  error: Error;
-
-  reset: () => void;
-}
+import { ErrorState } from '@/shared/ui/feedback/error-state';
 
 export default function GlobalError({
   error,
-  reset
-}: Props) {
-
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   return (
-
-    <html>
-
+    <html lang="es">
       <body>
-
-        <main className="flex min-h-screen items-center justify-center">
-
-          <div className="space-y-4 text-center">
-
-            <h1 className="text-4xl font-bold">
-
-              Ocurrió un error
-
-            </h1>
-
-            <p className="text-gray-500">
-
-              {error.message}
-
-            </p>
-
-            <button
-              onClick={reset}
-              className="rounded-xl border px-4 py-2"
-            >
-
-              Reintentar
-
-            </button>
-
-          </div>
-
+        <main className="flex min-h-screen items-center justify-center bg-brand-gray-25/30 px-5">
+          <ErrorState error={error} onRetry={reset} />
         </main>
-
       </body>
-
     </html>
   );
 }

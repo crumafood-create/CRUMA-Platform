@@ -6,6 +6,7 @@ import {
   type InventoryAlert,
   type InventoryAlertMaterial,
   type InventoryAlertProduct,
+  type InventoryAlertStock,
 } from './inventory-alert-contract';
 
 async function fetchAlertProducts(
@@ -52,7 +53,13 @@ export async function fetchInventoryAlerts(
 
   if (error) throw new Error(error.message);
 
-  const rows = data ?? [];
+  return resolveInventoryAlertsForStock(supabase, data ?? []);
+}
+
+export async function resolveInventoryAlertsForStock(
+  supabase: TypedSupabaseClient,
+  rows: readonly InventoryAlertStock[],
+): Promise<InventoryAlert[]> {
   const { productIds, materialIds } = collectInventoryAlertIds(rows);
 
   const [products, materials] = await Promise.all([

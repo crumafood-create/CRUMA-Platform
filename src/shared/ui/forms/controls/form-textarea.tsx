@@ -24,8 +24,8 @@ export function FormTextarea({
         py-3
         outline-none
         transition
-        focus:ring-2
-        focus:ring-black
+        focus-visible:ring-2
+        focus-visible:ring-brand-blue
         ${className}
       `}
     />

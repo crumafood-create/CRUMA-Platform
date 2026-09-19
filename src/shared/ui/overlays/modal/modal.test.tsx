@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Modal } from './modal';
@@ -49,5 +50,26 @@ describe('Modal', () => {
     );
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('mueve el foco al abrir y lo devuelve al control invocador', () => {
+    function Example() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>Abrir edición</button>
+          <Modal open={open} title="Editar" onOpenChange={setOpen}>Contenido</Modal>
+        </>
+      );
+    }
+
+    render(<Example />);
+    const trigger = screen.getByRole('button', { name: 'Abrir edición' });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(trigger).toHaveFocus();
   });
 });

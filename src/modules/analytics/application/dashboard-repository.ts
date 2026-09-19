@@ -1,5 +1,7 @@
 import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
 import { requireRows } from '@/lib/database/query-result';
+import { resolveInventoryAlertsForStock } from '@/modules/inventory/application/inventory-alert-repository';
+import type { InventoryAlert } from '@/modules/inventory/application/inventory-alert-contract';
 
 import {
   buildDashboardSummary,
@@ -10,6 +12,12 @@ import type { DashboardFilters } from './dashboard-filters';
 export type DashboardFilterOptions = {
   warehouses: Array<{ id: string; name: string }>;
   profiles: Array<{ id: string; full_name: string | null; email: string | null }>;
+};
+
+export type DashboardView = {
+  summary: DashboardSummary;
+  alerts: InventoryAlert[];
+  options: DashboardFilterOptions;
 };
 
 export async function loadDashboardFilterOptions(
@@ -31,13 +39,21 @@ export async function loadDashboardSummary(
   filters: DashboardFilters,
   now = new Date(),
 ): Promise<DashboardSummary> {
+  const source = await loadDashboardSource(client, filters);
+  return buildDashboardSummary(source, now);
+}
+
+async function loadDashboardSource(
+  client: TypedSupabaseClient,
+  filters: DashboardFilters,
+) {
   let salesQuery = client
     .from('sales_orders')
     .select('total')
     .gte('created_at', filters.from)
     .lte('created_at', filters.to)
     .eq('status', 'delivered');
-  let stockQuery = client.from('inventory_stock_by_item').select('item_type, quantity');
+  let stockQuery = client.from('inventory_stock_by_item').select('item_type, item_id, quantity');
   let productionQuery = client
     .from('production_orders')
     .select('production_status, planned_start_at')
@@ -60,11 +76,29 @@ export async function loadDashboardSummary(
   ]);
   const resource = 'indicadores del dashboard';
 
-  return buildDashboardSummary({
+  return {
     sales: requireRows(sales, resource),
     receivables: requireRows(receivables, resource),
     stock: requireRows(stock, resource),
     production: requireRows(production, resource),
     forecasts: requireRows(forecasts, resource),
-  }, now);
+  };
+}
+
+export async function loadDashboardView(
+  client: TypedSupabaseClient,
+  filters: DashboardFilters,
+  now = new Date(),
+): Promise<DashboardView> {
+  const [source, options] = await Promise.all([
+    loadDashboardSource(client, filters),
+    loadDashboardFilterOptions(client),
+  ]);
+  const alerts = await resolveInventoryAlertsForStock(client, source.stock);
+
+  return {
+    summary: buildDashboardSummary(source, now),
+    alerts,
+    options,
+  };
 }

@@ -85,6 +85,11 @@ body {
   @apply font-arkibal text-brand-black bg-white antialiased;
 }
 
+.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
 /* Configuración Senior: Los títulos usan automáticamente la fuente de la marca */
 h1, h2, h3, h4, h5, h6 {
   @apply font-grocry;

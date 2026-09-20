@@ -6,6 +6,11 @@ import { MetricCard } from './metric-card';
 const meta = {
   title: 'Data Display/Metric Card',
   component: MetricCard,
+  parameters: {
+    a11y: {
+      test: 'error',
+    },
+  },
 } satisfies Meta<typeof MetricCard>;
 
 export default meta;

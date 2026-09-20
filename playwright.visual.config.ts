@@ -23,7 +23,7 @@ export default defineConfig({
       animations: 'disabled',
       caret: 'hide',
       scale: 'css',
-      maxDiffPixels: 0,
+      maxDiffPixelRatio: 0.001,
     },
   },
   use: {
@@ -41,13 +41,19 @@ export default defineConfig({
       name: 'chromium-linux',
       use: {
         browserName: 'chromium',
+        colorScheme: 'light',
+      },
+    },
+    {
+      name: 'chromium-dark',
+      use: {
+        browserName: 'chromium',
+        colorScheme: 'dark',
       },
     },
   ],
   webServer: {
-    command: process.env.CI
-      ? 'python3 -m http.server 6006 --bind 127.0.0.1 --directory storybook-static'
-      : 'pnpm storybook --ci --host 127.0.0.1',
+    command: 'npx http-server storybook-static -p 6006 -a 127.0.0.1 --silent',
     url: 'http://127.0.0.1:6006',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

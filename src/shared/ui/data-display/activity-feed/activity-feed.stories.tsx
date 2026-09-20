@@ -5,6 +5,11 @@ import { ActivityFeed } from './activity-feed';
 const meta = {
   title: 'Data Display/Activity Feed',
   component: ActivityFeed,
+  parameters: {
+    a11y: {
+      test: 'error',
+    },
+  },
 } satisfies Meta<typeof ActivityFeed>;
 
 export default meta;

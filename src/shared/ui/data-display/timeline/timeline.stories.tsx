@@ -5,6 +5,11 @@ import { Timeline } from './timeline';
 const meta = {
   title: 'Data Display/Timeline',
   component: Timeline,
+  parameters: {
+    a11y: {
+      test: 'error',
+    },
+  },
 } satisfies Meta<typeof Timeline>;
 
 export default meta;

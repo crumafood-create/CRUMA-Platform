@@ -10,6 +10,11 @@ import { StatCard } from './stat-card';
 const meta = {
   title: 'Data Display/Stat Card',
   component: StatCard,
+  parameters: {
+    a11y: {
+      test: 'error',
+    },
+  },
 } satisfies Meta<typeof StatCard>;
 
 export default meta;

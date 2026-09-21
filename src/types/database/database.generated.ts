@@ -7355,6 +7355,18 @@ export type Database = {
           produced: number | null
           status: string | null
         }
+        Insert: {
+          day?: never
+          planned?: never
+          produced?: never
+          status?: string | null
+        }
+        Update: {
+          day?: never
+          planned?: never
+          produced?: never
+          status?: string | null
+        }
         Relationships: []
       }
       business_sales_by_line: {

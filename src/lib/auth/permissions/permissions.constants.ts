@@ -1,5 +1,7 @@
 export const PERMISSIONS = {
   ADMIN_PANEL_ACCESS: 'admin.panel.access',
+  BUSINESS_REPORT_VIEW: 'analytics.business-report.view',
+  MOBILE_OPERATIONS_ACCESS: 'mobile.operations.access',
   CATALOG_PRODUCT_MANAGE: 'catalog.product.manage',
   IDENTITY_USER_MANAGE: 'identity.user.manage',
   INVENTORY_MATERIAL_MANAGE: 'inventory.material.manage',

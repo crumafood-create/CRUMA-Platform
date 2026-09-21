@@ -7337,6 +7337,37 @@ export type Database = {
         }
         Relationships: []
       }
+      business_inventory_by_sku: {
+        Row: {
+          item_id: string | null
+          item_name: string | null
+          item_type: string | null
+          minimum: number | null
+          quantity: number | null
+          sku: string | null
+        }
+        Relationships: []
+      }
+      business_production_rates: {
+        Row: {
+          day: string | null
+          planned: number | null
+          produced: number | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      business_sales_by_line: {
+        Row: {
+          day: string | null
+          line_name: string | null
+          product_name: string | null
+          revenue: number | null
+          sku: string | null
+          units: number | null
+        }
+        Relationships: []
+      }
       dashboard_sales_summary: {
         Row: {
           average_ticket: number | null
@@ -7889,4 +7920,3 @@ export const Constants = {
     },
   },
 } as const
-

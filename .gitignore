@@ -12,3 +12,8 @@ storybook-static
 # Playwright visual test artifacts
 playwright-report/
 test-results/
+
+# Versioned Playwright visual baselines
+!tests/visual-storybook/
+!tests/visual-storybook/visual.spec.ts-snapshots/
+!tests/visual-storybook/visual.spec.ts-snapshots/*.png

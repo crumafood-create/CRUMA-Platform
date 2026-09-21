@@ -71,8 +71,8 @@ export function MetricCard({
             className={cn(
               'text-sm font-medium',
               trend.value >= 0
-                ? 'text-green-500'
-                : 'text-red-500'
+                ? 'text-green-700'
+                : 'text-red-700'
             )}
           >
             {trend.value}%

@@ -5,6 +5,11 @@ import { Status } from './status';
 const meta = {
   title: 'Data Display/Status',
   component: Status,
+  parameters: {
+    a11y: {
+      test: 'error',
+    },
+  },
 } satisfies Meta<typeof Status>;
 
 export default meta;

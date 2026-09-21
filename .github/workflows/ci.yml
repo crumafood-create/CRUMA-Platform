@@ -137,6 +137,8 @@ jobs:
 
   storybook:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
     timeout-minutes: 20
 
     steps:
@@ -157,9 +159,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
 
       - name: Reject snapshot updates in CI
         shell: bash

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { AnalyticsTracker } from '@/components/analytics/analytics-tracker';
+import { AnalyticsTracker } from '@/modules/analytics/components/analytics-tracker';
 
 const tasks = [
   { href: '/mobile', label: 'Inicio', icon: '⌂' },

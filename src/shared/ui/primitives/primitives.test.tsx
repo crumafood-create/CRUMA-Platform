@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { Button as LegacyButton } from '@/components/button';
+import { Button } from '@/shared/ui/primitives/button';
 
 import { Button } from './button';
 import { Card, CardContent, CardHeader } from './card';

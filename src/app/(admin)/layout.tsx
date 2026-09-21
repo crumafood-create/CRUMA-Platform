@@ -16,7 +16,9 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
   } catch (error) {
     if (!isAuthorizationError(error)) throw error;
 
-    if (error.reason === 'permission_missing') redirect('/');
+    if (error.reason === 'permission_missing') {
+      redirect('/login?error=admin_required');
+    }
 
     redirect('/login');
   }

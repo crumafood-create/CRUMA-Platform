@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
 
-import { StorefrontProductDetail } from '@/components/storefront/storefront-product-detail';
+import { StorefrontProductDetail } from '@/app/(storefront)/_components/storefront/storefront-product-detail';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { fetchPublishedStorefrontProduct } from '@/modules/storefront/application/storefront-product-repository';
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/button'; // Tu botón corporativo
+import { Button } from '@/shared/ui/primitives/button'; // Tu botón corporativo
 import { createClient } from '@/infrastructure/integrations/supabase/client';
 
 export default function RegisterPage() {

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { LogoutButton } from '@/components/auth/logout-button';
+import { AnalyticsTracker } from '@/components/analytics/analytics-tracker';
 
 type AdminShellProps = {
   children: ReactNode;
@@ -12,6 +13,7 @@ type AdminShellProps = {
 
 const navigation = [
   { href: '/dashboard', label: 'Inicio', icon: '📊' },
+  { href: '/reports', label: 'Reportes', icon: '📈' },
   { href: '/sales-orders', label: 'Ventas', icon: '🛒' },
   { href: '/inventory-stock', label: 'Inventario', icon: '📦' },
   { href: '/production-orders', label: 'Producción', icon: '🏭' },
@@ -22,6 +24,7 @@ const navigation = [
   },
   { href: '/products', label: 'Productos', icon: '🍔' },
   { href: '/customers', label: 'Clientes', icon: '👥' },
+  { href: '/mobile', label: 'Operación móvil', icon: '📱' },
 ] as const;
 
 export function AdminShell({ children }: AdminShellProps) {
@@ -43,7 +46,7 @@ export function AdminShell({ children }: AdminShellProps) {
         </div>
 
         <nav
-          className="flex-1 space-y-1.5 px-4 py-6"
+          className="flex-1 space-y-1.5 overflow-y-auto px-4 py-6"
           aria-label="Navegación del panel administrativo"
         >
           {navigation.map((item) => {
@@ -75,6 +78,7 @@ export function AdminShell({ children }: AdminShellProps) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <AnalyticsTracker area="admin" />
         <header className="flex h-20 items-center justify-between border-b border-brand-gray-25 bg-white px-6 md:px-8">
           <span className="text-xs font-black uppercase tracking-wider text-brand-gray-50">
             Módulo Administrativo

@@ -6,6 +6,11 @@ import { DataList } from './data-list';
 const meta = {
   title: 'Data Display/Data List',
   component: DataList,
+  parameters: {
+    a11y: {
+      test: 'error',
+    },
+  },
 } satisfies Meta<typeof DataList>;
 
 export default meta;

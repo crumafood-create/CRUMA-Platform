@@ -4,19 +4,19 @@
 
 ## Metadata
 
-| Campo | Valor |
-|---|---|
-| Estado | Aceptado |
-| Fecha | 2026-07-12 |
-| Decisores | Product Owner, responsable de diseño, responsable de frontend, responsable de accesibilidad y responsable de calidad |
-| Consultados | Arquitectura, desarrollo Web, Mobile, Desktop, operación y seguridad |
-| Informados | Responsables de componentes, revisores de Pull Requests y usuarios del design system |
-| Propietario | Design System y Quality Engineering, con corresponsabilidad de Frontend |
-| Alcance | Catálogo, stories, documentación, interacción, accesibilidad, regresión visual, CI, baselines, revisión, publicación y gobierno |
-| Reemplaza | No aplica |
-| Reemplazado por | No aplica |
-| RFC relacionado | No aplica; spike ejecutable completado y validado en local y GitHub Actions |
-| Issues relacionados | Resueltos durante el piloto mediante configuración de Storybook, Vitest, Playwright, accesibilidad, baselines y CI |
+| Campo               | Valor                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Estado              | Aceptado                                                                                                                        |
+| Fecha               | 2026-07-12                                                                                                                      |
+| Decisores           | Product Owner, responsable de diseño, responsable de frontend, responsable de accesibilidad y responsable de calidad            |
+| Consultados         | Arquitectura, desarrollo Web, Mobile, Desktop, operación y seguridad                                                            |
+| Informados          | Responsables de componentes, revisores de Pull Requests y usuarios del design system                                            |
+| Propietario         | Design System y Quality Engineering, con corresponsabilidad de Frontend                                                         |
+| Alcance             | Catálogo, stories, documentación, interacción, accesibilidad, regresión visual, CI, baselines, revisión, publicación y gobierno |
+| Reemplaza           | No aplica                                                                                                                       |
+| Reemplazado por     | No aplica                                                                                                                       |
+| RFC relacionado     | No aplica; spike ejecutable completado y validado en local y GitHub Actions                                                     |
+| Issues relacionados | Resueltos durante el piloto mediante configuración de Storybook, Vitest, Playwright, accesibilidad, baselines y CI              |
 
 ---
 
@@ -140,18 +140,18 @@ No define:
 
 ## 7. Fuerzas de decisión
 
-| Fuerza | Importancia | Implicación |
-|---|---|---|
-| Catálogo ejecutable | Crítica | Componentes aislados y estados navegables |
-| Compatibilidad Next.js | Crítica | Router, Image, fonts y aliases |
-| Pruebas modernas | Alta | Vitest y browser real |
-| Accesibilidad | Crítica | axe, teclado y revisión manual |
-| Determinismo visual | Crítica | OS, browser, fuentes y tiempo fijados |
-| Costo | Alta | Evitar SaaS antes de necesidad medida |
-| Revisión | Alta | Diffs disponibles en PR |
-| Mantenimiento | Alta | Pocas herramientas y stories útiles |
-| Seguridad | Crítica | Sin datos o endpoints de Production |
-| Multiplataforma | Alta | Viewports y WebView representativos |
+| Fuerza                 | Importancia | Implicación                               |
+| ---------------------- | ----------- | ----------------------------------------- |
+| Catálogo ejecutable    | Crítica     | Componentes aislados y estados navegables |
+| Compatibilidad Next.js | Crítica     | Router, Image, fonts y aliases            |
+| Pruebas modernas       | Alta        | Vitest y browser real                     |
+| Accesibilidad          | Crítica     | axe, teclado y revisión manual            |
+| Determinismo visual    | Crítica     | OS, browser, fuentes y tiempo fijados     |
+| Costo                  | Alta        | Evitar SaaS antes de necesidad medida     |
+| Revisión               | Alta        | Diffs disponibles en PR                   |
+| Mantenimiento          | Alta        | Pocas herramientas y stories útiles       |
+| Seguridad              | Crítica     | Sin datos o endpoints de Production       |
+| Multiplataforma        | Alta        | Viewports y WebView representativos       |
 
 ---
 
@@ -188,29 +188,29 @@ El spike deberá confirmar estos supuestos.
 
 ## 10. Criterios de decisión
 
-| Criterio | Prioridad | Evaluación |
-|---|---|---|
-| Next.js | Crítica | Componentes actuales compilan y renderizan |
-| Developer experience | Alta | Inicio, HMR y debugging |
-| Testing | Crítica | Render, play, axe y screenshots |
-| CI | Crítica | Build y suites reproducibles |
-| Costo | Alta | Sin servicio obligatorio inicial |
-| Revisión visual | Alta | Diff y evidencia comprensibles |
-| Seguridad | Crítica | Build sin datos/secrets reales |
-| Portabilidad | Alta | Stories reutilizables y salida estática |
-| Madurez | Alta | Versiones estables y documentación oficial |
+| Criterio             | Prioridad | Evaluación                                 |
+| -------------------- | --------- | ------------------------------------------ |
+| Next.js              | Crítica   | Componentes actuales compilan y renderizan |
+| Developer experience | Alta      | Inicio, HMR y debugging                    |
+| Testing              | Crítica   | Render, play, axe y screenshots            |
+| CI                   | Crítica   | Build y suites reproducibles               |
+| Costo                | Alta      | Sin servicio obligatorio inicial           |
+| Revisión visual      | Alta      | Diff y evidencia comprensibles             |
+| Seguridad            | Crítica   | Build sin datos/secrets reales             |
+| Portabilidad         | Alta      | Stories reutilizables y salida estática    |
+| Madurez              | Alta      | Versiones estables y documentación oficial |
 
 ---
 
 ## 11. Opciones consideradas
 
-| Opción | Resumen | Resultado |
-|---|---|---|
-| A | Storybook + Vitest + axe + Playwright visual | Elegida |
-| B | Storybook + Chromatic | No elegida inicialmente |
-| C | Playwright solo contra aplicación | No elegida como catálogo |
-| D | Capturas manuales | No elegida |
-| E | No adoptar catálogo | No elegida |
+| Opción | Resumen                                      | Resultado                |
+| ------ | -------------------------------------------- | ------------------------ |
+| A      | Storybook + Vitest + axe + Playwright visual | Elegida                  |
+| B      | Storybook + Chromatic                        | No elegida inicialmente  |
+| C      | Playwright solo contra aplicación            | No elegida como catálogo |
+| D      | Capturas manuales                            | No elegida               |
+| E      | No adoptar catálogo                          | No elegida               |
 
 ---
 
@@ -390,21 +390,21 @@ Se usará Component Story Format tipado con `Meta` y `StoryObj`.
 Ejemplo conceptual:
 
 ```ts
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { Status } from './status';
+import { Status } from "./status";
 
 const meta = {
-  title: 'Data Display/Status',
+  title: "Data Display/Status",
   component: Status,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 } satisfies Meta<typeof Status>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Success: Story = {
-  args: { label: 'Completado', variant: 'success' },
+  args: { label: "Completado", variant: "success" },
 };
 ```
 
@@ -1051,15 +1051,15 @@ La cuarentena será temporal, con owner, issue y expiración. No se reintentará
 
 ## 63. Ownership
 
-| Artefacto | Propietario |
-|---|---|
-| Configuración Storybook | Design System/Frontend |
-| Story de componente | Propietario del componente |
-| Interaction test | Frontend/Quality |
-| Regla axe | Accesibilidad |
-| Baseline visual | Diseño + componente |
-| Runner Playwright | Quality Engineering |
-| CI y artifacts | Platform/Operación |
+| Artefacto               | Propietario                |
+| ----------------------- | -------------------------- |
+| Configuración Storybook | Design System/Frontend     |
+| Story de componente     | Propietario del componente |
+| Interaction test        | Frontend/Quality           |
+| Regla axe               | Accesibilidad              |
+| Baseline visual         | Diseño + componente        |
+| Runner Playwright       | Quality Engineering        |
+| CI y artifacts          | Platform/Operación         |
 
 ---
 
@@ -1176,18 +1176,18 @@ No se migrará todo el catálogo antes de demostrar el pipeline.
 
 ## 71. Riesgos y controles
 
-| Riesgo | Control |
-|---|---|
+| Riesgo                       | Control                                 |
+| ---------------------------- | --------------------------------------- |
 | Storybook difiere de Next.js | nextjs-vite, spike y E2E complementario |
-| Baselines ruidosas | Runner fijado y determinismo |
-| Snapshot update automático | Prohibido en CI y revisión obligatoria |
-| Falsa accesibilidad | axe + revisión manual |
-| Datos sensibles | Synthetic-only y artifact scan |
-| Suite lenta | Selección, tags y medición |
-| Story drift | DoD y ownership |
-| Addon abandonado | Allowlist mínima y upgrades |
-| Git crece por imágenes | Selección y revisión periódica |
-| Chromium oculta diferencias | Triggers para ampliar matriz |
+| Baselines ruidosas           | Runner fijado y determinismo            |
+| Snapshot update automático   | Prohibido en CI y revisión obligatoria  |
+| Falsa accesibilidad          | axe + revisión manual                   |
+| Datos sensibles              | Synthetic-only y artifact scan          |
+| Suite lenta                  | Selección, tags y medición              |
+| Story drift                  | DoD y ownership                         |
+| Addon abandonado             | Allowlist mínima y upgrades             |
+| Git crece por imágenes       | Selección y revisión periódica          |
+| Chromium oculta diferencias  | Triggers para ampliar matriz            |
 
 ---
 
@@ -1262,7 +1262,7 @@ Antes de aceptar este ADR se resolvieron las preguntas del piloto:
 - el baseline inicial usa Chromium/Linux, viewport Desktop Chrome de 1280 × 720 CSS px y tema light;
 - nuevos viewports o tema dark se añadirán únicamente cuando el riesgo del componente lo justifique;
 - las pruebas visuales no dependerán de fonts remotas no controladas; cualquier font crítica deberá estar versionada o disponible de forma determinista en el entorno de ejecución;
-- la tolerancia global aprobada es `maxDiffPixels: 0`; una excepción deberá ser local, justificada y revisada;
+- la tolerancia global aprobada es `maxDiffPixelRatio: 0.001`, limitada a variaciones mínimas de antialiasing y revisada junto con cada diff;
 - el presupuesto inicial será de hasta 25 baselines visuales activas; superar ese límite requerirá revisar costo, flakiness y tiempo de CI;
 - los diffs se revisarán mediante artifacts de GitHub Actions con `expected`, `actual`, `diff`, reporte HTML, contexto y trace cuando estén disponibles;
 - los artifacts visuales tendrán una retención de 7 días;
@@ -1307,14 +1307,14 @@ Este ADR se revisará cuando:
 
 ## 77. Registro de aprobación
 
-| Rol | Estado | Evidencia |
-|---|---|---|
-| Product Owner | Aprobado | Rafael Ríos aprueba prioridad, alcance y costo operativo del piloto |
-| Diseño | Aprobado | Rafael Ríos aprueba catálogo, política de baselines y revisión visual selectiva |
-| Frontend | Aprobado | Rafael Ríos aprueba la integración Storybook 10, Next.js/Vite y pruebas en navegador |
+| Rol           | Estado   | Evidencia                                                                                           |
+| ------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| Product Owner | Aprobado | Rafael Ríos aprueba prioridad, alcance y costo operativo del piloto                                 |
+| Diseño        | Aprobado | Rafael Ríos aprueba catálogo, política de baselines y revisión visual selectiva                     |
+| Frontend      | Aprobado | Rafael Ríos aprueba la integración Storybook 10, Next.js/Vite y pruebas en navegador                |
 | Accesibilidad | Aprobado | Rafael Ríos aprueba la política inicial de axe, canaria automatizada y revisión manual proporcional |
-| Calidad | Aprobado | Rafael Ríos aprueba Vitest, Playwright, tolerancia visual y controles de flakiness |
-| Operación | Aprobado | Rafael Ríos aprueba CI, artifacts, retención de 7 días y escaneo previo a publicación |
+| Calidad       | Aprobado | Rafael Ríos aprueba Vitest, Playwright, tolerancia visual y controles de flakiness                  |
+| Operación     | Aprobado | Rafael Ríos aprueba CI, artifacts, retención de 7 días y escaneo previo a publicación               |
 
 Rafael Ríos, en calidad de Product Owner y autoridad delegada para Diseño, Frontend, Accesibilidad, Calidad y Operación durante esta etapa, aprueba formalmente el ADR-0012.
 
@@ -1322,15 +1322,15 @@ Rafael Ríos, en calidad de Product Owner y autoridad delegada para Diseño, Fro
 
 ## 78. Historial
 
-| Fecha | Cambio |
-|---|---|
-| 2026-07-12 | Creación de la propuesta ADR-0012 |
-| 2026-08-03 | Ejecución del spike técnico de Storybook, Vitest y Playwright; el ADR permanece Propuesto |
-| 2026-08-04 | Incorporación y validación de la primera `play function` en Chromium; el ADR permanece Propuesto |
-| 2026-08-04 | Validación de una violación canaria `button-name` con axe y comprobación de su remediación; el ADR permanece Propuesto |
-| 2026-08-04 | Validación de una regresión visual canaria con Playwright y generación de artifacts `expected/actual/diff`; el ADR permanece Propuesto |
-| 2026-08-05 | Integración de Storybook y Playwright visual en GitHub Actions mediante el PR #37; ejecución normal aprobada en `main` |
-| 2026-08-05 | Validación del PR canario #38: CI detectó la regresión visual, escaneó y publicó artifacts seguros y terminó en fallo; el PR se cerró sin fusionar |
+| Fecha      | Cambio                                                                                                                                                                     |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-12 | Creación de la propuesta ADR-0012                                                                                                                                          |
+| 2026-08-03 | Ejecución del spike técnico de Storybook, Vitest y Playwright; el ADR permanece Propuesto                                                                                  |
+| 2026-08-04 | Incorporación y validación de la primera `play function` en Chromium; el ADR permanece Propuesto                                                                           |
+| 2026-08-04 | Validación de una violación canaria `button-name` con axe y comprobación de su remediación; el ADR permanece Propuesto                                                     |
+| 2026-08-04 | Validación de una regresión visual canaria con Playwright y generación de artifacts `expected/actual/diff`; el ADR permanece Propuesto                                     |
+| 2026-08-05 | Integración de Storybook y Playwright visual en GitHub Actions mediante el PR #37; ejecución normal aprobada en `main`                                                     |
+| 2026-08-05 | Validación del PR canario #38: CI detectó la regresión visual, escaneó y publicó artifacts seguros y terminó en fallo; el PR se cerró sin fusionar                         |
 | 2026-08-05 | Aprobación formal del ADR-0012 por Rafael Ríos como Product Owner y autoridad delegada de Diseño, Frontend, Accesibilidad, Calidad y Operación; estado cambiado a Aceptado |
 
 ---
@@ -1366,20 +1366,20 @@ La implementación comprobó:
 
 Resultados reproducidos localmente:
 
-| Validación | Resultado |
-|---|---|
-| `pnpm typecheck` | Aprobado |
-| `pnpm lint` | Aprobado |
-| `pnpm test` | 5 archivos, 17 pruebas unitarias aprobadas |
-| `pnpm test:storybook` | 7 archivos, 21 pruebas de stories aprobadas en Chromium |
-| `pnpm build-storybook` | Build estático aprobado |
-| `pnpm storybook:test:visual` | 1 baseline visual aprobada en Chromium/Linux |
-| `CI=true pnpm storybook:test:visual` | Comparación aprobada contra Storybook estático |
-| GitHub Actions run `30979332466` | Jobs `build` y `storybook` aprobados sobre `main` |
-| GitHub Actions run `31065774017` | Canaria visual detectada; job `storybook` fallido de forma controlada |
+| Validación                                        | Resultado                                                                                   |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`                                  | Aprobado                                                                                    |
+| `pnpm lint`                                       | Aprobado                                                                                    |
+| `pnpm test`                                       | 5 archivos, 17 pruebas unitarias aprobadas                                                  |
+| `pnpm test:storybook`                             | 7 archivos, 21 pruebas de stories aprobadas en Chromium                                     |
+| `pnpm build-storybook`                            | Build estático aprobado                                                                     |
+| `pnpm storybook:test:visual`                      | 1 baseline visual aprobada en Chromium/Linux                                                |
+| `CI=true pnpm storybook:test:visual`              | Comparación aprobada contra Storybook estático                                              |
+| GitHub Actions run `30979332466`                  | Jobs `build` y `storybook` aprobados sobre `main`                                           |
+| GitHub Actions run `31065774017`                  | Canaria visual detectada; job `storybook` fallido de forma controlada                       |
 | Artifact `storybook-visual-failure-31065774017-1` | `expected`, `actual`, `diff`, reporte HTML, trace y contexto publicados después del escaneo |
-| `pnpm build` | Build de Next.js aprobado |
-| `git diff --check` | Sin errores |
+| `pnpm build`                                      | Build de Next.js aprobado                                                                   |
+| `git diff --check`                                | Sin errores                                                                                 |
 
 El spike confirmó los siguientes supuestos:
 

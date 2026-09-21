@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import { requireRows } from '@/lib/database/query-result';
 
 // ============================================================================
 // TIPOS
@@ -54,33 +55,20 @@ function getStatusBadgeClass(status: string): string {
 export default async function MobilePickingListPage() {
   const supabase = await createTypedClient();
 
-  const { data: pickings, error } = await supabase
+  const result = await supabase
     .from('picking_orders')
     .select('id, status, sales_order_id, created_at')
     .in('status', ['pending', 'in_progress'])
     .order('created_at', { ascending: false });
 
-  if (error) {
-    return (
-      <main className="space-y-6 p-6">
-        <h1 className="text-3xl font-bold">Picking</h1>
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-          <p className="text-red-700">
-            Error al cargar pickings: {error.message}
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  const pickingList: PickingOrder[] = pickings ?? [];
+  const pickingList = requireRows(result, 'órdenes de picking') as PickingOrder[];
 
   return (
-    <main className="space-y-6 p-6 pb-24">
+    <main className="space-y-6 p-4 sm:p-6">
       {/* HEADER */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold">📦 Picking</h1>
+          <h1 className="text-3xl font-black sm:text-4xl">📦 Picking</h1>
           <p className="mt-1 text-sm text-gray-500">
             Órdenes pendientes de preparación
           </p>
@@ -126,7 +114,7 @@ function PickingOrderCard({ picking }: { picking: PickingOrder }) {
   return (
     <Link
       href={`/mobile/picking/${picking.id}`}
-      className="block rounded-2xl border border-gray-200 bg-white p-6 transition-all hover:border-blue-300 hover:shadow-lg active:scale-[0.99]"
+      className="block min-h-44 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:border-blue-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 active:scale-[0.99] sm:p-6"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
@@ -177,7 +165,7 @@ function EmptyState() {
 
       <Link
         href="/mobile/picking"
-        className="mt-6 inline-block rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700"
+        className="mt-6 inline-flex min-h-12 items-center rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2"
       >
         Actualizar
       </Link>

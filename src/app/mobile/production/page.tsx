@@ -53,10 +53,10 @@ export default async function MobileProductionPage() {
   const orders = await getProductionOrders();
 
   return (
-    <main className="space-y-6 p-6 pb-24">
+    <main className="space-y-6 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold">
+          <h1 className="text-3xl font-black sm:text-4xl">
             🏭 Producción
           </h1>
 
@@ -107,7 +107,7 @@ function ProductionCard({
   return (
     <Link
       href={`/mobile/production/${order.id}`}
-      className="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-blue-300 hover:shadow-lg"
+      className="block min-h-44 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 active:scale-[0.99] sm:p-6"
     >
       <div className="flex items-start justify-between">
         <div>

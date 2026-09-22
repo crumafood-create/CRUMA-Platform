@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import MobileScanner from '@/app/mobile/components/mobile-scanner';
+import { MobileScanner } from '@/modules/warehouse/components/mobile-scanner';
 
 import {
   confirmReceiving,

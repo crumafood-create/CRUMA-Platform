@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
-import InventoryLocationForm from '@/app/(admin)/_components/inventory-location-form';
+import InventoryLocationForm from '@/modules/warehouse/components/forms/inventory-location-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { normalizeInventoryLocationFormValues } from '@/modules/inventory/application/inventory-location-contract';
 

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { ProductionCostForm } from '@/app/(admin)/_components/production-cost-form';
+import { ProductionCostForm } from '@/modules/manufacturing/components/forms/production-cost-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 const money = (value: number) => `$${Number(value).toFixed(4)}`;

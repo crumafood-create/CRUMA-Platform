@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-import { ProductionCostForm } from '@/app/(admin)/_components/production-cost-form';
+import { ProductionCostForm } from '@/modules/manufacturing/components/forms/production-cost-form';
 
 import {
   releaseProductionOrder,

@@ -1,5 +1,5 @@
 import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
-import { requireRows } from '@/lib/database/query-result';
+import { requireRows } from '@/infrastructure/database/query-result';
 
 import {
   collectInventoryAlertIds,

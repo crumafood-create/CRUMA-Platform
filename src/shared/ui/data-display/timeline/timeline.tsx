@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils';
 
 import { TimelineProps } from './timeline.types';
 import { TimelineEntry } from './timeline-item';

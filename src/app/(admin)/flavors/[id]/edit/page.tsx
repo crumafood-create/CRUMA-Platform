@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { normalizeFlavorFormValues } from '@/modules/inventory/application/flavor-catalog-contract';
 
-import { FlavorForm } from '@/app/(admin)/_components/flavor-form';
+import { FlavorForm } from '@/modules/catalog/components/forms/flavor-form';
 
 import {
   updateFlavor,

@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils';
 
 import { ActivityFeedItem } from './activity-item';
 import { ActivityFeedProps } from './activity-feed.types';

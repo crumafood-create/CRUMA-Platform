@@ -1,5 +1,5 @@
 import { UnitOfMeasureForm }
-from '@/app/(admin)/_components/unit-of-measure-form';
+from '@/modules/warehouse/components/forms/unit-of-measure-form';
 
 import { createUnitOfMeasure }
 from '../actions';

@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
 import { getSuggestedLot, type SuggestedLot } from '../actions';
 

@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import { buildReceivablePayment } from '@/modules/finance/application/receivable-payment-contract';
 import { registerReceivablePayment } from '@/modules/finance/application/receivable-payment-repository';
 

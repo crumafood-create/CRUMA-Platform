@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SalesQuoteForm } from '@/app/(admin)/_components/sales-quote-form';
+import { SalesQuoteForm } from '@/modules/sales/components/forms/sales-quote-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 export default async function NewSalesQuotePage() {
   const supabase = await createTypedClient();

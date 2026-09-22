@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { PurchaseOrderForm } from '@/app/(admin)/_components/purchase-order-form';
+import { PurchaseOrderForm } from '@/modules/procurement/components/forms/purchase-order-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { createPurchaseOrder } from '../actions';

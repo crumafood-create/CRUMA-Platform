@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-import { ProductionOrderForm } from '@/app/(admin)/_components/production-order-form';
+import { ProductionOrderForm } from '@/modules/manufacturing/components/forms/production-order-form';
 
 import { createProductionOrder } from '../actions';
 

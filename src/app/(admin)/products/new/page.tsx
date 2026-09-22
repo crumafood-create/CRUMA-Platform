@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { fetchProductFormCatalog } from '@/modules/inventory/application/product-catalog-repository';
 
-import { ProductForm } from '../../_components/product-form';
+import { ProductForm } from '@/modules/catalog/components/forms/product-form';
 
 import { createProduct } from '../actions';
 

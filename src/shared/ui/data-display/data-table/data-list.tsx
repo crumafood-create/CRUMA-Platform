@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/utils'
 
 import { DataListRow } from './data-list-item';
 import { DataListProps } from './data-list.types'

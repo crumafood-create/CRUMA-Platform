@@ -1,4 +1,4 @@
-import { AccountsReceivablePaymentForm } from '@/app/(admin)/_components/accounts-receivable-payment-form';
+import { AccountsReceivablePaymentForm } from '@/modules/sales/components/forms/accounts-receivable-payment-form';
 
 import { createAccountsReceivablePayment } from './actions';
 

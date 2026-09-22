@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 import { parseBusinessReportPeriod } from '@/modules/analytics/application/business-report-period';
 import { loadBusinessReport } from '@/modules/analytics/application/business-report-repository';
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import { Button } from '@/shared/ui/primitives/button';
 import { Card, CardContent } from '@/shared/ui/primitives/card';
 

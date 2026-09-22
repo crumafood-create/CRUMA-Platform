@@ -1,4 +1,4 @@
-import { FlavorForm } from '@/app/(admin)/_components/flavor-form';
+import { FlavorForm } from '@/modules/catalog/components/forms/flavor-form';
 
 import { createFlavor } from '../actions';
 

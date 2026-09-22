@@ -1,5 +1,5 @@
 import { CategoryForm }
-from '@/app/(admin)/_components/category-form';
+from '@/modules/catalog/components/forms/category-form';
 
 import { createCategory }
 from '../actions';

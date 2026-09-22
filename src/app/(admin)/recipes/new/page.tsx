@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-import { RecipeForm } from '@/app/(admin)/_components/recipe-form';
+import { RecipeForm } from '@/modules/manufacturing/components/forms/recipe-form';
 
 import { createRecipe } from '../actions';
 

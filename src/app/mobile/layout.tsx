@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 
-import { MobileShell } from '@/app/mobile/_components/mobile-shell';
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { isAuthorizationError } from '@/lib/auth/guards/permission.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { MobileShell } from '@/shared/ui/mobile-shell';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { isAuthorizationError } from '@/modules/identity/guards/permission.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
 export default async function MobileLayout({ children }: { children: ReactNode }) {
   try {

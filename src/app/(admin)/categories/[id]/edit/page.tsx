@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-import { CategoryForm } from '@/app/(admin)/_components/category-form';
+import { CategoryForm } from '@/modules/catalog/components/forms/category-form';
 import { normalizeCategoryFormValues } from '@/modules/inventory/application/category-family-contract';
 
 import {

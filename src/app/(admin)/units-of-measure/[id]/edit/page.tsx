@@ -4,7 +4,7 @@ import { createTypedClient } from '@/infrastructure/integrations/supabase/server
 import { normalizeUnitOfMeasureFormValues } from '@/modules/inventory/application/unit-of-measure-contract';
 
 import { UnitOfMeasureForm }
-from '@/app/(admin)/_components/unit-of-measure-form';
+from '@/modules/warehouse/components/forms/unit-of-measure-form';
 
 import {
   updateUnitOfMeasure,

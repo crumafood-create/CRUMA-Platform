@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { RecipeItemForm } from '@/app/(admin)/_components/recipe-item-form';
+import { RecipeItemForm } from '@/modules/manufacturing/components/forms/recipe-item-form';
 
 import { createRecipeItem } from './actions';
 

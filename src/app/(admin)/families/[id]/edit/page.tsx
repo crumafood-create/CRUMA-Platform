@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
-import { FamilyForm } from '@/app/(admin)/_components/family-form';
+import { FamilyForm } from '@/modules/catalog/components/forms/family-form';
 import { normalizeFamilyFormValues } from '@/modules/inventory/application/category-family-contract';
 import { fetchFamilyCategories } from '@/modules/inventory/application/category-family-repository';
 import { updateFamily, deleteFamily } from '../../actions';

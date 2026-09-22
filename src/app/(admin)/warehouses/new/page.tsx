@@ -1,4 +1,4 @@
-import { WarehouseForm } from '@/app/(admin)/_components/warehouse-form';
+import { WarehouseForm } from '@/modules/warehouse/components/forms/warehouse-form';
 
 import { createWarehouse } from '../actions';
 

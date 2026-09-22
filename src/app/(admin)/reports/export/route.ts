@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server';
 
-import { isAuthorizationError } from '@/lib/auth/guards/permission.guard';
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { isAuthorizationError } from '@/modules/identity/guards/permission.guard';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import { parseBusinessReportPeriod } from '@/modules/analytics/application/business-report-period';
 import { toBusinessReportCsv, toBusinessReportPdf } from '@/modules/analytics/application/business-report-export';
 import { loadBusinessReport } from '@/modules/analytics/application/business-report-repository';

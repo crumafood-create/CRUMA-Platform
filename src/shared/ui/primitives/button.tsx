@@ -70,4 +70,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   },
 );
 
+// Alias para garantizar compatibilidad legacy en pruebas
+export const LegacyButton = Button;
+
 export default Button;

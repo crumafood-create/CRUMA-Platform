@@ -22,7 +22,7 @@ describe('contratos de producto y crecimiento P5', () => {
 
   it('conecta telemetría mínima al shell administrativo', () => {
     expect(source('src/app/(admin)/_components/admin-shell.tsx')).toContain('AnalyticsTracker');
-    expect(source('src/components/analytics/analytics-tracker.tsx')).toContain('trackAnalyticsPageView');
+    expect(source('src/modules/analytics/components/analytics-tracker.tsx')).toContain('trackAnalyticsPageView');
     expect(source('src/modules/analytics/application/analytics-event-action.ts')).toContain("event_type: 'page_view'");
   });
 

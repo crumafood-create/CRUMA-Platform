@@ -20,11 +20,11 @@ describe('contratos de producto y crecimiento P5', () => {
     expect(source('src/app/(admin)/reports/export/route.ts')).toContain('BUSINESS_REPORT_VIEW');
   });
 
- it('conecta telemetría mínima al shell administrativo', () => {
-  expect(source('src/shared/components/layout/admin-shell.tsx')).toContain('AnalyticsTracker');
-  expect(source('src/modules/analytics/components/analytics-tracker.tsx')).toContain('trackAnalyticsPageView');
-  expect(source('src/modules/analytics/application/analytics-event-action.ts')).toContain("event_type: 'page_view'");
-});
+  it('conecta telemetría mínima al shell administrativo', () => {
+    expect(source('src/shared/components/layout/admin-shell.tsx')).toContain('AnalyticsTracker');
+    expect(source('src/modules/analytics/components/analytics-tracker.tsx')).toContain('trackAnalyticsPageView');
+    expect(source('src/modules/analytics/application/analytics-event-action.ts')).toContain("event_type: 'page_view'");
+  });
 
   it('define límites de carga y error para la operación móvil', () => {
     for (const path of ['src/app/mobile/layout.tsx', 'src/app/mobile/loading.tsx', 'src/app/mobile/error.tsx']) {

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { SupplierForm } from '@/app/(admin)/_components/supplier-form';
+import { SupplierForm } from '@/modules/procurement/components/forms/supplier-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { normalizeSupplierFormValues } from '@/modules/procurement/application/supplier-contract';
 

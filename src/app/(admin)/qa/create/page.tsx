@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { QualityInspectionForm } from '@/app/(admin)/_components/quality-inspection-form';
+import { QualityInspectionForm } from '@/modules/quality/components/forms/quality-inspection-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function CreateQualityInspectionPage({

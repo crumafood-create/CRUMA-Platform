@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { ProductionLotReleaseForm } from '@/app/(admin)/_components/production-lot-release-form';
+import { ProductionLotReleaseForm } from '@/modules/manufacturing/components/forms/production-lot-release-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export default async function ReleaseProductionLotPage({

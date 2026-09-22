@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-import { SalesOrderItemForm } from '@/app/(admin)/_components/sales-order-item-form';
+import { SalesOrderItemForm } from '@/modules/sales/components/forms/sales-order-item-form';
 
 import { createSalesOrderItem } from '../actions';
 

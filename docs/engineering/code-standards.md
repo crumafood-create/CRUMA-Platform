@@ -12,7 +12,7 @@ Estas reglas mantienen la plataforma coherente mientras los módulos existentes 
 
 - `src/app` compone rutas y vistas; no contiene reglas de negocio en los cortes ya migrados.
 - `src/modules/<dominio>/application` contiene casos de uso, contratos y puertos de repositorio.
-- `src/lib/database` normaliza respuestas y errores del proveedor de datos.
+- `src/infrastructure/database` normaliza respuestas y errores del proveedor de datos.
 - `src/infrastructure` implementa integraciones externas, incluida Supabase.
 - `src/shared/ui` es la fuente canónica para primitivas, formularios y overlays. `src/components` solo conserva reexportaciones temporales de compatibilidad.
 - Una migración cambia un flujo vertical completo y evita reorganizaciones masivas sin cobertura.

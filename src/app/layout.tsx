@@ -1,9 +1,9 @@
-import './globals.css';
+import '@/app/globals.css';
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
-import { AppProvider } from '@/providers/app-provider';
+import { AppProvider } from '@/shared/providers';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://crumafood.com.mx'),
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     'Tequeños, empanadas y productos congelados artesanales.',
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
 };
@@ -28,8 +28,8 @@ export default function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className="font-manrope" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
+      <body className="font-manrope">
         <AppProvider>
           {children}
         </AppProvider>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import InventoryLocationForm from '@/app/(admin)/_components/inventory-location-form';
+import InventoryLocationForm from '@/modules/warehouse/components/forms/inventory-location-form';
 
 import { createInventoryLocation } from '../actions';
 

@@ -15,8 +15,8 @@ export default defineConfig({
       include: [
         'src/modules/inventory/application/utils/product-code.ts',
         'scripts/database/migration-history.ts',
-        'src/lib/database/query-result.ts',
-        'src/lib/auth/permissions/permissions.service.ts',
+        'src/infrastructure/database/query-result.ts',
+        'src/modules/identity/permissions/permissions.service.ts',
         'src/modules/analytics/application/dashboard-filters.ts',
         'src/modules/analytics/application/dashboard-summary.ts',
         'src/modules/analytics/application/dashboard-repository.ts',

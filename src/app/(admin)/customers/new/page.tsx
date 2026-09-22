@@ -1,4 +1,4 @@
-import { CustomerForm } from '@/app/(admin)/_components/customer-form';
+import { CustomerForm } from '@/modules/customers/components/forms/customer-form';
 
 import { createCustomer } from '../actions';
 

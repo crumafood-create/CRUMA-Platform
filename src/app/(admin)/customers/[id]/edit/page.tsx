@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { normalizeCustomerFormValues } from '@/modules/sales/application/customer-contract';
 
-import { CustomerForm } from '@/app/(admin)/_components/customer-form';
+import { CustomerForm } from '@/modules/customers/components/forms/customer-form';
 
 import {
   updateCustomer,

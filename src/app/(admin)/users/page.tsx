@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
 
-import { requireAuthenticatedUser } from '@/lib/auth/guards/auth.guard';
+import { requireAuthenticatedUser } from '@/modules/identity/guards/auth.guard';
 import {
   isAuthorizationError,
   requirePermission,
-} from '@/lib/auth/guards/permission.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+} from '@/modules/identity/guards/permission.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
 export default async function UsersPage() {
   const { actor } = await requireAuthenticatedUser().catch(

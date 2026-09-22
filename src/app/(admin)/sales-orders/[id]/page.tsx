@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { InvoiceIssueForm } from '@/app/(admin)/_components/invoice-issue-form';
+import { InvoiceIssueForm } from '@/modules/sales/components/forms/invoice-issue-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { assertSalesOrderStatus } from '@/modules/sales/application/sales-order-contract';
 import { buildSalesOrderTimeline, getSalesOrderStatusMeta, isDeliveryAtRisk } from '@/modules/sales/application/sales-order-presentation';

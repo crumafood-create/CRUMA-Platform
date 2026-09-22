@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { SupplierForm } from '@/app/(admin)/_components/supplier-form';
+import { SupplierForm } from '@/modules/procurement/components/forms/supplier-form';
 
 import {
   createSupplier,

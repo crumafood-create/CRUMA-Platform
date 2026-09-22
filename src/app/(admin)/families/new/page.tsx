@@ -1,5 +1,5 @@
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
-import { FamilyForm } from '@/app/(admin)/_components/family-form';
+import { FamilyForm } from '@/modules/catalog/components/forms/family-form';
 import { fetchFamilyCategories } from '@/modules/inventory/application/category-family-repository';
 import { createFamily } from '../actions';
 

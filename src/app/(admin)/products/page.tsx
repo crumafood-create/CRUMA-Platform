@@ -2,12 +2,12 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
-import { requireAuthenticatedUser } from '@/lib/auth/guards/auth.guard';
+import { requireAuthenticatedUser } from '@/modules/identity/guards/auth.guard';
 import {
   isAuthorizationError,
   requirePermission,
-} from '@/lib/auth/guards/permission.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+} from '@/modules/identity/guards/permission.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
 export default async function ProductsPage() {
   const supabase = await createTypedClient();

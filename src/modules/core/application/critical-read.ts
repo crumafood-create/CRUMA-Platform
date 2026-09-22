@@ -1,1 +1,1 @@
-export { requireRows } from '@/lib/database/query-result';
+export { requireRows } from '@/infrastructure/database/query-result';

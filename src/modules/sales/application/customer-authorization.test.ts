@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { AuthorizationActor } from '@/lib/auth/guards/auth.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
-import { hasPermission } from '@/lib/auth/permissions/permissions.service';
+import type { AuthorizationActor } from '@/modules/identity/guards/auth.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
+import { hasPermission } from '@/modules/identity/permissions/permissions.service';
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const actor = (role: 'admin' | 'customer'): AuthorizationActor => ({

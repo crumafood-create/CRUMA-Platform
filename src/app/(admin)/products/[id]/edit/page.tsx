@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
-import { ProductForm } from '@/app/(admin)/_components/product-form';
-import { StorefrontPublicationForm } from '@/app/(admin)/_components/storefront-publication-form';
+import { ProductForm } from '@/modules/catalog/components/forms/product-form';
+import { StorefrontPublicationForm } from '@/modules/storefront/components/forms/storefront-publication-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { normalizeProductFormValues } from '@/modules/inventory/application/product-catalog-contract';
 import { fetchProductFormCatalog } from '@/modules/inventory/application/product-catalog-repository';

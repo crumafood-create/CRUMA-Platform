@@ -1,7 +1,7 @@
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { fetchRawMaterialFormCatalog } from '@/modules/inventory/application/raw-material-repository';
 
-import { RawMaterialForm } from '@/app/(admin)/_components/raw-material-form';
+import { RawMaterialForm } from '@/modules/warehouse/components/forms/raw-material-form';
 
 import { createRawMaterial } from '../actions';
 

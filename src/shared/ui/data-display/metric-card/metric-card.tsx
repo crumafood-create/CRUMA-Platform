@@ -1,6 +1,6 @@
 import { TrendingDown, TrendingUp } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/utils'
 
 import { MetricCardProps } from './metric-card.types'
 

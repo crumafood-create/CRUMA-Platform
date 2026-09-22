@@ -6,6 +6,7 @@
     "allowJs": false,
     "skipLibCheck": true,
 
+    /* Estrictez Máxima de Tipos */
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -16,8 +17,8 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
 
+    /* Next.js & Module Resolution */
     "noEmit": true,
-    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -32,12 +33,12 @@
       }
     ],
 
+    /* Alias de Rutas Alineados a la Arquitectura FSD / DDD */
     "paths": {
       "@/*": ["./src/*"],
       "@/modules/*": ["./src/modules/*"],
       "@/shared/*": ["./src/shared/*"],
       "@/infrastructure/*": ["./src/infrastructure/*"],
-      "@/providers/*": ["./src/app/providers/*"],
       "@/config/*": ["./src/config/*"],
       "@/core/*": ["./src/core/*"]
     }

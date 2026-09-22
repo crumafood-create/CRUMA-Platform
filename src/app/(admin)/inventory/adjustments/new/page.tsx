@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-import { InventoryAdjustmentForm } from '@/app/(admin)/_components/inventory-adjustment-form';
+import { InventoryAdjustmentForm } from '@/modules/warehouse/components/forms/inventory-adjustment-form';
 
 import {
   createInventoryAdjustment,

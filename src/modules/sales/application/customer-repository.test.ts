@@ -3,15 +3,31 @@ import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase
 import { assertCustomerCanBeDeactivated, assertCustomerIdentityAvailable } from './customer-repository';
 
 type Result = { data: unknown; error: { message: string } | null };
+
+type MockQuery = Promise<Result> & {
+  [key: string]: unknown;
+  maybeSingle?: () => Promise<Result>;
+};
+
 function client(fixtures: Record<string, Result> = {}) {
   const calls: string[] = [];
-  return { calls, value: { from(table: string) {
-    calls.push(table); const result = fixtures[table] ?? { data: table === 'customers' ? null : [], error: null };
-    let query: any = Promise.resolve(result);
-    ['select', 'eq', 'is', 'ilike', 'neq', 'gt', 'limit'].forEach((method) => { query[method] = () => query; });
-    query.maybeSingle = () => Promise.resolve(result);
-    return query;
-  } } as unknown as TypedSupabaseClient };
+  return {
+    calls,
+    value: {
+      from(table: string) {
+        calls.push(table);
+        const result = fixtures[table] ?? { data: table === 'customers' ? null : [], error: null };
+        const query = Promise.resolve(result) as MockQuery;
+
+        ['select', 'eq', 'is', 'ilike', 'neq', 'gt', 'limit'].forEach((method) => {
+          query[method] = () => query;
+        });
+
+        query.maybeSingle = () => Promise.resolve(result);
+        return query;
+      },
+    } as unknown as TypedSupabaseClient,
+  };
 }
 
 describe('identidad y desactivación de clientes', () => {

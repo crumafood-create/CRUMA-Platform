@@ -4,8 +4,8 @@ import crypto from 'node:crypto';
 
 import { revalidatePath } from 'next/cache';
 
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
 function generateProductionNumber(): string {
   const day = new Date().toISOString().slice(0, 10).replaceAll('-', '');

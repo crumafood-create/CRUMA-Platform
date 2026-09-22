@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import type { AuthorizationActor } from '@/lib/auth/guards/auth.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
-import { hasPermission } from '@/lib/auth/permissions/permissions.service';
+import type { AuthorizationActor } from '@/modules/identity/guards/auth.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
+import { hasPermission } from '@/modules/identity/permissions/permissions.service';
 
 const source = () => readFileSync(
   resolve(process.cwd(), 'src/app/(admin)/invoices/actions.ts'), 'utf8',

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 
-import { AdminShell } from '@/app/(admin)/_components/admin-shell';
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { isAuthorizationError } from '@/lib/auth/guards/permission.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { AdminShell } from '@/shared/components/layout';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { isAuthorizationError } from '@/modules/identity/guards/permission.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
 type AdminLayoutProps = {
   children: ReactNode;

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { PurchaseOrderItemForm } from '@/app/(admin)/_components/purchase-order-item-form';
+import { PurchaseOrderItemForm } from '@/modules/procurement/components/forms/purchase-order-item-form';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { createPurchaseOrderItem } from './actions';

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { normalizeWarehouseFormValues } from '@/modules/inventory/application/warehouse-contract';
 
-import { WarehouseForm } from '@/app/(admin)/_components/warehouse-form';
+import { WarehouseForm } from '@/modules/warehouse/components/forms/warehouse-form';
 
 import {
   updateWarehouse,

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import { assertApprovalDecision } from '@/modules/procurement/application/purchase-requisition-contract';
 import {
   createPurchaseApprovals as createPurchaseApprovalRecords,

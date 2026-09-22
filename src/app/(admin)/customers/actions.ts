@@ -3,8 +3,8 @@
 import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { requireTypedAuthorizedAction } from '@/lib/auth/guards/action.guard';
-import { PERMISSIONS } from '@/lib/auth/permissions/permissions.constants';
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import { buildCustomerInsert, buildCustomerUpdate } from '@/modules/sales/application/customer-contract';
 import { assertCustomerCanBeDeactivated, assertCustomerIdentityAvailable } from '@/modules/sales/application/customer-repository';
 

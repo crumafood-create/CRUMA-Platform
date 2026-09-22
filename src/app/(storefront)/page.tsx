@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { PublicHome } from '@/components/storefront/public-home';
+import { PublicHome } from '@/app/(storefront)/_components/storefront/public-home';
 
 export const metadata: Metadata = {
   title: 'Tequeños, empanadas y masas artesanales',

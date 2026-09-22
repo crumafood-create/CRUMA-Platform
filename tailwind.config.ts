@@ -22,6 +22,11 @@ const config: Config = {
         },
       },
       fontFamily: {
+        manrope: ['Manrope', 'sans-serif'],
+        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
+        technical: ['JetBrains Mono', 'monospace'],
+        mono: ['JetBrains Mono', 'monospace'],
+
         // Tipografía Institucional Exclusiva para Titulares
         crumafood: ['Crumafood', 'sans-serif'],
         

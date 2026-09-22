@@ -4,8 +4,8 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { LogoutButton } from '@/components/auth/logout-button';
-import { AnalyticsTracker } from '@/components/analytics/analytics-tracker';
+import { LogoutButton } from '@/modules/identity/auth/components/logout-button';
+import { AnalyticsTracker } from '@/modules/analytics/components/analytics-tracker';
 
 type AdminShellProps = {
   children: ReactNode;

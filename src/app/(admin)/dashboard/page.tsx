@@ -1,4 +1,14 @@
 import Link from 'next/link';
+import { 
+  TrendingUp, 
+  Wallet, 
+  Factory, 
+  Sparkles, 
+  PlusCircle, 
+  AlertTriangle, 
+  Package, 
+  Boxes 
+} from 'lucide-react';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { parseDashboardFilters } from '@/modules/analytics/application/dashboard-filters';
@@ -38,11 +48,37 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const { summary, options } = view;
   const alerts = rankInventoryAlerts(view.alerts);
   const { warehouses, profiles } = options;
+
+  // Asignamos a cada tarjeta de métrica un componente de icono y su color de acento
   const primaryMetrics = [
-    { label: 'Ventas entregadas', value: money(summary.salesMonth), hint: 'En el periodo seleccionado' },
-    { label: 'Cartera pendiente', value: money(summary.receivableBalance), hint: 'Saldo por cobrar actual' },
-    { label: 'Producción abierta', value: summary.openProduction.toString(), hint: `${summary.delayedProduction} con atraso` },
-    { label: 'Producción sugerida', value: `${summary.suggestedProduction.toFixed(0)} pzas`, hint: `${summary.productsToProduce} productos` },
+    { 
+      label: 'Ventas entregadas', 
+      value: money(summary.salesMonth), 
+      hint: 'En el periodo seleccionado',
+      icon: TrendingUp,
+      color: 'text-emerald-600 bg-emerald-50'
+    },
+    { 
+      label: 'Cartera pendiente', 
+      value: money(summary.receivableBalance), 
+      hint: 'Saldo por cobrar actual',
+      icon: Wallet,
+      color: 'text-amber-600 bg-amber-50'
+    },
+    { 
+      label: 'Producción abierta', 
+      value: summary.openProduction.toString(), 
+      hint: `${summary.delayedProduction} con atraso`,
+      icon: Factory,
+      color: 'text-sky-600 bg-sky-50'
+    },
+    { 
+      label: 'Producción sugerida', 
+      value: `${summary.suggestedProduction.toFixed(0)} pzas`, 
+      hint: `${summary.productsToProduce} productos`,
+      icon: Sparkles,
+      color: 'text-purple-600 bg-purple-50'
+    },
   ];
 
   return (
@@ -53,7 +89,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <h1 className="mt-2 text-3xl font-black tracking-tight text-brand-black">Resumen ejecutivo</h1>
           <p className="mt-1 text-sm text-brand-gray-75">Decisiones rápidas con ventas, inventario y producción en un solo lugar.</p>
         </div>
-        <Link href="/sales-orders/new"><Button>Nueva venta</Button></Link>
+        <Link href="/sales-orders/new">
+          <Button className="flex items-center gap-2">
+            <PlusCircle className="w-4 h-4" />
+            Nueva venta
+          </Button>
+        </Link>
       </header>
 
       <Card>
@@ -95,22 +136,33 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <section aria-labelledby="metrics-heading">
         <h2 id="metrics-heading" className="sr-only">Indicadores principales</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {primaryMetrics.map((metric) => (
-            <Card key={metric.label}>
-              <CardContent>
-                <p className="text-xs font-black uppercase tracking-wider text-brand-gray-75">{metric.label}</p>
-                <p className="mt-3 text-3xl font-black tracking-tight text-brand-black">{metric.value}</p>
-                <p className="mt-2 text-sm text-brand-gray-50">{metric.hint}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {primaryMetrics.map((metric) => {
+            const Icon = metric.icon;
+            return (
+              <Card key={metric.label}>
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black uppercase tracking-wider text-brand-gray-75">{metric.label}</p>
+                    <div className={`p-2 rounded-lg ${metric.color}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <p className="mt-3 text-3xl font-black tracking-tight text-brand-black">{metric.value}</p>
+                  <p className="mt-2 text-sm text-brand-gray-50">{metric.hint}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <section aria-labelledby="alerts-heading">
           <div className="mb-3 flex items-center justify-between">
-            <h2 id="alerts-heading" className="text-xl font-black text-brand-black">Atención requerida</h2>
+            <h2 id="alerts-heading" className="text-xl font-black text-brand-black flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Atención requerida
+            </h2>
             <Link href="/inventory/alerts" className="text-sm font-bold text-brand-blue">Ver todas →</Link>
           </div>
           <Card>
@@ -133,15 +185,32 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
         <section aria-labelledby="operation-heading">
           <h2 id="operation-heading" className="mb-3 text-xl font-black text-brand-black">Pulso operativo</h2>
-          <Card><CardContent className="space-y-4 text-sm">
-            <div className="flex justify-between"><span>Productos con existencia</span><strong>{summary.productCount}</strong></div>
-            <div className="flex justify-between"><span>Materias primas con existencia</span><strong>{summary.materialCount}</strong></div>
-            <div className="flex justify-between"><span>Órdenes completadas</span><strong>{summary.completedProduction}</strong></div>
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <Link href="/inventory-stock" className="rounded-lg bg-brand-gray-25 p-3 text-center font-bold text-brand-black">Inventario</Link>
-              <Link href="/production-orders" className="rounded-lg bg-brand-gray-25 p-3 text-center font-bold text-brand-black">Producción</Link>
-            </div>
-          </CardContent></Card>
+          <Card>
+            <CardContent className="space-y-4 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-2 text-brand-gray-75">
+                  <Package className="w-4 h-4 text-slate-400" /> Productos con existencia
+                </span>
+                <strong>{summary.productCount}</strong>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-2 text-brand-gray-75">
+                  <Boxes className="w-4 h-4 text-slate-400" /> Materias primas con existencia
+                </span>
+                <strong>{summary.materialCount}</strong>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-2 text-brand-gray-75">
+                  <Factory className="w-4 h-4 text-slate-400" /> Órdenes completadas
+                </span>
+                <strong>{summary.completedProduction}</strong>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <Link href="/inventory-stock" className="rounded-lg bg-brand-gray-25 p-3 text-center font-bold text-brand-black hover:bg-slate-200 transition-colors">Inventario</Link>
+                <Link href="/production-orders" className="rounded-lg bg-brand-gray-25 p-3 text-center font-bold text-brand-black hover:bg-slate-200 transition-colors">Producción</Link>
+              </div>
+            </CardContent>
+          </Card>
         </section>
       </div>
     </main>

@@ -1,40 +1,52 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/button'; // Tu botón corporativo
+import { Button } from '@/shared/ui/primitives/button'; // Tu botón corporativo
 import { createClient } from '@/infrastructure/integrations/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); // Reemplazo de alert()
+  const [errorMsg, setErrorMsg] = useState<string | null>(
+    searchParams.get('error') === 'admin_required'
+      ? 'Tu cuenta existe, pero todavía no tiene permisos de administrador para entrar al dashboard.'
+      : null,
+  );
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+      if (error) {
+        setErrorMsg(error.message);
+        return;
+      }
 
-    setLoading(false);
-
-    if (error) {
-      setErrorMsg(error.message);
-      return;
+      router.push('/dashboard');
+      router.refresh();
+    } catch (error) {
+      setErrorMsg(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible conectar con el servicio de autenticación.',
+      );
+    } finally {
+      setLoading(false);
     }
-
-    router.push('/dashboard');
-    router.refresh();
   }
 
   return (

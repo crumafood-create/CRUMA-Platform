@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MobileShell } from './mobile-shell';
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/mobile/picking/order-1' }));
-vi.mock('@/components/analytics/analytics-tracker', () => ({ AnalyticsTracker: () => null }));
+vi.mock('@/modules/analytics/components/analytics-tracker', () => ({ AnalyticsTracker: () => null }));
 
 describe('shell de operación móvil', () => {
   it('expone tareas reales con targets táctiles y estado de navegación', () => {

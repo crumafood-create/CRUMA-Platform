@@ -1,16 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { Button as LegacyButton } from '@/components/button';
-
 import { Button } from './button';
 import { Card, CardContent, CardHeader } from './card';
 
 describe('primitivas canónicas', () => {
-  it('usa una sola implementación de Button', () => {
-    expect(LegacyButton).toBe(Button);
-  });
-
   it('aplica variante, tamaño y comportamiento seguro por defecto', () => {
     render(<Button>Guardar</Button>);
 

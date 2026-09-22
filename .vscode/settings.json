@@ -1,5 +1,8 @@
 {
   "markdown.validate.enabled": true,
   "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false
 }

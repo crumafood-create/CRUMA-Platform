@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { PublicCatalog } from '@/components/storefront/public-catalog';
+import { PublicCatalog } from '@/app/(storefront)/_components/storefront/public-catalog';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { fetchPublishedStorefrontProducts } from '@/modules/storefront/application/storefront-product-repository';
 

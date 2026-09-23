@@ -1,4 +1,4 @@
-import type { AuthorizationActor } from '@/modules/identity/guards/auth.guard';
+import type { AuthorizationActor } from '@/modules/identity/guards/types';
 
 import type { Permission } from './permissions.constants';
 import { LEGACY_ROLE_PERMISSIONS } from './permissions.matrix';

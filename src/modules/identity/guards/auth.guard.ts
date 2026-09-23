@@ -1,25 +1,12 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import {
   getUserRoles,
   LegacyRoleLookupError,
-  type LegacyRole,
-  type SupabaseServerClient,
-} from '@/modules/identity/get-user-role';
+} from '@/modules/identity/get-user-roles';
+import type { SupabaseServerClient } from '@/modules/identity/get-user-roles';
 
-import { AuthorizationError } from './permission.guard';
-
-export type AuthorizationActor = {
-  userId: string;
-  roles: readonly LegacyRole[];
-  authorizationSource: 'legacy_user_roles';
-};
-
-export type AuthorizationContext = {
-  actor: AuthorizationActor;
-  supabase: SupabaseClient;
-};
+import { AuthorizationError } from './authorization-error';
+import type { AuthorizationContext } from './types';
 
 export async function requireAuthenticatedUser(
   supabaseClient?: SupabaseServerClient,
@@ -47,7 +34,7 @@ export async function requireAuthenticatedUser(
         roles,
         authorizationSource: 'legacy_user_roles',
       },
-      supabase: supabase as unknown as SupabaseClient,
+      supabase,
     };
   } catch (roleError) {
     if (roleError instanceof LegacyRoleLookupError) {

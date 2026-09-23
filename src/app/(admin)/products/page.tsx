@@ -3,11 +3,9 @@ import { redirect } from 'next/navigation';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { requireAuthenticatedUser } from '@/modules/identity/guards/auth.guard';
-import {
-  isAuthorizationError,
-  requirePermission,
-} from '@/modules/identity/guards/permission.guard';
+import { isAuthorizationError } from '@/modules/identity/guards/authorization-error';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
+import { requirePermission } from '@/modules/identity/guards/permission.guard';
 
 export default async function ProductsPage() {
   const supabase = await createTypedClient();

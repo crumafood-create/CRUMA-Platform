@@ -1,10 +1,10 @@
 import { expect, test, vi } from 'vitest';
 
-import type { SupabaseServerClient } from '@/modules/identity/get-user-role';
+import type { SupabaseServerClient } from '@/modules/identity/get-user-roles';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
+import { AuthorizationError } from '@/modules/identity/guards/authorization-error';
 
-import { requireAuthorizedAction } from './action.guard';
-import { AuthorizationError } from './permission.guard';
+import { requireTypedAuthorizedAction } from './action.guard';
 
 function clientWith(
   user: { id: string } | null,
@@ -33,7 +33,7 @@ test('requireAuthorizedAction permite al admin y reutiliza su cliente', async ()
     [{ role: 'admin' }],
   );
 
-  const context = await requireAuthorizedAction(
+  const context = await requireTypedAuthorizedAction(
     PERMISSIONS.PRODUCTION_ORDER_CREATE,
     client,
   );
@@ -42,14 +42,14 @@ test('requireAuthorizedAction permite al admin y reutiliza su cliente', async ()
   expect(context.supabase).toBe(client);
 });
 
-test('requireAuthorizedAction deniega customer antes del caso de uso', async () => {
+test('requireTypedAuthorizedAction deniega customer antes del caso de uso', async () => {
   const client = clientWith(
     { id: '00000000-0000-0000-0000-000000000002' },
     [{ role: 'customer' }],
   );
 
   await expect(
-    requireAuthorizedAction(
+    requireTypedAuthorizedAction(
       PERMISSIONS.SALES_ORDER_DELIVER,
       client,
     ),
@@ -64,7 +64,7 @@ test('requireAuthorizedAction deniega una sesión ausente', async () => {
   const client = clientWith(null);
 
   await expect(
-    requireAuthorizedAction(
+    requireTypedAuthorizedAction(
       PERMISSIONS.PRODUCTION_ORDER_CREATE,
       client,
     ),

@@ -1,4 +1,4 @@
-import type { LegacyRole } from '@/modules/identity/get-user-role';
+import type { LegacyRole } from '@/modules/identity/get-user-roles';
 
 import {
   PERMISSIONS,

@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
-import type { SupabaseServerClient } from '@/modules/identity/get-user-role';
+import type { SupabaseServerClient } from '@/modules/identity/get-user-roles';
 import { resolvePublicSupabaseConfiguration } from '../../infrastructure/integrations/supabase/configuration';
 
 const validEnvironment: NodeJS.ProcessEnv = {

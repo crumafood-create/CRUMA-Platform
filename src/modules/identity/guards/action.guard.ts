@@ -1,11 +1,9 @@
-import type { SupabaseServerClient } from '@/modules/identity/get-user-role';
+import type { SupabaseServerClient } from '@/modules/identity/get-user-roles'; // o get-user-roles, según confirmes
 import type { Permission } from '@/modules/identity/permissions/permissions.constants';
 
-import {
-  requireAuthenticatedUser,
-  type AuthorizationContext,
-} from './auth.guard';
+import { requireAuthenticatedUser } from './auth.guard';
 import { requirePermission } from './permission.guard';
+import type { AuthorizationContext } from './types';
 
 export async function requireAuthorizedAction(
   permission: Permission,

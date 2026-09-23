@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import type { AuthorizationActor } from '@/modules/identity/guards/auth.guard';
+import type { AuthorizationActor } from '@/modules/identity/guards/types';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import { hasPermission } from '@/modules/identity/permissions/permissions.service';
 

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 
 import { AdminShell } from '@/shared/components/layout';
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
-import { isAuthorizationError } from '@/modules/identity/guards/permission.guard';
+import { isAuthorizationError } from '@/modules/identity/guards/authorization-error';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
 type AdminLayoutProps = {

@@ -1,10 +1,10 @@
 interface Props {
 
-  data?: unknown[];
+  _data?: unknown[];
 }
 
 export function BarChart({
-  data
+  _data
 }: Props) {
 
   return (

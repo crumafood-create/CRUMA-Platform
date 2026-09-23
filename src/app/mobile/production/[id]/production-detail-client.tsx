@@ -180,7 +180,6 @@ export default function ProductionDetailClient({
   useEffect(() => {
     void loadDetail();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productionOrderId]);
 
   useEffect(() => {

@@ -47,7 +47,7 @@ async function loadDashboardSource(
   client: TypedSupabaseClient,
   filters: DashboardFilters,
 ) {
-  let salesQuery = client
+  const salesQuery = client
     .from('sales_orders')
     .select('total')
     .gte('created_at', filters.from)

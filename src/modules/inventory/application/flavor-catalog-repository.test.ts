@@ -14,9 +14,7 @@ type QueryBuilder = Promise<Result> & {
 
 function clientWith(result: Result) {
   const calls: string[] = [];
-  let query: QueryBuilder;
-
-  query = Object.assign(Promise.resolve(result), {
+  const query: QueryBuilder = Object.assign(Promise.resolve(result), {
     select() { return query; },
     eq() { return query; },
     is() { return query; },

@@ -123,7 +123,6 @@ setPageState('error');
 
 useEffect(() => {
 void loadDetail();
-// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [pickingId]);
 
 useEffect(() => {
@@ -209,7 +208,7 @@ orderId: string;
 status: PickingOrderStatus;
 };
 
-function PageHeader({ orderId, status }: PageHeaderProps) {
+function PageHeader({ orderId, status: _status }: PageHeaderProps) {
 return (
 <div className="flex items-center justify-between gap-3">
 <div>

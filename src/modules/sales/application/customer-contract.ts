@@ -47,8 +47,26 @@ export function buildCustomerInsert(form: FormData, generatedCode: string): Cust
 }
 
 export function buildCustomerUpdate(form: FormData, updatedAt: string): CustomerUpdate {
-  const { customer_code: _code, ...values } = buildCustomerInsert(form, '');
-  return { ...values, updated_at: updatedAt };
+  const name = form.get('name')?.toString().trim() ?? '';
+  if (!name) throw new Error('El nombre del cliente es obligatorio.');
+
+  return {
+    customer_type: type(form),
+    name,
+    company_name: optional(form, 'company_name'),
+    tax_id: optional(form, 'tax_id')?.toUpperCase() ?? null,
+    email: email(form),
+    phone: optional(form, 'phone'),
+    mobile: optional(form, 'mobile'),
+    address: optional(form, 'address'),
+    city: optional(form, 'city'),
+    state: optional(form, 'state'),
+    postal_code: optional(form, 'postal_code'),
+    notes: optional(form, 'notes'),
+    credit_limit: creditLimit(form),
+    is_active: active(form),
+    updated_at: updatedAt,
+  };
 }
 
 export function normalizeCustomerFormValues(customer: CustomerFormValues) {

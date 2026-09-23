@@ -51,9 +51,7 @@ function clientWith(fixtures: Partial<Record<TableName, QueryResult>>) {
 
       calls.push(call);
 
-      let query: QueryBuilder;
-
-      query = Object.assign(Promise.resolve(result), {
+      const query: QueryBuilder = Object.assign(Promise.resolve(result), {
         select(columns: string) {
           call.columns = columns;
           return query;

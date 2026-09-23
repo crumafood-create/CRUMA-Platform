@@ -1,66 +1,43 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
-import { NextResponse } from 'next/server';
-import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies';
-
-import type { NextRequest } from 'next/server';
-
-import { getPublicSupabaseConfiguration } from './configuration';
-import type { ApplicationDatabase } from './database.types';
-
-type SupabaseCookie = {
+type CookieToSet = {
   name: string;
   value: string;
-  options: CookieOptions;
+  options?: CookieOptions;
 };
 
-export async function updateSession(
-  request: NextRequest
-) {
-
-  let response = NextResponse.next({
-    request
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
   });
 
-  const { url, anonymousKey } = getPublicSupabaseConfiguration();
-
-  const supabase = createServerClient<ApplicationDatabase>(
-
-    url,
-
-    anonymousKey,
-
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-
       cookies: {
-
         getAll() {
           return request.cookies.getAll();
         },
-
-        setAll(cookiesToSet: SupabaseCookie[]) {
-
-          cookiesToSet.forEach(
-            ({ name, value, options }) =>
-              request.cookies.set(name, value)
-          );
-
-          response = NextResponse.next({
-            request
+        setAll(cookiesToSet: CookieToSet[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({
+            request,
           });
-
-          cookiesToSet.forEach(
-            ({ name, value, options }) =>
-              response.cookies.set(
-                { name, value, ...options } as ResponseCookie,
-              )
-          );
-        }
-      }
+          cookiesToSet.forEach(({ name, value, options }) => {
+            if (options) {
+              supabaseResponse.cookies.set(name, value, options);
+            } else {
+              supabaseResponse.cookies.set(name, value);
+            }
+          });
+        },
+      },
     }
   );
 
   await supabase.auth.getUser();
 
-  return response;
+  return supabaseResponse;
 }

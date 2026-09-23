@@ -3,8 +3,7 @@ import type {
 }
 from 'react';
 
-interface Props
-extends InputHTMLAttributes<HTMLInputElement> {}
+type Props = InputHTMLAttributes<HTMLInputElement>
 
 export function FormInput({
   className = '',

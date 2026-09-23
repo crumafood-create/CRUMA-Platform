@@ -79,7 +79,6 @@ export default function ReceivingDetailClient({
   useEffect(() => {
     void load();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currentItem =

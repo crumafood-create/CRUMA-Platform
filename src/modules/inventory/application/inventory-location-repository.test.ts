@@ -31,9 +31,7 @@ function clientWith(fixtures: Partial<Record<TableName, Result>>) {
       calls.push(table);
 
       const result = fixtures[table] ?? { data: [], error: null };
-      let query: QueryBuilder;
-
-      query = Object.assign(Promise.resolve(result), {
+      const query: QueryBuilder = Object.assign(Promise.resolve(result), {
         select() { return query; },
         eq() { return query; },
         neq(_field: string, value: string) { exclusions.push(value); return query; },

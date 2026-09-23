@@ -19,14 +19,15 @@ type QueryBuilder = Promise<Result> & {
 
 function clientWith(data: unknown, error: { message: string } | null = null) {
   const calls: unknown[] = [];
-  let query: QueryBuilder;
-  query = Object.assign(Promise.resolve({ data, error }), {
+  
+  const query: QueryBuilder = Object.assign(Promise.resolve({ data, error }), {
     select(columns: string) { calls.push(['select', columns]); return query; },
     eq(column: string, value: unknown) { calls.push(['eq', column, value]); return query; },
     lte(column: string, value: unknown) { calls.push(['lte', column, value]); return query; },
     order(column: string, options: unknown) { calls.push(['order', column, options]); return query; },
     maybeSingle() { calls.push(['maybeSingle']); return Promise.resolve({ data, error }); },
   });
+  
   const client = {
     from(table: string) {
       calls.push(['from', table]);

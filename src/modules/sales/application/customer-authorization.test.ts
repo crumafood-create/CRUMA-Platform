@@ -22,8 +22,10 @@ describe('autorización de clientes', () => {
     expect(source.match(/PERMISSIONS\.SALES_CUSTOMER_MANAGE/g)).toHaveLength(3);
   });
 
-  it.each(['../../../app/(admin)/customers/page.tsx', '../../../app/(admin)/customers/[id]/edit/page.tsx'])
-  ('usa cliente tipado sin any en %s', (path) => {
+it.each([
+    '../../../app/(admin)/customers/page.tsx', 
+    '../../../app/(admin)/customers/[id]/edit/page.tsx'
+  ])('usa cliente tipado sin any en %s', (path) => {
     const source = read(path);
     expect(source).toContain('createTypedClient(');
     expect(source).not.toContain(': any');

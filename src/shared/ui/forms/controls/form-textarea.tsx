@@ -3,8 +3,7 @@ import type {
 }
 from 'react';
 
-interface Props
-extends TextareaHTMLAttributes<HTMLTextAreaElement> {}
+type Props = TextareaHTMLAttributes<HTMLTextAreaElement>
 
 export function FormTextarea({
   className = '',

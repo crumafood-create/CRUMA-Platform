@@ -21,6 +21,7 @@ type QueryBuilder = Promise<QueryResult> & {
   eq: (column: string, value: unknown) => QueryBuilder;
   neq: (column: string, value: unknown) => QueryBuilder;
   ilike: (column: string, value: unknown) => QueryBuilder;
+  limit: (count: number) => QueryBuilder;
   maybeSingle: () => Promise<QueryResult>;
 };
 
@@ -46,6 +47,9 @@ function clientWith(fixtures: Partial<Record<TableName, QueryResult>>) {
           return query;
         },
         ilike() {
+          return query;
+        },
+        limit() {
           return query;
         },
         maybeSingle() {

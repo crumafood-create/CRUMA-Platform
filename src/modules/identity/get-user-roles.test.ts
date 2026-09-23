@@ -4,7 +4,7 @@ import {
   getUserRoles,
   LegacyRoleLookupError,
   type SupabaseServerClient,
-} from './get-user-role';
+} from './get-user-roles';
 
 function clientReturning(result: {
   data: Array<{ role: unknown }> | null;

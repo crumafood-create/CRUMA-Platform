@@ -1,9 +1,9 @@
 import { expect, test, vi } from 'vitest';
 
-import type { SupabaseServerClient } from '@/modules/identity/get-user-role';
+import type { SupabaseServerClient } from '@/modules/identity/get-user-roles';
 
 import { requireAuthenticatedUser } from './auth.guard';
-import { AuthorizationError } from './permission.guard';
+import { AuthorizationError } from './authorization-error';
 
 type ClientOptions = {
   user: { id: string } | null;

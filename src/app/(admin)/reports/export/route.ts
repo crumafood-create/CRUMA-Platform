@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import { isAuthorizationError } from '@/modules/identity/guards/permission.guard';
+import { isAuthorizationError } from '@/modules/identity/guards/authorization-error';
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import { parseBusinessReportPeriod } from '@/modules/analytics/application/business-report-period';

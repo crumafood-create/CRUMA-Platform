@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 
 import { MobileShell } from '@/shared/ui/mobile-shell';
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
-import { isAuthorizationError } from '@/modules/identity/guards/permission.guard';
+import { isAuthorizationError } from '@/modules/identity/guards/authorization-error';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
 export default async function MobileLayout({ children }: { children: ReactNode }) {

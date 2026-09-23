@@ -1,29 +1,9 @@
 import type { Permission } from '@/modules/identity/permissions/permissions.constants';
 import { hasPermission } from '@/modules/identity/permissions/permissions.service';
 
-import type { AuthorizationActor } from './auth.guard';
+import { AuthorizationError } from './authorization-error';
 
-export type AuthorizationReason =
-  | 'unauthenticated'
-  | 'authorization_context_unavailable'
-  | 'permission_missing';
-
-export class AuthorizationError extends Error {
-  constructor(
-    public readonly reason: AuthorizationReason,
-    message: string,
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = 'AuthorizationError';
-  }
-}
-
-export function isAuthorizationError(
-  error: unknown,
-): error is AuthorizationError {
-  return error instanceof AuthorizationError;
-}
+import type { AuthorizationActor } from './types';
 
 export function requirePermission(
   actor: AuthorizationActor,

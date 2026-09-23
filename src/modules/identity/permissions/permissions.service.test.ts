@@ -1,10 +1,8 @@
 import { expect, test } from 'vitest';
 
-import type { AuthorizationActor } from '@/modules/identity/guards/auth.guard';
-import {
-  AuthorizationError,
-  requirePermission,
-} from '@/modules/identity/guards/permission.guard';
+import type { AuthorizationActor } from '@/modules/identity/guards/types';
+import { AuthorizationError } from '@/modules/identity/guards/authorization-error';
+import { requirePermission } from '@/modules/identity/guards/permission.guard';
 
 import { PERMISSIONS } from './permissions.constants';
 import {

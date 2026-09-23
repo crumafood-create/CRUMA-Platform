@@ -1,4 +1,4 @@
-import { ThreadItem, ThreadStatus } from './types';
+import type { ThreadItem, ThreadStatus } from './types';
 
 const threadStore: ThreadItem[] = [];
 

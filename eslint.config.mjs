@@ -21,7 +21,10 @@ export default tseslint.config(
     },
     rules: {
       ...nextPlugin.configs['core-web-vitals'].rules,
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
@@ -29,14 +32,21 @@ export default tseslint.config(
     files: ['.storybook/**/*.{ts,tsx}', 'src/**/*.stories.{ts,tsx}'],
     languageOptions: {
       parser: tseslint.parser,
-      parserOptions: { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } },
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: { jsx: true },
+      },
     },
   },
   {
-  files: ['scripts/**/*.mjs'],
-  languageOptions: {
-    globals: { process: 'readonly', URL: 'readonly' },
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        URL: 'readonly',
+      },
+    },
   },
-},
   ...storybook.configs['flat/recommended'],
 );

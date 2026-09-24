@@ -49,16 +49,18 @@ Una capa inferior no deberá contradecir una capa superior sin una decisión exp
 
 Antes de consultar una arquitectura especializada, se recomienda leer:
 
-1. [`../vision.md`](../vision.md)
-2. [`../engineering/constitution.md`](../engineering/constitution.md)
-3. [`../engineering/engineering-principles.md`](../engineering/engineering-principles.md)
-4. [`../engineering/engineering-operating-system.md`](../engineering/engineering-operating-system.md)
-5. [`system-overview.md`](system-overview.md)
+1. [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+2. [`../vision.md`](../vision.md)
+3. [`../engineering/constitution.md`](../engineering/constitution.md)
+4. [`../engineering/engineering-principles.md`](../engineering/engineering-principles.md)
+5. [`../engineering/engineering-operating-system.md`](../engineering/engineering-operating-system.md)
+6. [`system-overview.md`](system-overview.md)
 
 ## 4. Catálogo arquitectónico
 
 | Documento | Responsabilidad principal |
 |---|---|
+| [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) | Mapa real del repositorio, dependencias, módulos y decisiones de implementación |
 | [`system-overview.md`](system-overview.md) | Contexto, productos, capas, módulos y dirección general |
 | [`business-core.md`](business-core.md) | Dominio, aplicación, límites modulares y contratos |
 | [`data-architecture.md`](data-architecture.md) | Persistencia, integridad, ownership, inventario, migraciones y recuperación |

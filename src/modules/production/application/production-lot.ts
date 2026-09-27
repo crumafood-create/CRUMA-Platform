@@ -31,8 +31,9 @@ export async function getAvailableLots(
       expiration_date,
       created_at
     `)
-    .eq('raw_material_id', rawMaterialId)
-    .gt('quantity', 0)
+   .eq('raw_material_id', rawMaterialId)
+   .eq('status', 'available')
+   .gt('quantity', 0)
     .order('expiration_date', {
       ascending: true,
       nullsFirst: false,
@@ -77,6 +78,7 @@ export async function getSuggestedRawMaterialLot(
       )
     `)
     .eq('raw_material_id', rawMaterialId)
+    .eq('status', 'available')
     .gt('quantity', 0)
     .order('expiration_date', {
       ascending: true,

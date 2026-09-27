@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { requireRows } from '@/infrastructure/database/query-result';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
@@ -39,7 +38,6 @@ type DynamicSupabaseClient = {
       } & Promise<unknown>;
     };
   };
-  rpc: (fnName: string, params: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
 };
 
 /**
@@ -90,57 +88,4 @@ export async function getReceivingItems(orderId: string): Promise<ReceivingItem[
   const rows = requireRows(result as Parameters<typeof requireRows>[0], 'partidas de recepción');
 
   return rows as unknown as ReceivingItem[];
-}
-
-/**
- * Incrementa la cantidad recibida en la partida de la orden mediante RPC
- */
-export async function incrementReceivedQuantity(itemId: string, quantity: number) {
-  const supabase = await createTypedClient();
-
-  const { error: itemError } = await (supabase as unknown as DynamicSupabaseClient).rpc('increment_received_quantity', {
-    p_item_id: itemId,
-    p_quantity: quantity,
-  });
-
-  if (itemError) {
-    throw new Error(`Error al incrementar cantidad recibida: ${itemError.message}`);
-  }
-}
-
-/**
- * Registra la recepción parcial o total de un ítem y genera el lote de materia prima
- */
-export async function processReceivingItem(input: {
-  orderId: string;
-  itemId: string;
-  rawMaterialId: string;
-  quantityReceived: number;
-  lotNumber: string;
-  expirationDate?: string;
-}) {
-  const supabase = await createTypedClient();
-
-  // 1. Crear el registro en raw_material_lots
-  const { error: lotError } = await supabase
-    .from('raw_material_lots')
-    .insert({
-      raw_material_id: input.rawMaterialId,
-      lot_number: input.lotNumber,
-      quantity: input.quantityReceived,
-      expiration_date: input.expirationDate || null,
-    });
-
-  if (lotError) {
-    throw new Error(`Error al registrar el lote: ${lotError.message}`);
-  }
-
-  // 2. Actualizar la cantidad recibida llamando a la función auxiliar
-  await incrementReceivedQuantity(input.itemId, input.quantityReceived);
-
-  // 3. Revalidar las rutas afectadas en la UI
-  revalidatePath('/mobile/receiving');
-  revalidatePath(`/mobile/receiving/${input.orderId}`);
-
-  return { success: true };
 }

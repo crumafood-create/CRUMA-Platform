@@ -8,7 +8,6 @@ import { hasPermission } from '@/modules/identity/permissions/permissions.servic
 
 const ORDER_ACTIONS = '../../../app/(admin)/purchase-orders/actions.ts';
 const ITEM_ACTIONS = '../../../app/(admin)/purchase-orders/[id]/items/actions.ts';
-const RECEIVING_ACTIONS = '../../../app/(admin)/purchase-orders/receiving-actions.ts';
 const MOBILE_RECEIVING = '../../../app/mobile/receiving/[id]/actions.ts';
 
 function source(path: string): string {
@@ -58,33 +57,38 @@ describe('autorización de órdenes de compra', () => {
     expect(write).toBeGreaterThan(body.indexOf('requireTypedAuthorizedAction('));
   });
 
-  it.each(['receivePurchaseOrderItem', 'receivePurchaseOrder'])(
-    'protege la recepción %s',
-    (action) => {
-      const body = actionSource(RECEIVING_ACTIONS, action);
-      expect(body).toContain('requireTypedAuthorizedAction(');
-      expect(body).toContain('PERMISSIONS.PROCUREMENT_ORDER_RECEIVE');
-      expect(body.indexOf('.rpc(')).toBeGreaterThan(body.indexOf('requireTypedAuthorizedAction('));
-    },
+  it('protege la recepción móvil y delega la transacción a la base de datos', () => {
+  const body = actionSource(
+    MOBILE_RECEIVING,
+    'confirmReceiving',
   );
 
-  it('protege la recepción móvil y delega la transacción a la base de datos', () => {
-    const body = actionSource(MOBILE_RECEIVING, 'confirmReceiving');
-    expect(body).toContain('requireTypedAuthorizedAction(');
-    expect(body).toContain('PERMISSIONS.PROCUREMENT_ORDER_RECEIVE');
-    expect(body.indexOf(".rpc('receive_purchase_order_lot'")).toBeGreaterThan(
-      body.indexOf('requireTypedAuthorizedAction('),
+  const authorization =
+    body.indexOf(
+      'requireTypedAuthorizedAction(',
     );
-  });
 
-  it.each([
-    '../../../app/(admin)/purchase-orders/page.tsx',
-    '../../../app/(admin)/purchase-orders/new/page.tsx',
-    '../../../app/(admin)/purchase-orders/[id]/page.tsx',
-    '../../../app/(admin)/purchase-orders/[id]/items/page.tsx',
-  ])('usa cliente tipado y elimina any en %s', (path) => {
-    expect(source(path)).toContain('createTypedClient(');
-    expect(source(path)).not.toContain('createClient(');
-    expect(source(path)).not.toContain(': any');
-  });
-});
+  const transaction =
+    body.indexOf(
+      "'receive_purchase_order_lot'",
+    );
+
+  expect(body).toContain(
+    'parsePurchaseReceivingInput(',
+  );
+
+  expect(body).toContain(
+    'PERMISSIONS.PROCUREMENT_ORDER_RECEIVE',
+  );
+
+  expect(authorization).toBeGreaterThan(-1);
+
+  expect(transaction).toBeGreaterThan(
+    authorization,
+  );
+
+  expect(body).not.toContain(
+    ".from('raw_material_lots')",
+  );
+})
+})

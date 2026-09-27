@@ -5279,6 +5279,114 @@ export type Database = {
           },
         ]
       }
+      purchase_receipt_items: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_location_id: string
+          purchase_order_item_id: string
+          purchase_receipt_id: string
+          quantity: number
+          raw_material_lot_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_location_id: string
+          purchase_order_item_id: string
+          purchase_receipt_id: string
+          quantity: number
+          raw_material_lot_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_location_id?: string
+          purchase_order_item_id?: string
+          purchase_receipt_id?: string
+          quantity?: number
+          raw_material_lot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_receipt_items_inventory_location_id_fkey"
+            columns: ["inventory_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_receipt_items_purchase_order_item_id_fkey"
+            columns: ["purchase_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_receipt_items_purchase_receipt_id_fkey"
+            columns: ["purchase_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_receipt_items_raw_material_lot_id_fkey"
+            columns: ["raw_material_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_receipts: {
+        Row: {
+          created_at: string
+          id: string
+          idempotency_key: string
+          purchase_order_id: string
+          received_at: string
+          received_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          purchase_order_id: string
+          received_at?: string
+          received_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          purchase_order_id?: string
+          received_at?: string
+          received_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_receipts_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_receipts_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "purchase_receipts_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_requisition_items: {
         Row: {
           available_quantity: number
@@ -7667,9 +7775,11 @@ export type Database = {
       receive_purchase_order_lot: {
         Args: {
           p_expiration_date: string
+          p_idempotency_key: string
           p_inventory_location_id: string
           p_item_id: string
           p_lot_number: string
+          p_quantity: number
         }
         Returns: string
       }

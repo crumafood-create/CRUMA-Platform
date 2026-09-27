@@ -59,7 +59,7 @@ export async function consumeRawMaterialLot(
   supabase: TypedSupabaseClient,
   allocation: FEFOAllocation,
 ): Promise<void> {
-  const { error } =
+  const { data, error } =
     await supabase
       .from('raw_material_lots')
       .update({
@@ -72,10 +72,19 @@ export async function consumeRawMaterialLot(
       .eq(
         'id',
         allocation.lot_id,
-      );
+      )
+      .eq('status', 'available')
+      .select('id')
+      .maybeSingle();
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error(
+      'Raw material lot is not available for consumption.',
+    );
   }
 }
 

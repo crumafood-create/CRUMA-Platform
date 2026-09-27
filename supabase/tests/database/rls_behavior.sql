@@ -734,9 +734,11 @@ WHERE id = '9a000000-0000-0000-0000-000000000002';
 
 SELECT public.receive_purchase_order_lot(
   '9b000000-0000-0000-0000-000000000001',
+  2,
   'RLS-LOT-1',
   '2027-09-02',
-  '9c000000-0000-0000-0000-000000000001'
+  '9c000000-0000-0000-0000-000000000001',
+  '9d000000-0000-0000-0000-000000000001'
 );
 
 RESET ROLE;
@@ -1274,16 +1276,27 @@ BEGIN
     RAISE EXCEPTION 'admin purchase order insert was not persisted';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM public.raw_material_lots
-    WHERE raw_material_id = '95000000-0000-0000-0000-000000000001'
-      AND lot_number = 'RLS-LOT-1' AND quantity = 2
-  ) OR NOT EXISTS (
-    SELECT 1 FROM public.inventory_movements
-    WHERE reference_id = '9a000000-0000-0000-0000-000000000002'
+     IF NOT EXISTS (
+    SELECT 1
+    FROM public.raw_material_lots
+    WHERE raw_material_id =
+      '95000000-0000-0000-0000-000000000001'
+      AND lot_number = 'RLS-LOT-1'
       AND quantity = 2
+      AND status = 'quarantine'
   ) THEN
-    RAISE EXCEPTION 'purchase order receipt transaction was not persisted';
+    RAISE EXCEPTION
+      'purchase order receipt did not create a quarantined lot';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.inventory_movements
+    WHERE reference_id =
+      '9a000000-0000-0000-0000-000000000002'
+  ) THEN
+    RAISE EXCEPTION
+      'quarantined receipt unexpectedly became available inventory';
   END IF;
 
   IF EXISTS (

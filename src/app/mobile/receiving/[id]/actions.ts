@@ -5,6 +5,10 @@ import { revalidatePath } from 'next/cache';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
+import {
+  parsePurchaseReceivingInput,
+  type PurchaseReceivingInput,
+} from '@/modules/procurement/application/purchase-receiving-contract';
 import { assertPurchaseOrderStatus, type PurchaseOrderStatus } from '@/modules/procurement/application/purchase-order-contract';
 
 export type InventoryLocation = { id: string; code: string; name: string; zone: string | null };
@@ -45,28 +49,68 @@ export async function getReceivingDetail(purchaseOrderId: string): Promise<Recei
   };
 }
 
+type ReceivePurchaseOrderLotRpc = (
+  functionName: 'receive_purchase_order_lot',
+  parameters: {
+    p_item_id: string;
+    p_quantity: number;
+    p_lot_number: string;
+    p_expiration_date: string;
+    p_inventory_location_id: string;
+    p_idempotency_key: string;
+  },
+) => Promise<{
+  data: string | null;
+  error: { message: string } | null;
+}>;
+
 export async function confirmReceiving(
-  purchaseOrderItemId: string,
-  lotNumber: string,
-  expirationDate: string,
-  inventoryLocationId: string,
+  rawInput: PurchaseReceivingInput,
 ) {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.PROCUREMENT_ORDER_RECEIVE,
-  );
-  if (!lotNumber.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(expirationDate) || !inventoryLocationId) {
-    throw new Error('Lote, caducidad y ubicación son obligatorios.');
+  const input =
+    parsePurchaseReceivingInput(rawInput);
+
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.PROCUREMENT_ORDER_RECEIVE,
+    );
+
+  const receivePurchaseOrderLot =
+    supabase.rpc as unknown as
+      ReceivePurchaseOrderLotRpc;
+
+  const { data: orderId, error } =
+    await receivePurchaseOrderLot(
+      'receive_purchase_order_lot',
+      {
+        p_item_id:
+          input.purchaseOrderItemId,
+        p_quantity:
+          input.quantityReceived,
+        p_lot_number:
+          input.lotNumber,
+        p_expiration_date:
+          input.expirationDate,
+        p_inventory_location_id:
+          input.inventoryLocationId,
+        p_idempotency_key:
+          input.idempotencyKey,
+      },
+    );
+
+  if (error || !orderId) {
+    throw new Error(
+      'No fue posible confirmar la recepción.',
+    );
   }
-  const { data: orderId, error } = await supabase.rpc('receive_purchase_order_lot', {
-    p_item_id: purchaseOrderItemId,
-    p_lot_number: lotNumber.trim(),
-    p_expiration_date: expirationDate,
-    p_inventory_location_id: inventoryLocationId,
-  });
-  if (error || !orderId) throw new Error('No fue posible confirmar la recepción.');
+
   revalidatePath('/mobile/receiving');
-  revalidatePath(`/mobile/receiving/${orderId}`);
-  revalidatePath(`/purchase-orders/${orderId}`);
+  revalidatePath(
+    `/mobile/receiving/${orderId}`,
+  );
+  revalidatePath(
+    `/purchase-orders/${orderId}`,
+  );
 }
 
 export async function getReceivingLocations(): Promise<InventoryLocation[]> {

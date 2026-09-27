@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { cancelPurchaseOrder, releasePurchaseOrder } from '../actions';
-import { receivePurchaseOrder } from '../receiving-actions';
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Borrador',
@@ -58,8 +57,13 @@ export default async function PurchaseOrderPage({
           <Action action={releasePurchaseOrder.bind(null, order.id)} label="Liberar compra" />
         ) : null}
         {canReceive ? (
-          <Action action={receivePurchaseOrder.bind(null, order.id)} label="Recibir pendiente" green />
-        ) : null}
+  <Link
+    href={`/mobile/receiving/${order.id}`}
+    className="rounded border border-green-300 bg-green-50 px-4 py-2 text-green-700"
+  >
+    Registrar recepción
+  </Link>
+) : null}
         {canCancel ? (
           <Action action={cancelPurchaseOrder.bind(null, order.id)} label="Cancelar" danger />
         ) : null}
@@ -73,10 +77,26 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 
 function Action({
-  action, label, green = false, danger = false,
+  action,
+  label,
+  danger = false,
 }: {
-  action: () => Promise<void>; label: string; green?: boolean; danger?: boolean;
+  action: () => Promise<void>;
+  label: string;
+  danger?: boolean;
 }) {
-  const color = green ? 'bg-green-50 text-green-700' : danger ? 'border-red-300 text-red-700' : '';
-  return <form action={action}><button type="submit" className={`rounded border px-4 py-2 ${color}`}>{label}</button></form>;
+  const color = danger
+    ? 'border-red-300 text-red-700'
+    : '';
+
+  return (
+    <form action={action}>
+      <button
+        type="submit"
+        className={`rounded border px-4 py-2 ${color}`}
+      >
+        {label}
+      </button>
+    </form>
+  );
 }

@@ -104,11 +104,16 @@ async function validateRecipeStockAvailability(
       plannedQuantity,
     );
 
-    const { data: lots, error: lotsError } = await supabase
-      .from('raw_material_lots')
-      .select('quantity')
-      .eq('raw_material_id', item.raw_material_id)
-      .gt('quantity', 0);
+    const { data: lots, error: lotsError } =
+  await supabase
+    .from('raw_material_lots')
+    .select('quantity')
+    .eq(
+      'raw_material_id',
+      item.raw_material_id,
+    )
+    .eq('status', 'available')
+    .gt('quantity', 0);
 
     if (lotsError) {
       throw new Error(

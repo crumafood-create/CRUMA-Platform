@@ -1,7 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { MobileScanner } from '@/modules/warehouse/components/mobile-scanner';
 
@@ -50,6 +54,17 @@ export default function ReceivingDetailClient({
   const [locationId, setLocationId] =
     useState('');
 
+      const [quantityReceived, setQuantityReceived] =
+    useState('');
+
+  const idempotencyKeyRef =
+    useRef<string | null>(null);
+
+  function resetReceivingAttempt(): void {
+    idempotencyKeyRef.current = null;
+    setError(null);
+  }
+
   async function load() {
     try {
       const [detailData, locationData] =
@@ -61,6 +76,24 @@ export default function ReceivingDetailClient({
         ]);
 
       setDetail(detailData);
+
+            const nextItem =
+        detailData.items.find(
+          (item) =>
+            item.received_quantity <
+            item.quantity,
+        ) ?? null;
+
+      setQuantityReceived(
+        nextItem
+          ? String(
+              nextItem.quantity -
+                nextItem.received_quantity,
+            )
+          : '',
+      );
+
+      idempotencyKeyRef.current = null;
 
       setLocations(locationData);
 
@@ -88,6 +121,11 @@ export default function ReceivingDetailClient({
         item.quantity,
     ) ?? null;
 
+      const pendingQuantity = currentItem
+    ? currentItem.quantity -
+      currentItem.received_quantity
+    : 0;
+
   const completedItems =
     detail?.items.filter(
       (item) =>
@@ -95,13 +133,31 @@ export default function ReceivingDetailClient({
         item.quantity,
     ) ?? [];
 
-  async function handleConfirm() {
+    async function handleConfirm() {
     if (!currentItem) return;
 
-    if (!lotNumber.trim()) {
+    const parsedQuantity =
+      Number(quantityReceived);
+
+    if (
+      !Number.isFinite(parsedQuantity) ||
+      parsedQuantity <= 0
+    ) {
       setError(
-        'Escanee el lote.',
+        'Ingrese una cantidad positiva.',
       );
+      return;
+    }
+
+    if (parsedQuantity > pendingQuantity) {
+      setError(
+        `La cantidad no puede superar el pendiente de ${pendingQuantity}.`,
+      );
+      return;
+    }
+
+    if (!lotNumber.trim()) {
+      setError('Escanee el lote.');
       return;
     }
 
@@ -119,16 +175,30 @@ export default function ReceivingDetailClient({
       return;
     }
 
+    const idempotencyKey =
+      idempotencyKeyRef.current ??
+      crypto.randomUUID();
+
+    idempotencyKeyRef.current =
+      idempotencyKey;
+
     try {
       setSaving(true);
+      setError(null);
 
-      await confirmReceiving(
-        currentItem.id,
+      await confirmReceiving({
+        purchaseOrderItemId:
+          currentItem.id,
+        quantityReceived:
+          parsedQuantity,
         lotNumber,
         expirationDate,
-        locationId,
-      );
+        inventoryLocationId:
+          locationId,
+        idempotencyKey,
+      });
 
+      idempotencyKeyRef.current = null;
       setLotNumber('');
       setExpirationDate('');
       setLocationId('');
@@ -337,6 +407,33 @@ export default function ReceivingDetailClient({
 
           </div>
 
+                              {/* CANTIDAD */}
+
+          <div className="mt-8">
+            <label className="block text-sm font-semibold text-gray-700">
+              Cantidad a recibir
+            </label>
+
+            <input
+              type="number"
+              min="0"
+              max={pendingQuantity}
+              step="0.001"
+              value={quantityReceived}
+              onChange={(event) => {
+                setQuantityReceived(
+                  event.target.value,
+                );
+                resetReceivingAttempt();
+              }}
+              className="mt-2 w-full rounded-xl border border-gray-300 p-4 text-lg"
+            />
+
+            <p className="mt-2 text-sm text-gray-500">
+              Pendiente: {pendingQuantity}
+            </p>
+          </div>
+
                     {/* LOTE */}
 
           <div className="mt-8">
@@ -348,9 +445,11 @@ export default function ReceivingDetailClient({
             <input
               type="text"
               value={lotNumber}
-              onChange={(e) =>
-                setLotNumber(e.target.value)
-              }
+              onChange={(event) => {
+              setLotNumber(event.target.value);
+              resetReceivingAttempt();
+              }}
+
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   void handleConfirm();
@@ -366,8 +465,9 @@ export default function ReceivingDetailClient({
               <MobileScanner
                 onDetected={(code) => {
                   setLotNumber(code);
-                  setError(null);
+                  resetReceivingAttempt();
                 }}
+
               />
             </div>
 
@@ -384,11 +484,12 @@ export default function ReceivingDetailClient({
             <input
               type="date"
               value={expirationDate}
-              onChange={(e) =>
-                setExpirationDate(
-                  e.target.value,
-                )
-              }
+              onChange={(event) => {
+              setExpirationDate(
+               event.target.value,
+            );
+            resetReceivingAttempt();
+          }}
               className="mt-2 w-full rounded-xl border border-gray-300 p-4"
             />
 
@@ -404,11 +505,13 @@ export default function ReceivingDetailClient({
 
             <select
               value={locationId}
-              onChange={(e) =>
+              onChange={(event) => {
                 setLocationId(
-                  e.target.value,
-                )
-              }
+                  event.target.value,
+                );
+                resetReceivingAttempt();
+              }}
+
               className="mt-2 w-full rounded-xl border border-gray-300 p-4"
             >
 

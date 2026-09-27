@@ -25,7 +25,7 @@ DECLARE
     'public.receive_purchase_order(uuid)',
     'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
-    'public.receive_purchase_order_lot(uuid,text,date,uuid)'
+    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY hardened_functions LOOP
@@ -80,13 +80,13 @@ DECLARE
     'public.receive_purchase_order(uuid)',
     'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
-    'public.receive_purchase_order_lot(uuid,text,date,uuid)',
+    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)',
     'public.recalculate_cart_totals()',
     'public.set_updated_at()',
     'public.sync_order_payment_status()',
     'public.update_order_timestamp()'
   ];
-  authenticated_functions constant text[] := ARRAY[
+   authenticated_functions constant text[] := ARRAY[
     'public.create_production_order_items(uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
     'public.is_admin(uuid)',
@@ -97,10 +97,8 @@ DECLARE
     'public.release_production_output_to_inventory(uuid,text,date,uuid,uuid)',
     'public.deliver_sales_order(uuid)',
     'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
-    'public.receive_purchase_order(uuid)',
     'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
-    'public.receive_purchase_order_item(uuid,numeric)',
-    'public.receive_purchase_order_lot(uuid,text,date,uuid)'
+    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY all_functions LOOP
@@ -212,7 +210,7 @@ DECLARE
     'public.receive_purchase_order(uuid)',
     'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
-    'public.receive_purchase_order_lot(uuid,text,date,uuid)'
+    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY secured_functions LOOP

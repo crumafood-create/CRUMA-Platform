@@ -8,7 +8,6 @@ import { redirect } from 'next/navigation';
 import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
-import { getSuggestedRawMaterialLot } from '@/modules/production/application/production-lot';
 import {
   canCancelProductionOrder,
   calculateRequiredQuantity,
@@ -16,7 +15,6 @@ import {
   toProductionOrderState,
   type ProductionOrderState,
 } from '@/modules/production/application/production-order-contract';
-import { consumeProductionItem } from '@/modules/production/application/production-service';
 import {
   INVENTORY_MOVEMENT,
   INVENTORY_REFERENCE,
@@ -345,12 +343,10 @@ export async function cancelProductionOrder(orderId: string) {
 /**
  * Completa una orden de producción (in_progress → completed)
  *
- * 1. Valida estado
- * 2. Obtiene receta y producto terminado
- * 3. Consume los materiales de cada item de producción
- *    delegando al Production Service (consumeProductionItem)
- * 4. Registra entrada del producto terminado
- * 5. Marca la orden como completada
+ * 1. Valida el estado de la orden.
+ * 2. Exige que todos los materiales hayan sido consumidos físicamente.
+ * 3. Registra la entrada del producto terminado.
+ * 4. Marca la orden como completada.
  */
 export async function completeProductionOrder(orderId: string) {
   const { supabase } = await requireTypedAuthorizedAction(
@@ -385,35 +381,48 @@ export async function completeProductionOrder(orderId: string) {
     throw new Error('La receta no tiene producto asociado');
   }
 
-  const { data: productionItems, error: itemsError } = await supabase
+   const {
+    data: productionItem,
+    error: productionItemError,
+  } = await supabase
     .from('production_order_items')
-    .select('id, raw_material_id')
-    .eq('production_order_id', orderId);
+    .select('id')
+    .eq('production_order_id', orderId)
+    .limit(1)
+    .maybeSingle();
 
-  if (itemsError) {
-    throw new Error(itemsError.message);
-  }
-
-  if (!productionItems || productionItems.length === 0) {
-    throw new Error('La orden no tiene items de producción.');
-  }
-
-  for (const item of productionItems) {
-    const suggestedLot = await getSuggestedRawMaterialLot(
-      supabase,
-      item.raw_material_id,
+  if (productionItemError) {
+    throw new Error(
+      productionItemError.message,
     );
+  }
 
-    if (!suggestedLot) {
-      throw new Error(
-        'No existe un lote disponible para completar el consumo de producción.',
-      );
-    }
+  if (!productionItem) {
+    throw new Error(
+      'La orden no tiene items de producción.',
+    );
+  }
 
-    await consumeProductionItem(
-      supabase,
-      item.id,
-      suggestedLot.lot_number,
+  const {
+    data: pendingProductionItem,
+    error: pendingProductionItemError,
+  } = await supabase
+    .from('production_order_items')
+    .select('id')
+    .eq('production_order_id', orderId)
+    .neq('status', 'completed')
+    .limit(1)
+    .maybeSingle();
+
+  if (pendingProductionItemError) {
+    throw new Error(
+      pendingProductionItemError.message,
+    );
+  }
+
+  if (pendingProductionItem) {
+    throw new Error(
+      'Todos los materiales deben estar consumidos antes de completar la orden.',
     );
   }
 

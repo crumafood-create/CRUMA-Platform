@@ -23,6 +23,7 @@
     "production:test:recipes": "vitest run --project unit src/modules/production/application/recipe-contract.test.ts src/modules/production/application/recipe-repository.test.ts src/modules/production/application/recipe-authorization.test.ts src/infrastructure/database/recipe-rls.test.ts",
     "production:test:costs": "vitest run --project unit src/modules/production/application/production-cost-contract.test.ts src/modules/production/application/production-cost-repository.test.ts src/modules/production/application/production-cost-snapshot.test.ts src/modules/production/application/production-cost-authorization.test.ts src/infrastructure/database/production-cost-rls.test.ts",
     "production:test:lots": "vitest run --project unit src/modules/production/application/production-lot-contract.test.ts src/modules/production/application/production-lot-repository.test.ts src/modules/production/application/production-lot-authorization.test.ts src/modules/production/application/production-lot-traceability.test.ts src/infrastructure/database/production-lot-rls.test.ts",
+    "production:test:consumption": "vitest run --project unit src/modules/production/application/production-material-consumption-contract.test.ts src/modules/production/application/production-material-consumption-repository.test.ts src/modules/production/application/production-material-consumption-authorization.test.ts src/infrastructure/database/production-material-consumption.test.ts",
     "quality:test:control": "vitest run --project unit src/modules/quality/application/quality-control-contract.test.ts src/modules/quality/application/quality-control-repository.test.ts src/modules/quality/application/quality-control-authorization.test.ts src/modules/quality/application/raw-material-quality-contract.test.ts src/modules/quality/application/raw-material-quality-repository.test.ts src/modules/quality/components/forms/raw-material-quality-inspection-form.test.tsx src/infrastructure/database/quality-control-rls.test.ts src/infrastructure/database/raw-material-quality-release.test.ts",
     "inventory:test:movements": "vitest run --project unit src/modules/inventory/application/inventory-movement-contract.test.ts",
     "inventory:test:locations": "vitest run --project unit src/modules/inventory/application/inventory-location-contract.test.ts src/modules/inventory/application/inventory-location-repository.test.ts src/modules/inventory/application/inventory-location-authorization.test.ts",
@@ -70,7 +71,7 @@
     "db:test:function-security": "bash scripts/database/run-database-test.sh supabase/tests/database/function_security.sql",
     "db:verify": "pnpm run db:reset:test && pnpm run db:lint && pnpm run db:test:security && pnpm run db:test:schema-contract && pnpm run db:test:seed-strategy && pnpm run db:test:migration-history && pnpm run db:test:reconciliation && pnpm run db:test:generated-types && pnpm run db:test:client-contract && pnpm run db:types:check",
     "db:test:table-privileges": "bash scripts/database/run-database-test.sh supabase/tests/database/table_privileges.sql",
-    "db:test:security": "pnpm run db:test:function-security && pnpm run db:test:table-privileges && pnpm run db:test:rls-behavior && pnpm run db:test:receivables && pnpm run db:test:invoices && pnpm run db:test:quotes && pnpm run db:test:requisitions && pnpm run db:test:receiving && pnpm run db:test:costs && pnpm run db:test:quality && pnpm run db:test:raw-material-quality && pnpm run db:test:lots && pnpm run db:test:storefront && pnpm run db:test:forecasts && pnpm run db:test:reporting",
+    "db:test:security": "pnpm run db:test:function-security && pnpm run db:test:table-privileges && pnpm run db:test:rls-behavior && pnpm run db:test:receivables && pnpm run db:test:invoices && pnpm run db:test:quotes && pnpm run db:test:requisitions && pnpm run db:test:receiving && pnpm run db:test:costs && pnpm run db:test:quality && pnpm run db:test:raw-material-quality && pnpm run db:test:production-consumption && pnpm run db:test:lots && pnpm run db:test:storefront && pnpm run db:test:forecasts && pnpm run db:test:reporting",
     "db:test:rls-behavior": "bash scripts/database/run-database-test.sh supabase/tests/database/rls_behavior.sql",
     "db:test:receivables": "bash scripts/database/run-database-test.sh supabase/tests/database/receivable_payments.sql",
     "db:test:invoices": "bash scripts/database/run-database-test.sh supabase/tests/database/commercial_invoicing.sql",
@@ -88,7 +89,8 @@
     "db:seed:test": "pnpm run db:seed:base && bash scripts/database/run-database-test.sh supabase/seeds/test.sql",
     "db:reset:test": "supabase db reset --network-id cruma-supabase-local --no-seed && pnpm run db:seed:test",
     "db:test:seed-strategy": "pnpm run db:seed:test && bash scripts/database/run-database-test.sh supabase/tests/database/seed_strategy.sql",
-    "db:test:raw-material-quality": "bash scripts/database/run-database-test.sh supabase/tests/database/raw_material_quality_release.sql"
+    "db:test:raw-material-quality": "bash scripts/database/run-database-test.sh supabase/tests/database/raw_material_quality_release.sql",
+    "db:test:production-consumption": "bash scripts/database/run-database-test.sh supabase/tests/database/production_material_consumption.sql"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

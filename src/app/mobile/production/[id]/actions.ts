@@ -12,7 +12,18 @@ import {
   type SuggestedRawMaterialLot,
 } from '@/modules/production/application/production-lot';
 import { fetchMobileProductionDetail } from '@/modules/production/application/mobile-production-repository';
-import { consumeProductionItem } from '@/modules/production/application/production-service';
+import {
+  requireTypedAuthorizedAction,
+} from '@/modules/identity/guards/action.guard';
+import {
+  PERMISSIONS,
+} from '@/modules/identity/permissions/permissions.constants';
+import {
+  buildProductionMaterialConsumptionRequest,
+} from '@/modules/production/application/production-material-consumption-contract';
+import {
+  consumeProductionMaterialFefo,
+} from '@/modules/production/application/production-material-consumption-repository';
 
 export type SuggestedLot = SuggestedRawMaterialLot | null;
 
@@ -28,22 +39,26 @@ export type ProductionDetail = {
 export async function confirmProductionItem(
   productionItemId: string,
   scannedLotNumber: string,
+  idempotencyKey: string,
 ): Promise<void> {
-  const supabase = await createTypedClient();
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.PRODUCTION_MATERIAL_CONSUME,
+    );
 
-  await consumeProductionItem(supabase, productionItemId, scannedLotNumber);
+  const request =
+    buildProductionMaterialConsumptionRequest({
+      productionOrderItemId:
+        productionItemId,
+      scannedLotNumber,
+      idempotencyKey,
+    });
 
-  const { data: item, error } = await supabase
-    .from('production_order_items')
-    .select('production_order_id')
-    .eq('id', productionItemId)
-    .single();
-
-  if (error || !item) {
-    throw new Error(error?.message ?? 'Item no encontrado.');
-  }
-
-  const orderId = item.production_order_id;
+  const orderId =
+    await consumeProductionMaterialFefo(
+      supabase,
+      request,
+    );
 
   for (const path of [
     '/mobile/production',

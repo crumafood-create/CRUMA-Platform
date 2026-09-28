@@ -111,6 +111,16 @@ CREATE INDEX quality_release_decisions_raw_material_lot_idx
   )
   WHERE raw_material_lot_id IS NOT NULL;
 
+  DROP POLICY IF EXISTS
+  raw_material_lots_admin_read
+  ON public.raw_material_lots;
+
+CREATE POLICY raw_material_lots_admin_read
+  ON public.raw_material_lots
+  FOR SELECT
+  TO authenticated
+  USING (public.is_admin(auth.uid()));
+
 CREATE OR REPLACE FUNCTION
   public.record_raw_material_quality_inspection(
     p_lot_id uuid,

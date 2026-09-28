@@ -59,9 +59,22 @@ describe('liberación de calidad de materia prima', () => {
       'ADD CONSTRAINT quality_inspections_subject_check',
     );
 
-    expect(migration).toContain(
+        expect(migration).toContain(
       'ALTER TABLE public.quality_defects ' +
         'ALTER COLUMN quantity TYPE numeric(18,4)',
+    );
+  });
+
+  it('permite al administrador consultar lotes para inspeccionarlos', () => {
+    const migration = normalizeSql(
+      source(MIGRATION),
+    );
+
+    expect(migration).toContain(
+      'CREATE POLICY raw_material_lots_admin_read ' +
+        'ON public.raw_material_lots ' +
+        'FOR SELECT TO authenticated ' +
+        'USING (public.is_admin(auth.uid()))',
     );
   });
 

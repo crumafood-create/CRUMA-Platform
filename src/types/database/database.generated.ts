@@ -5566,12 +5566,15 @@ export type Database = {
           inspected_at: string
           inspector_id: string
           notes: string | null
-          production_order_id: string
-          production_output_id: string
+          production_order_id: string | null
+          production_output_id: string | null
+          purchase_receipt_item_id: string | null
+          raw_material_lot_id: string | null
           rejected_quantity: number
           result: string | null
           sampled_quantity: number
           status: string
+          subject_type: string
           updated_at: string
         }
         Insert: {
@@ -5581,12 +5584,15 @@ export type Database = {
           inspected_at?: string
           inspector_id: string
           notes?: string | null
-          production_order_id: string
-          production_output_id: string
+          production_order_id?: string | null
+          production_output_id?: string | null
+          purchase_receipt_item_id?: string | null
+          raw_material_lot_id?: string | null
           rejected_quantity?: number
           result?: string | null
           sampled_quantity: number
           status?: string
+          subject_type?: string
           updated_at?: string
         }
         Update: {
@@ -5596,12 +5602,15 @@ export type Database = {
           inspected_at?: string
           inspector_id?: string
           notes?: string | null
-          production_order_id?: string
-          production_output_id?: string
+          production_order_id?: string | null
+          production_output_id?: string | null
+          purchase_receipt_item_id?: string | null
+          raw_material_lot_id?: string | null
           rejected_quantity?: number
           result?: string | null
           sampled_quantity?: number
           status?: string
+          subject_type?: string
           updated_at?: string
         }
         Relationships: [
@@ -5633,6 +5642,20 @@ export type Database = {
             referencedRelation: "production_outputs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quality_inspections_purchase_receipt_item_id_fkey"
+            columns: ["purchase_receipt_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_receipt_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_raw_material_lot_id_fkey"
+            columns: ["raw_material_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
+            referencedColumns: ["id"]
+          },
         ]
       }
       quality_release_decisions: {
@@ -5643,9 +5666,12 @@ export type Database = {
           decision: string
           id: string
           inspection_id: string
-          production_order_id: string
-          production_output_id: string
+          production_order_id: string | null
+          production_output_id: string | null
+          purchase_receipt_item_id: string | null
+          raw_material_lot_id: string | null
           reason: string | null
+          subject_type: string
         }
         Insert: {
           approved_at?: string
@@ -5654,9 +5680,12 @@ export type Database = {
           decision: string
           id?: string
           inspection_id: string
-          production_order_id: string
-          production_output_id: string
+          production_order_id?: string | null
+          production_output_id?: string | null
+          purchase_receipt_item_id?: string | null
+          raw_material_lot_id?: string | null
           reason?: string | null
+          subject_type?: string
         }
         Update: {
           approved_at?: string
@@ -5665,9 +5694,12 @@ export type Database = {
           decision?: string
           id?: string
           inspection_id?: string
-          production_order_id?: string
-          production_output_id?: string
+          production_order_id?: string | null
+          production_output_id?: string | null
+          purchase_receipt_item_id?: string | null
+          raw_material_lot_id?: string | null
           reason?: string | null
+          subject_type?: string
         }
         Relationships: [
           {
@@ -5703,6 +5735,20 @@ export type Database = {
             columns: ["production_output_id"]
             isOneToOne: false
             referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_purchase_receipt_item_id_fkey"
+            columns: ["purchase_receipt_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_receipt_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_release_decisions_raw_material_lot_id_fkey"
+            columns: ["raw_material_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
             referencedColumns: ["id"]
           },
         ]
@@ -7752,6 +7798,10 @@ export type Database = {
         Args: { p_decision: string; p_inspection_id: string; p_reason: string }
         Returns: string
       }
+      decide_raw_material_quality_release: {
+        Args: { p_decision: string; p_inspection_id: string; p_reason: string }
+        Returns: string
+      }
       decrease_product_lot_quantity: {
         Args: { p_lot_id: string; p_quantity: number }
         Returns: undefined
@@ -7789,6 +7839,16 @@ export type Database = {
           p_defects: Json
           p_notes: string
           p_output_id: string
+          p_sampled_quantity: number
+        }
+        Returns: string
+      }
+      record_raw_material_quality_inspection: {
+        Args: {
+          p_criteria: Json
+          p_defects: Json
+          p_lot_id: string
+          p_notes: string
           p_sampled_quantity: number
         }
         Returns: string

@@ -25,7 +25,11 @@ DECLARE
     'public.receive_purchase_order(uuid)',
     'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
-    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)'
+    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)',
+    'public.record_quality_inspection(uuid,integer,text,jsonb,jsonb)',
+    'public.decide_quality_release(uuid,text,text)',
+    'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
+    'public.decide_raw_material_quality_release(uuid,text,text)'
   ];
 BEGIN
   FOREACH signature IN ARRAY hardened_functions LOOP
@@ -102,11 +106,6 @@ DECLARE
     'public.deliver_sales_order(uuid)',
     'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
     'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
-    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)',
-    'public.record_quality_inspection(uuid,integer,text,jsonb,jsonb)',
-    'public.decide_quality_release(uuid,text,text)',
-    'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
-    'public.decide_raw_material_quality_release(uuid,text,text)',
     'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)',
     'public.record_quality_inspection(uuid,integer,text,jsonb,jsonb)',
     'public.decide_quality_release(uuid,text,text)',
@@ -223,7 +222,7 @@ DECLARE
     'public.receive_purchase_order(uuid)',
     'public.register_receivable_payment(uuid,date,numeric,text,text,text)',
     'public.receive_purchase_order_item(uuid,numeric)',
-    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)'
+    'public.receive_purchase_order_lot(uuid,numeric,text,date,uuid,uuid)',
     'public.record_quality_inspection(uuid,integer,text,jsonb,jsonb)',
     'public.decide_quality_release(uuid,text,text)',
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',

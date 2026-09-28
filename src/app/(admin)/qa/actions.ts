@@ -8,18 +8,32 @@ import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constant
 import {
   assertQualityDecision,
   buildQualityInspectionRequest,
+  buildRawMaterialQualityInspectionRequest,
 } from '@/modules/quality/application/quality-control-contract';
 import {
   decideQualityRelease as persistQualityDecision,
+  decideRawMaterialQualityRelease as persistRawMaterialQualityDecision,
   recordQualityInspection as persistQualityInspection,
+  recordRawMaterialQualityInspection as persistRawMaterialQualityInspection,
 } from '@/modules/quality/application/quality-control-repository';
 
-export async function recordQualityInspection(formData: FormData): Promise<void> {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.QUALITY_INSPECTION_MANAGE,
-  );
-  const request = buildQualityInspectionRequest(formData);
-  const inspectionId = await persistQualityInspection(supabase, request);
+export async function recordQualityInspection(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.QUALITY_INSPECTION_MANAGE,
+    );
+
+  const request =
+    buildQualityInspectionRequest(formData);
+
+  const inspectionId =
+    await persistQualityInspection(
+      supabase,
+      request,
+    );
+
   revalidatePath('/qa');
   revalidatePath('/production-orders');
   redirect(`/qa/${inspectionId}`);
@@ -30,13 +44,81 @@ export async function decideQualityRelease(
   decisionValue: string,
   formData: FormData,
 ): Promise<void> {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.QUALITY_RELEASE_DECIDE,
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.QUALITY_RELEASE_DECIDE,
+    );
+
+  const decision =
+    assertQualityDecision(decisionValue);
+
+  const reason =
+    formData.get('reason')?.toString().trim() ||
+    null;
+
+  await persistQualityDecision(
+    supabase,
+    inspectionId,
+    decision,
+    reason,
   );
-  const decision = assertQualityDecision(decisionValue);
-  const reason = formData.get('reason')?.toString().trim() || null;
-  await persistQualityDecision(supabase, inspectionId, decision, reason);
+
   revalidatePath('/qa');
   revalidatePath(`/qa/${inspectionId}`);
   revalidatePath('/production-orders');
+}
+
+export async function recordRawMaterialQualityInspection(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.QUALITY_INSPECTION_MANAGE,
+    );
+
+  const request =
+    buildRawMaterialQualityInspectionRequest(
+      formData,
+    );
+
+  const inspectionId =
+    await persistRawMaterialQualityInspection(
+      supabase,
+      request,
+    );
+
+  revalidatePath('/qa');
+  revalidatePath('/inventory');
+  revalidatePath('/purchase-orders');
+  redirect(`/qa/${inspectionId}`);
+}
+
+export async function decideRawMaterialQualityRelease(
+  inspectionId: string,
+  decisionValue: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.QUALITY_RELEASE_DECIDE,
+    );
+
+  const decision =
+    assertQualityDecision(decisionValue);
+
+  const reason =
+    formData.get('reason')?.toString().trim() ||
+    null;
+
+  await persistRawMaterialQualityDecision(
+    supabase,
+    inspectionId,
+    decision,
+    reason,
+  );
+
+  revalidatePath('/qa');
+  revalidatePath(`/qa/${inspectionId}`);
+  revalidatePath('/inventory');
+  revalidatePath('/purchase-orders');
 }

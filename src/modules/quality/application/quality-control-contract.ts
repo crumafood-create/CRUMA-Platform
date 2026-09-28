@@ -26,6 +26,14 @@ export type QualityInspectionRequest = {
   defects: QualityDefectInput[];
 };
 
+export type RawMaterialQualityInspectionRequest = {
+  rawMaterialLotId: string;
+  sampledQuantity: number;
+  notes: string | null;
+  criteria: QualityCriterionInput[];
+  defects: QualityDefectInput[];
+};
+
 function value(formData: FormData, key: string): string {
   return formData.get(key)?.toString().trim() ?? '';
 }
@@ -37,6 +45,22 @@ function optional(input: string): string | null {
 function positiveInteger(input: string, message: string): number {
   const parsed = Number(input);
   if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(message);
+  return parsed;
+}
+
+function positiveFiniteQuantity(
+  input: string,
+  message: string,
+): number {
+  const parsed = Number(input);
+
+  if (
+    !Number.isFinite(parsed) ||
+    parsed <= 0
+  ) {
+    throw new Error(message);
+  }
+
   return parsed;
 }
 
@@ -53,17 +77,27 @@ function criteria(formData: FormData): QualityCriterionInput[] {
   });
 }
 
-function defects(formData: FormData, sampled: number): QualityDefectInput[] {
+function defects(
+  formData: FormData,
+  sampled: number,
+  allowDecimal = false,
+): QualityDefectInput[] {
   const defectType = value(formData, 'defect_type');
   if (!defectType) return [];
   const severityValue = value(formData, 'defect_severity');
   if (!QUALITY_SEVERITIES.includes(severityValue as QualitySeverity)) {
     throw new Error('La severidad del defecto no es válida.');
   }
-  const quantity = positiveInteger(
-    value(formData, 'defect_quantity'),
-    'La cantidad defectuosa debe ser un entero positivo.',
-  );
+ const quantity = allowDecimal
+  ? positiveFiniteQuantity(
+      value(formData, 'defect_quantity'),
+      'La cantidad defectuosa debe ser positiva y finita.',
+    )
+  : positiveInteger(
+      value(formData, 'defect_quantity'),
+      'La cantidad defectuosa debe ser un entero positivo.',
+    );
+
   if (quantity > sampled) {
     throw new Error('La cantidad defectuosa no puede superar la muestra.');
   }
@@ -94,6 +128,46 @@ export function buildQualityInspectionRequest(
     notes: optional(value(formData, 'notes')),
     criteria: inspectionCriteria,
     defects: defects(formData, sampledQuantity),
+  };
+}
+
+export function buildRawMaterialQualityInspectionRequest(
+  formData: FormData,
+): RawMaterialQualityInspectionRequest {
+  const rawMaterialLotId = value(
+    formData,
+    'raw_material_lot_id',
+  );
+
+  if (!rawMaterialLotId) {
+    throw new Error(
+      'El lote de materia prima es obligatorio.',
+    );
+  }
+
+  const sampledQuantity = positiveFiniteQuantity(
+    value(formData, 'sampled_quantity'),
+    'La cantidad muestreada debe ser positiva y finita.',
+  );
+
+  const inspectionCriteria = criteria(formData);
+
+  if (inspectionCriteria.length === 0) {
+    throw new Error(
+      'La inspección requiere al menos un criterio.',
+    );
+  }
+
+  return {
+    rawMaterialLotId,
+    sampledQuantity,
+    notes: optional(value(formData, 'notes')),
+    criteria: inspectionCriteria,
+    defects: defects(
+      formData,
+      sampledQuantity,
+      true,
+    ),
   };
 }
 

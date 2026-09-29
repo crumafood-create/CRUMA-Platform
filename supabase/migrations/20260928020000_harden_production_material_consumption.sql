@@ -71,7 +71,7 @@ AS $$
 DECLARE
   item public.production_order_items%ROWTYPE;
   production_order public.production_orders%ROWTYPE;
-  lot public.raw_material_lots%ROWTYPE;
+  selected_lot public.raw_material_lots%ROWTYPE;
   material public.raw_materials%ROWTYPE;
   existing_operation
     public.production_material_consumption_operations%ROWTYPE;
@@ -183,7 +183,7 @@ BEGIN
   END IF;
 
   SELECT lot.*
-  INTO lot
+INTO selected_lot
   FROM public.raw_material_lots AS lot
   WHERE lot.raw_material_id = item.raw_material_id
     AND lot.status = 'available'
@@ -212,7 +212,7 @@ BEGIN
       USING
         ERRCODE = '23514',
         DETAIL =
-          'Expected lot: ' || lot.lot_number;
+          'Expected lot: ' || selected_lot.lot_number;
   END IF;
 
   SELECT *
@@ -230,7 +230,7 @@ BEGIN
   END IF;
 
   v_consumed_quantity := LEAST(
-    lot.quantity,
+    selected_lot.quantity,
     v_remaining_quantity
   );
 
@@ -260,7 +260,7 @@ BEGIN
   )
   VALUES (
     item.id,
-    lot.id,
+    selected_lot.id,
     v_consumed_quantity,
     now()
   )
@@ -305,7 +305,7 @@ BEGIN
     v_new_stock,
     'production_material_consumption',
     v_consumption_id,
-    'Consumo FEFO del lote ' || lot.lot_number,
+    'Consumo FEFO del lote ' || selected_lot.lot_number,
     auth.uid()
   )
   RETURNING id
@@ -354,7 +354,7 @@ BEGIN
     p_idempotency_key,
     production_order.id,
     item.id,
-    lot.id,
+    selected_lot.id,
     v_consumption_id,
     v_inventory_movement_id,
     v_scanned_lot_number,

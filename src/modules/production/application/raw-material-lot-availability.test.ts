@@ -7,8 +7,9 @@ const PRODUCTION_ORDER_ACTIONS =
 
 const PRODUCTION_LOTS = './production-lot.ts';
 
-const PRODUCTION_MOVEMENTS =
-  './production-movements.ts';
+const PRODUCTION_CONSUMPTION =
+  '../../../../supabase/migrations/' +
+  '20260928020000_harden_production_material_consumption.sql';
 
 function source(path: string): string {
   return readFileSync(
@@ -25,26 +26,23 @@ function occurrences(
 }
 
   it('impide consumir un lote que no esté disponible', () => {
-    const movements = source(
-      PRODUCTION_MOVEMENTS,
-    );
+  const consumption = source(
+    PRODUCTION_CONSUMPTION,
+  );
 
-    expect(movements).toContain(
-      ".eq('status', 'available')",
-    );
-
-    expect(movements).toContain(
-      ".select('id')",
-    );
-
-    expect(movements).toContain(
-      '.maybeSingle()',
-    );
-
-    expect(movements).toContain(
-      'if (!data)',
-    );
-  });
+  expect(consumption).toContain(
+    "lot.status = 'available'",
+  );
+  expect(consumption).toContain(
+    'lot.quantity > 0',
+  );
+  expect(consumption).toContain(
+    'lot.expiration_date >= CURRENT_DATE',
+  );
+  expect(consumption).toContain(
+    'FOR UPDATE',
+  );
+});
 
 describe('disponibilidad de lotes de materia prima', () => {
   it('excluye cuarentena de la validación de stock', () => {

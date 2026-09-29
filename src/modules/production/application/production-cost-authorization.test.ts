@@ -39,10 +39,27 @@ describe('autorización de costos de producción', () => {
   });
 
   it('captura costo unitario y total al registrar el consumo', () => {
-    const lot = source('src/modules/production/application/production-lot.ts');
-    const movement = source('src/modules/production/application/production-movements.ts');
-    expect(lot).toContain('unit_cost');
-    expect(movement).toContain('unit_cost:');
-    expect(movement).toContain('total_cost:');
-  });
+  const consumption = source(
+    'supabase/migrations/' +
+      '20260928020000_harden_production_material_consumption.sql',
+  );
+
+  const costs = source(
+    'supabase/migrations/' +
+      '20260914020000_harden_production_costs.sql',
+  );
+
+  expect(consumption).toContain(
+    'INSERT INTO public.production_order_consumptions',
+  );
+  expect(costs).toContain(
+    'CREATE TRIGGER snapshot_production_consumption_cost',
+  );
+  expect(costs).toContain(
+    'NEW.unit_cost := v_unit_cost;',
+  );
+  expect(costs).toContain(
+    'NEW.total_cost := round(',
+  );
 });
+})

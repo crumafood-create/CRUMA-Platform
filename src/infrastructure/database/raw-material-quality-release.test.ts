@@ -137,10 +137,11 @@ describe('liberación de calidad de materia prima', () => {
     );
 
     expect(packageJson).toContain(
-      'pnpm run db:test:quality && ' +
-        'pnpm run db:test:raw-material-quality && ' +
-        'pnpm run db:test:lots',
-    );
+  'pnpm run db:test:quality && ' +
+    'pnpm run db:test:raw-material-quality && ' +
+    'pnpm run db:test:production-consumption && ' +
+    'pnpm run db:test:lots',
+);
   });
 
   it('registra inspecciones de lotes en cuarentena', () => {

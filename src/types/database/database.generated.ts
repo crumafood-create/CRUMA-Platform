@@ -4637,6 +4637,98 @@ export type Database = {
           },
         ]
       }
+      production_material_consumption_operations: {
+        Row: {
+          consumed_by: string
+          consumed_quantity: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          inventory_movement_id: string
+          production_order_consumption_id: string
+          production_order_id: string
+          production_order_item_id: string
+          raw_material_lot_id: string
+          scanned_lot_number: string
+        }
+        Insert: {
+          consumed_by: string
+          consumed_quantity: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          inventory_movement_id: string
+          production_order_consumption_id: string
+          production_order_id: string
+          production_order_item_id: string
+          raw_material_lot_id: string
+          scanned_lot_number: string
+        }
+        Update: {
+          consumed_by?: string
+          consumed_quantity?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          inventory_movement_id?: string
+          production_order_consumption_id?: string
+          production_order_id?: string
+          production_order_item_id?: string
+          raw_material_lot_id?: string
+          scanned_lot_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_material_consumpti_production_order_consumption_fkey"
+            columns: ["production_order_consumption_id"]
+            isOneToOne: false
+            referencedRelation: "production_order_consumptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_material_consumption_o_production_order_item_id_fkey"
+            columns: ["production_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "production_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_material_consumption_oper_inventory_movement_id_fkey"
+            columns: ["inventory_movement_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_material_consumption_operat_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_material_consumption_operat_raw_material_lot_id_fkey"
+            columns: ["raw_material_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_material_consumption_operations_consumed_by_fkey"
+            columns: ["consumed_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "production_material_consumption_operations_consumed_by_fkey"
+            columns: ["consumed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_order_consumptions: {
         Row: {
           created_at: string
@@ -7767,6 +7859,14 @@ export type Database = {
         Returns: string
       }
       confirm_sales_order: { Args: { p_order_id: string }; Returns: string }
+      consume_production_material_fefo: {
+        Args: {
+          p_idempotency_key: string
+          p_production_order_item_id: string
+          p_scanned_lot_number: string
+        }
+        Returns: string
+      }
       convert_purchase_requisition_to_orders: {
         Args: { p_requisition_id: string }
         Returns: string[]

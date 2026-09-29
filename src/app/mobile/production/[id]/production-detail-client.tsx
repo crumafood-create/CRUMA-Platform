@@ -1,7 +1,11 @@
 "use client"
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { MobileScanner } from '@/modules/warehouse/components/mobile-scanner';
 import type { ProductionStatus } from '@/modules/production/domain/constants';
@@ -112,6 +116,9 @@ export default function ProductionDetailClient({
   const [isSaving, setIsSaving] =
     useState(false);
 
+  const idempotencyKeyRef =
+    useRef<string | null>(null);
+
   const currentItem =
     detail?.items.find(
       (item) =>
@@ -182,8 +189,9 @@ export default function ProductionDetailClient({
 
   }, [productionOrderId]);
 
-  useEffect(() => {
+    useEffect(() => {
     setScannedLot('');
+    idempotencyKeyRef.current = null;
   }, [currentItem?.id]);
 
   // ============================================================================
@@ -210,13 +218,24 @@ export default function ProductionDetailClient({
       return;
     }
 
+        const idempotencyKey =
+      idempotencyKeyRef.current ??
+      crypto.randomUUID();
+
+    idempotencyKeyRef.current =
+      idempotencyKey;
+
     setIsSaving(true);
     setGlobalError(null);
 
     try {
+           const idempotencyKey =
+        crypto.randomUUID();
+
       await confirmProductionItem(
         currentItem.id,
         code,
+        idempotencyKey,
       );
 
       await loadDetail();
@@ -227,6 +246,10 @@ export default function ProductionDetailClient({
           ? error.message
           : 'Error al confirmar consumo',
       );
+      await loadDetail();
+
+      idempotencyKeyRef.current = null;
+      setScannedLot('');
     } finally {
       setIsSaving(false);
     }
@@ -613,7 +636,7 @@ function CompletedState() {
       </div>
 
       <h2 className="mt-4 text-3xl font-bold text-green-900">
-        Producción Completada
+        Materiales consumidos
       </h2>
 
       <p className="mt-3 text-green-700">
@@ -621,7 +644,7 @@ function CompletedState() {
       </p>
 
       <p className="mt-2 text-sm text-green-600">
-        La orden quedó registrada y el producto terminado fue generado.
+        La orden está lista para registrar el producto terminado.
       </p>
 
       <Link

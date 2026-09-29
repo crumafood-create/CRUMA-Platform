@@ -124,7 +124,23 @@ describe('consumo transaccional de materia prima', () => {
     expect(migration).toContain(
       'UPDATE public.production_order_items',
     );
-  });
+    });
+    it('usa el registro FEFO fuera del alcance del alias SQL', () => {
+  const migration = normalizeSql(source());
+
+  expect(migration).toContain(
+    'SELECT lot.* INTO selected_lot',
+  );
+  expect(migration).toContain(
+    'IF upper(btrim(selected_lot.lot_number))',
+  );
+  expect(migration).toContain(
+    'WHERE id = selected_lot.id',
+  );
+  expect(migration).not.toContain(
+    'IF upper(btrim(lot.lot_number))',
+  );
+});
 
   it('restringe la RPC y las tablas de auditoría', () => {
     const migration = normalizeSql(source());

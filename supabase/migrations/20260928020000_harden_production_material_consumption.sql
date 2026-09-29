@@ -205,7 +205,7 @@ INTO selected_lot
       USING ERRCODE = '23514';
   END IF;
 
-  IF upper(btrim(lot.lot_number))
+  IF upper(btrim(selected_lot.lot_number))
        IS DISTINCT FROM v_scanned_lot_number THEN
     RAISE EXCEPTION
       'Scanned lot is not the next valid FEFO lot.'
@@ -276,7 +276,7 @@ INTO selected_lot
         ELSE 'available'
       END,
       updated_at = now()
-  WHERE id = lot.id;
+  WHERE id = selected_lot.id;
 
   UPDATE public.raw_materials
   SET current_stock =

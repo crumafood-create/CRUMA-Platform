@@ -23,7 +23,7 @@ describe('autorización de lotes producidos', () => {
   it('delega la escritura a una RPC autorizada', () => {
     const action = source('src/app/(admin)/lots/actions.ts');
     expect(action).toContain('PERMISSIONS.PRODUCTION_LOT_RELEASE');
-    expect(action).toContain('releaseProductionOutputToInventory(');
+    expect(action).toContain('releaseFinishedProductQualityToInventory(',);
     expect(action).not.toContain(".from('product_lots')");
     expect(action).not.toContain(".from('inventory_movements')");
   });

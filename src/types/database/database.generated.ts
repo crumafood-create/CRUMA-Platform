@@ -1591,6 +1591,124 @@ export type Database = {
           },
         ]
       }
+      finished_product_quality_release_operations: {
+        Row: {
+          created_at: string
+          expiration_date: string
+          id: string
+          idempotency_key: string
+          inventory_location_id: string
+          inventory_movement_id: string
+          lot_number: string
+          product_lot_id: string
+          production_output_id: string
+          quality_inspection_id: string
+          quality_release_decision_id: string
+          release_reason: string | null
+          released_at: string
+          released_by: string
+          warehouse_id: string
+        }
+        Insert: {
+          created_at?: string
+          expiration_date: string
+          id?: string
+          idempotency_key: string
+          inventory_location_id: string
+          inventory_movement_id: string
+          lot_number: string
+          product_lot_id: string
+          production_output_id: string
+          quality_inspection_id: string
+          quality_release_decision_id: string
+          release_reason?: string | null
+          released_at?: string
+          released_by: string
+          warehouse_id: string
+        }
+        Update: {
+          created_at?: string
+          expiration_date?: string
+          id?: string
+          idempotency_key?: string
+          inventory_location_id?: string
+          inventory_movement_id?: string
+          lot_number?: string
+          product_lot_id?: string
+          production_output_id?: string
+          quality_inspection_id?: string
+          quality_release_decision_id?: string
+          release_reason?: string | null
+          released_at?: string
+          released_by?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finished_product_quality_release_ope_quality_inspection_id_fkey"
+            columns: ["quality_inspection_id"]
+            isOneToOne: false
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_relea_quality_release_decision_id_fkey"
+            columns: ["quality_release_decision_id"]
+            isOneToOne: true
+            referencedRelation: "quality_release_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_oper_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: true
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_operations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: true
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_ope_inventory_movement_id_fkey"
+            columns: ["inventory_movement_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_operations_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_ope_inventory_location_id_fkey"
+            columns: ["inventory_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_operations_released_by_fkey"
+            columns: ["released_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_operations_released_by_fkey"
+            columns: ["released_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flavors: {
         Row: {
           created_at: string | null
@@ -8031,6 +8149,18 @@ export type Database = {
           p_payment_date: string
           p_payment_method: string
           p_reference: string
+        }
+        Returns: string
+      }
+      release_finished_product_quality_to_inventory: {
+        Args: {
+          p_expiration_date: string
+          p_idempotency_key: string
+          p_inspection_id: string
+          p_inventory_location_id: string
+          p_lot_number: string
+          p_reason: string
+          p_warehouse_id: string
         }
         Returns: string
       }

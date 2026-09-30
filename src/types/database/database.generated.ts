@@ -1645,17 +1645,31 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "finished_product_quality_release_ope_quality_inspection_id_fkey"
-            columns: ["quality_inspection_id"]
-            isOneToOne: false
-            referencedRelation: "quality_inspections"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "finished_product_quality_relea_quality_release_decision_id_fkey"
             columns: ["quality_release_decision_id"]
             isOneToOne: true
             referencedRelation: "quality_release_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_ope_inventory_location_id_fkey"
+            columns: ["inventory_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_ope_inventory_movement_id_fkey"
+            columns: ["inventory_movement_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_ope_quality_inspection_id_fkey"
+            columns: ["quality_inspection_id"]
+            isOneToOne: false
+            referencedRelation: "quality_inspections"
             referencedColumns: ["id"]
           },
           {
@@ -1669,28 +1683,21 @@ export type Database = {
             foreignKeyName: "finished_product_quality_release_operations_product_lot_id_fkey"
             columns: ["product_lot_id"]
             isOneToOne: true
-            referencedRelation: "product_lots"
-            referencedColumns: ["id"]
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
           },
           {
-            foreignKeyName: "finished_product_quality_release_ope_inventory_movement_id_fkey"
-            columns: ["inventory_movement_id"]
+            foreignKeyName: "finished_product_quality_release_operations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
             isOneToOne: true
-            referencedRelation: "inventory_movements"
+            referencedRelation: "inventory_product_lots_fefo"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "finished_product_quality_release_operations_warehouse_id_fkey"
-            columns: ["warehouse_id"]
-            isOneToOne: false
-            referencedRelation: "warehouses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "finished_product_quality_release_ope_inventory_location_id_fkey"
-            columns: ["inventory_location_id"]
-            isOneToOne: false
-            referencedRelation: "inventory_locations"
+            foreignKeyName: "finished_product_quality_release_operations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: true
+            referencedRelation: "product_lots"
             referencedColumns: ["id"]
           },
           {
@@ -1705,6 +1712,13 @@ export type Database = {
             columns: ["released_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_operations_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]

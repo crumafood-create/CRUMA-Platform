@@ -82,7 +82,7 @@ DECLARE
     'public.transition_sales_order(uuid,text,text)',
     'public.confirm_picking_item(uuid,text)',
     'public.release_production_output_to_inventory(uuid,text,date,uuid,uuid)',
-    'public.release_finished_product_quality_to_inventory(uuid,text,date,uuid,uuid,uuid,text)'
+    'public.release_finished_product_quality_to_inventory(uuid,text,date,uuid,uuid,uuid,text)',
     'public.deliver_sales_order(uuid)',
     'public.add_purchase_order_item(uuid,uuid,numeric,numeric)',
     'public.receive_purchase_order(uuid)',

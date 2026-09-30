@@ -387,9 +387,10 @@ export default async function QualityInspectionPage({
           ) : null}
 
           {decision.decision === 'release' &&
-          isRawMaterial ? (
+          !isRawMaterial ? (
             <p className="mt-4 text-sm text-green-700">
-              El lote está disponible en inventario.
+              El producto terminado está disponible
+              en inventario.
             </p>
           ) : null}
         </section>
@@ -400,7 +401,8 @@ export default async function QualityInspectionPage({
             'md:grid-cols-3'
           }
         >
-          {inspection.status === 'passed' && (
+                    {inspection.status === 'passed' &&
+          (isRawMaterial ? (
             <form
               action={decideAction.bind(
                 null,
@@ -428,7 +430,21 @@ export default async function QualityInspectionPage({
                 Liberar
               </button>
             </form>
-          )}
+          ) : (
+            <Link
+              href={
+                '/lots/release?inspection_id=' +
+                id
+              }
+              className={
+                'inline-flex items-center ' +
+                'justify-center rounded border ' +
+                'px-4 py-2'
+              }
+            >
+              Preparar liberación a inventario
+            </Link>
+          ))}
 
           {(['hold', 'reject'] as const).map(
             (decisionValue) => (

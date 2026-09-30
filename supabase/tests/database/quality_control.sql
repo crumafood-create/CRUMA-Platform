@@ -49,9 +49,36 @@ DO $test$ DECLARE inspection_id uuid; BEGIN
     '[{"criterion":"Apariencia","expected_value":"Uniforme","actual_value":"Uniforme","passed":true}]'::jsonb,
     '[]'::jsonb
   );
-  PERFORM public.decide_quality_release(inspection_id,'release','Cumple especificación');
+
   BEGIN
-    PERFORM public.decide_quality_release(inspection_id,'release','Duplicada');
+    PERFORM public.decide_quality_release(
+      inspection_id,
+      'release',
+      'Cumple especificación'
+    );
+    RAISE EXCEPTION
+      'fragmented finished product release unexpectedly succeeded';
+  EXCEPTION
+    WHEN invalid_parameter_value THEN
+      IF SQLERRM IS DISTINCT FROM
+        'Finished product release requires lot and inventory data.'
+      THEN
+        RAISE;
+      END IF;
+  END;
+
+  PERFORM public.decide_quality_release(
+    inspection_id,
+    'hold',
+    'Retenida para revisión'
+  );
+
+  BEGIN
+    PERFORM public.decide_quality_release(
+      inspection_id,
+      'hold',
+      'Duplicada'
+    );
     RAISE EXCEPTION 'quality decision was recorded twice';
   EXCEPTION WHEN unique_violation THEN NULL;
   END;
@@ -63,14 +90,22 @@ DO $test$ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM public.quality_inspections inspection
-    JOIN public.quality_release_decisions decision ON decision.inspection_id=inspection.id
-    JOIN public.production_outputs output ON output.id=inspection.production_output_id
-    WHERE inspection.status='passed' AND inspection.result='ok'
-      AND inspection.sampled_quantity=5 AND inspection.accepted_quantity=5
-      AND inspection.rejected_quantity=0 AND decision.decision='release'
-      AND decision.approved_by='d1000000-0000-0000-0000-000000000001'
-      AND output.quality_status='released'
-  ) THEN RAISE EXCEPTION 'quality release is inconsistent'; END IF;
+    JOIN public.quality_release_decisions decision
+      ON decision.inspection_id = inspection.id
+    JOIN public.production_outputs output
+      ON output.id = inspection.production_output_id
+    WHERE inspection.status = 'passed'
+      AND inspection.result = 'ok'
+      AND inspection.sampled_quantity = 5
+      AND inspection.accepted_quantity = 5
+      AND inspection.rejected_quantity = 0
+      AND decision.decision = 'hold'
+      AND decision.approved_by =
+        'd1000000-0000-0000-0000-000000000001'
+      AND output.quality_status = 'hold'
+  ) THEN
+    RAISE EXCEPTION 'quality hold is inconsistent';
+  END IF;
 END;
 $test$;
 

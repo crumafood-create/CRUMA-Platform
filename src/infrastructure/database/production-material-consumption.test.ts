@@ -214,6 +214,7 @@ describe('consumo transaccional de materia prima', () => {
   'pnpm run db:test:raw-material-quality && ' +
     'pnpm run db:test:production-consumption && ' +
     'pnpm run db:test:production-output && ' +
+    'pnpm run db:test:finished-product-release && ' +
     'pnpm run db:test:lots',
 );
     },

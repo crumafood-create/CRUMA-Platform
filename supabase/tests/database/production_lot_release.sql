@@ -45,17 +45,35 @@ INSERT INTO public.production_outputs(
  id,production_order_id,product_id,quantity_produced,quality_status
 ) VALUES
  ('ea000000-0000-0000-0000-000000000001','e8000000-0000-0000-0000-000000000001',
-  'e4000000-0000-0000-0000-000000000001',3,'released'),
+  'e4000000-0000-0000-0000-000000000001',3,'pending'),
  ('ea000000-0000-0000-0000-000000000002','e8000000-0000-0000-0000-000000000001',
-  'e4000000-0000-0000-0000-000000000001',4,'released');
+  'e4000000-0000-0000-0000-000000000001',4,'pending');
+
+INSERT INTO public.quality_inspections(
+ id,production_order_id,production_output_id,inspector_id,subject_type,
+ status,result,sampled_quantity,accepted_quantity,rejected_quantity
+) VALUES
+ ('ef000000-0000-0000-0000-000000000001',
+  'e8000000-0000-0000-0000-000000000001',
+  'ea000000-0000-0000-0000-000000000001',
+  'e1000000-0000-0000-0000-000000000001',
+  'production_output','passed','ok',3,3,0),
+ ('ef000000-0000-0000-0000-000000000002',
+  'e8000000-0000-0000-0000-000000000001',
+  'ea000000-0000-0000-0000-000000000002',
+  'e1000000-0000-0000-0000-000000000001',
+  'production_output','passed','ok',4,4,0);
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','e1000000-0000-0000-0000-000000000002',true);
 DO $test$ BEGIN
   BEGIN
-    PERFORM public.release_production_output_to_inventory(
-      'ea000000-0000-0000-0000-000000000001','PT-001','2099-01-01',
-      'e2000000-0000-0000-0000-000000000001','e3000000-0000-0000-0000-000000000001'
+    PERFORM public.release_finished_product_quality_to_inventory(
+      'ef000000-0000-0000-0000-000000000001','PT-001','2099-01-01',
+      'e2000000-0000-0000-0000-000000000001',
+      'e3000000-0000-0000-0000-000000000001',
+      'ef100000-0000-0000-0000-000000000001',
+      'Cumple especificación'
     );
     RAISE EXCEPTION 'normal user released a production lot';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
@@ -66,13 +84,19 @@ $test$;
 RESET ROLE;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','e1000000-0000-0000-0000-000000000001',true);
-SELECT public.release_production_output_to_inventory(
- 'ea000000-0000-0000-0000-000000000001','PT-001','2099-01-01',
- 'e2000000-0000-0000-0000-000000000001','e3000000-0000-0000-0000-000000000001'
+SELECT public.release_finished_product_quality_to_inventory(
+ 'ef000000-0000-0000-0000-000000000001','PT-001','2099-01-01',
+ 'e2000000-0000-0000-0000-000000000001',
+ 'e3000000-0000-0000-0000-000000000001',
+ 'ef100000-0000-0000-0000-000000000001',
+ 'Cumple especificación'
 );
-SELECT public.release_production_output_to_inventory(
- 'ea000000-0000-0000-0000-000000000002','PT-002','2099-02-01',
- 'e2000000-0000-0000-0000-000000000001','e3000000-0000-0000-0000-000000000001'
+SELECT public.release_finished_product_quality_to_inventory(
+ 'ef000000-0000-0000-0000-000000000002','PT-002','2099-02-01',
+ 'e2000000-0000-0000-0000-000000000001',
+ 'e3000000-0000-0000-0000-000000000001',
+ 'ef100000-0000-0000-0000-000000000002',
+ 'Cumple especificación'
 );
 
 RESET ROLE;

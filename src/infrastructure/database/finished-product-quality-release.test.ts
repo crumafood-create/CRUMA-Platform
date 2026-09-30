@@ -10,6 +10,10 @@ const MIGRATION =
   '../../../supabase/tests/database/' +
   'finished_product_quality_release.sql';
 
+const PRODUCTION_LOT_DATABASE_TEST =
+  '../../../supabase/tests/database/' +
+  'production_lot_release.sql';
+
 const FUNCTION_SECURITY =
   '../../../supabase/tests/database/' +
   'function_security.sql';
@@ -187,6 +191,10 @@ describe(
       'cierra las rutas fragmentadas anteriores',
       () => {
         const migration = normalizeSql(source());
+        const productionLotDatabaseTest =
+          normalizeSql(
+            file(PRODUCTION_LOT_DATABASE_TEST),
+          );
 
         expect(migration).toContain(
           "IF p_decision = 'release' THEN",
@@ -199,6 +207,15 @@ describe(
         expect(migration).toContain(
           'REVOKE ALL ON FUNCTION ' +
             'public.release_production_output_to_inventory(',
+        );
+
+        expect(productionLotDatabaseTest).not.toContain(
+          'public.release_production_output_to_inventory(',
+        );
+
+        expect(productionLotDatabaseTest).toContain(
+          'public.' +
+            'release_finished_product_quality_to_inventory(',
         );
       },
     );

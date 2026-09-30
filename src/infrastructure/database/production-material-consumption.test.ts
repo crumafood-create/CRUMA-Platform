@@ -211,10 +211,11 @@ describe('consumo transaccional de materia prima', () => {
       );
 
       expect(packageJson).toContain(
-        'pnpm run db:test:raw-material-quality && ' +
-          'pnpm run db:test:production-consumption && ' +
-          'pnpm run db:test:lots',
-      );
+  'pnpm run db:test:raw-material-quality && ' +
+    'pnpm run db:test:production-consumption && ' +
+    'pnpm run db:test:production-output && ' +
+    'pnpm run db:test:lots',
+);
     },
   );
 

@@ -4901,6 +4901,61 @@ export type Database = {
           },
         ]
       }
+      production_output_completion_operations: {
+        Row: {
+          completed_at: string
+          completed_by: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          produced_quantity: number
+          production_order_id: string
+          production_output_id: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          produced_quantity: number
+          production_order_id: string
+          production_output_id: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          produced_quantity?: number
+          production_order_id?: string
+          production_output_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_output_completion_operations_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_output_completion_operations_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_output_completion_operations_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: true
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_outputs: {
         Row: {
           batch_id: string | null
@@ -7853,6 +7908,14 @@ export type Database = {
       cancel_sales_invoice: {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: undefined
+      }
+      complete_production_output_quarantine: {
+        Args: {
+          p_idempotency_key: string
+          p_produced_quantity: number
+          p_production_order_id: string
+        }
+        Returns: string
       }
       confirm_picking_item: {
         Args: { p_lot_number: string; p_picking_item_id: string }

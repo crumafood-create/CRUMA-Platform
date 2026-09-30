@@ -9,6 +9,12 @@ import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import {
+  buildProductionOutputCompletionRequest,
+} from '@/modules/production/application/production-output-completion-contract';
+import {
+  completeProductionOutputToQuarantine,
+} from '@/modules/production/application/production-output-completion-repository';
+import {
   canCancelProductionOrder,
   calculateRequiredQuantity,
   sumAvailableStock,
@@ -16,8 +22,6 @@ import {
   type ProductionOrderState,
 } from '@/modules/production/application/production-order-contract';
 import {
-  INVENTORY_MOVEMENT,
-  INVENTORY_REFERENCE,
   PRODUCTION_STATUS,
 } from '@/modules/production/domain/constants';
 
@@ -129,39 +133,6 @@ async function validateRecipeStockAvailability(
   }
 
   return true;
-}
-
-/**
- * Registra un movimiento de inventario
- */
-async function createInventoryMovement(
-  supabase: TypedSupabaseClient,
-  movement: {
-    item_type: 'product' | 'raw_material';
-    item_id: string;
-    movement_type: 'entry' | 'exit' | 'adjustment' | 'transfer';
-    quantity: number;
-    reference_type: string;
-    reference_id: string;
-    notes?: string;
-  },
-) {
-  const { error } = await supabase.from('inventory_movements').insert({
-    item_type: movement.item_type,
-    item_id: movement.item_id,
-    movement_type: movement.movement_type,
-    quantity: movement.quantity,
-    reference_type: movement.reference_type,
-    reference_id: movement.reference_id,
-    notes: movement.notes || null,
-    created_at: new Date().toISOString(),
-  });
-
-  if (error) {
-    throw new Error(
-      `Error al registrar movimiento de inventario: ${error.message}`,
-    );
-  }
 }
 
 /**
@@ -348,107 +319,30 @@ export async function cancelProductionOrder(orderId: string) {
  * 3. Registra la entrada del producto terminado.
  * 4. Marca la orden como completada.
  */
-export async function completeProductionOrder(orderId: string) {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.PRODUCTION_ORDER_COMPLETE,
+export async function completeProductionOrder(
+  orderId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.PRODUCTION_ORDER_COMPLETE,
+    );
+
+  const request =
+    buildProductionOutputCompletionRequest({
+      productionOrderId: orderId,
+      producedQuantity: Number(
+        formData.get('produced_quantity'),
+      ),
+      idempotencyKey:
+        formData.get('idempotency_key'),
+    });
+
+  await completeProductionOutputToQuarantine(
+    supabase,
+    request,
   );
 
-  const order = await getProductionOrder(supabase, orderId);
-
-  if (order.production_status !== PRODUCTION_STATUS.IN_PROGRESS) {
-    throw new Error(
-      `No se puede completar una orden en estado ${order.production_status}`,
-    );
-  }
-
-  const { data: productionOrder, error: orderError } = await supabase
-    .from('production_orders')
-    .select('recipe_id')
-    .eq('id', orderId)
-    .single();
-
-  if (orderError || !productionOrder) {
-    throw new Error('No se pudo obtener la receta de la orden');
-  }
-
-  const { data: recipe, error: recipeError } = await supabase
-    .from('recipes')
-    .select('product_id')
-    .eq('id', productionOrder.recipe_id)
-    .single();
-
-  if (recipeError || !recipe?.product_id) {
-    throw new Error('La receta no tiene producto asociado');
-  }
-
-   const {
-    data: productionItem,
-    error: productionItemError,
-  } = await supabase
-    .from('production_order_items')
-    .select('id')
-    .eq('production_order_id', orderId)
-    .limit(1)
-    .maybeSingle();
-
-  if (productionItemError) {
-    throw new Error(
-      productionItemError.message,
-    );
-  }
-
-  if (!productionItem) {
-    throw new Error(
-      'La orden no tiene items de producción.',
-    );
-  }
-
-  const {
-    data: pendingProductionItem,
-    error: pendingProductionItemError,
-  } = await supabase
-    .from('production_order_items')
-    .select('id')
-    .eq('production_order_id', orderId)
-    .neq('status', 'completed')
-    .limit(1)
-    .maybeSingle();
-
-  if (pendingProductionItemError) {
-    throw new Error(
-      pendingProductionItemError.message,
-    );
-  }
-
-  if (pendingProductionItem) {
-    throw new Error(
-      'Todos los materiales deben estar consumidos antes de completar la orden.',
-    );
-  }
-
-  await createInventoryMovement(supabase, {
-    item_type: 'product',
-    item_id: recipe.product_id,
-    movement_type: INVENTORY_MOVEMENT.ENTRY,
-    quantity: Number(order.planned_quantity ?? 0),
-    reference_type: INVENTORY_REFERENCE.PRODUCTION_ORDER,
-    reference_id: orderId,
-    notes: 'Producción terminada',
-  });
-
-  const { error: updateError } = await supabase
-    .from('production_orders')
-    .update({
-      production_status: PRODUCTION_STATUS.COMPLETED,
-      produced_quantity: Number(order.planned_quantity ?? 0),
-      completed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', orderId);
-
-  if (updateError) {
-    throw new Error(updateError.message);
-  }
-
   revalidateProductionRoutes(orderId);
+  revalidatePath('/qa');
 }

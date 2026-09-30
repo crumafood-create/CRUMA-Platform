@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -29,6 +30,9 @@ type InventoryStockRow = {
   item_id: string | null;
   quantity: number | null;
 };
+
+const completionIdempotencyKey =
+  crypto.randomUUID();
 
 function getStatusLabel(status: string): string {
   switch (status) {
@@ -326,17 +330,42 @@ export default async function ProductionOrderPage({
         )}
 
         {order.production_status === 'in_progress' && (
-          <form
-            action={completeProductionOrder.bind(null, order.id)}
-          >
-            <button
-              type="submit"
-              className="rounded border px-4 py-2"
-            >
-              Completar Producción
-            </button>
-          </form>
+  <form
+    action={completeProductionOrder.bind(
+      null,
+      order.id,
+    )}
+    className="flex items-end gap-3"
+  >
+    <label className="text-sm">
+      Cantidad realmente producida
+      <input
+        name="produced_quantity"
+        type="number"
+        min="1"
+        step="1"
+        defaultValue={Number(
+          order.planned_quantity,
         )}
+        required
+        className="mt-1 block rounded border px-3 py-2"
+      />
+    </label>
+
+    <input
+      name="idempotency_key"
+      type="hidden"
+      value={completionIdempotencyKey}
+    />
+
+    <button
+      type="submit"
+      className="rounded border px-4 py-2"
+    >
+      Completar Producción
+    </button>
+  </form>
+)}
 
         {order.production_status !== 'completed' &&
           order.production_status !== 'cancelled' && (

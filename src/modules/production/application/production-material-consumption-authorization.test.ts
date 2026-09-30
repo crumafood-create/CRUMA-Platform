@@ -169,30 +169,26 @@ describe(
     );
 
     it(
-      'completa la orden únicamente después del consumo físico',
-      () => {
-        const action = actionSource(
-          ADMIN_ACTION,
-          'completeProductionOrder',
-        );
-
-        expect(action).not.toContain(
-          'consumeProductionItem(',
-        );
-
-        expect(action).not.toContain(
-          'getSuggestedRawMaterialLot(',
-        );
-
-        expect(action).toContain(
-          ".neq('status', 'completed')",
-        );
-
-        expect(action).toContain(
-          'Todos los materiales deben estar consumidos',
-        );
-      },
+  'delega el cierre y su validación a la transacción',
+  () => {
+    const action = actionSource(
+      ADMIN_ACTION,
+      'completeProductionOrder',
     );
+
+    expect(action).toContain(
+      'completeProductionOutputToQuarantine(',
+    );
+
+    expect(action).not.toContain(
+      ".from('production_order_items')",
+    );
+
+    expect(action).not.toContain(
+      'createInventoryMovement(',
+    );
+  },
+);
 
         it(
       'elimina las rutas hacia el servicio de escrituras fragmentadas',

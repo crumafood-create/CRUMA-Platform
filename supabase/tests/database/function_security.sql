@@ -30,7 +30,8 @@ DECLARE
     'public.decide_quality_release(uuid,text,text)',
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
-    'public.consume_production_material_fefo(uuid,text,uuid)'
+    'public.consume_production_material_fefo(uuid,text,uuid)',
+    'public.complete_production_output_quarantine(uuid,integer,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY hardened_functions LOOP
@@ -94,7 +95,8 @@ DECLARE
     'public.set_updated_at()',
     'public.sync_order_payment_status()',
     'public.update_order_timestamp()',
-    'public.consume_production_material_fefo(uuid,text,uuid)'
+    'public.consume_production_material_fefo(uuid,text,uuid)',
+    'public.complete_production_output_quarantine(uuid,integer,uuid)'
   ];
    authenticated_functions constant text[] := ARRAY[
     'public.create_production_order_items(uuid)',
@@ -113,7 +115,8 @@ DECLARE
     'public.decide_quality_release(uuid,text,text)',
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
-    'public.consume_production_material_fefo(uuid,text,uuid)'
+    'public.consume_production_material_fefo(uuid,text,uuid)',
+    'public.complete_production_output_quarantine(uuid,integer,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY all_functions LOOP
@@ -230,7 +233,8 @@ DECLARE
     'public.decide_quality_release(uuid,text,text)',
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
-    'public.consume_production_material_fefo(uuid,text,uuid)'
+    'public.consume_production_material_fefo(uuid,text,uuid)',
+    'public.complete_production_output_quarantine(uuid,integer,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY secured_functions LOOP

@@ -4934,24 +4934,31 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "production_output_completion_operations_completed_by_fkey"
-            columns: ["completed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            foreignKeyName: "production_output_completion_operatio_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: true
+            referencedRelation: "production_outputs"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "production_output_completion_operations_production_order_id_fkey"
+            foreignKeyName: "production_output_completion_operation_production_order_id_fkey"
             columns: ["production_order_id"]
             isOneToOne: false
             referencedRelation: "production_orders"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "production_output_completion_operations_production_output_id_fkey"
-            columns: ["production_output_id"]
-            isOneToOne: true
-            referencedRelation: "production_outputs"
+            foreignKeyName: "production_output_completion_operations_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "production_output_completion_operations_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

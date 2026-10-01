@@ -16,6 +16,13 @@ import {
   recordQualityInspection as persistQualityInspection,
   recordRawMaterialQualityInspection as persistRawMaterialQualityInspection,
 } from '@/modules/quality/application/quality-control-repository';
+import {
+  buildFinishedProductNonconformanceDispositionRequest,
+} from '@/modules/production/application/finished-product-nonconformance-disposition-contract';
+import {
+  disposeFinishedProductNonconformance as
+    persistFinishedProductNonconformanceDisposition,
+} from '@/modules/production/application/finished-product-nonconformance-disposition-repository';
 
 export async function recordQualityInspection(
   formData: FormData,
@@ -65,6 +72,31 @@ export async function decideQualityRelease(
 
   revalidatePath('/qa');
   revalidatePath(`/qa/${inspectionId}`);
+  revalidatePath('/production-orders');
+}
+
+export async function disposeFinishedProductNonconformance(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.QUALITY_RELEASE_DECIDE,
+    );
+
+  const request =
+    buildFinishedProductNonconformanceDispositionRequest(
+      formData,
+    );
+
+  await persistFinishedProductNonconformanceDisposition(
+    supabase,
+    request,
+  );
+
+  revalidatePath('/qa');
+  revalidatePath(
+    `/qa/${request.qualityInspectionId}`,
+  );
   revalidatePath('/production-orders');
 }
 

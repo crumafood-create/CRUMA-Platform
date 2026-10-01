@@ -17,8 +17,8 @@ const FUNCTION_SECURITY =
   'function_security.sql';
 
 const FUNCTION_SIGNATURE =
-  'public.complete_production_output_quarantine' +
-  '(uuid,integer,uuid)';
+  'public.complete_production_yield_to_quarantine' +
+  '(uuid,integer,integer,text,uuid)';
 
 function source(path: string = MIGRATION): string {
   return readFileSync(
@@ -215,7 +215,7 @@ describe(
     expect(databaseTest).toContain('BEGIN;');
 
     expect(databaseTest).toContain(
-      'SELECT public.complete_production_output_quarantine(',
+      'SELECT public.complete_production_yield_to_quarantine(',
     );
 
     expect(databaseTest).toContain(
@@ -242,6 +242,7 @@ describe(
     expect(packageJson).toContain(
       'pnpm run db:test:production-consumption && ' +
         'pnpm run db:test:production-output && ' +
+        'pnpm run db:test:production-yield && ' +
         'pnpm run db:test:finished-product-release && ' +
         'pnpm run db:test:lots',
     );

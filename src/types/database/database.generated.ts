@@ -5040,9 +5040,12 @@ export type Database = {
           created_at: string
           id: string
           idempotency_key: string
+          planned_quantity: number
           produced_quantity: number
           production_order_id: string
           production_output_id: string
+          variance_reason: string | null
+          waste_quantity: number
         }
         Insert: {
           completed_at?: string
@@ -5050,9 +5053,12 @@ export type Database = {
           created_at?: string
           id?: string
           idempotency_key: string
+          planned_quantity: number
           produced_quantity: number
           production_order_id: string
           production_output_id: string
+          variance_reason?: string | null
+          waste_quantity: number
         }
         Update: {
           completed_at?: string
@@ -5060,9 +5066,12 @@ export type Database = {
           created_at?: string
           id?: string
           idempotency_key?: string
+          planned_quantity?: number
           produced_quantity?: number
           production_order_id?: string
           production_output_id?: string
+          variance_reason?: string | null
+          waste_quantity?: number
         }
         Relationships: [
           {
@@ -8053,6 +8062,16 @@ export type Database = {
           p_idempotency_key: string
           p_produced_quantity: number
           p_production_order_id: string
+        }
+        Returns: string
+      }
+      complete_production_yield_to_quarantine: {
+        Args: {
+          p_idempotency_key: string
+          p_produced_quantity: number
+          p_production_order_id: string
+          p_variance_reason: string
+          p_waste_quantity: number
         }
         Returns: string
       }

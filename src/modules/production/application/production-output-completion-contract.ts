@@ -4,6 +4,8 @@ const UUID_PATTERN =
 export type ProductionOutputCompletionInput = {
   productionOrderId: unknown;
   producedQuantity: unknown;
+  wasteQuantity: unknown;
+  varianceReason: unknown;
   idempotencyKey: unknown;
 };
 
@@ -11,6 +13,8 @@ export type ProductionOutputCompletionRequest =
   Readonly<{
     productionOrderId: string;
     producedQuantity: number;
+    wasteQuantity: number;
+    varianceReason: string | null;
     idempotencyKey: string;
   }>;
 
@@ -49,6 +53,65 @@ function positiveInteger(
   return value;
 }
 
+function nonNegativeInteger(
+  value: unknown,
+): number {
+  if (
+    typeof value !== 'number' ||
+    !Number.isInteger(value) ||
+    value < 0
+  ) {
+    throw new Error(
+      'La cantidad de merma debe ser un entero no negativo.',
+    );
+  }
+
+  return value;
+}
+
+function normalizeVarianceReason(
+  value: unknown,
+  wasteQuantity: number,
+): string | null {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    if (wasteQuantity > 0) {
+      throw new Error(
+        'El motivo de la variación es obligatorio cuando existe merma.',
+      );
+    }
+
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error(
+      'El motivo de la variación no es válido.',
+    );
+  }
+
+  const normalized = value.trim();
+
+  if (
+    normalized.length === 0 &&
+    wasteQuantity > 0
+  ) {
+    throw new Error(
+      'El motivo de la variación es obligatorio cuando existe merma.',
+    );
+  }
+
+  if (normalized.length > 500) {
+    throw new Error(
+      'El motivo de la variación no puede exceder 500 caracteres.',
+    );
+  }
+
+  return normalized || null;
+}
+
 export function buildProductionOutputCompletionRequest(
   input: ProductionOutputCompletionInput,
 ): ProductionOutputCompletionRequest {
@@ -58,8 +121,18 @@ export function buildProductionOutputCompletionRequest(
   );
 
   const producedQuantity = positiveInteger(
-  input.producedQuantity,
-);
+    input.producedQuantity,
+  );
+
+  const wasteQuantity = nonNegativeInteger(
+    input.wasteQuantity,
+  );
+
+  const varianceReason =
+    normalizeVarianceReason(
+      input.varianceReason,
+      wasteQuantity,
+    );
 
   const idempotencyKey = requiredUuid(
     input.idempotencyKey,
@@ -69,6 +142,8 @@ export function buildProductionOutputCompletionRequest(
   return Object.freeze({
     productionOrderId,
     producedQuantity,
+    wasteQuantity,
+    varianceReason,
     idempotencyKey,
   });
 }

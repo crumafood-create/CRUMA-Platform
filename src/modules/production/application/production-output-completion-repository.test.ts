@@ -12,6 +12,8 @@ const REQUEST = {
   productionOrderId:
     '11111111-1111-4111-8111-111111111111',
   producedQuantity: 87,
+  wasteQuantity: 13,
+  varianceReason: 'Merma por recorte',
   idempotencyKey:
     '33333333-3333-4333-8333-333333333333',
 };
@@ -49,7 +51,7 @@ describe(
 
         expect(calls).toEqual([
           [
-            'complete_production_output_quarantine',
+            'complete_production_yield_to_quarantine',
             {
               p_idempotency_key:
                 REQUEST.idempotencyKey,
@@ -57,6 +59,56 @@ describe(
                 REQUEST.producedQuantity,
               p_production_order_id:
                 REQUEST.productionOrderId,
+              p_variance_reason:
+                REQUEST.varianceReason,
+              p_waste_quantity:
+                REQUEST.wasteQuantity,
+            },
+          ],
+        ]);
+      },
+    );
+
+    it(
+      'normaliza un motivo ausente para la RPC',
+      async () => {
+        const calls: unknown[] = [];
+
+        const client = {
+          rpc: async (
+            ...args: unknown[]
+          ) => {
+            calls.push(args);
+
+            return {
+              data:
+                '44444444-4444-4444-8444-444444444444',
+              error: null,
+            };
+          },
+        } as unknown as TypedSupabaseClient;
+
+        await completeProductionOutputToQuarantine(
+          client,
+          {
+            ...REQUEST,
+            wasteQuantity: 0,
+            varianceReason: null,
+          },
+        );
+
+        expect(calls).toEqual([
+          [
+            'complete_production_yield_to_quarantine',
+            {
+              p_idempotency_key:
+                REQUEST.idempotencyKey,
+              p_produced_quantity:
+                REQUEST.producedQuantity,
+              p_production_order_id:
+                REQUEST.productionOrderId,
+              p_variance_reason: '',
+              p_waste_quantity: 0,
             },
           ],
         ]);

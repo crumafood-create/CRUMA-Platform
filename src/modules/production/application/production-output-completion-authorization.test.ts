@@ -114,6 +114,14 @@ describe(
         );
 
         expect(action).toContain(
+          "formData.get('waste_quantity')",
+        );
+
+        expect(action).toContain(
+          "formData.get('variance_reason')",
+        );
+
+        expect(action).toContain(
           'completeProductionOutputToQuarantine(',
         );
       },
@@ -146,7 +154,7 @@ describe(
     );
 
     it(
-      'captura rendimiento real e idempotencia en el formulario',
+      'captura producción, merma, motivo e idempotencia en el formulario',
       () => {
         const page = source(
           DETAIL_PAGE,
@@ -154,6 +162,14 @@ describe(
 
         expect(page).toContain(
           'name="produced_quantity"',
+        );
+
+        expect(page).toContain(
+          'name="waste_quantity"',
+        );
+
+        expect(page).toContain(
+          'name="variance_reason"',
         );
 
         expect(page).toContain(

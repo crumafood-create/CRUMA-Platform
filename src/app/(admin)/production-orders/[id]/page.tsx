@@ -330,42 +330,69 @@ export default async function ProductionOrderPage({
         )}
 
         {order.production_status === 'in_progress' && (
-  <form
-    action={completeProductionOrder.bind(
-      null,
-      order.id,
-    )}
-    className="flex items-end gap-3"
-  >
-    <label className="text-sm">
-      Cantidad realmente producida
-      <input
-        name="produced_quantity"
-        type="number"
-        min="1"
-        step="1"
-        defaultValue={Number(
-          order.planned_quantity,
+          <form
+            action={completeProductionOrder.bind(
+              null,
+              order.id,
+            )}
+            className="grid gap-4 rounded-xl border p-4 md:grid-cols-2"
+          >
+            <label className="text-sm">
+              Cantidad realmente producida
+              <input
+                name="produced_quantity"
+                type="number"
+                min="1"
+                step="1"
+                defaultValue={Number(
+                  order.planned_quantity,
+                )}
+                required
+                className="mt-1 block w-full rounded border px-3 py-2"
+              />
+            </label>
+
+            <label className="text-sm">
+              Cantidad de merma
+              <input
+                name="waste_quantity"
+                type="number"
+                min="0"
+                step="1"
+                defaultValue={0}
+                required
+                className="mt-1 block w-full rounded border px-3 py-2"
+              />
+            </label>
+
+            <label className="text-sm md:col-span-2">
+              Motivo de la variación
+              <textarea
+                name="variance_reason"
+                rows={3}
+                maxLength={500}
+                placeholder="Obligatorio cuando exista merma o sobreproducción"
+                className="mt-1 block w-full rounded border px-3 py-2"
+              />
+              <span className="mt-1 block text-xs text-gray-500">
+                Déjalo vacío únicamente cuando la producción coincida con el rendimiento planeado.
+              </span>
+            </label>
+
+            <input
+              name="idempotency_key"
+              type="hidden"
+              value={completionIdempotencyKey}
+            />
+
+            <button
+              type="submit"
+              className="rounded border px-4 py-2 md:col-span-2"
+            >
+              Conciliar y completar producción
+            </button>
+          </form>
         )}
-        required
-        className="mt-1 block rounded border px-3 py-2"
-      />
-    </label>
-
-    <input
-      name="idempotency_key"
-      type="hidden"
-      value={completionIdempotencyKey}
-    />
-
-    <button
-      type="submit"
-      className="rounded border px-4 py-2"
-    >
-      Completar Producción
-    </button>
-  </form>
-)}
 
         {order.production_status !== 'completed' &&
           order.production_status !== 'cancelled' && (

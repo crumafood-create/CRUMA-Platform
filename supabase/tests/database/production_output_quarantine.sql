@@ -170,9 +170,11 @@ SELECT set_config(
 DO $test$
 BEGIN
   BEGIN
-    PERFORM public.complete_production_output_quarantine(
+    PERFORM public.complete_production_yield_to_quarantine(
       'fc500000-0000-0000-0000-000000000001',
       8,
+      2,
+      'Merma de producción conciliada',
       'fc700000-0000-4000-8000-000000000001'
     );
 
@@ -195,15 +197,19 @@ SELECT set_config(
 );
 
 -- La operación exacta es idempotente.
-SELECT public.complete_production_output_quarantine(
+SELECT public.complete_production_yield_to_quarantine(
   'fc500000-0000-0000-0000-000000000001',
   8,
+  2,
+  'Merma de producción conciliada',
   'fc700000-0000-4000-8000-000000000001'
 );
 
-SELECT public.complete_production_output_quarantine(
+SELECT public.complete_production_yield_to_quarantine(
   'fc500000-0000-0000-0000-000000000001',
   8,
+  2,
+  'Merma de producción conciliada',
   'fc700000-0000-4000-8000-000000000001'
 );
 
@@ -211,9 +217,11 @@ SELECT public.complete_production_output_quarantine(
 DO $test$
 BEGIN
   BEGIN
-    PERFORM public.complete_production_output_quarantine(
+    PERFORM public.complete_production_yield_to_quarantine(
       'fc500000-0000-0000-0000-000000000001',
       7,
+      3,
+      'Datos diferentes',
       'fc700000-0000-4000-8000-000000000001'
     );
 
@@ -230,9 +238,11 @@ $test$;
 DO $test$
 BEGIN
   BEGIN
-    PERFORM public.complete_production_output_quarantine(
+    PERFORM public.complete_production_yield_to_quarantine(
       'fc500000-0000-0000-0000-000000000002',
       5,
+      0,
+      NULL,
       'fc700000-0000-4000-8000-000000000002'
     );
 
@@ -301,7 +311,11 @@ BEGIN
     FROM public.production_output_completion_operations
     WHERE production_order_id =
       'fc500000-0000-0000-0000-000000000001'
+      AND planned_quantity = 10
       AND produced_quantity = 8
+      AND waste_quantity = 2
+      AND variance_reason =
+        'Merma de producción conciliada'
       AND completed_by =
         'fc100000-0000-0000-0000-000000000001'
   ) THEN

@@ -328,12 +328,22 @@ export async function completeProductionOrder(
       PERMISSIONS.PRODUCTION_ORDER_COMPLETE,
     );
 
+  const wasteQuantity =
+    formData.get('waste_quantity');
+
   const request =
     buildProductionOutputCompletionRequest({
       productionOrderId: orderId,
       producedQuantity: Number(
         formData.get('produced_quantity'),
       ),
+      wasteQuantity:
+        typeof wasteQuantity === 'string' &&
+        wasteQuantity.trim() !== ''
+          ? Number(wasteQuantity)
+          : wasteQuantity,
+      varianceReason:
+        formData.get('variance_reason'),
       idempotencyKey:
         formData.get('idempotency_key'),
     });

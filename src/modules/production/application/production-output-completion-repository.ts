@@ -11,7 +11,7 @@ export async function completeProductionOutputToQuarantine(
   request: ProductionOutputCompletionRequest,
 ): Promise<string> {
   const { data, error } = await supabase.rpc(
-    'complete_production_output_quarantine',
+    'complete_production_yield_to_quarantine',
     {
       p_idempotency_key:
         request.idempotencyKey,
@@ -19,6 +19,10 @@ export async function completeProductionOutputToQuarantine(
         request.producedQuantity,
       p_production_order_id:
         request.productionOrderId,
+      p_variance_reason:
+        request.varianceReason ?? '',
+      p_waste_quantity:
+        request.wasteQuantity,
     },
   );
 

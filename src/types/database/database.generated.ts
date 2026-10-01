@@ -1591,6 +1591,94 @@ export type Database = {
           },
         ]
       }
+      finished_product_nonconformance_disposition_operations: {
+        Row: {
+          created_at: string
+          disposed_at: string
+          disposed_by: string
+          disposed_quantity: number
+          disposition: string
+          id: string
+          idempotency_key: string
+          production_output_id: string
+          quality_inspection_id: string
+          quality_release_decision_id: string
+          reason: string
+          rework_production_order_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          disposed_at?: string
+          disposed_by: string
+          disposed_quantity: number
+          disposition: string
+          id?: string
+          idempotency_key: string
+          production_output_id: string
+          quality_inspection_id: string
+          quality_release_decision_id: string
+          reason: string
+          rework_production_order_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          disposed_at?: string
+          disposed_by?: string
+          disposed_quantity?: number
+          disposition?: string
+          id?: string
+          idempotency_key?: string
+          production_output_id?: string
+          quality_inspection_id?: string
+          quality_release_decision_id?: string
+          reason?: string
+          rework_production_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finished_product_nonconformance_disp_quality_inspection_id_fkey"
+            columns: ["quality_inspection_id"]
+            isOneToOne: true
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_nonconformanc_quality_release_decision_id_fkey"
+            columns: ["quality_release_decision_id"]
+            isOneToOne: true
+            referencedRelation: "quality_release_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_nonconformance_dispo_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: true
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_nonconformance_rework_production_order_id_fkey"
+            columns: ["rework_production_order_id"]
+            isOneToOne: true
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_nonconformance_disposition_op_disposed_by_fkey"
+            columns: ["disposed_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "finished_product_nonconformance_disposition_op_disposed_by_fkey"
+            columns: ["disposed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finished_product_quality_release_operations: {
         Row: {
           created_at: string
@@ -8128,6 +8216,15 @@ export type Database = {
         Returns: undefined
       }
       deliver_sales_order: { Args: { p_order_id: string }; Returns: string }
+      dispose_finished_product_nonconformance: {
+        Args: {
+          p_disposition: string
+          p_idempotency_key: string
+          p_inspection_id: string
+          p_reason: string
+        }
+        Returns: string
+      }
       generate_purchase_requisition_number: { Args: never; Returns: string }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
       issue_sales_invoice: {

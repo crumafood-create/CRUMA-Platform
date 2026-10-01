@@ -8,6 +8,7 @@ import {
 import {
   decideQualityRelease,
   decideRawMaterialQualityRelease,
+  disposeFinishedProductNonconformance,
 } from '../actions';
 
 const statusLabel: Record<string, string> = {
@@ -22,6 +23,11 @@ const decisionLabel: Record<string, string> = {
   release: 'Liberado',
   hold: 'Retenido',
   reject: 'Rechazado',
+};
+
+const dispositionLabel: Record<string, string> = {
+  scrap: 'Descarte',
+  rework: 'Retrabajo',
 };
 
 export default async function QualityInspectionPage({
@@ -90,6 +96,7 @@ export default async function QualityInspectionPage({
     { data: items },
     { data: defects },
     { data: decision },
+    { data: disposition },
   ] = await Promise.all([
     supabase
       .from('quality_inspection_items')
@@ -126,7 +133,22 @@ export default async function QualityInspectionPage({
       `)
       .eq('inspection_id', id)
       .maybeSingle(),
+
+    supabase
+      .from('finished_product_nonconformance_disposition_operations')
+      .select(`
+        id,
+        disposition,
+        reason,
+        rework_production_order_id,
+        disposed_at
+      `)
+      .eq('quality_inspection_id', id)
+      .maybeSingle(),
   ]);
+
+  const dispositionIdempotencyKey =
+    crypto.randomUUID();
 
   const isRawMaterial =
     inspection.subject_type === 'raw_material_lot';
@@ -369,6 +391,43 @@ export default async function QualityInspectionPage({
               'Sin observaciones'}
           </p>
 
+          {disposition ? (
+            <div
+              className={
+                'mt-4 rounded border ' +
+                'border-amber-300 p-4'
+              }
+            >
+              <strong>
+                Disposición:{' '}
+                {dispositionLabel[
+                  disposition.disposition
+                ] ?? disposition.disposition}
+              </strong>
+
+              <p className="text-sm text-gray-500">
+                {disposition.reason}
+              </p>
+
+              {disposition
+                .rework_production_order_id ? (
+                <Link
+                  href={
+                    '/production-orders/' +
+                    disposition
+                      .rework_production_order_id
+                  }
+                  className={
+                    'mt-3 inline-flex rounded ' +
+                    'border px-4 py-2'
+                  }
+                >
+                  Ver orden de retrabajo
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+
           {decision.decision === 'release' &&
           !isRawMaterial &&
           inspection.production_outputs?.id ? (
@@ -401,7 +460,7 @@ export default async function QualityInspectionPage({
             'md:grid-cols-3'
           }
         >
-                    {inspection.status === 'passed' &&
+          {inspection.status === 'passed' &&
           (isRawMaterial ? (
             <form
               action={decideAction.bind(
@@ -446,41 +505,137 @@ export default async function QualityInspectionPage({
             </Link>
           ))}
 
-          {(['hold', 'reject'] as const).map(
-            (decisionValue) => (
-              <form
-                key={decisionValue}
-                action={decideAction.bind(
-                  null,
-                  id,
-                  decisionValue,
-                )}
-                className="space-y-2"
+          <form
+            action={decideAction.bind(
+              null,
+              id,
+              'hold',
+            )}
+            className="space-y-2"
+          >
+            <input
+              name="reason"
+              placeholder="Motivo obligatorio"
+              required
+              className={
+                'w-full rounded border ' +
+                'px-3 py-2'
+              }
+            />
+
+            <button
+              type="submit"
+              className={
+                'w-full rounded border ' +
+                'px-4 py-2'
+              }
+            >
+              Retener
+            </button>
+          </form>
+
+          {isRawMaterial ? (
+            <form
+              action={decideRawMaterialQualityRelease.bind(
+                null,
+                id,
+                'reject',
+              )}
+              className="space-y-2"
+            >
+              <input
+                name="reason"
+                placeholder="Motivo obligatorio"
+                required
+                className={
+                  'w-full rounded border ' +
+                  'px-3 py-2'
+                }
+              />
+
+              <button
+                type="submit"
+                className={
+                  'w-full rounded border ' +
+                  'border-red-300 px-4 py-2'
+                }
               >
-                <input
+                Rechazar
+              </button>
+            </form>
+          ) : null}
+
+          {!isRawMaterial &&
+          ['hold', 'failed'].includes(
+            inspection.status,
+          ) &&
+          (inspection.result === 'rework' ||
+            inspection.result === 'reject') ? (
+            <form
+              action={
+                disposeFinishedProductNonconformance
+              }
+              className={
+                'space-y-3 rounded border ' +
+                'border-amber-300 p-4 ' +
+                'md:col-span-2'
+              }
+            >
+              <input
+                type="hidden"
+                name="quality_inspection_id"
+                value={id}
+              />
+
+              <input
+                type="hidden"
+                name="idempotency_key"
+                value={
+                  dispositionIdempotencyKey
+                }
+              />
+
+              <label className="block text-sm">
+                Motivo de la disposición
+
+                <textarea
                   name="reason"
-                  placeholder="Motivo obligatorio"
                   required
+                  maxLength={500}
                   className={
-                    'w-full rounded border ' +
-                    'px-3 py-2'
+                    'mt-1 min-h-24 w-full ' +
+                    'rounded border px-3 py-2'
                   }
                 />
+              </label>
+
+              <div className="grid gap-2 md:grid-cols-2">
+                <button
+                  type="submit"
+                  name="disposition"
+                  value="scrap"
+                  className={
+                    'rounded border ' +
+                    'border-red-400 px-4 py-2'
+                  }
+                >
+                  Descarte
+                </button>
 
                 <button
                   type="submit"
+                  name="disposition"
+                  value="rework"
                   className={
-                    'w-full rounded border ' +
-                    'border-red-300 px-4 py-2'
+                    'rounded border ' +
+                    'border-amber-500 px-4 py-2'
                   }
                 >
-                  {decisionValue === 'hold'
-                    ? 'Retener'
-                    : 'Rechazar'}
+                  Retrabajo
                 </button>
-              </form>
-            ),
-          )}
+              </div>
+            </form>
+          ) : null}
         </section>
       )}
     </main>

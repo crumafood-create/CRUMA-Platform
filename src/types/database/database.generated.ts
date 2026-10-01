@@ -1636,13 +1636,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "finished_product_nonconformance_disp_quality_inspection_id_fkey"
-            columns: ["quality_inspection_id"]
-            isOneToOne: true
-            referencedRelation: "quality_inspections"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "finished_product_nonconformanc_quality_release_decision_id_fkey"
             columns: ["quality_release_decision_id"]
             isOneToOne: true
@@ -1650,17 +1643,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "finished_product_nonconformance_disp_quality_inspection_id_fkey"
+            columns: ["quality_inspection_id"]
+            isOneToOne: true
+            referencedRelation: "quality_inspections"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "finished_product_nonconformance_dispo_production_output_id_fkey"
             columns: ["production_output_id"]
             isOneToOne: true
             referencedRelation: "production_outputs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "finished_product_nonconformance_rework_production_order_id_fkey"
-            columns: ["rework_production_order_id"]
-            isOneToOne: true
-            referencedRelation: "production_orders"
             referencedColumns: ["id"]
           },
           {
@@ -1675,6 +1668,13 @@ export type Database = {
             columns: ["disposed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finished_product_nonconformance_rework_production_order_id_fkey"
+            columns: ["rework_production_order_id"]
+            isOneToOne: true
+            referencedRelation: "production_orders"
             referencedColumns: ["id"]
           },
         ]

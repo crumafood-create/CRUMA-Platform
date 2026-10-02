@@ -6,13 +6,12 @@ import { revalidatePath } from 'next/cache';
 
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
-
-function generateProductionNumber(): string {
-  const day = new Date().toISOString().slice(0, 10).replaceAll('-', '');
-  const suffix = crypto.randomUUID().slice(0, 6).toUpperCase();
-
-  return `OP-${day}-${suffix}`;
-}
+import {
+  buildProductionOrderCreationRequest,
+} from '@/modules/production/application/production-order-lifecycle-contract';
+import {
+  createProductionOrderDraft,
+} from '@/modules/production/application/production-order-lifecycle-repository';
 
 export async function calculateDemandForecasts() {
   const { supabase } = await requireTypedAuthorizedAction(
@@ -136,79 +135,65 @@ export async function calculateDemandForecasts() {
   revalidatePath('/demand-forecasts');
 }
 
-export async function createProductionOrderFromForecast(productId: string) {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.PRODUCTION_ORDER_CREATE,
-  );
+export async function createProductionOrderFromForecast(
+  productId: string,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.PRODUCTION_ORDER_CREATE,
+    );
 
-  //
-  // Pronóstico
-  //
-  const { data: forecast, error: forecastError } = await supabase
-    .from('demand_forecasts')
-    .select('*')
-    .eq('product_id', productId)
-    .single();
+  const { data: forecast, error: forecastError } =
+    await supabase
+      .from('demand_forecasts')
+      .select('suggested_production')
+      .eq('product_id', productId)
+      .single();
 
   if (forecastError || !forecast) {
     throw new Error(
-      forecastError?.message ?? 'Pronóstico no encontrado'
+      forecastError?.message ??
+        'Pronóstico no encontrado',
     );
   }
 
-  const quantity = Number(forecast.suggested_production ?? 0);
+  const plannedQuantity = Math.ceil(
+    Number(forecast.suggested_production ?? 0),
+  );
 
-  if (quantity <= 0) {
-    throw new Error('No hay producción sugerida.');
+  if (plannedQuantity <= 0) {
+    throw new Error(
+      'No hay producción sugerida.',
+    );
   }
 
-  //
-  // Buscar receta activa
-  //
-  const { data: recipe, error: recipeError } = await supabase
-    .from('recipes')
-    .select(`
-      id,
-      name
-    `)
-    .eq('product_id', productId)
-    .eq('is_active', true)
-    .single();
+  const { data: recipe, error: recipeError } =
+    await supabase
+      .from('recipes')
+      .select('id')
+      .eq('product_id', productId)
+      .eq('is_active', true)
+      .single();
 
   if (recipeError || !recipe) {
-    throw new Error('El producto no tiene receta activa.');
-  }
-
-  //
-  // Crear orden
-  //
-  const { data: productionOrder, error: productionError } = await supabase
-    .from('production_orders')
-    .insert({
-      recipe_id: recipe.id,
-      production_number: generateProductionNumber(),
-      planned_quantity: quantity,
-      produced_quantity: 0,
-      production_status: 'draft',
-      notes: 'Generada desde Forecast',
-    })
-    .select('id')
-    .single();
-
-  if (productionError || !productionOrder) {
     throw new Error(
-      productionError?.message ?? 'No fue posible crear la orden.',
+      'El producto no tiene receta activa.',
     );
   }
 
-  const { error: itemsError } = await supabase
-    .rpc('create_production_order_items', {
-      p_production_order_id: productionOrder.id,
+  const request =
+    buildProductionOrderCreationRequest({
+      recipeId: recipe.id,
+      plannedQuantity,
+      notes: 'Generada desde Forecast',
+      idempotencyKey:
+        crypto.randomUUID(),
     });
 
-  if (itemsError) {
-    throw new Error(itemsError.message);
-  }
+  await createProductionOrderDraft(
+    supabase,
+    request,
+  );
 
   revalidatePath('/production-orders');
   revalidatePath('/demand-forecasts');

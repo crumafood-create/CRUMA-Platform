@@ -30,10 +30,29 @@ describe('autorización de forecast', () => {
     expect(body).toContain(`PERMISSIONS.${permission}`);
   });
 
-  it('crea una orden identificable y genera sus partidas de receta', () => {
-    const body = actionSource('createProductionOrderFromForecast');
+  it(
+    'crea la orden y sus partidas mediante la RPC atómica',
+    () => {
+      const body = actionSource(
+        'createProductionOrderFromForecast',
+      );
 
-    expect(body).toContain('production_number: generateProductionNumber()');
-    expect(body).toContain(".rpc('create_production_order_items'");
-  });
+      expect(body).toContain(
+        'buildProductionOrderCreationRequest(',
+      );
+
+      expect(body).toContain(
+        'createProductionOrderDraft(',
+      );
+
+      expect(body).not.toContain(
+        ".from('production_orders')",
+      );
+
+      expect(body).not.toContain(
+        'create_production_order_items',
+      );
+    },
+  );
+
 });

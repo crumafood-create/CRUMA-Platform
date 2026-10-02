@@ -8480,10 +8480,6 @@ export type Database = {
         }
         Returns: string
       }
-      submit_purchase_requisition: {
-        Args: { p_requisition_id: string }
-        Returns: string
-      }
       settle_production_cost: {
         Args: {
           p_idempotency_key: string
@@ -8491,6 +8487,10 @@ export type Database = {
           p_overhead_cost: number
           p_production_order_id: string
         }
+        Returns: string
+      }
+      submit_purchase_requisition: {
+        Args: { p_requisition_id: string }
         Returns: string
       }
       transition_production_order_lifecycle: {

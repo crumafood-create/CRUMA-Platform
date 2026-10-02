@@ -5056,6 +5056,83 @@ export type Database = {
           },
         ]
       }
+      production_order_lifecycle_operations: {
+        Row: {
+          created_at: string
+          id: string
+          idempotency_key: string
+          new_status: string
+          notes: string | null
+          operation: string
+          performed_at: string
+          performed_by: string
+          planned_quantity: number | null
+          previous_status: string | null
+          production_order_id: string
+          reason: string | null
+          recipe_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          new_status: string
+          notes?: string | null
+          operation: string
+          performed_at?: string
+          performed_by: string
+          planned_quantity?: number | null
+          previous_status?: string | null
+          production_order_id: string
+          reason?: string | null
+          recipe_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          new_status?: string
+          notes?: string | null
+          operation?: string
+          performed_at?: string
+          performed_by?: string
+          planned_quantity?: number | null
+          previous_status?: string | null
+          production_order_id?: string
+          reason?: string | null
+          recipe_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_order_lifecycle_operations_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "production_order_lifecycle_operations_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_lifecycle_operations_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_lifecycle_operations_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_orders: {
         Row: {
           actual_cost: number | null
@@ -8184,6 +8261,15 @@ export type Database = {
         Args: { p_quote_id: string }
         Returns: string
       }
+      create_production_order_draft: {
+        Args: {
+          p_idempotency_key: string
+          p_notes: string
+          p_planned_quantity: number
+          p_recipe_id: string
+        }
+        Returns: string
+      }
       create_production_order_items: {
         Args: { p_production_order_id: string }
         Returns: undefined
@@ -8306,6 +8392,15 @@ export type Database = {
       }
       submit_purchase_requisition: {
         Args: { p_requisition_id: string }
+        Returns: string
+      }
+      transition_production_order_lifecycle: {
+        Args: {
+          p_idempotency_key: string
+          p_production_order_id: string
+          p_reason: string
+          p_transition: string
+        }
         Returns: string
       }
       transition_sales_order: {

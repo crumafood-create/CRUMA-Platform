@@ -7,6 +7,7 @@ interface Recipe {
 
 interface Props {
   action: (formData: FormData) => Promise<void>;
+  idempotencyKey: string;
   recipes: Recipe[];
   initialValues?: {
     recipe_id?: string;
@@ -17,6 +18,7 @@ interface Props {
 
 export function ProductionOrderForm({
   action,
+  idempotencyKey,
   recipes,
   initialValues,
 }: Props) {
@@ -55,8 +57,8 @@ export function ProductionOrderForm({
 
         <input
           type="number"
-          step="0.0001"
-          min="0.0001"
+          step="1"
+          min="1"
           name="planned_quantity"
           required
           defaultValue={initialValues?.planned_quantity ?? 1}
@@ -73,11 +75,18 @@ export function ProductionOrderForm({
         <textarea
           name="notes"
           rows={4}
+          maxLength={500}
           defaultValue={initialValues?.notes ?? ''}
           className="w-full rounded border p-3"
           placeholder="Observaciones de producción..."
         />
       </div>
+
+      <input
+        name="idempotency_key"
+        type="hidden"
+        value={idempotencyKey}
+      />
 
       <button
         type="submit"

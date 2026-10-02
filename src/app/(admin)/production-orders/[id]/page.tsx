@@ -31,9 +31,6 @@ type InventoryStockRow = {
   quantity: number | null;
 };
 
-const completionIdempotencyKey =
-  crypto.randomUUID();
-
 function getStatusLabel(status: string): string {
   switch (status) {
     case 'draft':
@@ -58,6 +55,9 @@ export default async function ProductionOrderPage({
 }) {
   const { id } = await params;
   const supabase = await createTypedClient();
+
+  const completionIdempotencyKey =
+    crypto.randomUUID();
 
   const { data: order } = await supabase
     .from('production_orders')
@@ -307,6 +307,12 @@ export default async function ProductionOrderPage({
           <form
             action={releaseProductionOrder.bind(null, order.id)}
           >
+            <input
+              name="idempotency_key"
+              type="hidden"
+              value={crypto.randomUUID()}
+            />
+
             <button
               type="submit"
               className="rounded border px-4 py-2"
@@ -320,6 +326,12 @@ export default async function ProductionOrderPage({
           <form
             action={startProductionOrder.bind(null, order.id)}
           >
+            <input
+              name="idempotency_key"
+              type="hidden"
+              value={crypto.randomUUID()}
+            />
+
             <button
               type="submit"
               className="rounded border px-4 py-2"
@@ -398,7 +410,26 @@ export default async function ProductionOrderPage({
           order.production_status !== 'cancelled' && (
             <form
               action={cancelProductionOrder.bind(null, order.id)}
+              className="grid gap-3 rounded-xl border border-red-200 p-4"
             >
+              <label className="text-sm">
+                Motivo de cancelación
+                <textarea
+                  name="reason"
+                  rows={3}
+                  maxLength={500}
+                  required
+                  className="mt-1 block w-full rounded border px-3 py-2"
+                  placeholder="Describe por qué se cancela la orden"
+                />
+              </label>
+
+              <input
+                name="idempotency_key"
+                type="hidden"
+                value={crypto.randomUUID()}
+              />
+
               <button
                 type="submit"
                 className="rounded border border-red-300 px-4 py-2 text-red-700"

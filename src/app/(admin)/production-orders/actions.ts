@@ -1,7 +1,5 @@
 'use server';
 
-import crypto from 'crypto';
-
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -15,56 +13,17 @@ import {
   completeProductionOutputToQuarantine,
 } from '@/modules/production/application/production-output-completion-repository';
 import {
-  canCancelProductionOrder,
+  buildProductionOrderCreationRequest,
+  buildProductionOrderTransitionRequest,
+} from '@/modules/production/application/production-order-lifecycle-contract';
+import {
+  createProductionOrderDraft,
+  transitionProductionOrderLifecycle,
+} from '@/modules/production/application/production-order-lifecycle-repository';
+import {
   calculateRequiredQuantity,
   sumAvailableStock,
-  toProductionOrderState,
-  type ProductionOrderState,
 } from '@/modules/production/application/production-order-contract';
-import {
-  PRODUCTION_STATUS,
-} from '@/modules/production/domain/constants';
-
-/**
- * Genera un número de orden único
- * Formato: OP-YYYYMMDD-XXXXXX
- */
-function generateOrderNumber(): string {
-  const date = new Date();
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const random = crypto.randomUUID().slice(0, 6).toUpperCase();
-
-  return `OP-${yyyy}${mm}${dd}-${random}`;
-}
-
-/**
- * Obtiene el estado actual de una orden de producción
- */
-async function getProductionOrder(
-  supabase: TypedSupabaseClient,
-  orderId: string,
-): Promise<ProductionOrderState> {
-  const { data: order, error } = await supabase
-    .from('production_orders')
-    .select(`
-      id,
-      recipe_id,
-      planned_quantity,
-      produced_quantity,
-      production_status,
-      notes
-    `)
-    .eq('id', orderId)
-    .single();
-
-  if (error || !order) {
-    throw new Error(error?.message ?? 'Orden de producción no encontrada');
-  }
-
-  return toProductionOrderState(order);
-}
 
 /**
  * Valida que hay suficiente stock para los ingredientes de una receta
@@ -151,164 +110,148 @@ function revalidateProductionRoutes(orderId: string): void {
 // ============================================================================
 
 /**
- * Crea una nueva orden de producción
- *
- * 1. Valida inputs y disponibilidad de stock
- * 2. Inserta la orden y recupera su id
- * 3. Genera las líneas de la orden (production_order_items)
- *    vía la función de base de datos `create_production_order_items`
+ * Crea atómicamente una orden en borrador y su plan
+ * de materiales.
  */
-export async function createProductionOrder(formData: FormData) {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.PRODUCTION_ORDER_CREATE,
-  );
+export async function createProductionOrder(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.PRODUCTION_ORDER_CREATE,
+    );
 
-  const recipeId = formData.get('recipe_id')?.toString().trim() ?? '';
-  const plannedQuantity = Number(formData.get('planned_quantity'));
-  const notes = formData.get('notes')?.toString().trim() || null;
-
-  if (!recipeId || !plannedQuantity || plannedQuantity <= 0) {
-    throw new Error('Receta y cantidad planeada son obligatorias');
-  }
+  const request =
+    buildProductionOrderCreationRequest({
+      recipeId:
+        formData.get('recipe_id'),
+      plannedQuantity: Number(
+        formData.get('planned_quantity'),
+      ),
+      notes:
+        formData.get('notes'),
+      idempotencyKey:
+        formData.get('idempotency_key'),
+    });
 
   await validateRecipeStockAvailability(
     supabase,
-    recipeId,
-    plannedQuantity,
+    request.recipeId,
+    request.plannedQuantity,
   );
 
-  const { data: productionOrder, error } = await supabase
-    .from('production_orders')
-    .insert({
-      recipe_id: recipeId,
-      production_number: generateOrderNumber(),
-      planned_quantity: plannedQuantity,
-      produced_quantity: 0,
-      production_status: PRODUCTION_STATUS.DRAFT,
-      notes,
-    })
-    .select('id')
-    .single();
-
-  if (error || !productionOrder) {
-    throw new Error(
-      `Error al crear orden de producción: ${error?.message ?? 'sin datos'}`,
-    );
-  }
-
-  const { error: rpcError } = await supabase.rpc(
-    'create_production_order_items',
-    {
-      p_production_order_id: productionOrder.id,
-    },
+  await createProductionOrderDraft(
+    supabase,
+    request,
   );
-
-  if (rpcError) {
-    throw new Error(
-      `Error al generar los items de la orden: ${rpcError.message}`,
-    );
-  }
 
   revalidatePath('/production-orders');
   redirect('/production-orders');
 }
 
 /**
- * Libera una orden de producción (draft → released)
+ * Libera atómicamente una orden:
+ * draft → released.
  */
-export async function releaseProductionOrder(orderId: string) {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.PRODUCTION_ORDER_RELEASE,
-  );
-
-  const order = await getProductionOrder(supabase, orderId);
-
-  if (order.production_status !== PRODUCTION_STATUS.DRAFT) {
-    throw new Error(
-      `No se puede liberar una orden en estado ${order.production_status}`,
+export async function releaseProductionOrder(
+  orderId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.PRODUCTION_ORDER_RELEASE,
     );
-  }
 
-  const { error } = await supabase
-    .from('production_orders')
-    .update({
-      production_status: PRODUCTION_STATUS.RELEASED,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', orderId);
+  const request =
+    buildProductionOrderTransitionRequest({
+      productionOrderId: orderId,
+      transition: 'release',
+      reason:
+        formData.get('reason'),
+      idempotencyKey:
+        formData.get('idempotency_key'),
+    });
 
-  if (error) {
-    throw new Error(`Error al liberar orden: ${error.message}`);
-  }
+  const transitionedOrderId =
+    await transitionProductionOrderLifecycle(
+      supabase,
+      request,
+    );
 
   revalidatePath('/production-orders');
-  revalidatePath(`/production-orders/${orderId}`);
+  revalidatePath(
+    `/production-orders/${transitionedOrderId}`,
+  );
 }
 
 /**
- * Inicia la producción de una orden (released → in_progress)
+ * Inicia atómicamente una orden:
+ * released → in_progress.
  */
-export async function startProductionOrder(orderId: string) {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.PRODUCTION_ORDER_START,
-  );
-
-  const order = await getProductionOrder(supabase, orderId);
-
-  if (order.production_status !== PRODUCTION_STATUS.RELEASED) {
-    throw new Error(
-      `No se puede iniciar una orden en estado ${order.production_status}`,
+export async function startProductionOrder(
+  orderId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.PRODUCTION_ORDER_START,
     );
-  }
 
-  const { error } = await supabase
-    .from('production_orders')
-    .update({
-      production_status: PRODUCTION_STATUS.IN_PROGRESS,
-      started_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', orderId);
+  const request =
+    buildProductionOrderTransitionRequest({
+      productionOrderId: orderId,
+      transition: 'start',
+      reason:
+        formData.get('reason'),
+      idempotencyKey:
+        formData.get('idempotency_key'),
+    });
 
-  if (error) {
-    throw new Error(`Error al iniciar orden: ${error.message}`);
-  }
+  const transitionedOrderId =
+    await transitionProductionOrderLifecycle(
+      supabase,
+      request,
+    );
 
   revalidatePath('/production-orders');
-  revalidatePath(`/production-orders/${orderId}`);
+  revalidatePath(
+    `/production-orders/${transitionedOrderId}`,
+  );
 }
 
 /**
- * Cancela una orden de producción
- * Solo se puede cancelar desde estado 'draft' o 'released'
+ * Cancela atómicamente una orden desde draft o
+ * released y conserva el motivo en auditoría.
  */
-export async function cancelProductionOrder(orderId: string) {
-  const { supabase } = await requireTypedAuthorizedAction(
-    PERMISSIONS.PRODUCTION_ORDER_CANCEL,
-  );
-
-  const order = await getProductionOrder(supabase, orderId);
-
-  if (!canCancelProductionOrder(order.production_status)) {
-    throw new Error(
-      `No se puede cancelar una orden en estado ${order.production_status}`,
+export async function cancelProductionOrder(
+  orderId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.PRODUCTION_ORDER_CANCEL,
     );
-  }
 
-  const { error } = await supabase
-    .from('production_orders')
-    .update({
-      production_status: PRODUCTION_STATUS.CANCELLED,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', orderId);
+  const request =
+    buildProductionOrderTransitionRequest({
+      productionOrderId: orderId,
+      transition: 'cancel',
+      reason:
+        formData.get('reason'),
+      idempotencyKey:
+        formData.get('idempotency_key'),
+    });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  const transitionedOrderId =
+    await transitionProductionOrderLifecycle(
+      supabase,
+      request,
+    );
 
   revalidatePath('/production-orders');
-  revalidatePath(`/production-orders/${orderId}`);
+  revalidatePath(
+    `/production-orders/${transitionedOrderId}`,
+  );
 }
 
 /**

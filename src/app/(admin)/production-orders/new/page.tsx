@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
@@ -52,6 +53,7 @@ export default async function NewProductionOrderPage() {
 
       <ProductionOrderForm
         action={createProductionOrder}
+        idempotencyKey={crypto.randomUUID()}
         recipes={recipes ?? []}
       />
     </main>

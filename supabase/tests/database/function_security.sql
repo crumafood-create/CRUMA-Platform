@@ -14,6 +14,7 @@ DECLARE
     'public.create_production_order_items(uuid)',
     'public.create_production_order_draft(uuid,integer,text,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
+    'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
     'public.handle_new_user()',
     'public.is_admin(uuid)',
@@ -76,6 +77,7 @@ DECLARE
     'public.create_production_order_items(uuid)',
     'public.create_production_order_draft(uuid,integer,text,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
+    'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
     'public.generate_invoice_number()',
     'public.generate_purchase_requisition_number()',
@@ -109,6 +111,7 @@ DECLARE
    authenticated_functions constant text[] := ARRAY[
     'public.create_production_order_draft(uuid,integer,text,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
+    'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
     'public.is_admin(uuid)',
     'public.add_sales_order_item(uuid,uuid,numeric,numeric)',
@@ -230,6 +233,7 @@ DECLARE
   secured_functions constant text[] := ARRAY[
     'public.create_production_order_draft(uuid,integer,text,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
+    'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.add_sales_order_item(uuid,uuid,numeric,numeric)',
     'public.confirm_sales_order(uuid)',
     'public.transition_sales_order(uuid,text,text)',

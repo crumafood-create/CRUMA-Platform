@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -11,6 +12,9 @@ export default async function ProductionCostPage({
 }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createTypedClient();
+
+  const costSettlementIdempotencyKey =
+    crypto.randomUUID();
   const { data: cost, error } = await supabase
     .from('production_costs')
     .select(`
@@ -60,7 +64,12 @@ export default async function ProductionCostPage({
         </div>
       </section>
 
-      <ProductionCostForm productionOrderId={id} laborCost={cost.labor_cost} overheadCost={cost.overhead_cost} />
+      <ProductionCostForm
+        productionOrderId={id}
+        idempotencyKey={costSettlementIdempotencyKey}
+        laborCost={cost.labor_cost}
+        overheadCost={cost.overhead_cost}
+      />
 
       <section className="space-y-3 rounded-2xl border p-6">
         <h2 className="text-xl font-semibold">Historial de cálculos</h2>

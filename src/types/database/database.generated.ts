@@ -4618,6 +4618,96 @@ export type Database = {
           },
         ]
       }
+      production_cost_settlement_operations: {
+        Row: {
+          calculation_version: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          labor_cost: number
+          material_cost: number
+          overhead_cost: number
+          production_cost_id: string
+          production_order_id: string
+          production_output_id: string
+          settled_at: string
+          settled_by: string
+          source_consumption_count: number
+          total_cost: number
+          unit_cost: number
+        }
+        Insert: {
+          calculation_version: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          labor_cost: number
+          material_cost: number
+          overhead_cost: number
+          production_cost_id: string
+          production_order_id: string
+          production_output_id: string
+          settled_at?: string
+          settled_by: string
+          source_consumption_count: number
+          total_cost: number
+          unit_cost: number
+        }
+        Update: {
+          calculation_version?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          labor_cost?: number
+          material_cost?: number
+          overhead_cost?: number
+          production_cost_id?: string
+          production_order_id?: string
+          production_output_id?: string
+          settled_at?: string
+          settled_by?: string
+          source_consumption_count?: number
+          total_cost?: number
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_cost_settlement_operations_production_cost_id_fkey"
+            columns: ["production_cost_id"]
+            isOneToOne: false
+            referencedRelation: "production_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_cost_settlement_operations_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_cost_settlement_operations_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: false
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_cost_settlement_operations_settled_by_fkey"
+            columns: ["settled_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "production_cost_settlement_operations_settled_by_fkey"
+            columns: ["settled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_costs: {
         Row: {
           calculated_at: string
@@ -8387,6 +8477,15 @@ export type Database = {
           p_lot_number: string
           p_output_id: string
           p_warehouse_id: string
+        }
+        Returns: string
+      }
+      settle_production_cost: {
+        Args: {
+          p_idempotency_key: string
+          p_labor_cost: number
+          p_overhead_cost: number
+          p_production_order_id: string
         }
         Returns: string
       }

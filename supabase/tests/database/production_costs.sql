@@ -3,6 +3,26 @@ BEGIN;
 INSERT INTO auth.users(id,aud,role,email,created_at,updated_at) VALUES
  ('c1000000-0000-0000-0000-000000000001','authenticated','authenticated','cost-admin@example.test',now(),now()),
  ('c1000000-0000-0000-0000-000000000002','authenticated','authenticated','cost-user@example.test',now(),now());
+
+INSERT INTO public.profiles(
+  id,
+  full_name,
+  email,
+  role
+) VALUES
+  (
+    'c1000000-0000-0000-0000-000000000001',
+    'Production Cost Admin',
+    'cost-admin@example.test',
+    'admin'
+  ),
+  (
+    'c1000000-0000-0000-0000-000000000002',
+    'Production Cost User',
+    'cost-user@example.test',
+    'client'
+  );
+
 INSERT INTO public.user_roles(user_id,role)
 VALUES ('c1000000-0000-0000-0000-000000000001','admin');
 INSERT INTO public.products(id,slug,internal_code,name,status)
@@ -40,7 +60,7 @@ DO $test$ BEGIN
     RAISE EXCEPTION 'normal user unexpectedly read production costs';
   END IF;
   BEGIN
-    PERFORM public.calculate_production_cost('c6000000-0000-0000-0000-000000000001',20,5);
+    PERFORM public.settle_production_cost('c6000000-0000-0000-0000-000000000001',20,5,'c8000000-0000-4000-8000-000000000001');
     RAISE EXCEPTION 'normal user calculated production cost';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
@@ -50,7 +70,32 @@ $test$;
 RESET ROLE;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','c1000000-0000-0000-0000-000000000001',true);
-SELECT public.calculate_production_cost('c6000000-0000-0000-0000-000000000001',20,5);
+SELECT public.settle_production_cost('c6000000-0000-0000-0000-000000000001',20,5,'c8000000-0000-4000-8000-000000000001');
+
+DO $test$
+BEGIN
+  BEGIN
+    PERFORM public.settle_production_cost(
+      'c6000000-0000-0000-0000-000000000001',
+      21,
+      5,
+      'c8000000-0000-4000-8000-000000000001'
+    );
+
+    RAISE EXCEPTION
+      'idempotency key accepted different cost data';
+  EXCEPTION
+    WHEN unique_violation THEN
+      IF SQLERRM <>
+        'Idempotency key was reused with different data.'
+      THEN
+        RAISE EXCEPTION
+          'unexpected idempotency error: %',
+          SQLERRM;
+      END IF;
+  END;
+END;
+$test$;
 
 RESET ROLE;
 UPDATE public.raw_material_lots
@@ -62,7 +107,7 @@ WHERE production_order_item_id='c7000000-0000-0000-0000-000000000001';
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','c1000000-0000-0000-0000-000000000001',true);
-SELECT public.calculate_production_cost('c6000000-0000-0000-0000-000000000001',25,5);
+SELECT public.settle_production_cost('c6000000-0000-0000-0000-000000000001',25,5,'c8000000-0000-4000-8000-000000000002');
 
 RESET ROLE;
 DO $test$ BEGIN

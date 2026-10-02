@@ -59,6 +59,9 @@ export default async function ProductionOrderPage({
   const completionIdempotencyKey =
     crypto.randomUUID();
 
+  const costSettlementIdempotencyKey =
+    crypto.randomUUID();
+
   const { data: order } = await supabase
     .from('production_orders')
     .select(
@@ -463,6 +466,7 @@ export default async function ProductionOrderPage({
         {order.production_status === 'completed' && (
           <ProductionCostForm
             productionOrderId={order.id}
+            idempotencyKey={costSettlementIdempotencyKey}
             laborCost={Number(currentCost?.labor_cost ?? 0)}
             overheadCost={Number(currentCost?.overhead_cost ?? 0)}
           />

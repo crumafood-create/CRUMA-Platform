@@ -4,6 +4,17 @@
 
 Este roadmap prioriza resultados verificables para ventas, inventario y producción. La presencia de una idea en el backlog no autoriza su implementación: cada iniciativa debe demostrar ROI, propietario, métrica y capacidad operativa.
 
+## Correspondencia con la arquitectura
+
+La [matriz de conciliación ERP/MES/WMS](erp-mes-wms-reconciliation.md)
+contrasta las 19 capacidades industriales propuestas con el código verificado.
+Debe consultarse antes de estimar una iniciativa o asignarle un módulo.
+
+La matriz es un inventario con decisiones pendientes; no incorpora automáticamente
+esas capacidades al alcance de este roadmap ni compromete las 24 semanas
+propuestas. La telemetría de uso de este documento no equivale a sensores de
+temperatura o monitoreo de frío IoT.
+
 ## Criterios de priorización
 
 1. Protege ingresos, inventario o continuidad operativa.

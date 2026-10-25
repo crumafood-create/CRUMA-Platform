@@ -2926,6 +2926,44 @@ export type Database = {
           },
         ]
       }
+      organizations: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_attempts: {
         Row: {
           created_at: string | null
@@ -3604,6 +3642,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sales_orders"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      plants: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plants_tenant_id_organization_id_fkey"
+            columns: ["tenant_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["tenant_id", "id"]
           },
         ]
       }
@@ -7689,85 +7768,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      organizations: {
-        Row: {
-          code: string
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organizations_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      plants: {
-        Row: {
-          code: string
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          organization_id: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          organization_id: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          organization_id?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "plants_tenant_id_organization_id_fkey"
-            columns: ["tenant_id", "organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["tenant_id", "id"]
-          },
-        ]
       }
       tenant_members: {
         Row: {

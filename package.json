@@ -87,6 +87,7 @@
     "db:test:lots": "bash scripts/database/run-database-test.sh supabase/tests/database/production_lot_release.sql",
     "db:test:quality": "bash scripts/database/run-database-test.sh supabase/tests/database/quality_control.sql",
     "db:test:storefront": "bash scripts/database/run-database-test.sh supabase/tests/database/storefront_catalog.sql",
+    "db:test:operational-scope": "bash scripts/database/run-database-test.sh supabase/tests/database/operational_scope_hierarchy.sql",
     "db:test:forecasts": "bash scripts/database/run-database-test.sh supabase/tests/database/demand_forecasts.sql",
     "db:test:reporting": "bash scripts/database/run-database-test.sh supabase/tests/database/business_reporting.sql",
     "db:test:schema-contract": "bash scripts/database/run-database-test.sh supabase/tests/database/schema_contract.sql",

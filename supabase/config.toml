@@ -1,6 +1,13 @@
 # Configuración local versionada para ADR-0002.
 project_id = "cruma-platform"
 
+[db]
+# PostgreSQL nativo de Windows ocupa 5432. Supabase local usa su puerto
+# separado y solo escucha en loopback.
+port = 54322
+shadow_port = 54320
+major_version = 17
+
 [db.seed]
 enabled = true
 sql_paths = [

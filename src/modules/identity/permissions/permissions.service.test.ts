@@ -4,7 +4,9 @@ import type { AuthorizationActor } from '@/modules/identity/guards/types';
 import { AuthorizationError } from '@/modules/identity/guards/authorization-error';
 import { requirePermission } from '@/modules/identity/guards/permission.guard';
 
+import { LEGACY_AUTHORIZATION_BOUNDARY } from './legacy-authorization-boundary';
 import { PERMISSIONS } from './permissions.constants';
+import { LEGACY_PERMISSION_CONTRACT } from './permissions.matrix';
 import {
   getPermissionsForRoles,
   hasPermission,
@@ -20,12 +22,43 @@ function actor(
   };
 }
 
-test('admin recibe la unión de permisos legacy', () => {
-  const permissions = getPermissionsForRoles(['admin']);
-
-  expect(permissions).toEqual(
-    new Set(Object.values(PERMISSIONS)),
+test('el puente legacy permanece global y sin scopes operativos', () => {
+  expect(LEGACY_AUTHORIZATION_BOUNDARY).toEqual({
+    source: 'legacy_user_roles',
+    scope: 'global',
+    supportedRoles: ['admin', 'customer'],
+    missingScopes: ['organization', 'plant', 'warehouse'],
+  });
+  expect(LEGACY_PERMISSION_CONTRACT.boundary).toBe(
+    LEGACY_AUTHORIZATION_BOUNDARY,
   );
+});
+
+test('admin recibe exactamente el catálogo publicado, sin permisos implícitos', () => {
+  const permissions = getPermissionsForRoles(['admin']);
+  const publishedPermissions = Object.values(PERMISSIONS);
+
+  expect([...permissions]).toEqual(publishedPermissions);
+  expect(permissions).toEqual(new Set(publishedPermissions));
+  expect(LEGACY_PERMISSION_CONTRACT.grants.admin).toEqual(
+    publishedPermissions,
+  );
+});
+
+test('customer se deniega por defecto en todos los permisos publicados', () => {
+  expect(getPermissionsForRoles(['customer'])).toEqual(new Set());
+  expect(LEGACY_PERMISSION_CONTRACT.grants.customer).toEqual([]);
+
+  for (const permission of Object.values(PERMISSIONS)) {
+    expect(hasPermission(actor(['customer']), permission)).toBe(false);
+  }
+});
+
+test('un actor sin roles no hereda autoridad', () => {
+  expect(getPermissionsForRoles([])).toEqual(new Set());
+  expect(
+    hasPermission(actor([]), PERMISSIONS.ADMIN_PANEL_ACCESS),
+  ).toBe(false);
 });
 
 test('el catálogo conserva los permisos confirmados de producción y ventas', () => {
@@ -40,12 +73,6 @@ test('el catálogo conserva los permisos confirmados de producción y ventas', (
     SALES_ORDER_PREPARE: 'sales.order.prepare',
     SALES_ORDER_DELIVER: 'sales.order.deliver',
   });
-});
-
-test('customer se deniega por defecto en todos los permisos administrativos', () => {
-  for (const permission of Object.values(PERMISSIONS)) {
-    expect(hasPermission(actor(['customer']), permission)).toBe(false);
-  }
 });
 
 test('varios roles producen una unión determinista de permisos', () => {

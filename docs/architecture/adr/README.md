@@ -4,18 +4,18 @@
 
 ## Estado del documento
 
-| Campo | Valor |
-|---|---|
-| Estado | Aprobado |
-| Versión | 1.0 |
-| Propietarios | Product Owner y responsable de arquitectura |
-| Aprobado por | Product Owner de CRUMAFOOD Platform |
-| Fecha de aprobación | 2026-08-01 |
-| Estado de implementación | Operativo de forma manual; existen índice, plantilla y quince ADR numerados: ADR-0012 y ADR-0013 están Aceptados y los trece restantes continúan Propuestos; permanece pendiente automatizar las validaciones ADR en CI |
-| Base de evidencia | Revisión de `docs/architecture/adr/README.md`, `0000-template.md`, los ADR 0001–0015 y `.github/workflows/ci.yml`; numeración e índice presentes, sin verificaciones automatizadas de nombres, metadata, estados, enlaces o reemplazos |
-| Alcance | Registro, numeración, estados, creación, aprobación, reemplazo y mantenimiento de ADR |
-| Autoridad | Derivado de `docs/engineering/constitution.md`, `docs/engineering/engineering-principles.md`, `docs/engineering/engineering-operating-system.md`, `docs/architecture/README.md`, `docs/vision.md` y el CES |
-| Revisión | Cuando cambie el proceso de decisiones, plantilla, estados, autoridad o convención de almacenamiento |
+| Campo                    | Valor                                                                                                                                                                                                                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Estado                   | Aprobado                                                                                                                                                                                                                                                                                             |
+| Versión                  | 1.0                                                                                                                                                                                                                                                                                                  |
+| Propietarios             | Product Owner y responsable de arquitectura                                                                                                                                                                                                                                                          |
+| Aprobado por             | Product Owner de CRUMAFOOD Platform                                                                                                                                                                                                                                                                  |
+| Fecha de aprobación      | 2026-08-01                                                                                                                                                                                                                                                                                           |
+| Estado de implementación | Operativo de forma manual; existen índice, plantilla y dieciséis ADR numerados: ADR-0012, ADR-0013 y ADR-0017 están Aceptados, ADR-0001 y ADR-0003 están Reemplazados, ADR-0016 está Deprecado y los once restantes continúan Propuestos; permanece pendiente automatizar las validaciones ADR en CI |
+| Base de evidencia        | Revisión de `docs/architecture/adr/README.md`, `0000-template.md`, los ADR 0001–0017 y `.github/workflows/ci.yml`; numeración e índice presentes, sin verificaciones automatizadas de nombres, metadata, estados, enlaces o reemplazos                                                               |
+| Alcance                  | Registro, numeración, estados, creación, aprobación, reemplazo y mantenimiento de ADR                                                                                                                                                                                                                |
+| Autoridad                | Derivado de `docs/engineering/constitution.md`, `docs/engineering/engineering-principles.md`, `docs/engineering/engineering-operating-system.md`, `docs/architecture/README.md`, `docs/vision.md` y el CES                                                                                           |
+| Revisión                 | Cuando cambie el proceso de decisiones, plantilla, estados, autoridad o convención de almacenamiento                                                                                                                                                                                                 |
 
 ---
 
@@ -286,18 +286,18 @@ Los términos ambiguos se definirán.
 
 Cada ADR incluirá:
 
-| Campo | Propósito |
-|---|---|
-| Estado | Situación de la decisión |
-| Fecha | Fecha ISO de decisión o propuesta |
-| Decisores | Roles responsables |
-| Consultados | Roles o áreas que aportaron |
-| Informados | Áreas afectadas |
-| Propietario | Rol responsable de mantener la decisión |
-| Alcance | Sistemas, módulos o procesos |
-| Reemplaza | ADR anterior, si aplica |
-| Reemplazado por | ADR sucesor, si aplica |
-| RFC relacionado | Exploración previa, si aplica |
+| Campo               | Propósito                                |
+| ------------------- | ---------------------------------------- |
+| Estado              | Situación de la decisión                 |
+| Fecha               | Fecha ISO de decisión o propuesta        |
+| Decisores           | Roles responsables                       |
+| Consultados         | Roles o áreas que aportaron              |
+| Informados          | Áreas afectadas                          |
+| Propietario         | Rol responsable de mantener la decisión  |
+| Alcance             | Sistemas, módulos o procesos             |
+| Reemplaza           | ADR anterior, si aplica                  |
+| Reemplazado por     | ADR sucesor, si aplica                   |
+| RFC relacionado     | Exploración previa, si aplica            |
 | Issues relacionados | Trabajo o evidencia vinculada, si aplica |
 
 No se incluirán datos personales innecesarios.
@@ -308,13 +308,13 @@ No se incluirán datos personales innecesarios.
 
 Los estados válidos son:
 
-| Estado | Significado |
-|---|---|
-| Propuesto | Listo para revisión, aún sin autoridad |
-| Aceptado | Decisión vigente |
-| Rechazado | Evaluado y no elegido |
-| Deprecado | Vigente solo durante transición |
-| Reemplazado | Sustituido por otro ADR |
+| Estado      | Significado                            |
+| ----------- | -------------------------------------- |
+| Propuesto   | Listo para revisión, aún sin autoridad |
+| Aceptado    | Decisión vigente                       |
+| Rechazado   | Evaluado y no elegido                  |
+| Deprecado   | Vigente solo durante transición        |
+| Reemplazado | Sustituido por otro ADR                |
 
 No se usarán estados ambiguos como “Final”.
 
@@ -674,24 +674,26 @@ La revisión puede confirmar, deprecar o reemplazar el ADR.
 
 ## 41. Índice de decisiones
 
-| ADR | Título | Estado | Fecha | Reemplaza |
-|---|---|---|---|---|
-| [0000](0000-template.md) | Plantilla de Architecture Decision Record | Plantilla | — | — |
-| [0001](0001-tenant-isolation-model.md) | Adoptar Tenant técnico con aislamiento lógico por fila | Propuesto | 2026-07-12 | — |
-| [0002](0002-schema-baseline-and-migrations.md) | Establecer baseline y migraciones canónicas de PostgreSQL/Supabase | Propuesto | 2026-07-12 | — |
-| [0003](0003-authorization-model.md) | Adoptar RBAC con permisos canónicos y scopes jerárquicos | Propuesto | 2026-07-12 | — |
-| [0004](0004-desktop-tauri-topology.md) | Adoptar Tauri 2 con frontend local y API versionada | Propuesto | 2026-07-12 | — |
-| [0005](0005-offline-sync-strategy.md) | Adoptar sincronización offline por comandos y proyecciones | Propuesto | 2026-07-12 | — |
-| [0006](0006-event-outbox-inbox.md) | Adoptar eventos de integración con outbox e inbox transaccionales | Propuesto | 2026-07-12 | — |
-| [0007](0007-ci-cd-pipeline.md) | Adoptar GitHub Actions como pipeline CI/CD gobernado | Propuesto | 2026-07-12 | — |
-| [0008](0008-observability-provider.md) | Adoptar Sentry como plataforma inicial de observabilidad de aplicación | Propuesto | 2026-07-12 | — |
-| [0009](0009-service-level-and-recovery-objectives.md) | Adoptar objetivos iniciales de servicio y recuperación por criticidad | Propuesto | 2026-07-12 | — |
-| [0010](0010-cache-strategy.md) | Adoptar caché explícita, scoped y orientada a frescura | Propuesto | 2026-07-12 | — |
-| [0011](0011-canonical-design-token-format.md) | Adoptar DTCG JSON como formato canónico de design tokens | Propuesto | 2026-07-12 | — |
-| [0012](0012-storybook-and-visual-testing.md) | Adoptar Storybook y regresión visual selectiva con Playwright | Propuesto | 2026-07-12 | — |
-| [0013](0013-node-and-package-manager.md) | Adoptar Node.js 24 LTS y pnpm 10 como toolchain JavaScript | Aceptado | 2026-08-01 | — |
-| [0014](0014-supabase-environment-isolation.md) | Separar Supabase por entorno y usar branches efímeras en Preview | Propuesto | 2026-07-12 | — |
-| [0015](0015-backup-and-restore-strategy.md) | Adoptar backups multicapa y restauración verificada | Propuesto | 2026-07-12 | — |
+| ADR                                                   | Título                                                                   | Estado      | Fecha      | Reemplaza  |
+| ----------------------------------------------------- | ------------------------------------------------------------------------ | ----------- | ---------- | ---------- |
+| [0000](0000-template.md)                              | Plantilla de Architecture Decision Record                                | Plantilla   | —          | —          |
+| [0001](0001-tenant-isolation-model.md)                | Adoptar Tenant técnico con aislamiento lógico por fila                   | Reemplazado | 2026-07-12 | —          |
+| [0002](0002-schema-baseline-and-migrations.md)        | Establecer baseline y migraciones canónicas de PostgreSQL/Supabase       | Propuesto   | 2026-07-12 | —          |
+| [0003](0003-authorization-model.md)                   | Adoptar RBAC con permisos canónicos y scopes jerárquicos                 | Reemplazado | 2026-07-12 | —          |
+| [0004](0004-desktop-tauri-topology.md)                | Adoptar Tauri 2 con frontend local y API versionada                      | Propuesto   | 2026-07-12 | —          |
+| [0005](0005-offline-sync-strategy.md)                 | Adoptar sincronización offline por comandos y proyecciones               | Propuesto   | 2026-07-12 | —          |
+| [0006](0006-event-outbox-inbox.md)                    | Adoptar eventos de integración con outbox e inbox transaccionales        | Propuesto   | 2026-07-12 | —          |
+| [0007](0007-ci-cd-pipeline.md)                        | Adoptar GitHub Actions como pipeline CI/CD gobernado                     | Propuesto   | 2026-07-12 | —          |
+| [0008](0008-observability-provider.md)                | Adoptar Sentry como plataforma inicial de observabilidad de aplicación   | Propuesto   | 2026-07-12 | —          |
+| [0009](0009-service-level-and-recovery-objectives.md) | Adoptar objetivos iniciales de servicio y recuperación por criticidad    | Propuesto   | 2026-07-12 | —          |
+| [0010](0010-cache-strategy.md)                        | Adoptar caché explícita, scoped y orientada a frescura                   | Propuesto   | 2026-07-12 | —          |
+| [0011](0011-canonical-design-token-format.md)         | Adoptar DTCG JSON como formato canónico de design tokens                 | Propuesto   | 2026-07-12 | —          |
+| [0012](0012-storybook-and-visual-testing.md)          | Adoptar Storybook y regresión visual selectiva con Playwright            | Aceptado    | 2026-07-12 | —          |
+| [0013](0013-node-and-package-manager.md)              | Adoptar Node.js 24 LTS y pnpm 10 como toolchain JavaScript               | Aceptado    | 2026-08-01 | —          |
+| [0014](0014-supabase-environment-isolation.md)        | Separar Supabase por entorno y usar branches efímeras en Preview         | Propuesto   | 2026-07-12 | —          |
+| [0015](0015-backup-and-restore-strategy.md)           | Adoptar backups multicapa y restauración verificada                      | Propuesto   | 2026-07-12 | —          |
+| [0016](0016-membership-scope-spike.md)                | Bloquear la migración de membresías hasta resolver scopes y autoridades  | Deprecado   | 2026-10-02 | —          |
+| [0017](0017-scoped-authorization-direction.md)        | Adoptar tenant técnico y RBAC scoped sin activar la autoridad incompleta | Aceptado    | 2026-10-02 | 0001, 0003 |
 
 Las decisiones numeradas se agregarán al ser propuestas.
 
@@ -821,7 +823,7 @@ El registro será conforme cuando:
 
 ## 50. Próximo paso
 
-Los ADR 0001–0015 se evaluarán individualmente según:
+Los ADR 0001–0017 se evaluarán individualmente según:
 
 - dependencia;
 - riesgo;

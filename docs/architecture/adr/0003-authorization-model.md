@@ -4,18 +4,18 @@
 
 ## Metadata
 
-| Campo | Valor |
-|---|---|
-| Estado | Propuesto |
-| Fecha | 2026-07-12 |
-| Decisores | Product Owner, responsable de arquitectura, responsable de seguridad y responsable de Identity & Access |
-| Consultados | Datos, responsables de módulos, operación, Mobile y Desktop |
-| Informados | Desarrollo, calidad, soporte y responsables de integraciones |
-| Propietario | Identity & Access con corresponsabilidad de Seguridad |
-| Alcance | Membresías, roles, permisos, scopes, casos de uso, RLS, sesiones, clientes, auditoría y revocación |
-| Reemplaza | No aplica |
-| Reemplazado por | No aplica |
-| RFC relacionado | No aplica; validación iniciada el 2026-08-03 con baseline y auditoría de autorización; permanecen pendientes el prototipo de evaluación, RLS y revocación |
+| Campo               | Valor                                                                                                                                                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Estado              | Reemplazado                                                                                                                                                                                                                                                                     |
+| Fecha               | 2026-07-12                                                                                                                                                                                                                                                                      |
+| Decisores           | Product Owner, responsable de arquitectura, responsable de seguridad y responsable de Identity & Access                                                                                                                                                                         |
+| Consultados         | Datos, responsables de módulos, operación, Mobile y Desktop                                                                                                                                                                                                                     |
+| Informados          | Desarrollo, calidad, soporte y responsables de integraciones                                                                                                                                                                                                                    |
+| Propietario         | Identity & Access con corresponsabilidad de Seguridad                                                                                                                                                                                                                           |
+| Alcance             | Membresías, roles, permisos, scopes, casos de uso, RLS, sesiones, clientes, auditoría y revocación                                                                                                                                                                              |
+| Reemplaza           | No aplica                                                                                                                                                                                                                                                                       |
+| Reemplazado por     | ADR-0017                                                                                                                                                                                                                                                                        |
+| RFC relacionado     | No aplica; validación iniciada el 2026-08-03 con baseline y auditoría de autorización; permanecen pendientes el prototipo de evaluación, RLS y revocación                                                                                                                       |
 | Issues relacionados | [Auditoría de autorización del 2026-08-03](../../engineering/security-audits/2026-08-03-database-function-authorization.md); cardinalidad confirmada; pendientes su implementación, la convergencia de modelos actuales, el catálogo de permisos, scopes y la matriz de pruebas |
 
 ---
@@ -114,18 +114,18 @@ No cubre:
 
 ## 5. Fuerzas de decisión
 
-| Fuerza | Importancia | Implicación |
-|---|---|---|
-| Mínimo privilegio | Crítica | Un grant debe limitar acción y scope |
-| Comprensibilidad | Alta | Soporte y usuarios deben explicar el acceso |
-| Multi-tenancy | Crítica | Un rol nunca cruza tenants |
-| Integridad | Crítica | RLS y caso de uso deben coincidir |
-| Evolución modular | Alta | Cada módulo posee sus permisos |
-| Operación | Alta | Alta, cambio y revocación deben ser confiables |
-| Rendimiento | Alta | Evaluación y policies deben ser acotadas |
-| Offline | Alta | El servidor reautoriza comandos diferidos |
-| Configurabilidad | Media | Tenants pueden agrupar permisos sin inventarlos |
-| Simplicidad | Alta | Evitar reglas de deny y precedencia complejas inicialmente |
+| Fuerza            | Importancia | Implicación                                                |
+| ----------------- | ----------- | ---------------------------------------------------------- |
+| Mínimo privilegio | Crítica     | Un grant debe limitar acción y scope                       |
+| Comprensibilidad  | Alta        | Soporte y usuarios deben explicar el acceso                |
+| Multi-tenancy     | Crítica     | Un rol nunca cruza tenants                                 |
+| Integridad        | Crítica     | RLS y caso de uso deben coincidir                          |
+| Evolución modular | Alta        | Cada módulo posee sus permisos                             |
+| Operación         | Alta        | Alta, cambio y revocación deben ser confiables             |
+| Rendimiento       | Alta        | Evaluación y policies deben ser acotadas                   |
+| Offline           | Alta        | El servidor reautoriza comandos diferidos                  |
+| Configurabilidad  | Media       | Tenants pueden agrupar permisos sin inventarlos            |
+| Simplicidad       | Alta        | Evitar reglas de deny y precedencia complejas inicialmente |
 
 ---
 
@@ -162,29 +162,29 @@ Los supuestos deberán probarse con escenarios reales de Inventario, Producción
 
 ## 8. Criterios de decisión
 
-| Criterio | Prioridad | Evaluación |
-|---|---|---|
-| Denegación segura | Crítica | Casos negativos y RLS |
-| Expresividad | Alta | Acción, recurso y scope |
-| Explicabilidad | Alta | Razón de allow/deny |
-| Integridad tenant | Crítica | Aislamiento A/B |
-| Rendimiento | Alta | Consulta y policy |
-| Mantenibilidad | Alta | Catálogo modular |
-| Revocación | Alta | Efecto conocido |
-| Configurabilidad | Media | Roles por tenant |
-| Offline | Alta | Reautorización |
+| Criterio          | Prioridad | Evaluación              |
+| ----------------- | --------- | ----------------------- |
+| Denegación segura | Crítica   | Casos negativos y RLS   |
+| Expresividad      | Alta      | Acción, recurso y scope |
+| Explicabilidad    | Alta      | Razón de allow/deny     |
+| Integridad tenant | Crítica   | Aislamiento A/B         |
+| Rendimiento       | Alta      | Consulta y policy       |
+| Mantenibilidad    | Alta      | Catálogo modular        |
+| Revocación        | Alta      | Efecto conocido         |
+| Configurabilidad  | Media     | Roles por tenant        |
+| Offline           | Alta      | Reautorización          |
 
 ---
 
 ## 9. Opciones consideradas
 
-| Opción | Resumen | Resultado propuesto |
-|---|---|---|
-| A | RBAC con scopes jerárquicos y contexto | Elegida |
-| B | Roles globales de texto | Rechazada |
-| C | Permisos directos por usuario | No elegida como base |
-| D | ABAC/policy engine general | Diferida |
-| E | Autorización solo mediante RLS | Rechazada |
+| Opción | Resumen                                | Resultado propuesto  |
+| ------ | -------------------------------------- | -------------------- |
+| A      | RBAC con scopes jerárquicos y contexto | Elegida              |
+| B      | Roles globales de texto                | Rechazada            |
+| C      | Permisos directos por usuario          | No elegida como base |
+| D      | ABAC/policy engine general             | Diferida             |
+| E      | Autorización solo mediante RLS         | Rechazada            |
 
 ---
 
@@ -964,18 +964,18 @@ Los IDs se seudonimizarán cuando corresponda.
 
 ## 51. Impacto arquitectónico
 
-| Área | Impacto |
-|---|---|
-| Business Core | Puerto y políticas de autorización |
-| Datos | Memberships, roles, scopes, assignments y RLS |
-| Seguridad | Default deny, mínimo privilegio y revocación |
-| Integraciones | Identidades de servicio scoped |
-| Frontend | Guards de experiencia, no autoridad final |
-| Mobile | Contexto visible y reautorización |
-| Desktop | Separación capability/permiso |
-| Observabilidad | Reason codes y latencia |
-| Pruebas | Matriz positiva/negativa |
-| Multi-tenancy | Todo grant pertenece a tenant |
+| Área           | Impacto                                       |
+| -------------- | --------------------------------------------- |
+| Business Core  | Puerto y políticas de autorización            |
+| Datos          | Memberships, roles, scopes, assignments y RLS |
+| Seguridad      | Default deny, mínimo privilegio y revocación  |
+| Integraciones  | Identidades de servicio scoped                |
+| Frontend       | Guards de experiencia, no autoridad final     |
+| Mobile         | Contexto visible y reautorización             |
+| Desktop        | Separación capability/permiso                 |
+| Observabilidad | Reason codes y latencia                       |
+| Pruebas        | Matriz positiva/negativa                      |
+| Multi-tenancy  | Todo grant pertenece a tenant                 |
 
 ---
 
@@ -1022,19 +1022,19 @@ No se mantendrán dos fuentes autoritativas indefinidamente.
 
 ### Evidencia de validación — 2026-08-03
 
-| Evidencia | Resultado | Conformidad |
-|---|---|---|
-| Baseline versionado | 124 tablas, 12 vistas, 188 policies y RLS habilitado en 124 tablas de `public` | Conforme como base verificable; ADR-0002 continúa sujeto a sus propios criterios |
-| Inventario de roles actuales | `user_roles` admite `admin` y `customer`; el código también compara `manager` | Decisión confirmada: retirar `manager`; implementación pendiente |
-| Cardinalidad de roles | Una membresía puede recibir varios roles mediante assignments scoped; el esquema legacy permite varias filas, pero `getUserRole()` exige una sola | Decisión conforme a la propuesta; contrato e implementación pendientes |
-| Modelos de autorización coexistentes | `user_roles`, `tenant_members` y `admin_permissions`/`user_admin_permissions` representan conceptos superpuestos | No conforme; no existe autoridad canónica |
-| Consumo por la aplicación | Los controles revisados dependen de `user_roles`; los guards, permisos y políticas objetivo son marcadores vacíos | No conforme |
-| Persistencia tenant-scoped | Existen `tenants` y `tenant_members`, pero no roles, assignments y scopes canónicos integrados | Parcial |
-| Auditoría de autorización | Nueve hallazgos documentados, incluidos ocho de severidad alta y uno media | Evidencia suficiente para priorizar contención; no para aceptar el modelo |
-| RLS y caso de uso | Se observaron policies permisivas y RPC sin policies aplicables en tablas subyacentes | No conforme |
-| Prototipo tenant/warehouse/location | No ejecutado | Pendiente |
-| Revocación e invalidación | No demostradas | Pendiente |
-| Rendimiento y aprobaciones | Sin benchmark ni aprobaciones registradas | Pendiente |
+| Evidencia                            | Resultado                                                                                                                                         | Conformidad                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Baseline versionado                  | 124 tablas, 12 vistas, 188 policies y RLS habilitado en 124 tablas de `public`                                                                    | Conforme como base verificable; ADR-0002 continúa sujeto a sus propios criterios |
+| Inventario de roles actuales         | `user_roles` admite `admin` y `customer`; el código también compara `manager`                                                                     | Decisión confirmada: retirar `manager`; implementación pendiente                 |
+| Cardinalidad de roles                | Una membresía puede recibir varios roles mediante assignments scoped; el esquema legacy permite varias filas, pero `getUserRole()` exige una sola | Decisión conforme a la propuesta; contrato e implementación pendientes           |
+| Modelos de autorización coexistentes | `user_roles`, `tenant_members` y `admin_permissions`/`user_admin_permissions` representan conceptos superpuestos                                  | No conforme; no existe autoridad canónica                                        |
+| Consumo por la aplicación            | Los controles revisados dependen de `user_roles`; los guards, permisos y políticas objetivo son marcadores vacíos                                 | No conforme                                                                      |
+| Persistencia tenant-scoped           | Existen `tenants` y `tenant_members`, pero no roles, assignments y scopes canónicos integrados                                                    | Parcial                                                                          |
+| Auditoría de autorización            | Nueve hallazgos documentados, incluidos ocho de severidad alta y uno media                                                                        | Evidencia suficiente para priorizar contención; no para aceptar el modelo        |
+| RLS y caso de uso                    | Se observaron policies permisivas y RPC sin policies aplicables en tablas subyacentes                                                             | No conforme                                                                      |
+| Prototipo tenant/warehouse/location  | No ejecutado                                                                                                                                      | Pendiente                                                                        |
+| Revocación e invalidación            | No demostradas                                                                                                                                    | Pendiente                                                                        |
+| Rendimiento y aprobaciones           | Sin benchmark ni aprobaciones registradas                                                                                                         | Pendiente                                                                        |
 
 La [auditoría de autorización del 2026-08-03](../../engineering/security-audits/2026-08-03-database-function-authorization.md) constituye evidencia de implementación, no una decisión normativa adicional.
 
@@ -1084,16 +1084,16 @@ Se probarán:
 
 ## 56. Matriz mínima
 
-| Actor | Permiso | Scope | Recurso | Resultado |
-|---|---|---|---|---|
-| Sin sesión | read | A | A | Denegado |
-| Miembro A sin rol | read | A | A | Denegado |
-| Operador A | inventory.movement.create | Almacén A1 | A1 | Permitido |
-| Operador A | inventory.movement.create | Almacén A2 | A2 | Denegado |
-| Operador A | inventory.adjustment.approve | A1 | A1 | Denegado |
-| Supervisor A | inventory.adjustment.approve | Organización A | A1 | Permitido por herencia |
-| Miembro A | read | Tenant A | Tenant B | Denegado |
-| Assignment expirado | read | A | A | Denegado |
+| Actor               | Permiso                      | Scope          | Recurso  | Resultado              |
+| ------------------- | ---------------------------- | -------------- | -------- | ---------------------- |
+| Sin sesión          | read                         | A              | A        | Denegado               |
+| Miembro A sin rol   | read                         | A              | A        | Denegado               |
+| Operador A          | inventory.movement.create    | Almacén A1     | A1       | Permitido              |
+| Operador A          | inventory.movement.create    | Almacén A2     | A2       | Denegado               |
+| Operador A          | inventory.adjustment.approve | A1             | A1       | Denegado               |
+| Supervisor A        | inventory.adjustment.approve | Organización A | A1       | Permitido por herencia |
+| Miembro A           | read                         | Tenant A       | Tenant B | Denegado               |
+| Assignment expirado | read                         | A              | A        | Denegado               |
 
 ---
 
@@ -1117,31 +1117,31 @@ La optimización no reducirá seguridad.
 
 ## 58. Riesgos y controles
 
-| Riesgo | Condición | Impacto | Control | Propietario | Señal |
-|---|---|---|---|---|---|
-| Privilegio excesivo | Rol amplio | Alto | Permisos finos y revisión | Seguridad | Grants de alto riesgo |
-| Scope cruzado | Assignment incorrecto | Crítico | Constraints y RLS | Datos | Denegación A/B |
-| Revocación tardía | Caché obsoleta | Alto | Versionado e invalidación | Identity | Acceso post-revoke |
-| Herencia ambigua | Grafo incorrecto | Alto | Matriz explícita | Arquitectura | Decisión divergente |
-| Role string residual | Código antiguo | Alto | Lint y migración | Desarrollo | Uso detectado |
-| Policy lenta | Joins excesivos | Medio/Alto | Índices y caché segura | Datos | p95 auth |
-| Super admin cotidiano | Atajo operativo | Crítico | Roles de plataforma separados | Seguridad | Uso privilegiado |
-| Offline obsoleto | Grant revocado | Alto | Reautorización sync | Mobile | Comando denegado |
+| Riesgo                | Condición             | Impacto    | Control                       | Propietario  | Señal                 |
+| --------------------- | --------------------- | ---------- | ----------------------------- | ------------ | --------------------- |
+| Privilegio excesivo   | Rol amplio            | Alto       | Permisos finos y revisión     | Seguridad    | Grants de alto riesgo |
+| Scope cruzado         | Assignment incorrecto | Crítico    | Constraints y RLS             | Datos        | Denegación A/B        |
+| Revocación tardía     | Caché obsoleta        | Alto       | Versionado e invalidación     | Identity     | Acceso post-revoke    |
+| Herencia ambigua      | Grafo incorrecto      | Alto       | Matriz explícita              | Arquitectura | Decisión divergente   |
+| Role string residual  | Código antiguo        | Alto       | Lint y migración              | Desarrollo   | Uso detectado         |
+| Policy lenta          | Joins excesivos       | Medio/Alto | Índices y caché segura        | Datos        | p95 auth              |
+| Super admin cotidiano | Atajo operativo       | Crítico    | Roles de plataforma separados | Seguridad    | Uso privilegiado      |
+| Offline obsoleto      | Grant revocado        | Alto       | Reautorización sync           | Mobile       | Comando denegado      |
 
 ---
 
 ## 59. Plan de implementación
 
-| Entrega | Alcance | Propietario | Evidencia |
-|---|---|---|---|
-| Inventario | Roles y guards actuales | Identity | Catálogo |
-| Permisos | Registry por módulos | Arquitectura/Módulos | Revisión |
-| Persistencia | Roles, scopes y assignments | Datos | Migraciones |
-| Evaluador | Puerto y adapter | Identity | Unitarias |
-| RLS | Policies y helpers | Seguridad/Datos | Matriz A/B |
-| Migración | Compatibilidad temporal | Desarrollo | Cero divergencias |
-| Clientes | Guards UX y reauth | Frontend/Mobile/Desktop | E2E |
-| Revocación | Versiones e invalidación | Identity | Test temporal |
+| Entrega      | Alcance                     | Propietario             | Evidencia         |
+| ------------ | --------------------------- | ----------------------- | ----------------- |
+| Inventario   | Roles y guards actuales     | Identity                | Catálogo          |
+| Permisos     | Registry por módulos        | Arquitectura/Módulos    | Revisión          |
+| Persistencia | Roles, scopes y assignments | Datos                   | Migraciones       |
+| Evaluador    | Puerto y adapter            | Identity                | Unitarias         |
+| RLS          | Policies y helpers          | Seguridad/Datos         | Matriz A/B        |
+| Migración    | Compatibilidad temporal     | Desarrollo              | Cero divergencias |
+| Clientes     | Guards UX y reauth          | Frontend/Mobile/Desktop | E2E               |
+| Revocación   | Versiones e invalidación    | Identity                | Test temporal     |
 
 ---
 
@@ -1181,13 +1181,13 @@ Fecha de revisión sugerida: después del piloto multi-tenant y antes de permiso
 
 ## 62. Registro de aprobación
 
-| Rol | Decisión | Fecha | Evidencia |
-|---|---|---|---|
-| Product Owner | Decisión de cardinalidad confirmada; aprobación integral pendiente | 2026-08-03 | Confirmación explícita durante la validación de ADR-0003 |
-| Responsable de arquitectura | Pendiente | — | — |
-| Responsable de seguridad | Pendiente | — | — |
-| Responsable de Identity & Access | Pendiente | — | — |
-| Responsable de datos | Consultado, pendiente | — | — |
+| Rol                              | Decisión                                                           | Fecha      | Evidencia                                                |
+| -------------------------------- | ------------------------------------------------------------------ | ---------- | -------------------------------------------------------- |
+| Product Owner                    | Decisión de cardinalidad confirmada; aprobación integral pendiente | 2026-08-03 | Confirmación explícita durante la validación de ADR-0003 |
+| Responsable de arquitectura      | Pendiente                                                          | —          | —                                                        |
+| Responsable de seguridad         | Pendiente                                                          | —          | —                                                        |
+| Responsable de Identity & Access | Pendiente                                                          | —          | —                                                        |
+| Responsable de datos             | Consultado, pendiente                                              | —          | —                                                        |
 
 El estado permanecerá Propuesto hasta completar validación y aprobaciones.
 
@@ -1195,10 +1195,10 @@ El estado permanecerá Propuesto hasta completar validación y aprobaciones.
 
 ## 63. Historial
 
-| Fecha | Cambio | Autor o rol |
-|---|---|---|
-| 2026-07-12 | Propuesta inicial | Responsable de arquitectura |
-| 2026-08-03 | Incorporación del baseline, inventario del estado actual y auditoría de autorización; la decisión permanece Propuesto | Responsable de arquitectura y seguridad |
+| Fecha      | Cambio                                                                                                                                 | Autor o rol                                 |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 2026-07-12 | Propuesta inicial                                                                                                                      | Responsable de arquitectura                 |
+| 2026-08-03 | Incorporación del baseline, inventario del estado actual y auditoría de autorización; la decisión permanece Propuesto                  | Responsable de arquitectura y seguridad     |
 | 2026-08-03 | Confirmación de múltiples roles por membresía, unión de permisos scoped, compatibilidad temporal de `user_roles` y retiro de `manager` | Product Owner y responsable de arquitectura |
 
 Después de Aceptado, un cambio de modelo requerirá un ADR nuevo.

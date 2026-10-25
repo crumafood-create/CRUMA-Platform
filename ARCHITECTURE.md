@@ -7,8 +7,8 @@
 |---|---|
 | Estado | Vigente |
 | Alcance | Estructura de `src/`, dependencias y convenciones de módulos |
-| Base verificada | `main` al 24 de septiembre de 2026 |
-| Documentos relacionados | [`docs/architecture/`](docs/architecture/README.md), [`docs/engineering/code-standards.md`](docs/engineering/code-standards.md) |
+| Base verificada | Inventario de módulos conciliado contra `main` (`e89fd4176d0a9e055e47794081927ef9d51538c8`) al 25 de octubre de 2026; las demás reglas conservan su revisión previa |
+| Documentos relacionados | [`docs/architecture/`](docs/architecture/README.md), [`docs/engineering/code-standards.md`](docs/engineering/code-standards.md), [matriz ERP/MES/WMS](docs/product/erp-mes-wms-reconciliation.md) |
 
 ## 1. Propósito
 
@@ -137,17 +137,29 @@ subscriptions   super-admin     supply-chain     warehouse
 
 No todos representan una implementación terminada.
 
-- Con código funcional o cortes activos: `analytics`, `catalog`, `core`, `crm`,
-  `customers`, `finance`, `identity`, `inventory`, `manufacturing`, `orders`,
+- Con código funcional o cortes activos: `analytics`, `catalog`, `core`,
+  `customers`, `finance`, `identity`, `inventory`, `manufacturing`,
   `procurement`, `production`, `quality`, `sales`, `storefront` y `warehouse`.
 - Reservados mediante archivos `.ts` de un byte o scaffolding mínimo:
-  `accounting`, `billing`, `cart`, `checkout`, `contracts`, `dms`,
-  `fulfillment`, `hr`, `logistics`, `marketing`, `notifications`, `payments`,
+  `accounting`, `billing`, `cart`, `checkout`, `contracts`, `crm`, `dms`,
+  `fulfillment`, `hr`, `logistics`, `marketing`, `notifications`, `orders`, `payments`,
   `pricing`, `promotions`, `realtime`, `scheduling`, `search`, `subscriptions`,
   `super-admin` y `supply-chain`.
 
 Una carpeta reservada indica intención de producto, no una API disponible. No
 debe importarse ni completarse con más carpetas vacías.
+
+La lista anterior clasifica archivos dentro de los módulos, no la madurez de
+cada capacidad de negocio. En la base verificada, `crm` y `orders` contienen
+archivos reservados de un byte; las operaciones comerciales activas viven
+principalmente en `sales`. La ruta `app/(admin)/mrp/page.tsx` consulta
+requerimientos y calcula faltantes aunque `scheduling` siga reservado.
+
+La [matriz ERP/MES/WMS](docs/product/erp-mes-wms-reconciliation.md) distingue
+propietario lógico, ubicación actual, alcance implementado y brecha pendiente.
+Los propietarios lógicos de referencia están en
+[business-core.md, sección 7](docs/architecture/business-core.md#7-módulos-oficiales-del-núcleo).
+Una capacidad lógica puede abarcar varios archivos sin requerir otra carpeta.
 
 ## 4. Dirección de dependencias
 
@@ -384,6 +396,20 @@ Las siguientes dependencias existen hoy, pero no deben copiarse:
 | varios repositorios de `application` conocen tipos concretos de Supabase | introducir puertos al migrar cada corte vertical |
 | `core/decision-engine` importa un tipo de `shared` | mover el contrato estable a `core` |
 | algunos módulos conservan `ui`, `presentation`, `services` y `components` a la vez | converger gradualmente, sin una reorganización masiva sin pruebas |
+
+Además de las dependencias anteriores, la conciliación registra brechas de
+propiedad y ubicación; no todas constituyen una dependencia prohibida:
+
+| Situación actual | Pendiente de diseño |
+|---|---|
+| Formularios en `catalog` y contratos/repositorios de catálogo en `inventory` | alinear la implementación con la propiedad lógica de Catalog sin duplicar datos |
+| Casos de uso en `production` y formularios/vistas en `manufacturing` | documentar la transición de capas; esta distribución no demuestra dos motores de negocio |
+| Costeo industrial en `production`, facturación comercial en `finance` y Costing lógico documentado | conciliar el límite de Costing y sus consumidores antes de migrar código |
+| Consumo FEFO en una RPC SQL y sugerencias de picking en otra superficie | definir contrato y alcance compartido conservando selección, bloqueos y escritura en una transacción |
+
+Las alternativas y decisiones pendientes están detalladas en la
+[matriz ERP/MES/WMS](docs/product/erp-mes-wms-reconciliation.md).
+Estas filas registran hechos y trabajo de diseño, no aprueban nuevas fronteras.
 
 Las correcciones se realizan por corte vertical y con TDD. No se autoriza una
 mudanza masiva solo para hacer coincidir nombres de carpetas.

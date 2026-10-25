@@ -4,19 +4,19 @@
 
 ## Metadata
 
-| Campo | Valor |
-|---|---|
-| Estado | Propuesto |
-| Fecha | 2026-07-12 |
-| Decisores | Product Owner, responsable de arquitectura, responsable de datos y responsable de seguridad |
-| Consultados | Responsables de Identity & Access, Business Core, operación, Mobile y Desktop |
-| Informados | Desarrollo, calidad, soporte y responsables de módulos |
-| Propietario | Identity & Access con corresponsabilidad de Datos y Seguridad |
-| Alcance | Identidad, organizaciones, tablas scoped, RLS, APIs, caché, Storage, Realtime, jobs, auditoría y migración |
-| Reemplaza | No aplica |
-| Reemplazado por | No aplica |
-| RFC relacionado | No aplica; se requiere spike de esquema y RLS antes de aceptación |
-| Issues relacionados | Pendiente de vincular al backlog de Identity, baseline SQL y RLS |
+| Campo               | Valor                                                                                                      |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Estado              | Reemplazado                                                                                                |
+| Fecha               | 2026-07-12                                                                                                 |
+| Decisores           | Product Owner, responsable de arquitectura, responsable de datos y responsable de seguridad                |
+| Consultados         | Responsables de Identity & Access, Business Core, operación, Mobile y Desktop                              |
+| Informados          | Desarrollo, calidad, soporte y responsables de módulos                                                     |
+| Propietario         | Identity & Access con corresponsabilidad de Datos y Seguridad                                              |
+| Alcance             | Identidad, organizaciones, tablas scoped, RLS, APIs, caché, Storage, Realtime, jobs, auditoría y migración |
+| Reemplaza           | No aplica                                                                                                  |
+| Reemplazado por     | ADR-0017                                                                                                   |
+| RFC relacionado     | No aplica; se requiere spike de esquema y RLS antes de aceptación                                          |
+| Issues relacionados | Pendiente de vincular al backlog de Identity, baseline SQL y RLS                                           |
 
 ---
 
@@ -110,18 +110,18 @@ Estas decisiones tendrán ADR propios cuando sean necesarias.
 
 ## 5. Fuerzas de decisión
 
-| Fuerza | Importancia | Implicación |
-|---|---|---|
-| Aislamiento de datos | Alta | Una consulta o error de código no debe exponer otro tenant |
-| Integridad referencial | Alta | Las FKs deben impedir cruces incluso con IDs válidos |
-| Simplicidad inicial | Alta | El equipo no debe operar una base por cliente sin necesidad |
-| Compatibilidad con Supabase | Alta | Auth, RLS, Storage y Realtime deben integrarse naturalmente |
-| Evolución | Alta | El modelo debe permitir aislamiento dedicado futuro |
-| Rendimiento | Alta | Los filtros y policies deben ser indexables |
-| Operación | Alta | Migraciones, backups y observabilidad deben ser administrables |
-| Costo | Media | La topología inicial debe evitar infraestructura por tenant |
-| Portabilidad | Media | La semántica no debe depender solo de claims propietarios |
-| Time-to-market | Media | El onboarding inicial debe ser incremental |
+| Fuerza                      | Importancia | Implicación                                                    |
+| --------------------------- | ----------- | -------------------------------------------------------------- |
+| Aislamiento de datos        | Alta        | Una consulta o error de código no debe exponer otro tenant     |
+| Integridad referencial      | Alta        | Las FKs deben impedir cruces incluso con IDs válidos           |
+| Simplicidad inicial         | Alta        | El equipo no debe operar una base por cliente sin necesidad    |
+| Compatibilidad con Supabase | Alta        | Auth, RLS, Storage y Realtime deben integrarse naturalmente    |
+| Evolución                   | Alta        | El modelo debe permitir aislamiento dedicado futuro            |
+| Rendimiento                 | Alta        | Los filtros y policies deben ser indexables                    |
+| Operación                   | Alta        | Migraciones, backups y observabilidad deben ser administrables |
+| Costo                       | Media       | La topología inicial debe evitar infraestructura por tenant    |
+| Portabilidad                | Media       | La semántica no debe depender solo de claims propietarios      |
+| Time-to-market              | Media       | El onboarding inicial debe ser incremental                     |
 
 ---
 
@@ -160,28 +160,28 @@ Cada supuesto deberá verificarse antes de Aceptado.
 
 ## 8. Criterios de decisión
 
-| Criterio | Prioridad | Cómo se evalúa |
-|---|---|---|
-| Aislamiento verificable | Crítica | RLS, constraints y pruebas A/B |
-| Integridad | Crítica | FKs compuestas y transacciones |
-| Operabilidad | Alta | Migración, backup, soporte y monitoreo |
-| Simplicidad | Alta | Componentes y procesos adicionales |
-| Costo | Alta | Recursos fijos y costo por tenant |
-| Escalabilidad | Alta | Índices, cuotas y noisy neighbor |
-| Portabilidad | Media | Dependencia de Supabase y salida |
-| Residencia | Media actual | Capacidad de evolucionar a dedicado |
+| Criterio                | Prioridad    | Cómo se evalúa                         |
+| ----------------------- | ------------ | -------------------------------------- |
+| Aislamiento verificable | Crítica      | RLS, constraints y pruebas A/B         |
+| Integridad              | Crítica      | FKs compuestas y transacciones         |
+| Operabilidad            | Alta         | Migración, backup, soporte y monitoreo |
+| Simplicidad             | Alta         | Componentes y procesos adicionales     |
+| Costo                   | Alta         | Recursos fijos y costo por tenant      |
+| Escalabilidad           | Alta         | Índices, cuotas y noisy neighbor       |
+| Portabilidad            | Media        | Dependencia de Supabase y salida       |
+| Residencia              | Media actual | Capacidad de evolucionar a dedicado    |
 
 ---
 
 ## 9. Opciones consideradas
 
-| Opción | Resumen | Resultado propuesto |
-|---|---|---|
-| A | Esquema compartido, `tenant_id` y RLS | Elegida |
-| B | Esquema compartido, `organization_id` y RLS | No elegida |
-| C | Schema PostgreSQL por tenant | No elegida |
-| D | Proyecto o base por tenant | No elegida inicialmente |
-| E | Mantener filtros ad hoc actuales | Rechazada |
+| Opción | Resumen                                     | Resultado propuesto     |
+| ------ | ------------------------------------------- | ----------------------- |
+| A      | Esquema compartido, `tenant_id` y RLS       | Elegida                 |
+| B      | Esquema compartido, `organization_id` y RLS | No elegida              |
+| C      | Schema PostgreSQL por tenant                | No elegida              |
+| D      | Proyecto o base por tenant                  | No elegida inicialmente |
+| E      | Mantener filtros ad hoc actuales            | Rechazada               |
 
 ---
 
@@ -643,20 +643,20 @@ Un tenant no deberá bloquear a los demás.
 
 ## 31. Impacto arquitectónico
 
-| Área | Impacto |
-|---|---|
-| Business Core | Contexto de tenant en comandos, políticas y puertos |
-| Datos | Claves, FKs compuestas, índices, RLS y migraciones |
-| Seguridad | Membresías, scopes, service role y auditoría |
-| Integraciones | Credenciales y mensajes vinculados a tenant |
-| Despliegue | Baseline y validación de policies por entorno |
-| Frontend | Contexto visible y cachés scoped |
-| Mobile | Tenant/almacén activos y comandos offline scoped |
-| Desktop | Sesión, almacenamiento y bridge scoped |
-| Observabilidad | Tenant seudonimizado y alertas cross-tenant |
-| Pruebas | Matriz Tenant A/Tenant B |
-| Rendimiento | Índices, cuotas y noisy neighbor |
-| Design System | Branding futuro limitado, no seguridad |
+| Área           | Impacto                                             |
+| -------------- | --------------------------------------------------- |
+| Business Core  | Contexto de tenant en comandos, políticas y puertos |
+| Datos          | Claves, FKs compuestas, índices, RLS y migraciones  |
+| Seguridad      | Membresías, scopes, service role y auditoría        |
+| Integraciones  | Credenciales y mensajes vinculados a tenant         |
+| Despliegue     | Baseline y validación de policies por entorno       |
+| Frontend       | Contexto visible y cachés scoped                    |
+| Mobile         | Tenant/almacén activos y comandos offline scoped    |
+| Desktop        | Sesión, almacenamiento y bridge scoped              |
+| Observabilidad | Tenant seudonimizado y alertas cross-tenant         |
+| Pruebas        | Matriz Tenant A/Tenant B                            |
+| Rendimiento    | Índices, cuotas y noisy neighbor                    |
+| Design System  | Branding futuro limitado, no seguridad              |
 
 ---
 
@@ -883,14 +883,14 @@ La prueba canónica usará Tenant A y Tenant B con IDs válidos.
 
 ## 41. Matriz mínima
 
-| Actor | Operación | Recurso | Resultado |
-|---|---|---|---|
-| Anónimo | Select | Tenant A | Denegado |
-| Miembro A | Select | Tenant A | Permitido por scope |
-| Miembro A | Select | Tenant B | Denegado |
-| Miembro A | Insert | Tenant B | Denegado |
-| Miembro A | Update tenant | A→B | Denegado |
-| Miembro suspendido A | Mutación | Tenant A | Denegado |
+| Actor                   | Operación      | Recurso  | Resultado            |
+| ----------------------- | -------------- | -------- | -------------------- |
+| Anónimo                 | Select         | Tenant A | Denegado             |
+| Miembro A               | Select         | Tenant A | Permitido por scope  |
+| Miembro A               | Select         | Tenant B | Denegado             |
+| Miembro A               | Insert         | Tenant B | Denegado             |
+| Miembro A               | Update tenant  | A→B      | Denegado             |
+| Miembro suspendido A    | Mutación       | Tenant A | Denegado             |
 | Service role autorizada | Caso explícito | Tenant A | Permitido y auditado |
 
 ---
@@ -917,16 +917,16 @@ No se registrarán nombres comerciales ni payloads sensibles como labels.
 
 ## 43. Riesgos y controles
 
-| Riesgo | Condición | Impacto | Control | Propietario | Señal |
-|---|---|---|---|---|---|
-| Fuga cross-tenant | Filtro o policy incorrecta | Crítico | RLS, autorización, constraints y pruebas | Seguridad/Datos | Denegación o acceso anómalo |
-| FK cruzada | Referencia solo por ID | Alto | FK compuesta | Datos | Error de constraint |
-| Cache leak | Key sin tenant | Crítico | Keys scoped y limpieza | Frontend | Test A/B |
-| Claim obsoleto | Membresía revocada | Alto | Expiración y consulta confiable | Identity | Acceso tras revocación |
-| Service role amplia | Adaptador genérico | Crítico | Casos explícitos y auditoría | Seguridad | Uso privilegiado |
-| Policy lenta | Predicado no indexable | Medio/Alto | Índices y EXPLAIN | Datos | Latencia |
-| Noisy neighbor | Carga concentrada | Alto | Cuotas y rate limiting | Operación | Saturación por tenant |
-| Backfill incorrecto | Dato ambiguo | Crítico | Conciliación y bloqueo | Datos | Filas pendientes |
+| Riesgo              | Condición                  | Impacto    | Control                                  | Propietario     | Señal                       |
+| ------------------- | -------------------------- | ---------- | ---------------------------------------- | --------------- | --------------------------- |
+| Fuga cross-tenant   | Filtro o policy incorrecta | Crítico    | RLS, autorización, constraints y pruebas | Seguridad/Datos | Denegación o acceso anómalo |
+| FK cruzada          | Referencia solo por ID     | Alto       | FK compuesta                             | Datos           | Error de constraint         |
+| Cache leak          | Key sin tenant             | Crítico    | Keys scoped y limpieza                   | Frontend        | Test A/B                    |
+| Claim obsoleto      | Membresía revocada         | Alto       | Expiración y consulta confiable          | Identity        | Acceso tras revocación      |
+| Service role amplia | Adaptador genérico         | Crítico    | Casos explícitos y auditoría             | Seguridad       | Uso privilegiado            |
+| Policy lenta        | Predicado no indexable     | Medio/Alto | Índices y EXPLAIN                        | Datos           | Latencia                    |
+| Noisy neighbor      | Carga concentrada          | Alto       | Cuotas y rate limiting                   | Operación       | Saturación por tenant       |
+| Backfill incorrecto | Dato ambiguo               | Crítico    | Conciliación y bloqueo                   | Datos           | Filas pendientes            |
 
 ---
 
@@ -976,15 +976,15 @@ Si se acepta, esos documentos deberán actualizar su sección de decisiones pend
 
 ## 46. Plan de implementación
 
-| Entrega | Alcance | Propietario | Dependencia | Evidencia |
-|---|---|---|---|---|
-| Baseline | Esquema y policies reales | Datos | Acceso al proyecto | Migración reproducible |
-| Modelo Identity | Tenant, Organización y membresía | Identity | Baseline | Casos de uso y tests |
-| Expansión | `tenant_id` y writes | Módulos | Modelo Identity | Filas nuevas scoped |
-| Backfill | Datos existentes | Datos | Clasificación | Conciliación completa |
-| Seguridad | RLS y service role | Seguridad/Datos | Backfill | Matriz A/B |
-| Piloto | Dos tenants | Producto/Operación | Clientes preparados | Sin cruces y SLO aceptable |
-| Enforcement | NOT NULL y retiro de compatibilidad | Datos | Piloto | Conformidad |
+| Entrega         | Alcance                             | Propietario        | Dependencia         | Evidencia                  |
+| --------------- | ----------------------------------- | ------------------ | ------------------- | -------------------------- |
+| Baseline        | Esquema y policies reales           | Datos              | Acceso al proyecto  | Migración reproducible     |
+| Modelo Identity | Tenant, Organización y membresía    | Identity           | Baseline            | Casos de uso y tests       |
+| Expansión       | `tenant_id` y writes                | Módulos            | Modelo Identity     | Filas nuevas scoped        |
+| Backfill        | Datos existentes                    | Datos              | Clasificación       | Conciliación completa      |
+| Seguridad       | RLS y service role                  | Seguridad/Datos    | Backfill            | Matriz A/B                 |
+| Piloto          | Dos tenants                         | Producto/Operación | Clientes preparados | Sin cruces y SLO aceptable |
+| Enforcement     | NOT NULL y retiro de compatibilidad | Datos              | Piloto              | Conformidad                |
 
 ---
 
@@ -1030,12 +1030,12 @@ Fecha de revisión sugerida: después del piloto de dos tenants o antes de onboa
 
 ## 49. Registro de aprobación
 
-| Rol | Decisión | Fecha | Evidencia |
-|---|---|---|---|
-| Product Owner | Pendiente | — | — |
-| Responsable de arquitectura | Pendiente | — | — |
-| Responsable de datos | Pendiente | — | — |
-| Responsable de seguridad | Pendiente | — | — |
+| Rol                         | Decisión  | Fecha | Evidencia |
+| --------------------------- | --------- | ----- | --------- |
+| Product Owner               | Pendiente | —     | —         |
+| Responsable de arquitectura | Pendiente | —     | —         |
+| Responsable de datos        | Pendiente | —     | —         |
+| Responsable de seguridad    | Pendiente | —     | —         |
 
 El estado permanecerá Propuesto mientras exista una aprobación pendiente o no se cumpla la validación mínima.
 
@@ -1043,8 +1043,8 @@ El estado permanecerá Propuesto mientras exista una aprobación pendiente o no 
 
 ## 50. Historial
 
-| Fecha | Cambio | Autor o rol |
-|---|---|---|
+| Fecha      | Cambio            | Autor o rol                 |
+| ---------- | ----------------- | --------------------------- |
 | 2026-07-12 | Propuesta inicial | Responsable de arquitectura |
 
 Después de Aceptado, un cambio de decisión requerirá un ADR nuevo.

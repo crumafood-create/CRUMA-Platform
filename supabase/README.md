@@ -9,6 +9,7 @@ Su propósito es avanzar la validación de [ADR-0002](../docs/architecture/adr/0
 - Supabase CLI fijado en `2.109.1`.
 - Configuración local en `supabase/config.toml`.
 - Migraciones canónicas en `supabase/migrations/`.
+- Correcciones sin prueba PostgreSQL en `supabase/pending/`; no se aplican ni cuentan como autoridad.
 - Baseline del esquema versionado.
 - Reconstrucción local desde cero validada.
 - Lint del esquema validado con nivel `error`.
@@ -44,6 +45,7 @@ La reconstrucción local validada contiene:
 - Node y pnpm según ADR-0013.
 - Supabase CLI instalado mediante las dependencias del proyecto.
 - Red Docker `cruma-supabase-local`.
+- Puerto local `127.0.0.1:54322` libre. El puerto `5432` queda reservado para PostgreSQL nativo de Windows y no lo usa Supabase.
 
 La red se crea una sola vez:
 

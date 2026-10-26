@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, type ChangeEvent } from 'react';
+import { useState, useTransition, type ChangeEvent, type FormEvent } from 'react';
+
+import { FormError } from '@/shared/ui/forms/field-error/form-error';
 
 import {
   toSlug,
@@ -21,7 +23,7 @@ interface UnitOfMeasure {
 }
 
 interface ProductFormProps {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<void | { error: string }>;
   categories?: SelectOption[];
   families?: SelectOption[];
   flavors?: SelectOption[];
@@ -67,6 +69,8 @@ export function ProductForm({
   preparationTypes,
   unitsOfMeasure,
 }: ProductFormProps) {
+  const [error, setError] = useState('');
+  const [, startTransition] = useTransition();
   const [productName, setProductName] = useState(initialValues?.name ?? '');
   const [slug, setSlug] = useState(initialValues?.slug ?? '');
   const [slugEdited, setSlugEdited] = useState(!!initialValues?.slug);
@@ -82,6 +86,16 @@ export function ProductForm({
   const [selectedFamily, setSelectedFamily] = useState(
     initialValues?.family_id ?? ''
   );
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setError('');
+    startTransition(async () => {
+      const result = await action(formData);
+      if (result) setError(result.error);
+    });
+  }
 
   const filteredFamilies =
     families?.filter(
@@ -139,7 +153,8 @@ export function ProductForm({
   }
 
   return (
-    <form action={action} className="space-y-8 rounded-2xl border bg-white p-6">
+    <form onSubmit={handleSubmit} className="space-y-8 rounded-2xl border bg-white p-6">
+      {error && <div role="alert"><FormError message={error} /></div>}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Información General</h2>
 
@@ -157,10 +172,9 @@ export function ProductForm({
           </div>
 
           <div>
-            <label className="mb-2 block font-medium">Código Interno *</label>
+            <label className="mb-2 block font-medium">Código Interno (opcional)</label>
             <input
               name="internal_code"
-              required
               value={internalCode}
               onChange={handleInternalCodeChange}
               className="w-full rounded-lg border p-3"
@@ -366,8 +380,8 @@ export function ProductForm({
               className="w-full rounded-lg border p-3"
             >
               <option value="active">Activo</option>
-              <option value="inactive">Inactivo</option>
               <option value="draft">Borrador</option>
+              <option value="archived">Archivado</option>
             </select>
           </div>
 

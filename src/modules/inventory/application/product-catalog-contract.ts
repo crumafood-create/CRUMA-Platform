@@ -27,7 +27,7 @@ type ProductFormSelection = Pick<
   | 'min_stock'
 >;
 
-const PRODUCT_STATUSES = new Set(['active', 'inactive', 'draft']);
+const PRODUCT_STATUSES = new Set(['active', 'draft', 'archived']);
 
 function requiredText(form: FormData, field: string): string {
   const value = form.get(field)?.toString().trim() ?? '';
@@ -54,8 +54,8 @@ function productStatus(form: FormData): string {
 function minimumStock(form: FormData): number {
   const quantity = Number(optionalText(form, 'min_stock') ?? 0);
 
-  if (!Number.isFinite(quantity) || quantity < 0) {
-    throw new Error('El campo min_stock debe ser un número no negativo y finito.');
+  if (!Number.isFinite(quantity) || !Number.isInteger(quantity) || quantity < 0) {
+    throw new Error('El campo min_stock debe ser un entero no negativo y finito.');
   }
 
   return quantity;

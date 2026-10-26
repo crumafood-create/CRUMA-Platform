@@ -20,7 +20,7 @@ describe('contrato tipado del catálogo de productos', () => {
     const result = buildProductInsert(productForm({
       category_id: ' category-1 ',
       family_id: ' family-1 ',
-      min_stock: '12.5',
+      min_stock: '12',
       internal_code: ' SKU-001 ',
       is_featured: 'on',
     }));
@@ -30,18 +30,18 @@ describe('contrato tipado del catálogo de productos', () => {
     expect(result.category_id).toBe('category-1');
     expect(result.family_id).toBe('family-1');
     expect(result.internal_code).toBe('SKU-001');
-    expect(result.min_stock).toBe(12.5);
+    expect(result.min_stock).toBe(12);
     expect(result.status).toBe('active');
     expect(result.is_featured).toBe(true);
     expect(result.description).toBe(null);
   });
 
-  it.each(['active', 'inactive', 'draft'])(
+  it.each(['active', 'draft', 'archived'])(
     'acepta estado canónico: %s',
     (status) => expect(buildProductInsert(productForm({ status })).status).toBe(status),
   );
 
-  it.each(['pending', 'archived'])(
+  it.each(['pending', 'inactive'])(
     'rechaza estado fuera del contrato: %s',
     (status) => expect(() => buildProductInsert(productForm({ status })))
       .toThrow('Estado de producto inválido.'),
@@ -53,10 +53,16 @@ describe('contrato tipado del catálogo de productos', () => {
       .toThrow(`El campo ${field} es obligatorio.`),
   );
 
-  it.each(['-1', 'Infinity', 'texto'])(
+  it.each([['0', 0], ['1', 1], ['12', 12]] as const)(
+    'acepta stock mínimo entero no negativo: %s',
+    (min_stock, expected) => expect(buildProductInsert(productForm({ min_stock })).min_stock)
+      .toBe(expected),
+  );
+
+  it.each(['12.5', '0.1', '-1', 'Infinity', '-Infinity', 'NaN', 'texto'])(
     'rechaza stock mínimo inválido: %s',
     (min_stock) => expect(() => buildProductInsert(productForm({ min_stock })))
-      .toThrow('El campo min_stock debe ser un número no negativo y finito.'),
+      .toThrow('El campo min_stock debe ser un entero no negativo y finito.'),
   );
 
   it.each(['category_id', 'family_id'])(

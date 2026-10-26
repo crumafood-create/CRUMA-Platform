@@ -40,7 +40,7 @@ export default async function ProductsPage() {
   ] = await Promise.all([
     supabase
       .from('products')
-      .select('id, category_id, family_id, flavor_id, preparation_type_id, slug, internal_code, name, status, is_featured')
+      .select('id, category_id, family_id, flavor_id, preparation_type_id, slug, internal_code, name, status, min_stock, is_featured')
       .is('deleted_at', null)
       .order('created_at', { ascending: false }),
     supabase.from('categories').select('id, name').is('deleted_at', null).order('name'),
@@ -114,6 +114,10 @@ export default async function ProductsPage() {
 
                 <div className="text-sm text-gray-500">
                   Estado: {product.status ?? '-'}
+                </div>
+
+                <div className="text-sm text-gray-500">
+                  Stock mínimo: {product.min_stock ?? '-'}
                 </div>
 
                 <div className="mt-2 text-sm text-gray-500">

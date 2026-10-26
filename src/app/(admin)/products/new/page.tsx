@@ -5,7 +5,7 @@ import { fetchProductFormCatalog } from '@/modules/inventory/application/product
 
 import { ProductForm } from '@/modules/catalog/components/forms/product-form';
 
-import { createProduct } from '../actions';
+import { createProductForForm } from '../actions';
 
 export default async function NewProductPage() {
   const supabase = await createTypedClient();
@@ -27,7 +27,7 @@ export default async function NewProductPage() {
       </div>
 
       <ProductForm
-        action={createProduct}
+        action={createProductForForm}
         categories={catalog.categories}
         families={catalog.families}
         flavors={catalog.flavors}

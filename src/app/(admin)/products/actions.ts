@@ -16,6 +16,8 @@ import {
 import { buildStorefrontProductUpsert } from '@/modules/storefront/application/storefront-product-contract';
 import { upsertStorefrontProduct } from '@/modules/storefront/application/storefront-product-repository';
 
+class ProductCreationError extends Error {}
+
 export async function updateProduct(productId: string, formData: FormData) {
   const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.CATALOG_PRODUCT_MANAGE,
@@ -60,10 +62,27 @@ export async function createProduct(formData: FormData) {
   );
 
   const { error } = await supabase.from('products').insert(product);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === '23505' && error.message.includes('"products_slug_key"')) {
+      throw new ProductCreationError('Ya existe un producto con ese slug.', { cause: error });
+    }
+    if (error.code === '23505' && error.message.includes('"products_internal_code_key"')) {
+      throw new ProductCreationError('Ya existe un producto con ese código interno.', { cause: error });
+    }
+    throw new ProductCreationError('No se pudo registrar el producto.', { cause: error });
+  }
 
   revalidatePath('/products');
   redirect('/products');
+}
+
+export async function createProductForForm(formData: FormData) {
+  try {
+    await createProduct(formData);
+  } catch (error) {
+    if (error instanceof ProductCreationError) return { error: error.message };
+    throw error;
+  }
 }
 
 export async function saveStorefrontPublication(

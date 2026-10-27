@@ -22,7 +22,7 @@ it('ofrece acceso a compras desde el catálogo de materias primas', async () => 
     },
   });
 
-  render(await RawMaterialsPage());
+  render(await RawMaterialsPage({}));
 
   expect(screen.getByRole('link', { name: 'Crear orden de compra' })).toHaveAttribute(
     'href',

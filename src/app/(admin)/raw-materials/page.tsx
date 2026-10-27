@@ -2,15 +2,20 @@ import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
+type RawMaterialsSearchParams = {
+  created?: string;
+};
+
 export default async function RawMaterialsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ created?: string }>;
-} = {}) {
-  const [{ created }, supabase] = await Promise.all([
-    searchParams ?? Promise.resolve({}),
+  searchParams?: Promise<RawMaterialsSearchParams>;
+}) {
+  const [search, supabase] = await Promise.all([
+    searchParams ?? Promise.resolve<RawMaterialsSearchParams>({}),
     createTypedClient(),
   ]);
+  const { created } = search;
 
   const [
     { data: materials, error: materialsError },

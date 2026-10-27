@@ -11,11 +11,18 @@ import {
 } from '@/modules/inventory/application/raw-material-contract';
 import { assertRawMaterialFamilyBelongsToCategory } from '@/modules/inventory/application/raw-material-repository';
 
-export async function createRawMaterial(formData: FormData) {
+export async function createRawMaterial(
+  returnToPurchaseOrderId: string | null,
+  formData: FormData,
+) {
   const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.INVENTORY_MATERIAL_MANAGE,
   );
-  const material = buildRawMaterialInsert(formData);
+  const material = {
+    ...buildRawMaterialInsert(formData),
+    current_stock: 0,
+    average_cost: 0,
+  };
 
   await assertRawMaterialFamilyBelongsToCategory(
     supabase,
@@ -23,12 +30,20 @@ export async function createRawMaterial(formData: FormData) {
     material.family_id ?? null,
   );
 
-  const { error } = await supabase.from('raw_materials').insert(material);
+  const { data: createdMaterial, error } = await supabase
+    .from('raw_materials')
+    .insert(material)
+    .select('id')
+    .single();
 
   if (error) throw new Error(error.message);
 
   revalidatePath('/raw-materials');
-  redirect('/raw-materials');
+  redirect(
+    returnToPurchaseOrderId
+      ? `/purchase-orders/${returnToPurchaseOrderId}/items?rawMaterialId=${createdMaterial.id}`
+      : '/raw-materials?created=1',
+  );
 }
 
 export async function updateRawMaterial(materialId: string, formData: FormData) {

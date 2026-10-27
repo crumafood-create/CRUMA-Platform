@@ -5,7 +5,14 @@ import { RawMaterialForm } from '@/modules/warehouse/components/forms/raw-materi
 
 import { createRawMaterial } from '../actions';
 
-export default async function NewRawMaterialPage() {
+export default async function NewRawMaterialPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    returnToPurchaseOrderId?: string;
+  }>;
+}) {
+  const { returnToPurchaseOrderId } = await searchParams;
   const supabase = await createTypedClient();
   const { categories, families, unitsOfMeasure } =
     await fetchRawMaterialFormCatalog(supabase);
@@ -17,7 +24,10 @@ export default async function NewRawMaterialPage() {
       </h1>
 
       <RawMaterialForm
-        action={createRawMaterial}
+        action={createRawMaterial.bind(
+          null,
+          returnToPurchaseOrderId ?? null,
+        )}
         categories={categories}
         families={families}
         unitsOfMeasure={unitsOfMeasure}

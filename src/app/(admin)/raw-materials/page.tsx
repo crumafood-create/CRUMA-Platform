@@ -2,8 +2,15 @@ import Link from 'next/link';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-export default async function RawMaterialsPage() {
-  const supabase = await createTypedClient();
+export default async function RawMaterialsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ created?: string }>;
+} = {}) {
+  const [{ created }, supabase] = await Promise.all([
+    searchParams ?? Promise.resolve({}),
+    createTypedClient(),
+  ]);
 
   const [
     { data: materials, error: materialsError },
@@ -54,13 +61,30 @@ export default async function RawMaterialsPage() {
           Materias Primas
         </h1>
 
-        <Link
-          href="/raw-materials/new"
-          className="rounded border px-4 py-2"
-        >
-          Nueva Materia Prima
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/purchase-orders/new"
+            className="rounded border px-4 py-2"
+          >
+            Crear orden de compra
+          </Link>
+          <Link
+            href="/raw-materials/new"
+            className="rounded border px-4 py-2"
+          >
+            Nueva Materia Prima
+          </Link>
+        </div>
       </div>
+
+      {created === '1' ? (
+        <p
+          role="status"
+          className="rounded-xl border border-green-200 bg-green-50 p-4 text-green-700"
+        >
+          Materia prima creada correctamente.
+        </p>
+      ) : null}
 
       <div className="overflow-hidden rounded-2xl border">
         {materials?.length ? (

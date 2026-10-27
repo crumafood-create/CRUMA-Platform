@@ -4,6 +4,23 @@ import { describe, expect, it, vi } from 'vitest';
 import { RawMaterialForm } from './raw-material-form';
 
 describe('RawMaterialForm', () => {
+  it('shows stock and average cost as zero and read-only on creation', () => {
+    const { container } = render(
+      <RawMaterialForm action={vi.fn().mockResolvedValue(undefined)} />,
+    );
+    const currentStock = container.querySelector<HTMLInputElement>(
+      'input[name="current_stock"]',
+    );
+    const averageCost = container.querySelector<HTMLInputElement>(
+      'input[name="average_cost"]',
+    );
+
+    expect(currentStock).toHaveValue(0);
+    expect(currentStock).toHaveAttribute('readonly');
+    expect(averageCost).toHaveValue(0);
+    expect(averageCost).toHaveAttribute('readonly');
+  });
+
   it('keeps inventory-owned values read-only when editing', () => {
     const { container } = render(
       <RawMaterialForm

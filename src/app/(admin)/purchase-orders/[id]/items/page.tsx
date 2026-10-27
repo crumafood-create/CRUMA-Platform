@@ -8,10 +8,15 @@ import { createPurchaseOrderItem } from './actions';
 
 export default async function PurchaseOrderItemsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ rawMaterialId?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { rawMaterialId }] = await Promise.all([
+    params,
+    searchParams ?? Promise.resolve({}),
+  ]);
   const supabase = await createTypedClient();
   const [{ data: order }, { data: materials }, { data: items }] = await Promise.all([
     supabase.from('purchase_orders').select('id, status').eq('id', id).is('deleted_at', null).maybeSingle(),
@@ -32,13 +37,28 @@ export default async function PurchaseOrderItemsPage({
     <main className="space-y-6">
       <header className="flex items-center justify-between">
         <h1 className="text-4xl font-bold">Renglones de compra</h1>
-        <Link href={`/purchase-orders/${id}`} className="rounded border px-4 py-2">Volver</Link>
+        <div className="flex gap-2">
+          {order.status === 'draft' ? (
+            <Link
+              href={`/raw-materials/new?returnToPurchaseOrderId=${order.id}`}
+              className="rounded border px-4 py-2"
+            >
+              Crear materia prima
+            </Link>
+          ) : null}
+          <Link href={`/purchase-orders/${id}`} className="rounded border px-4 py-2">Volver</Link>
+        </div>
       </header>
       {order.status === 'draft' ? (
         <PurchaseOrderItemForm
           action={createPurchaseOrderItem}
           purchaseOrderId={order.id}
           materials={materials ?? []}
+          initialMaterialId={
+            materials?.some((material) => material.id === rawMaterialId)
+              ? rawMaterialId
+              : undefined
+          }
         />
       ) : null}
       <section className="rounded-2xl border p-6">

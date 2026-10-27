@@ -339,7 +339,7 @@ export function RawMaterialForm({
               step="0.0001"
               name="current_stock"
               defaultValue={initialValues?.current_stock ?? 0}
-              readOnly={Boolean(initialValues)}
+              readOnly
               className="w-full rounded-lg border p-3"
             />
           </div>
@@ -368,7 +368,7 @@ export function RawMaterialForm({
               step="0.0001"
               name="average_cost"
               defaultValue={initialValues?.average_cost ?? 0}
-              readOnly={Boolean(initialValues)}
+              readOnly
               className="w-full rounded-lg border p-3"
             />
           </div>

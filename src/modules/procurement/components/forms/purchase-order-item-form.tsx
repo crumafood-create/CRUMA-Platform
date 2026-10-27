@@ -13,12 +13,14 @@ interface Props {
 
   purchaseOrderId: string;
   materials: Material[];
+  initialMaterialId?: string;
 }
 
 export function PurchaseOrderItemForm({
   action,
   purchaseOrderId,
   materials,
+  initialMaterialId,
 }: Props) {
   return (
     <form
@@ -40,7 +42,7 @@ export function PurchaseOrderItemForm({
           name="raw_material_id"
           required
           className="w-full rounded border p-3"
-          defaultValue=""
+          defaultValue={initialMaterialId ?? ''}
         >
           <option value="">
             Seleccionar

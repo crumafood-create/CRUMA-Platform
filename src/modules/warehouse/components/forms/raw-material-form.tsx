@@ -1,6 +1,13 @@
 'use client';
 
-import { useState, type ChangeEvent } from 'react';
+import {
+  useState,
+  useTransition,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react';
+
+import { FormError } from '@/shared/ui/forms/field-error/form-error';
 
 import {
   toSlug,
@@ -60,6 +67,20 @@ function generateInternalCode(
   return `${prefix ?? 'MP'}-${toInternalCode(cleanName)}`;
 }
 
+const knownCreationErrors = new Set([
+  'La familia de una materia prima requiere una categoría.',
+  'La familia no pertenece a la categoría seleccionada.',
+  'Familia de materia prima no encontrada.',
+]);
+
+function getCreationErrorMessage(error: unknown): string {
+  if (error instanceof Error && knownCreationErrors.has(error.message)) {
+    return error.message;
+  }
+
+  return 'No fue posible guardar la materia prima. Revisa los datos e inténtalo de nuevo.';
+}
+
 export function RawMaterialForm({
   action,
   categories,
@@ -94,6 +115,21 @@ export function RawMaterialForm({
   const [selectedFamily, setSelectedFamily] = useState(
     initialValues?.family_id ?? ''
   );
+  const [error, setError] = useState('');
+  const [, startTransition] = useTransition();
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setError('');
+    startTransition(async () => {
+      try {
+        await action(formData);
+      } catch (actionError) {
+        setError(getCreationErrorMessage(actionError));
+      }
+    });
+  }
 
   const filteredFamilies =
     families?.filter(
@@ -166,9 +202,15 @@ export function RawMaterialForm({
 
   return (
     <form
-      action={action}
+      onSubmit={handleSubmit}
       className="space-y-8 rounded-2xl border bg-white p-6"
     >
+      {error ? (
+        <div role="alert">
+          <FormError message={error} />
+        </div>
+      ) : null}
+
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">
           Información General

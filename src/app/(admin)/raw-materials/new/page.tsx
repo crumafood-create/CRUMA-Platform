@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 import { fetchRawMaterialFormCatalog } from '@/modules/inventory/application/raw-material-repository';
 
@@ -22,6 +24,15 @@ export default async function NewRawMaterialPage({
       <h1 className="text-4xl font-bold">
         Nueva Materia Prima
       </h1>
+
+      <Link
+        href={returnToPurchaseOrderId
+          ? `/purchase-orders/${returnToPurchaseOrderId}/items`
+          : '/raw-materials'}
+        className="inline-block rounded border px-4 py-2"
+      >
+        Cancelar
+      </Link>
 
       <RawMaterialForm
         action={createRawMaterial.bind(

@@ -1,17 +1,24 @@
 import { render, screen } from '@testing-library/react';
-import { expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 
 import PurchaseOrderItemsPage from './page';
 
 const ORDER_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const MATERIAL_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const PREVIOUS_MATERIAL_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const USER_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const { createClient } = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock('@/infrastructure/integrations/supabase/server', () => ({
   createTypedClient: createClient,
 }));
 
+beforeEach(() => {
+  sessionStorage.clear();
+});
+
 it('purchaseOrderItems_offersMissingMaterialCreationWithOrderContext', async () => {
   createClient.mockResolvedValue({
+    auth: { getUser: async () => ({ data: { user: { id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' } } }) },
     from: (table: string) => {
       const query = {
         select: () => query,
@@ -42,8 +49,18 @@ it('purchaseOrderItems_offersMissingMaterialCreationWithOrderContext', async () 
   );
 });
 
-it('purchaseOrderItems_preselectsCreatedMaterialWithoutAddingLine', async () => {
+it('purchaseOrderItems_preselectsCreatedMaterialAndRestoresCaptureWithoutAddingLine', async () => {
+  sessionStorage.setItem(
+    `cruma:purchase-order-item:${USER_ID}:${ORDER_ID}`,
+    JSON.stringify({
+      raw_material_id: PREVIOUS_MATERIAL_ID,
+      quantity: '8.25',
+      unit_cost: '17.40',
+    }),
+  );
+
   createClient.mockResolvedValue({
+    auth: { getUser: async () => ({ data: { user: { id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' } } }) },
     from: (table: string) => {
       const query = {
         select: () => query,
@@ -78,5 +95,7 @@ it('purchaseOrderItems_preselectsCreatedMaterialWithoutAddingLine', async () => 
     MATERIAL_ID,
   );
   expect(screen.getByText('No hay artículos.')).toBeInTheDocument();
+  expect(container.querySelector('input[name="quantity"]')).toHaveValue('8.25');
+  expect(container.querySelector('input[name="unit_cost"]')).toHaveValue('17.40');
   expect(screen.getByRole('button', { name: 'Agregar' })).toBeInTheDocument();
 });

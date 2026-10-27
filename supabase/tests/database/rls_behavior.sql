@@ -719,21 +719,42 @@ VALUES (
   '99000000-0000-0000-0000-000000000001'
 );
 
-INSERT INTO public.purchase_order_items (
-  id, purchase_order_id, raw_material_id, quantity, unit_cost, total
-)
-VALUES (
-  '9b000000-0000-0000-0000-000000000001',
-  '9a000000-0000-0000-0000-000000000002',
-  '95000000-0000-0000-0000-000000000001',
-  2, 5, 10
-);
+DO $test$
+DECLARE
+  item_id uuid;
+  item_count integer;
+BEGIN
+  item_id := public.add_purchase_order_item(
+    '9a000000-0000-0000-0000-000000000002',
+    '95000000-0000-0000-0000-000000000001',
+    2,
+    5
+  );
+
+  SELECT count(*) INTO item_count
+  FROM public.purchase_order_items
+  WHERE id = item_id
+    AND purchase_order_id = '9a000000-0000-0000-0000-000000000002'
+    AND raw_material_id = '95000000-0000-0000-0000-000000000001'
+    AND quantity = 2
+    AND unit_cost = 5
+    AND total = 10;
+
+  IF item_count <> 1 THEN
+    RAISE EXCEPTION 'purchase order item was not persisted exactly once';
+  END IF;
+END;
+$test$;
 
 UPDATE public.purchase_orders SET status = 'released'
 WHERE id = '9a000000-0000-0000-0000-000000000002';
 
 SELECT public.receive_purchase_order_lot(
-  '9b000000-0000-0000-0000-000000000001',
+  (
+    SELECT id FROM public.purchase_order_items
+    WHERE purchase_order_id = '9a000000-0000-0000-0000-000000000002'
+      AND raw_material_id = '95000000-0000-0000-0000-000000000001'
+  ),
   2,
   'RLS-LOT-1',
   '2027-09-02',

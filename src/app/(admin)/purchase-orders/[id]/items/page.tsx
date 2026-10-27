@@ -15,7 +15,7 @@ export default async function PurchaseOrderItemsPage({
 }) {
   const [{ id }, { rawMaterialId }] = await Promise.all([
     params,
-    searchParams ?? Promise.resolve({}),
+    searchParams ?? Promise.resolve({ rawMaterialId: undefined }),
   ]);
   const supabase = await createTypedClient();
   const [{ data: order }, { data: materials }, { data: items }] = await Promise.all([
@@ -31,6 +31,7 @@ export default async function PurchaseOrderItemsPage({
       .select('id, quantity, received_quantity, unit_cost, total')
       .eq('purchase_order_id', id),
   ]);
+  const { data: { user } } = await supabase.auth.getUser();
   if (!order) notFound();
 
   return (
@@ -53,6 +54,7 @@ export default async function PurchaseOrderItemsPage({
         <PurchaseOrderItemForm
           action={createPurchaseOrderItem}
           purchaseOrderId={order.id}
+          userId={user?.id}
           materials={materials ?? []}
           initialMaterialId={
             materials?.some((material) => material.id === rawMaterialId)

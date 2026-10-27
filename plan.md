@@ -1,71 +1,66 @@
-# Historia completada: saldos iniciales trazables de materia prima
+# Historia: conservar la captura al crear una materia prima desde compras
 
 ## Story
 
-Como administrador de inventario, quiero que una materia prima nueva empiece con stock actual y costo promedio en cero, para que el saldo físico inicial se registre mediante el flujo de compras y quede trazable.
+Como administrador autorizado, quiero cancelar el alta o recuperarme de errores y capturas pendientes al crear una materia prima desde compras, para no perder mi trabajo.
 
 ## Módulo propietario
 
-**Inventory** — es propietario de movimientos y saldos. Warehouse opera la recepción física. La propiedad de las reglas de cálculo de costos permanece pendiente de conciliación; esta historia no la decide.
+**Procurement** es propietario de las órdenes y sus condiciones. **Inventory** conserva los datos del alta de materia prima y muestra sus errores. **app** coordina la salida, el retorno a la misma orden y la selección del material creado.
+
+La ubicación física del formulario de materia prima en `warehouse/components` no modifica su propiedad lógica. No se trasladan reglas entre módulos ni se crea otro módulo.
 
 ## Criterios de aceptación aprobados
 
-- [x] Dado que creo una materia prima, cuando veo la sección Inventario, entonces Stock Actual y Costo Promedio aparecen en cero y no se pueden editar.
-- [x] Dado que envío la creación con valores distintos de cero para stock o costo, cuando se guarda la materia prima, entonces ambos valores quedan en cero y los valores enviados no alteran el resultado.
-- [x] Dado que inicio el alta desde el catálogo general o desde los renglones de una orden en borrador, cuando la materia prima se guarda correctamente, entonces desde el catálogo permanezco allí con confirmación de éxito y acceso a compras; desde la orden regreso a esa misma orden con la materia prima seleccionada, sin agregar el renglón hasta que confirme sus condiciones.
+- [x] Dado que el alta de materia prima falla por validación o persistencia, cuando vuelvo al formulario, entonces se conservan sus campos editables y se muestra el error.
+- [x] Dado que hay datos sin guardar en los renglones de una orden en borrador, cuando abro el alta de una materia prima y la cancelo, entonces regreso a la misma orden con la captura pendiente recuperada y sin crear la materia prima ni un renglón.
+- [x] Dado que creo correctamente una materia prima desde esa orden, cuando regreso a los renglones, entonces se muestra seleccionada la materia prima nueva, se recuperan los demás datos pendientes de compra y todavía no hay un renglón agregado.
+- [x] Dado que la materia prima está seleccionada y confirmé los datos del renglón, cuando pulso **Agregar**, entonces se crea un solo renglón con la cantidad y el costo confirmados.
+
+## Reglas aprobadas para la captura pendiente
+
+- Guardar en `sessionStorage` solo materia prima, cantidad y costo unitario; conservar los valores como cadenas, incluso si están incompletos.
+- Asociar la captura al ID del usuario y al ID de la orden. No restaurarla para otra orden o usuario.
+- Al cancelar el alta, regresar a la misma orden con la captura recuperada. Al crear la materia prima, seleccionar la nueva y recuperar cantidad y costo.
+- Si el usuario empieza a editar el formulario, no sobrescribir esos cambios con una restauración posterior.
+- Un error al agregar el renglón conserva la captura para corregir y reintentar. Un alta de materia prima o una restauración nunca agrega el renglón automáticamente.
+- Un alta exitosa del renglón limpia la captura pendiente de esa orden. **Descartar captura** borra solo esos valores pendientes y conserva los renglones guardados.
+- El servidor conserva la validación de permisos, estado de la orden y datos definitivos. No se agregan tablas ni un sistema genérico de borradores.
 
 ## Plan aprobado
 
-- Mostrar stock actual y costo promedio iniciales en cero y solo lectura al crear una materia prima.
-- Asegurar que el alta del servidor persista ambos valores en cero aunque la petición incluya otros.
-- Desde el catálogo general, confirmar el alta y ofrecer acceso a compras.
-- Desde los renglones de una orden, ofrecer el alta de una materia prima faltante y, al guardarla, regresar a esa misma orden con el artículo seleccionado; no agregar el renglón automáticamente.
-- Dejar como verificación de integración futura el recorrido de recepción por orden y liberación de Calidad, comprobando existencias físicas y disponibles sin duplicar movimientos.
+- Conservar los campos editables del alta de materia prima y devolver el motivo del rechazo sin perder esa captura. Inventory mantiene esta responsabilidad.
+- Conservar la selección de materia prima, cantidad y costo unitario pendientes del renglón de compra mediante `sessionStorage` por usuario y orden. Procurement mantiene esta responsabilidad.
+- Hacer que `app` coordine cancelación, retorno a la misma orden y selección del material recién creado.
+- Mantener separadas la creación de la materia prima y la creación del renglón; únicamente **Agregar** confirma este último.
+- Respetar la autorización vigente y la validación del estado borrador existentes, sin agregar campos ni columnas.
 
 ## Fuera del alcance
 
-- Editar stock o costos de materias primas existentes.
-- Definir o cambiar la fórmula y propiedad del costo promedio.
-- Cambiar la recepción, la liberación de Calidad o los movimientos existentes.
-- Resolver los otros cinco hallazgos, que se mantienen como candidatos a historias separadas.
+- Agregar automáticamente el renglón al crear la materia prima.
+- Cambiar stock, costos de inventario, recepción o liberación de Calidad.
+- Persistir la captura después de cerrar la pestaña o el navegador.
+- Crear módulos, campos, columnas o un sistema genérico de borradores.
 
-## Pruebas aprobadas
+## Estado de los ciclos
 
-| Prueba | Capa responsable |
-|---|---|
-| `RawMaterialForm_showsStockAndAverageCostAsZeroAndReadOnly` | Componente del formulario |
-| `createRawMaterial_persistsZeroStockAndAverageCostDespiteSubmittedValues` | Acción del servidor |
-| `rawMaterialCatalog_offersPurchaseOrderLinkAfterCreation` | Página del catálogo |
-| `purchaseOrderItems_offersMissingMaterialCreationWithOrderContext` | Página de renglones de compra |
-| `createRawMaterial_fromPurchaseOrderReturnsToSameOrder` | Acción del servidor |
-| `rawMaterialCatalog_confirmsSuccessfulCreation` | Página del catálogo |
-| `createRawMaterial_fromPurchaseOrderReturnsWithMaterialSelected` | Acción del servidor |
-| `purchaseOrderItems_preselectsCreatedMaterialWithoutAddingLine` | Página y formulario de renglones de compra |
+- Ciclo 2: implementado y recorrido manualmente; cancelar el alta regresó a la misma orden con la captura intacta.
+- Ciclo 3: automatizado y recorrido manualmente; la materia prima nueva tuvo prioridad, y cantidad y costo se restauraron sin crear un renglón.
+- Ciclo 4: formulario y server action cubiertos por pruebas automatizadas. En desarrollo se comprobaron el guardado, el rechazo de un material ya incluido, la retención tras recargar y la limpieza explícita de la captura.
+- El test SQL adicional de persistencia única está en `supabase/tests/database/rls_behavior.sql`; no se ejecutó localmente porque no hay Docker. La regla existente de una misma materia prima por borrador se conserva en `purchase-order-repository.test.ts` y en el RPC.
+- Verificación automática: `pnpm run typecheck` pasó. Las pruebas enfocadas del ciclo 4 pasaron: 19 pruebas en 4 archivos.
 
-### Verificación de integración pendiente
+## Verificación manual realizada en desarrollo
 
-- Resultado esperado: la recepción registra una sola vez la cantidad física recibida, el lote y su ubicación; Calidad muestra su estado y, al liberar el lote, lo habilita para consumo sin volver a registrar la entrada.
-- Resultado obtenido: no ejecutado manualmente en esta revisión. La historia de navegación y selección se verificó mediante las pruebas aprobadas; no se afirma que el recorrido integral haya sido validado.
-- Diferencias: queda pendiente contrastar en desarrollo las existencias físicas y disponibles y los movimientos del flujo compra → recepción → Calidad.
+| Paso | Resultado esperado | Resultado observado |
+|---|---|---|
+| Captura inicial | Una orden en borrador con una línea existente; seleccionar harina, cantidad 3.5 y costo 30.25. | La orden tenía una línea de 200 a $20.00, total $4,000.00. Se capturó harina, 3.5 y $30.25. |
+| Cancelar el alta | Volver a la misma orden; conservar la captura y no añadir otra línea. | Regresó a la misma orden con harina, 3.5 y $30.25. La única línea existente permaneció sin cambios. |
+| Crear la materia prima | Volver a la orden con la materia prima nueva seleccionada, cantidad y costo restaurados, todavía sin otra línea. | Se creó “Harina prueba manual 271027 A”; regresó seleccionada con 3.5 y $30.25. Seguía habiendo una línea. |
+| Pulsar **Agregar** | Persistir un renglón con los valores confirmados y limpiar la captura. | Apareció una segunda línea: 3.5, costo $30.25, total $105.88. La línea original siguió intacta y los campos quedaron vacíos. |
+| Salir y volver a los renglones | Conservar ambos renglones y no restaurar la captura ya agregada. | Los dos renglones persistieron; materia prima, cantidad y costo quedaron vacíos. |
+| Rechazo al agregar | Mostrar un error seguro, conservar la captura y no modificar los dos renglones. | Al intentar agregar Harina de trigo, ya incluida, apareció el mensaje genérico; 1.25 y $9.50 permanecieron y los renglones no cambiaron. |
+| Recargar con captura pendiente | Restaurar material, cantidad y costo; conservar los dos renglones. | Tras Ctrl+R se restauraron Harina de trigo, 1.25 y $9.50; los dos renglones siguieron intactos. |
+| **Descartar captura** | Limpiar únicamente los valores pendientes. | Los campos quedaron vacíos; los dos renglones persistieron. |
 
-## Avance de Pair
-
-Ciclo 1 completado: `RawMaterialForm_showsStockAndAverageCostAsZeroAndReadOnly` falló porque los campos eran editables; pasó al mostrarlos en cero y como solo lectura durante la creación. El formulario de edición conserva su comportamiento actual.
-
-Ciclo 2 completado: `createRawMaterial_persistsZeroStockAndAverageCostDespiteSubmittedValues` falló porque el alta enviaba los valores recibidos al INSERT; pasó al fijar stock y costo promedio en cero en la acción del servidor.
-
-Ciclo 3 completado: `rawMaterialCatalog_offersPurchaseOrderLinkAfterCreation` falló porque el catálogo no ofrecía acceso a compras; pasó al agregar el enlace a crear una orden. El primer reintento agotó el timeout global de 5 segundos; con un límite de 15 segundos pasó sin cambiar la expectativa.
-
-Ciclo 4 completado: `purchaseOrderItems_offersMissingMaterialCreationWithOrderContext` falló porque la pantalla de renglones no ofrecía el alta de materias primas; pasó al agregar el enlace con el ID de la orden y mostrarlo únicamente mientras está en borrador.
-
-Ciclo 5 completado: `createRawMaterial_fromPurchaseOrderReturnsToSameOrder` falló porque la acción no recibía el contexto de la orden; pasó al enlazar el ID desde la página de alta y regresar a sus renglones después de guardar. El alta iniciada sin orden conserva el retorno al catálogo.
-
-El alcance aprobado ahora incluye confirmar el éxito del alta desde el catálogo y regresar desde compras con la materia prima seleccionada, sin crear el renglón. La prueba de confirmación desde el catálogo pasó; las pruebas de retorno con preselección quedan pendientes. Cancelación, errores con conservación de datos y aviso sobre captura de compra pendiente quedan en la historia posterior del backlog.
-
-Ciclo 6 completado: `rawMaterialCatalog_confirmsSuccessfulCreation` falló porque el catálogo no mostraba confirmación después del alta; pasó al regresar con una marca de éxito y presentarla en el catálogo. La prueba verificó el mensaje accesible de confirmación.
-
-Ciclo 7 completado: `createRawMaterial_fromPurchaseOrderReturnsWithMaterialSelected` falló porque la acción regresaba solo el ID de la orden; pasó al recuperar el ID generado de la materia prima y agregarlo al destino de retorno. El renglón de compra no se crea desde el alta.
-
-Ciclo 8 completado: `purchaseOrderItems_preselectsCreatedMaterialWithoutAddingLine` falló porque el formulario dejaba vacía la materia prima al volver; pasó al usar el ID de retorno solo si corresponde a una materia prima activa disponible. La prueba confirma que no se creó ningún renglón automáticamente.
-
-Las ocho pruebas aprobadas están completadas. Los comportamientos de alta desde catálogo y retorno a la misma orden con el material seleccionado quedan cubiertos por pruebas de página, formulario y acción. El recorrido manual integral compra → recepción → Calidad queda como verificación futura y no bloquea esta historia, conforme a la decisión del usuario.
+Diferencias observadas: ninguna en el recorrido realizado. La rama de error del alta de materia prima se cubrió con pruebas automatizadas y no se provocó manualmente.

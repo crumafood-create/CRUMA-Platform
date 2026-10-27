@@ -76,7 +76,7 @@ export async function confirmReceiving(
     );
 
   const receivePurchaseOrderLot =
-    supabase.rpc as unknown as
+    supabase.rpc.bind(supabase) as unknown as
       ReceivePurchaseOrderLotRpc;
 
   const { data: orderId, error } =

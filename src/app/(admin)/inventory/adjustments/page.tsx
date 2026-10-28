@@ -20,17 +20,25 @@ export default async function InventoryAdjustmentsPage() {
 
   return (
     <main className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-4xl font-bold">
           Ajustes de Inventario
         </h1>
 
-        <Link
-          href="/inventory/adjustments/new"
-          className="rounded border px-4 py-2"
-        >
-          Nuevo Ajuste
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/inventory/adjustments/new"
+            className="rounded border px-4 py-2"
+          >
+            Ajustar producto
+          </Link>
+          <Link
+            href="/inventory/adjustments/raw-material-lots/new"
+            className="rounded border px-4 py-2"
+          >
+            Ajustar materia prima por lote
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-2xl border p-6">

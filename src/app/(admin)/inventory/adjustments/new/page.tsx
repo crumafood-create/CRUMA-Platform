@@ -12,28 +12,12 @@ export default async function NewInventoryAdjustmentPage() {
   const supabase =
     await createTypedClient();
 
-  const [
-    { data: products },
-    { data: materials },
-  ] = await Promise.all([
-    supabase
-      .from('products')
-      .select(
-        'id, name, internal_code'
-      )
-      .eq('status', 'active')
-      .is('deleted_at', null)
-      .order('name'),
-
-    supabase
-      .from('raw_materials')
-      .select(
-        'id, name, internal_code'
-      )
-      .eq('is_active', true)
-      .is('deleted_at', null)
-      .order('name'),
-  ]);
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, name, internal_code')
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .order('name');
 
   return (
     <main className="space-y-6">
@@ -53,7 +37,6 @@ export default async function NewInventoryAdjustmentPage() {
       <InventoryAdjustmentForm
         action={createInventoryAdjustment}
         products={products ?? []}
-        materials={materials ?? []}
       />
     </main>
   );

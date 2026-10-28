@@ -108,15 +108,28 @@ jobs:
       - name: Start local Supabase
         shell: bash
         run: |
-          if ! pnpm exec supabase start \
-            --network-id cruma-supabase-local \
-            -x vector,logflare \
-            > /tmp/supabase-start.log 2>&1
-          then
-            echo "Supabase local failed to start."
+          for attempt in 1 2 3; do
+            if pnpm exec supabase start \
+              --network-id cruma-supabase-local \
+              -x vector,logflare \
+              > /tmp/supabase-start.log 2>&1
+            then
+              break
+            fi
+
+            echo "Supabase local failed to start (attempt ${attempt}/3)."
             cat /tmp/supabase-start.log
-            exit 1
-          fi
+
+            if ! grep -Fq "failed to pull docker image from all registries" /tmp/supabase-start.log ||
+               ! grep -Fq "toomanyrequests" /tmp/supabase-start.log ||
+               [ "${attempt}" -eq 3 ]
+            then
+              exit 1
+            fi
+
+            echo "Registry rate limit detected; retrying with cached images."
+            sleep "$((attempt * 15))"
+          done
 
           echo "Supabase local started successfully."
 

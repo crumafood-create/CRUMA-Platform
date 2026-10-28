@@ -112,6 +112,24 @@ describe('contrato tipado de materias primas', () => {
     ).toBe('2026-08-23T12:00:00.000Z');
   });
 
+  it('buildRawMaterialUpdate_excludesInventoryOwnedFieldsWhenSubmittedOrOmitted', () => {
+    const submitted = buildRawMaterialUpdate(
+      materialForm({ current_stock: '91.25', average_cost: '73.5', last_cost: '22' }),
+      '2026-08-23T12:00:00.000Z',
+    );
+    const omittedForm = materialForm();
+    omittedForm.delete('current_stock');
+    omittedForm.delete('average_cost');
+    omittedForm.delete('last_cost');
+    const omitted = buildRawMaterialUpdate(omittedForm, '2026-08-23T12:00:00.000Z');
+
+    for (const update of [submitted, omitted]) {
+      expect(update).not.toHaveProperty('current_stock');
+      expect(update).not.toHaveProperty('average_cost');
+      expect(update).not.toHaveProperty('last_cost');
+    }
+  });
+
   it('convierte campos nulos en valores seguros para el formulario', () => {
     const result = normalizeRawMaterialFormValues({
       name: 'Harina',

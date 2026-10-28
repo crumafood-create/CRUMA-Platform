@@ -259,17 +259,44 @@ BEGIN
       'purchase order was not partially received';
   END IF;
 
+  IF (
+    SELECT count(*)
+    FROM public.purchase_receipts AS receipt
+    JOIN public.purchase_receipt_items AS receipt_item
+      ON receipt_item.purchase_receipt_id = receipt.id
+    JOIN public.raw_material_lots AS lot
+      ON lot.id = receipt_item.raw_material_lot_id
+    WHERE receipt.idempotency_key =
+        'f7000000-0000-0000-0000-000000000001'
+  ) <> 1 THEN
+    RAISE EXCEPTION
+      'receipt must be associated with exactly one raw material lot';
+  END IF;
+
   IF NOT EXISTS (
     SELECT 1
-    FROM public.raw_material_lots
-    WHERE raw_material_id =
-      'f3000000-0000-0000-0000-000000000001'
-      AND lot_number = 'SUP-LOT-001'
-      AND quantity = 4
-      AND status = 'quarantine'
+    FROM public.purchase_receipts AS receipt
+    JOIN public.purchase_receipt_items AS receipt_item
+      ON receipt_item.purchase_receipt_id = receipt.id
+    JOIN public.raw_material_lots AS lot
+      ON lot.id = receipt_item.raw_material_lot_id
+    WHERE receipt.idempotency_key =
+        'f7000000-0000-0000-0000-000000000001'
+      AND receipt_item.purchase_order_item_id =
+        'f6000000-0000-0000-0000-000000000001'
+      AND receipt_item.quantity = 4
+      AND receipt_item.inventory_location_id =
+        'f4000000-0000-0000-0000-000000000001'
+      AND lot.raw_material_id =
+        'f3000000-0000-0000-0000-000000000001'
+      AND lot.lot_number = 'SUP-LOT-001'
+      AND lot.inventory_location_id =
+        'f4000000-0000-0000-0000-000000000001'
+      AND lot.quantity = 4
+      AND lot.status = 'quarantine'
   ) THEN
     RAISE EXCEPTION
-      'received lot was not quarantined';
+      'receipt lot has incorrect material, number, location, quantity or status';
   END IF;
 
   IF (

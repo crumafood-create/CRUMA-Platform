@@ -29,7 +29,6 @@ describe('NewInventoryAdjustmentPage', () => {
     });
 
     const { container } = render(await NewInventoryAdjustmentPage());
-    const itemSelector = container.querySelector<HTMLSelectElement>('select[name="item_id"]')!;
 
     expect(queriedTables).toEqual(['products']);
     expect(screen.getByRole('option', { name: 'TEQ-01 - Tequeños' })).toBeInTheDocument();

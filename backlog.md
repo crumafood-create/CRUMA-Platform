@@ -1,31 +1,33 @@
-# Backlog
+# Backlog activo: conservar el trabajo al crear materias primas desde compras
 
 ## Contexto
 
-CRUMAFOOD necesita completar el recorrido de registrar productos y materias primas, definir una receta con sus ingredientes y crear una orden de producción, con datos y reglas coherentes entre pantalla, servidor y base de datos.
+Se trabaja en el flujo para crear una materia prima faltante desde una orden de compra en borrador sin perder el trabajo capturado. Esta historia continúa la creación de materias primas con saldos iniciales trazables para CRUMAFOOD.
 
 Stack: el existente en CRUMA, sin cambios propuestos.
 
-Decisiones acordadas: solo CRUMAFOOD y una planta, sin sucursales ni franquicias; administrador mediante la autorización global vigente; primera versión con conexión, en español y MXN. No se crean tenant, organización, planta, campos ni columnas sin un consumidor real identificado. No se activa la autorización por organización pendiente del ADR-0017.
+Decisiones costosas ya acordadas: una organización CRUMAFOOD y una planta; operación conectada, en español y MXN; autorización global vigente. No agregar campos ni columnas sin consumidor real.
 
-Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md) y [matriz ERP/MES/WMS](docs/product/erp-mes-wms-reconciliation.md). Las transiciones Catalog/Inventory y Production/Manufacturing siguen pendientes de conciliación; esta historia no resuelve esas fronteras ni autoriza reorganizaciones automáticas.
+Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/architecture/business-core.md) y [matriz ERP/MES/WMS](docs/product/erp-mes-wms-reconciliation.md). Para esta historia, Procurement es responsable de entrega: Purchasing, implementado como `procurement`, es dueño de órdenes y condiciones de compra; Inventory conserva los datos del alta de materia prima y muestra sus errores; `app` coordina salida, retorno y selección. Warehouse es dueño de la operación física, y la ubicación del formulario no cambia esa propiedad lógica.
 
-## Historias
+## Historias activas
 
-1. [x] Como administrador autorizado, quiero registrar productos con datos y estados válidos para utilizarlos en el catálogo.
-2. [ ] Como administrador autorizado, quiero registrar materias primas con datos válidos para utilizarlas en mis recetas.
-3. [ ] Como administrador autorizado, quiero definir una receta con sus ingredientes y rendimiento para establecer cómo producir un producto. Requiere: #1 y #2.
-4. [ ] Como administrador autorizado, quiero crear una orden desde una receta para planificar la producción con las cantidades correspondientes. Requiere: #3.
+No hay historias activas en este momento.
 
-La división fue aceptada por el usuario. La historia #1 está completada: implementación, pruebas, comprobaciones SQL en Supabase y verificación manual del usuario. Las evidencias de cierre y las advertencias del build están en [plan.md](plan.md), que se conserva hasta pasar a la siguiente historia. Se recomienda `/code-review` antes de integrar la historia.
+## Historias completadas
 
-## Decisiones pendientes de refinamiento
+- [x] Como administrador autorizado, quiero cancelar el alta o recuperarme de errores y capturas pendientes al crear una materia prima desde compras, para no perder mi trabajo. Las pruebas y el recorrido manual confirmaron cancelación y recarga con captura preservada, retorno del alta exitosa, agregado explícito, rechazo recuperable, persistencia de dos renglones y limpieza de la captura.
+- [x] Como administrador autorizado, quiero registrar por lote y ubicación la materia prima recibida de una orden de compra para reflejar lo que llegó y actualizar las existencias.
+- [x] Como administrador de inventario, quiero que una materia prima nueva empiece con stock y costo promedio en cero y continuar a compras según el origen del alta, para registrar existencias de forma trazable. La alta desde catálogo conserva confirmación y acceso a compras; desde una orden borrador regresa con el material seleccionado, sin crear el renglón. Las pruebas aprobadas pasan.
 
-- Definir si las cantidades de ingredientes corresponden a una unidad o a un lote de receta y cómo interviene su rendimiento.
-- Definir si se exige disponibilidad de stock al crear la orden en borrador o al liberarla.
-- Confirmar los estados esperados de recetas. Los estados de productos y su stock mínimo ya fueron acordados en la historia #1.
-- Precisar los contratos públicos necesarios para las fronteras entre módulos ya señaladas por la arquitectura.
+## Verificación de integración pendiente
 
-## Flujo de trabajo
+- Recorrer en desarrollo compra → recepción → Calidad con cantidades conocidas y confirmar la diferencia entre existencias físicas y disponibles, sin duplicar movimientos al liberar el lote.
 
-Refinar con [SKILL_story](skills/story/SKILL_story.md): confirmar módulo propietario, proponer 2–3 criterios y un plan de hasta cinco puntos; si el alcance exige más criterios, proponer dividir la historia. Implementar únicamente después de las aprobaciones indicadas por [SKILL_pair](skills/pair/SKILL_pair.md). Mantener las historias breves según [SKILL_backlog](skills/backlog/SKILL_backlog.md); el contexto general se conserva en [AGENTS.md](AGENTS.md).
+## Candidatos para historias separadas, aún sin refinar
+
+- Código interno inconsistente.
+- Slug manual.
+- Categorías mezcladas.
+- Familia vacía.
+- Campos faltantes.

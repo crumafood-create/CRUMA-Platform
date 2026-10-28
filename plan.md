@@ -1,92 +1,66 @@
-# Registrar productos
+# Historia: conservar la captura al crear una materia prima desde compras
 
-Estado: historia implementada, verificada y commiteada en su rama; los tres criterios funcionales y las comprobaciones finales están completos, con las advertencias de compilación registradas en Avance. Documento temporal de esta historia; se descartará al pasar a la siguiente, según indicación del usuario.
+## Story
 
-## Historia
-
-Como administrador autorizado, quiero registrar productos con datos y estados válidos para utilizarlos en el catálogo.
+Como administrador autorizado, quiero cancelar el alta o recuperarme de errores y capturas pendientes al crear una materia prima desde compras, para no perder mi trabajo.
 
 ## Módulo propietario
 
-**Catalog** es el propietario lógico según [ARCHITECTURE.md](ARCHITECTURE.md) y la [matriz ERP/MES/WMS](docs/product/erp-mes-wms-reconciliation.md#4-fronteras-que-requieren-conciliación). El formulario vive en Catalog y los contratos y repositorios actuales en Inventory. Su transición sigue pendiente; esta historia no autoriza moverlos ni duplicar el maestro de productos.
+**Procurement** es propietario de las órdenes y sus condiciones. **Inventory** conserva los datos del alta de materia prima y muestra sus errores. **app** coordina la salida, el retorno a la misma orden y la selección del material creado.
 
-## Contexto
-
-Se trabaja sobre el alta existente de productos para CRUMAFOOD, con una sola planta y la autorización global vigente. La auditoría identificó diferencias entre los estados aceptados por la aplicación y SQL, y entre el stock mínimo decimal aceptado por el contrato y su columna entera. Las pruebas previas aceptaban esos valores; los ajustes y las verificaciones posteriores se detallan en Avance.
+La ubicación física del formulario de materia prima en `warehouse/components` no modifica su propiedad lógica. No se trasladan reglas entre módulos ni se crea otro módulo.
 
 ## Criterios de aceptación aprobados
 
-- [x] Dado un administrador autorizado y datos válidos, con estado Activo, Borrador o Archivado, stock mínimo entero mayor o igual a cero y código interno opcional, cuando registra un producto, entonces queda guardado y aparece en el catálogo administrativo con esos valores.
-- [x] Dados datos obligatorios incompletos, valores fuera de las reglas acordadas o un slug ya registrado, cuando intenta guardar, entonces el alta se rechaza con un motivo comprensible y no se crea un producto adicional.
-- [x] Dado un usuario sin sesión o sin autorización administrativa efectiva, cuando intenta registrar un producto, entonces la operación se rechaza y no se crea ningún registro.
+- [x] Dado que el alta de materia prima falla por validación o persistencia, cuando vuelvo al formulario, entonces se conservan sus campos editables y se muestra el error.
+- [x] Dado que hay datos sin guardar en los renglones de una orden en borrador, cuando abro el alta de una materia prima y la cancelo, entonces regreso a la misma orden con la captura pendiente recuperada y sin crear la materia prima ni un renglón.
+- [x] Dado que creo correctamente una materia prima desde esa orden, cuando regreso a los renglones, entonces se muestra seleccionada la materia prima nueva, se recuperan los demás datos pendientes de compra y todavía no hay un renglón agregado.
+- [x] Dado que la materia prima está seleccionada y confirmé los datos del renglón, cuando pulso **Agregar**, entonces se crea un solo renglón con la cantidad y el costo confirmados.
+
+## Reglas aprobadas para la captura pendiente
+
+- Guardar en `sessionStorage` solo materia prima, cantidad y costo unitario; conservar los valores como cadenas, incluso si están incompletos.
+- Asociar la captura al ID del usuario y al ID de la orden. No restaurarla para otra orden o usuario.
+- Al cancelar el alta, regresar a la misma orden con la captura recuperada. Al crear la materia prima, seleccionar la nueva y recuperar cantidad y costo.
+- Si el usuario empieza a editar el formulario, no sobrescribir esos cambios con una restauración posterior.
+- Un error al agregar el renglón conserva la captura para corregir y reintentar. Un alta de materia prima o una restauración nunca agrega el renglón automáticamente.
+- Un alta exitosa del renglón limpia la captura pendiente de esa orden. **Descartar captura** borra solo esos valores pendientes y conserva los renglones guardados.
+- El servidor conserva la validación de permisos, estado de la orden y datos definitivos. No se agregan tablas ni un sistema genérico de borradores.
 
 ## Plan aprobado
 
-- Reutilizar el alta existente y los campos que ya tienen consumidores, sin agregar campos ni columnas por anticipación.
-- Alinear las opciones del formulario, la validación del servidor y la persistencia con los estados, cantidades y obligatoriedad que se acuerden.
-- Mantener la autorización global vigente y verificar la protección de la escritura en la base de datos.
-- Conservar las garantías de integridad y unicidad y traducir los rechazos a mensajes comprensibles para el usuario.
-- Verificar el recorrido de registro, consulta posterior y rechazo, incluidas solicitudes simultáneas con el mismo slug.
+- Conservar los campos editables del alta de materia prima y devolver el motivo del rechazo sin perder esa captura. Inventory mantiene esta responsabilidad.
+- Conservar la selección de materia prima, cantidad y costo unitario pendientes del renglón de compra mediante `sessionStorage` por usuario y orden. Procurement mantiene esta responsabilidad.
+- Hacer que `app` coordine cancelación, retorno a la misma orden y selección del material recién creado.
+- Mantener separadas la creación de la materia prima y la creación del renglón; únicamente **Agregar** confirma este último.
+- Respetar la autorización vigente y la validación del estado borrador existentes, sin agregar campos ni columnas.
 
-## Fuera de alcance
+## Fuera del alcance
 
-- Edición, eliminación, publicación comercial y rediseño general del catálogo.
-- Alta de materias primas, recetas y órdenes de producción; se trabajan en historias posteriores.
-- Crear tenant, organización, planta o permisos por organización.
-- Trasladar módulos, hacer refactors de inventario o añadir infraestructura para usos futuros.
+- Agregar automáticamente el renglón al crear la materia prima.
+- Cambiar stock, costos de inventario, recepción o liberación de Calidad.
+- Persistir la captura después de cerrar la pestaña o el navegador.
+- Crear módulos, campos, columnas o un sistema genérico de borradores.
 
-## Reglas aprobadas
+## Estado de los ciclos
 
-- Estados permitidos: Activo (`active`), Borrador (`draft`) y Archivado (`archived`), compatibles con la restricción SQL vigente. `inactive` deja de ser un estado válido.
-- Stock mínimo: entero mayor o igual a cero. Se rechazan decimales, negativos y valores no finitos, sin ampliar el tipo de la columna.
-- Código interno: opcional. Si se omite o queda vacío, el contrato conserva su tratamiento actual como `null`; si se proporciona, permanece la unicidad ya existente en SQL.
+- Ciclo 2: implementado y recorrido manualmente; cancelar el alta regresó a la misma orden con la captura intacta.
+- Ciclo 3: automatizado y recorrido manualmente; la materia prima nueva tuvo prioridad, y cantidad y costo se restauraron sin crear un renglón.
+- Ciclo 4: formulario y server action cubiertos por pruebas automatizadas. En desarrollo se comprobaron el guardado, el rechazo de un material ya incluido, la retención tras recargar y la limpieza explícita de la captura.
+- El test SQL adicional de persistencia única está en `supabase/tests/database/rls_behavior.sql`; no se ejecutó localmente porque no hay Docker. La regla existente de una misma materia prima por borrador se conserva en `purchase-order-repository.test.ts` y en el RPC.
+- Verificación automática: `pnpm run typecheck` pasó. Las pruebas enfocadas del ciclo 4 pasaron: 19 pruebas en 4 archivos.
 
-## Lista de pruebas aprobada
+## Verificación manual realizada en desarrollo
 
-| Prueba | Capa responsable |
-|---|---|
-| Acepta Activo, Borrador y Archivado; rechaza Inactivo y estados desconocidos | Contrato del servidor |
-| Acepta stock mínimo entero no negativo; rechaza decimales, negativos y valores no finitos | Contrato del servidor |
-| Permite omitir el código interno y conserva el valor cuando se proporciona | Formulario y contrato del servidor |
-| Muestra los estados acordados y exige nombre y slug | Formulario |
-| Rechaza campos obligatorios incompletos y relaciones de clasificación inválidas | Servidor |
-| Guarda el producto y permite consultar sus valores persistidos | Acción del servidor y PostgreSQL |
-| Rechaza slug o código interno proporcionado repetidos con un motivo comprensible, incluso ante concurrencia | Acción del servidor y PostgreSQL |
-| Rechaza la creación sin sesión o sin admin explícito en user_roles | Acción del servidor y RLS en PostgreSQL |
+| Paso | Resultado esperado | Resultado observado |
+|---|---|---|
+| Captura inicial | Una orden en borrador con una línea existente; seleccionar harina, cantidad 3.5 y costo 30.25. | La orden tenía una línea de 200 a $20.00, total $4,000.00. Se capturó harina, 3.5 y $30.25. |
+| Cancelar el alta | Volver a la misma orden; conservar la captura y no añadir otra línea. | Regresó a la misma orden con harina, 3.5 y $30.25. La única línea existente permaneció sin cambios. |
+| Crear la materia prima | Volver a la orden con la materia prima nueva seleccionada, cantidad y costo restaurados, todavía sin otra línea. | Se creó “Harina prueba manual 271027 A”; regresó seleccionada con 3.5 y $30.25. Seguía habiendo una línea. |
+| Pulsar **Agregar** | Persistir un renglón con los valores confirmados y limpiar la captura. | Apareció una segunda línea: 3.5, costo $30.25, total $105.88. La línea original siguió intacta y los campos quedaron vacíos. |
+| Salir y volver a los renglones | Conservar ambos renglones y no restaurar la captura ya agregada. | Los dos renglones persistieron; materia prima, cantidad y costo quedaron vacíos. |
+| Rechazo al agregar | Mostrar un error seguro, conservar la captura y no modificar los dos renglones. | Al intentar agregar Harina de trigo, ya incluida, apareció el mensaje genérico; 1.25 y $9.50 permanecieron y los renglones no cambiaron. |
+| Recargar con captura pendiente | Restaurar material, cantidad y costo; conservar los dos renglones. | Tras Ctrl+R se restauraron Harina de trigo, 1.25 y $9.50; los dos renglones siguieron intactos. |
+| **Descartar captura** | Limpiar únicamente los valores pendientes. | Los campos quedaron vacíos; los dos renglones persistieron. |
 
-Verificación manual: presentación, confirmación o redirección al catálogo y mensajes de rechazo en el navegador.
-
-## Avance
-
-- Completado el ciclo de estados en el contrato del servidor: acepta `active`, `draft` y `archived`; rechaza `inactive` y estados desconocidos. Se comprobaron dos fallos iniciales y después pasaron las 16 pruebas del contrato. Las opciones del formulario se verificaron en su ciclo correspondiente.
-- Completado el ciclo de stock mínimo en el contrato del servidor: acepta enteros no negativos y rechaza decimales, negativos y valores no finitos. Se comprobaron los fallos iniciales y después pasaron las 23 pruebas del contrato. No se cambió el tipo de la columna.
-- Completado el ciclo de código interno opcional: el formulario permite dejarlo vacío; el contrato conserva `null` si se omite o contiene solo espacios y conserva el código proporcionado sin espacios en los extremos. Se comprobó el fallo inicial del formulario y después pasaron 24 pruebas entre formulario y contrato. No se modificó la unicidad existente en SQL.
-- Completado el ciclo de opciones y campos obligatorios del formulario: ofrece Activo, Borrador y Archivado, con Activo por defecto; nombre y slug siguen siendo obligatorios. La prueba verifica campos vacíos y los valores de los tres estados enviados al contrato. Se comprobó el fallo inicial y después pasaron 25 pruebas entre formulario y contrato.
-- Verificado el rechazo en la acción real `createProduct` antes del INSERT: nombre y slug omitidos, vacíos o con solo espacios; categoría/familia incompletas; y familia de otra categoría. La prueba pasó con la implementación existente, sin cambios de producción. Pasaron 36 pruebas de acción, formulario, contrato y repositorio; la consulta se simuló y no demuestra ejecución contra PostgreSQL.
-- Verificado el envío al guardado en la acción real `createProduct`: se envían nombre y slug normalizados, estado Archivado, stock mínimo entero y código interno `null`; después se invalida `/products` y se redirige al catálogo. La prueba pasó con la implementación existente, con 37 pruebas en verde. El guardado se simuló; este paso no acredita persistencia real.
-- El usuario trabaja con Supabase, Vercel y GitHub en la nube, sin Docker local; no se instala ni se inicia Docker en su equipo. Ejecuta las comprobaciones remotas y comparte sus resultados; el agente no ejecuta consultas en su proyecto. Las pruebas SQL acreditan inserción y consulta en PostgreSQL real de productos Activo, Borrador y Archivado, stock cero o 12 y código interno NULL o proporcionado, con los datos de prueba retirados al finalizar. Sigue pendiente el recorrido completo desde el formulario hasta el catálogo en navegador.
-- Completado el ciclo de consulta y presentación del stock mínimo: el catálogo administrativo selecciona `min_stock` y lo muestra por producto, incluido cero. Se comprobó el fallo inicial y después pasaron 38 pruebas de página, acción, formulario, contrato y repositorio. La consulta se simuló; PostgreSQL real sigue pendiente.
-- Completado el ciclo de traducción de errores de guardado en `createProduct`: el error SQL `23505` identifica las restricciones de slug y código interno y devuelve mensajes comprensibles; los demás errores devuelven un mensaje genérico. Los detalles internos se conservan en `cause`; un rechazo no invalida el catálogo ni redirige. Se comprobó el fallo inicial y después pasaron 39 pruebas. No se modificaron las restricciones SQL; la prueba simuló los errores y no acredita concurrencia real.
-- La presentación de mensajes se divide en tres ciclos: respuesta serializable del servidor, presentación y conservación de datos en el formulario, y conexión del alta con verificación del recorrido.
-- Completado el ciclo de respuesta del servidor: `createProductForForm` reutiliza `createProduct` y devuelve solo `{ error: mensaje }` para errores de guardado controlados. No devuelve la causa técnica ni intercepta errores de autorización o señales de redirección. Se comprobó el fallo inicial y después pasaron 40 pruebas; los errores de base se simularon.
-- Completado el ciclo de presentación y conservación de datos: `ProductForm` acepta el resultado serializable, muestra el rechazo en una alerta con `FormError` y evita el restablecimiento automático de los campos al fallar. La prueba verifica ambos mensajes y conserva nombre, slug, código, descripción, stock, estado y unidad. Se comprobó el fallo inicial y después pasaron 41 pruebas; la acción se simuló en la prueba del formulario.
-- Completado el ciclo de conexión del alta: la página usa `createProductForForm`. La prueba integra página, formulario, acción, contrato y repositorio reales; un slug duplicado muestra el mensaje y conserva los datos sin invalidar el catálogo ni redirigir. Se comprobó el fallo inicial y después pasaron 42 pruebas, TypeScript y ESLint. Supabase y la autorización se simularon; no acredita persistencia real ni una sesión de navegador.
-- Verificado el rechazo sin sesión o sin admin explícito en `user_roles`: la prueba ejecuta `createProduct` y `createProductForForm` con los guards y la consulta de roles reales, simulando el cliente Supabase. Ambas acciones rechazan la sesión ausente, la ausencia de roles y el rol `customer`; los metadatos y el campo `role` del formulario no conceden acceso. No se intenta insertar, invalidar ni redirigir; la consulta de roles corresponde al usuario autenticado. La prueba pasó con la implementación existente, sin cambios de producción; no acredita ejecución de RLS en PostgreSQL.
-- Los tres criterios funcionales están verificados con el alcance descrito: alta y catálogo, redirección automática, rechazos y conservación de datos para slug y código interno duplicados, validaciones del servidor, autorización, persistencia y RLS en PostgreSQL, y unicidad del slug ante concurrencia. La comprobación manual se apoya en los resultados informados por el usuario; el agente no operó el navegador. Las comprobaciones locales de cierre pasaron y la historia #1 se marcó completada en `backlog.md`.
-- Verificación RLS en la nube: el flujo `database` de `.github/workflows/ci.yml` ya prepara Supabase en GitHub Actions y ejecuta `db:verify`, que incluye las pruebas SQL de seguridad. Esa configuración no acredita el estado del proyecto alojado; este se comprobó mediante el diagnóstico y la prueba de comportamiento ejecutados por el usuario en Supabase. El agente no ha ejecutado consultas remotas.
-- El usuario compartió el diagnóstico de Supabase alojado: `products` tiene RLS activa; `public_read_products` solo concede SELECT de activos no eliminados y `admin_all_products` exige `is_admin(auth.uid())` para escritura. `is_admin` consulta exclusivamente la fila `admin` en `public.user_roles`, es SECURITY DEFINER y fija `search_path` vacío. Los grants de tabla incluyen escritura para `anon` y `authenticated`; RLS continúa restringiendo las filas. Este diagnóstico aún no demuestra el comportamiento del INSERT.
-- Verificada `supabase/tests/database/product_creation_rls.sql` en Supabase alojado según el resultado compartido por el usuario: `sin_sesion = rechazado`, `sin_admin = rechazado`, `admin = permitido_y_revertido`. El bloque cambia al rol de cada caso, exige rechazo por RLS para `anon` y una identidad SQL sin roles, e inserción y consulta para un admin existente en `user_roles`; termina en ROLLBACK. No crea usuarios ni modifica sus roles. Junto con las pruebas de ambas acciones, completa el criterio de rechazo sin autorización; no acredita todavía el recorrido completo desde el navegador.
-- Verificada `supabase/tests/database/product_creation_uniqueness.sql` en Supabase alojado según el resultado compartido por el usuario: `slug_duplicado = rechazado`, `codigo_interno_duplicado = rechazado`, `datos_prueba = revertidos`. Como admin existente, el bloque intenta duplicar cada campo por separado, exige SQLSTATE `23505` y la restricción correspondiente (`products_slug_key` o `products_internal_code_key`), comprueba que no quede otra fila ni cambie el original y termina con ROLLBACK. La prueba secuencial pasó y se complementó con la prueba concurrente del slug descrita a continuación. No se modificaron restricciones ni código de producción.
-- Verificados `supabase/tests/database/product_slug_concurrency_a.sql` y `product_slug_concurrency_b.sql` en Supabase alojado según ambos resultados compartidos por el usuario: A devolvió `concurrencia = comprobada`; B devolvió `slug_duplicado = rechazado` y `filas_restantes = 0`. Los INSERT se ejecutaron como `authenticated` con un admin explícito existente. A observó B bloqueada por su conexión mediante `pg_blocking_pids` antes de confirmar; B exigió `23505` por `products_slug_key`, revirtió su intento, comprobó un único ganador y lo eliminó por ID y slug exactos. Queda acreditada la unicidad del slug ante solicitudes solapadas y la limpieza de los datos de prueba. No se modificó código de producción ni se instalaron extensiones. Para el código interno se verificó el rechazo secuencial; no se ejecutó una prueba concurrente de ese campo.
-- Verificada `supabase/tests/database/product_creation_persistence.sql` en Supabase alojado según el resultado compartido por el usuario: `activo = guardado_y_consultado`, `archivado = guardado_y_consultado`, `stock_minimo = 12`, `datos_prueba = revertidos`. Como `authenticated` con un admin explícito existente, guarda y consulta ambos estados con stock 12; conserva código interno NULL en Activo y proporcionado en Archivado. El INSERT omite el ID, recupera el generado y un SELECT posterior comprueba nombre, slug, código, estado y stock contra los valores esperados. El bloque terminó en ROLLBACK. No acredita todavía el recorrido desde el formulario ni la visualización real en el catálogo. No se modificaron columnas ni código de producción.
-- Verificación manual informada por el usuario en `http://localhost:3000`: confirmó crear un producto y compartió el listado de `/products`, donde aparece `Tequeños de Choco party para freir`, código `PT-TEQ-CHOC-PARTY`, slug `tequenos-de-choco-party-para-freir`, estado `active`, stock mínimo 20, categoría Tequeños, familia Party, sabor Chocolate y preparación Crudo. Confirmó después que al guardar la aplicación abrió automáticamente `/products`. Se acreditan el guardado desde el formulario, la redirección y la consulta en catálogo con esos valores. El agente no observó ni operó ese navegador: Computer Use detuvo el acceso a Brave al no poder determinar con confianza su URL. No se eliminaron productos del usuario.
-
-- Verificación manual de rechazo de slug duplicado: el usuario informó que el formulario muestra exactamente `Ya existe un producto con ese slug.` después del intento con `tequenos-de-choco-party-para-freir`. Confirmó después que se conservaron los datos del formulario, ante la pregunta por nombre, slug, unidad, estado Borrador y stock mínimo 12. Quedan verificados el mensaje y la conservación de los datos en el recorrido real de ese rechazo.
-
-- Verificación manual de código interno duplicado: el usuario informó el mensaje exacto `Ya existe un producto con ese código interno.` y confirmó la conservación de los datos, tras la prueba propuesta con código `PT-TEQ-CHOC-PARTY` y slug diferente `prueba-codigo-interno-duplicado-01`. Junto con la prueba de slug, quedan comprobados ambos mensajes en el formulario real y la conservación de lo capturado.
-- Comprobaciones finales locales: pasaron las 43 pruebas de productos con `--maxWorkers=1`, TypeScript y ESLint de los archivos de la historia. La primera ejecución de pruebas con dos workers, simultánea a otros controles, terminó con 41 casos correctos y dos timeouts de 5000 ms; la repetición secuencial pasó con el mismo límite y las mismas expectativas, sin cambiar pruebas ni producción. Entorno local Node 24.21.0; `.nvmrc` fija 24.18.0 para el entorno reproducible.
-- Build de producción completado con Next.js 15.5.19 y salida 0, incluidas las 246 páginas, validación de tipos y trazas de compilación. Se ejecutó en una copia temporal del árbol de trabajo para evitar interferir con el servidor activo del puerto 3000; la copia y su enlace de dependencias se retiraron, conservando las dependencias originales. Se emitieron advertencias de serialización de caché de Webpack y uso de `process.version` de Supabase en el runtime Edge, con traza hacia `src/infrastructure/integrations/supabase/middleware.ts`; ese archivo y las versiones de dependencias no se modificaron en esta historia. La advertencia de compatibilidad queda señalada para revisión, sin ampliar el alcance. Este build no despliega cambios en Vercel ni sustituye las comprobaciones manuales informadas por el usuario.
-
-El usuario autorizó actualizar las expectativas antiguas que aceptan `inactive`, rechazan `archived` y esperan stock `12.5`, como parte de los ciclos correspondientes. No se omiten pruebas.
-
-El flujo de implementación seguirá el [SKILL_pair indicado por el usuario](../../../../../Downloads/files/SKILL_pair.md): lista de pruebas aprobada y un ciclo por vez salvo petición de un lote. El refinamiento sigue [SKILL_story](skills/story/SKILL_story.md).
+Diferencias observadas: ninguna en el recorrido realizado. La rama de error del alta de materia prima se cubrió con pruebas automatizadas y no se provocó manualmente.

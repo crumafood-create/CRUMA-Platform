@@ -36,7 +36,7 @@ Antes de proponer historias o implementación, revisar [ARCHITECTURE.md](ARCHITE
 - No dividir por capas ni proponer historias técnicas. Añadir `Requiere: #N` solo para dependencias indispensables.
 - No incluir criterios de aceptación, detalles técnicos, estimaciones ni prioridades en las historias.
 - Toda propuesta que requiera un módulo, carpeta superior o campo nuevo necesita un consumidor real identificado; consultar antes de incorporarla si la arquitectura no lo justifica.
-- `backlog.md` es el destino autorizado por el usuario. Conservar allí las historias; este archivo guarda contexto y decisiones.
+- `backlog.md` contiene las historias activas de la conversación actual. Las historias anteriores que el usuario quiera retomar después se conservan en `pendientes.md`; no duplicarlas en ambos archivos. Este archivo guarda contexto y decisiones.
 
 ### Story
 
@@ -71,6 +71,6 @@ Tenant sigue siendo la frontera técnica y organización la entidad de negocio s
 
 Las membresías, `profiles.role` y los datos del formulario no conceden permisos. Esta equivalencia no activa la autorización por organización pendiente del ADR-0017 ni se extiende a otras historias.
 
-El backlog inicial fue validado en la conversación y, por indicación del usuario, se guarda en `backlog.md` con casillas para registrar su avance. Las historias no se duplican en este archivo.
+El backlog inicial fue validado en la conversación. Por indicación del usuario, las historias activas se guardan en `backlog.md` con casillas para registrar su avance; las anteriores que se retomarán después se conservan en `pendientes.md` y no se duplican en ambos archivos.
 
 La historia de alta de organización queda pospuesta hasta identificar un flujo que la necesite. No se sustituye por un alta de planta. Según las consultas ejecutadas por el usuario en Supabase, `public.tenants` existe sin registros y `public.organizations` no existe; no se han creado registros ni aplicado migraciones durante este trabajo.

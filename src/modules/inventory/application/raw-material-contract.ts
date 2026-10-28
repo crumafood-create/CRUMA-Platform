@@ -6,6 +6,18 @@ import type {
 
 type RawMaterialInsert = PublicTableInsert<'raw_materials'>;
 type RawMaterialUpdate = PublicTableUpdate<'raw_materials'>;
+type RawMaterialCatalogFields = Pick<
+  RawMaterialInsert,
+  | 'name'
+  | 'slug'
+  | 'internal_code'
+  | 'category_id'
+  | 'family_id'
+  | 'unit_of_measure_id'
+  | 'minimum_stock'
+  | 'description'
+  | 'is_active'
+>;
 
 type RawMaterialFormSelection = Pick<
   PublicTableRow<'raw_materials'>,
@@ -45,7 +57,7 @@ function nonNegativeNumber(form: FormData, field: string): number {
   return quantity;
 }
 
-export function buildRawMaterialInsert(form: FormData): RawMaterialInsert {
+function buildRawMaterialCatalogFields(form: FormData): RawMaterialCatalogFields {
   const categoryId = optionalText(form, 'category_id');
   const familyId = optionalText(form, 'family_id');
 
@@ -60,12 +72,18 @@ export function buildRawMaterialInsert(form: FormData): RawMaterialInsert {
     category_id: categoryId,
     family_id: familyId,
     unit_of_measure_id: optionalText(form, 'unit_of_measure_id'),
-    current_stock: nonNegativeNumber(form, 'current_stock'),
     minimum_stock: nonNegativeNumber(form, 'minimum_stock'),
-    average_cost: nonNegativeNumber(form, 'average_cost'),
-    last_cost: nonNegativeNumber(form, 'last_cost'),
     description: optionalText(form, 'description'),
     is_active: form.get('is_active') === 'true',
+  };
+}
+
+export function buildRawMaterialInsert(form: FormData): RawMaterialInsert {
+  return {
+    ...buildRawMaterialCatalogFields(form),
+    current_stock: nonNegativeNumber(form, 'current_stock'),
+    average_cost: nonNegativeNumber(form, 'average_cost'),
+    last_cost: nonNegativeNumber(form, 'last_cost'),
   };
 }
 
@@ -73,7 +91,7 @@ export function buildRawMaterialUpdate(
   form: FormData,
   updatedAt: string,
 ): RawMaterialUpdate {
-  return { ...buildRawMaterialInsert(form), updated_at: updatedAt };
+  return { ...buildRawMaterialCatalogFields(form), updated_at: updatedAt };
 }
 
 export function normalizeRawMaterialFormValues(material: RawMaterialFormSelection) {

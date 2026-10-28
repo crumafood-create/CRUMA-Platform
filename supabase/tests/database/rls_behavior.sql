@@ -1291,7 +1291,8 @@ BEGIN
       AND status = 'received'
   ) OR NOT EXISTS (
     SELECT 1 FROM public.purchase_order_items
-    WHERE id = '9b000000-0000-0000-0000-000000000001'
+    WHERE purchase_order_id = '9a000000-0000-0000-0000-000000000002'
+      AND raw_material_id = '95000000-0000-0000-0000-000000000001'
       AND received_quantity = 2
   ) THEN
     RAISE EXCEPTION 'admin purchase order insert was not persisted';

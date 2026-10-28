@@ -8393,6 +8393,15 @@ export type Database = {
         }
         Returns: string
       }
+      adjust_raw_material_lot_quantity: {
+        Args: {
+          p_lot_id: string
+          p_movement_type: string
+          p_quantity: number
+          p_reason: string
+        }
+        Returns: string
+      }
       calculate_production_cost: {
         Args: {
           p_labor_cost: number

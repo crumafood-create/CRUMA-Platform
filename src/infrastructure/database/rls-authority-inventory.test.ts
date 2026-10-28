@@ -21,7 +21,7 @@ describe('inventario de autoridad RLS', () => {
       openReads: 35,
       openWrites: 13,
       missingReads: [],
-      functionGuards: 39,
+      functionGuards: 42,
       anonWriteGrants: 136,
       authenticatedWriteGrants: 141,
     });

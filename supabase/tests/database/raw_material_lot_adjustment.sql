@@ -1,19 +1,18 @@
 BEGIN;
 
-SELECT set_config('test.admin_id', (SELECT user_id::text FROM public.user_roles WHERE role = 'admin' ORDER BY user_id LIMIT 1), true);
+SELECT set_config('test.admin_id', gen_random_uuid()::text, true);
 SELECT set_config('test.material_id', gen_random_uuid()::text, true);
 SELECT set_config('test.location_id', gen_random_uuid()::text, true);
 SELECT set_config('test.selected_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.other_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.unit_id', gen_random_uuid()::text, true);
 
-DO $precondition$
-BEGIN
-  IF current_setting('test.admin_id', true) IS NULL THEN
-    RAISE EXCEPTION 'No explicitly assigned admin exists for the SQL test.';
-  END IF;
-END;
-$precondition$;
+-- The test owns its actor and explicit role assignment, even on a clean database.
+INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
+VALUES (current_setting('test.admin_id')::uuid, 'authenticated', 'authenticated',
+  'lot-adjustment-' || current_setting('test.admin_id') || '@example.test', now(), now());
+INSERT INTO public.user_roles (user_id, role)
+VALUES (current_setting('test.admin_id')::uuid, 'admin');
 
 INSERT INTO public.units_of_measure (id, name, code)
 VALUES (current_setting('test.unit_id')::uuid, 'Kilogram test', 'kg-' || left(current_setting('test.unit_id'), 8));

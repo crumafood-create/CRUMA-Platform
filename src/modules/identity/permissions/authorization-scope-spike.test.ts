@@ -44,34 +44,36 @@ describe('spike de membresía y scopes', () => {
     expect(AUTHORIZATION_SCOPE_SPIKE.scopeTargets).toEqual([
       {
         scope: 'organization',
-        persistence: 'available',
-        blocker: 'public.organizations existe, pero todavía no autoriza.',
+        persistence: 'deferred',
+        blocker:
+          'La versión vigente contempla una organización y no persiste este scope.',
       },
       {
         scope: 'plant',
-        persistence: 'available',
-        blocker: 'public.plants existe, pero todavía no autoriza.',
+        persistence: 'deferred',
+        blocker:
+          'La versión vigente contempla una planta y no persiste este scope.',
       },
       {
         scope: 'warehouse',
-        persistence: 'optional',
+        persistence: 'available',
         blocker:
-          'public.warehouses puede referenciar tenant y planta, pero las filas actuales siguen globales.',
+          'Los almacenes operativos se conservan, pero no se asignan a organizaciones, plantas ni permisos scoped.',
       },
     ]);
   });
 
   it('impide activar la migración mientras sus bloqueos sigan abiertos', () => {
     expect(AUTHORIZATION_SCOPE_SPIKE.blockers).toEqual([
-      'ADR-0017 acepta la dirección, pero no autoriza activar la autoridad incompleta.',
+      'La propuesta sucesora de ADR-0017 difiere los scopes de organización y planta; no autoriza activar autoridad incompleta.',
       'public.is_admin concede autoridad global mediante user_roles.',
-      'RLS tiene 50 políticas vigentes exclusivas de is_admin y ninguna alternativa scoped.',
+      'RLS tiene 48 políticas vigentes exclusivas de is_admin y ninguna alternativa scoped.',
       'Quedan 13 políticas de escritura abiertas; su reemplazo está preparado, pero no aplicado ni probado.',
-      'La jerarquía existe, pero los almacenes actuales siguen sin asignación explícita.',
+      'La aplicación vigente opera con una organización y una planta; los almacenes no tienen asignaciones de autorización scoped.',
       'Los vocabularios están unificados, pero ningún valor externo equivale a user_roles.',
       'La autoridad no se infiere: exige una fila explícita en user_roles.',
       'La evaluación dual existe solo en sombra y todavía no autoriza.',
-      'Las claves compuestas existen, pero su prueba SQL de cruce todavía no se ejecutó.',
+      'Las referencias compuestas de organización/planta a almacén quedan diferidas con esa jerarquía.',
       'La denegación de scopes existe en aplicación, pero su prueba RLS todavía no se ejecutó.',
     ]);
     expect(AUTHORIZATION_SCOPE_SPIKE.roleEquivalence).toHaveLength(10);

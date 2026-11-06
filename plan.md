@@ -94,3 +94,30 @@ La lista fue aprobada y ejecutada por ciclos TDD. Las pruebas locales del formul
 - Unidades de compra, presentaciones y conversiones entre unidades.
 - Cambios a unidades base de productos o recetas.
 - Reorganización de módulos o ubicación de archivos.
+
+
+## BD-01: diferir la jerarquía de organización y planta
+
+### Alcance y evidencia
+
+- Operación de esta versión: una organización CRUMAFOOD y una planta; no desarrollar administración de sucursales ni franquicias.
+- La consulta remota de solo lectura confirmó `organizations` y `plants` ausentes; `warehouses` existe sin `tenant_id`, `plant_id`, restricciones ni índices asociados.
+- `warehouses`, `tenants`, `tenant_members` y la autorización global `user_roles` se conservan.
+- No se encontraron consumidores operativos de la jerarquía. El inventario de RLS, los tipos y las pruebas dedicadas sí la reflejaban.
+
+### Cambio preparado
+
+- Conservar `20261002140000_add_operational_scope_hierarchy.sql` intacta.
+- La sucesión propuesta de ADR-0017 es parcial: preserva tenant técnico y todas las reglas vigentes de autorización (`user_roles` como autoridad efectiva); la activación futura de otros scopes permanece bloqueada.
+- La corrección `20261107080000` requiere que la migración histórica `20261002140000` haya corrido primero. El `LOCK TABLE` inicial no permite ejecutarla directamente en el remoto actual, donde faltan esas tablas.
+- El ejecutor de CI usa `supabase db reset`; la migración no tiene `-- pg-delta: transaction=false`. Supabase documenta transacción por archivo por defecto para `db reset`/`db push`/`migration up`, por lo que lock, guardas y drops son atómicos. No añadir `BEGIN` manual.
+- Validación de integración pendiente: retiro con jerarquía vacía y almacenes existentes; rechazo ante filas de organizaciones, plantas y asignaciones, comprobando rollback sin drops parciales. Docker no está disponible localmente.
+- La migración `20261107080000_defer_operational_hierarchy.sql` bloquea las relaciones, aborta si encuentra filas/asignaciones y elimina solo las tablas, columnas, constraints, índices y políticas de la jerarquía. No usa `CASCADE`.
+- La prueba `operational_scope_deferred.sql` comprueba el esquema final y que se conservan almacenes, tenants, membresías y `user_roles`; `db:verify` la ejecuta después de la reconstrucción.
+- ADR-0018 es una propuesta sucesora de ADR-0017, no una decisión arquitectónica aceptada.
+
+### Validación pendiente
+
+- Ejecutar reconstrucción limpia, prueba SQL/RLS y regeneración completa de tipos en Docker o CI.
+- Aplicar el recorrido histórico y correctivo sobre un entorno representativo del remoto, sin tocar el proyecto Supabase activo.
+- Mantener sin ejecutar la reparación de historial y el `db push` remoto.

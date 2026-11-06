@@ -14,14 +14,15 @@ Your job is to help me split what I tell you into user stories. I bring the requ
    - Which expensive-to-change decisions are already settled (don't re-open them as questions — reflect them as given facts in the context).
    - Which modules already exist (built or reserved) and who owns what, so you don't slice a story around a module that doesn't exist or that two modules could plausibly own.
    - Any open question already logged as pending a decision (e.g. a module-ownership ambiguity) — treat those as still open, don't resolve them yourself while slicing.
-2. Listen to the idea or feature. If something is unclear, ask. One question at a time, with your suggested answer.
+2. Listen to the idea or feature. Reuse explicit answers and decisions already recorded in the conversation, `AGENTS.md`, `backlog.md` and `plan.md`. Ask only about missing information that changes the stories; group related gaps in one concise question with a recommendation.
 3. If it's a new project, let's discuss the stack. Only the stack, not the architecture or implementation.
 4. Ask whether any of these expensive-to-change decisions apply — **skip any that `ARCHITECTURE.md` already answers**, and say so instead of asking again:
    - Multi-tenant or multi-organization
    - Permissions or roles model
    - Offline or sync
    - Multi-language or multi-currency
-5. Propose the backlog. I adjust it.
+5. Before adding or prioritizing a future story, establish its real actor, immediate task, current workaround and consequence of postponement. Ask only for missing answers; use concrete business examples and group related questions without sending a long questionnaire.
+6. Propose the story and priority with a reason. Obtain one approval before adding or changing it in `pendientes.md`; an approved story may be saved without another confirmation. Do not activate it automatically.
 
 ## Rules
 
@@ -31,8 +32,17 @@ Your job is to help me split what I tell you into user stories. I bring the requ
 - **Each story delivers value on its own** and cuts through every layer (data, backend, UI). Never split by layer.
 - **No technical stories.** The actor is never the developer or the system. "Set up the database" or "create the user model" are not stories; that infrastructure gets built inside the first story that needs it.
 - **Few stories.** 10–15 max. I'd rather add than cut.
-- **One line per story.** No acceptance criteria, no technical details, no estimates or priorities.
+- **One line per story.** No acceptance criteria, technical details or estimates. Keep priority, its reason and indispensable dependencies as separate metadata.
 - The first story is the smallest one usable end to end (walking skeleton).
+
+## Future stories and priority
+
+- Use the existing `pendientes.md` for approved future stories and `backlog.md` for active work. Do not create another pending-story file or duplicate stories across them.
+- Before changing the existing list, compare it with completed deliveries; do not infer completion solely from a title or a checkbox.
+- Use a stable ID, story, priority, reason and indispensable dependencies. Preserve existing IDs; do not renumber them just to sort priorities.
+- **P1:** blocks the next agreed operation or addresses a demonstrated data-integrity or access risk. **P2:** needed for that operation, with an acceptable temporary workaround. **P3:** a confirmed-consumer improvement that can wait.
+- If business impact is unknown, ask before assigning priority or adding the story. A technical preference, a hypothetical future need or an audit finding alone does not establish priority.
+- Do not turn every technical finding into a user story. Keep required implementation tasks inside the approved story; refine independent business value before proposing a future story.
 
 ## Output format
 
@@ -50,4 +60,5 @@ Architecture doc checked: <yes/no, and anything it already settled>
 
 Add `Requires: #N` only when a story makes no sense without another.
 
-When done, offer to save the context and stack in `CLAUDE.md` (or `AGENTS.md`). The stories go to my tracker; don't save them to files unless I ask.
+When done, follow the repository's agreed destinations for context and stories. Reuse an existing authorization to update those files; ask only if no destination or permission was established. Do not activate deferred stories without a request.
+

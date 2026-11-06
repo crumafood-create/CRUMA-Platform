@@ -1,114 +1,96 @@
-# Historia: ajustar cantidad de materias primas por lote disponible
+# Historia: definir y proteger la unidad base de materias primas
 
-## Story
+## Historia
 
-Como responsable de inventario, quiero corregir con un motivo la cantidad de un lote disponible, para mantener coherentes sus existencias y su historial de movimientos.
+Como administrador de catálogo, quiero definir la unidad base de una materia prima y protegerla cuando tenga operaciones asociadas, para evitar reinterpretar sus cantidades históricas.
 
 ## Módulo propietario
 
-**Inventory** es propietario de movimientos, saldos, lotes y ajustes según `docs/architecture/business-core.md`. **Warehouse** aporta la ubicación física del lote como contexto; el ajuste no cambia esa ubicación. No se crea otro módulo ni se agregan tablas.
+**Catalog**, según `docs/architecture/business-core.md`: es propietario de las unidades base y datos maestros. Inventory conserva la propiedad de movimientos, saldos y lotes. No se moverán archivos en esta historia; la ubicación actual del formulario y contrato queda como deuda documentada.
 
 ## Criterios de aceptación aprobados
 
-- [x] Dado un lote existente en estado `available`, cuando un usuario autorizado registra una cantidad positiva y finita con motivo obligatorio para aumentarlo o disminuirlo, entonces el ajuste se aplica en la unidad base, identifica el lote y conserva su ubicación, costo unitario y `last_cost`.
-- [x] Dado un lote en cuarentena, retenido o rechazado, una cantidad inválida, un motivo ausente o una disminución superior al saldo, cuando se solicita el ajuste, entonces el servidor lo rechaza sin modificar lote, saldo, valoración ni movimientos.
-- [x] Dado un ajuste válido, cuando se confirma, entonces la cantidad del lote, el saldo agregado, `average_cost` según la regla acordada y el movimiento de entrada o salida quedan actualizados en una sola operación; al llegar a cero el lote queda `depleted` y el último promedio se conserva.
+- [x] Dado que se crea una materia prima, cuando se guarda, entonces el formulario exige una unidad base activa y no eliminada, el servidor vuelve a validarla y la materia prima se guarda con ella; una solicitud sin unidad o con una unidad inválida se rechaza. Pruebas locales del formulario, repositorio y acción aprobadas.
+- [x] Dada una materia prima con referencias operativas, cuando se intenta cambiar o quitar su unidad base, entonces la operación se rechaza en la base de datos y conserva íntegro el registro, incluidos los demás datos enviados en esa actualización. Si se guarda otro dato sin cambiar la unidad, la edición se permite, incluso cuando la unidad histórica sea `NULL`. Fixtures SQL ejecutados manualmente; navegador confirmó edición sin cambiar unidad y rechazo sin actualización parcial.
+- [x] Dada una materia prima sin referencias operativas, cuando se le asigna o cambia a una unidad válida, entonces el cambio se guarda. La comprobación de referencias y la mutación están protegidas frente a operaciones concurrentes; una consulta previa solo desde la aplicación no satisface el criterio. El fixture SQL de unidad sin referencias pasó; las carreras `raw_material_lots` e `inventory_movements` se probaron en ambas direcciones con dos sesiones.
 
-## Reglas de negocio acordadas
+## Referencias operativas que bloquean cambiar o asignar la unidad
 
-- Solo se ajustan lotes existentes en estado `available`; no se ajustan lotes en cuarentena, retenidos ni rechazados.
-- El usuario identifica el lote junto con la ubicación actual. La ubicación se obtiene del lote y se muestra como contexto; no puede cambiarse aquí porque cambiarla corresponde a una transferencia.
-- El ajuste corrige una diferencia comprobada de cantidad y exige motivo.
-- Los aumentos y disminuciones se registran como movimientos `entry` o `exit`, con cantidad positiva. No se usa el tipo `adjustment` para operaciones nuevas.
-- La validación de autorización, estado del lote, cantidad positiva y finita, motivo y saldo se realiza en el servidor.
-- Una disminución no puede dejar saldo negativo. Si el lote llega a cero, su estado cambia a `depleted`.
-- El costo unitario del lote y `last_cost` no cambian con el ajuste.
-- **Aumento:** recalcular el promedio ponderado a partir del saldo y promedio anteriores y la cantidad aumentada valorada al costo unitario del lote; redondear a cuatro decimales.
+La comprobación contempla registros existentes sin filtrar por estado, borrado lógico, cantidad actual o saldo: un borrador, un histórico, un lote agotado o una línea con cantidad cero siguen siendo una referencia.
 
-  ```text
-  nuevo_promedio =
-    (saldo_anterior × promedio_anterior
-     + cantidad_aumentada × costo_unitario_del_lote)
-    / (saldo_anterior + cantidad_aumentada)
-  ```
+### Referencias directas
 
-- **Disminución:** conservar `average_cost`, siguiendo el comportamiento vigente del consumo.
-- **Saldo agregado en cero:** conservar el último `average_cost`; con cantidad cero no representa existencias con valor.
-- El promedio debe calcularse con los valores anteriores leídos bajo la misma protección transaccional que actualiza el lote, saldo y movimiento.
-- La entrada física y la carga de stock inicial siguen el flujo de orden de compra y recepción.
-- Los registros históricos de movimiento `adjustment` permanecen intactos; no se les asigna dirección ni efecto retroactivo.
-- Los datos iniciales de integración deben ser coherentes entre saldo agregado, lotes y movimientos.
-- La atomicidad se verifica provocando un error después de una escritura intermedia y comprobando que no persiste ningún cambio, incluido el promedio.
+| Tabla | Relación con la materia prima | Motivo |
+|---|---|---|
+| `purchase_requisition_items` | `raw_material_id` | Conserva cantidades requeridas, disponibles y de compra; incluye requisiciones en borrador e históricas. |
+| `purchase_order_items` | `raw_material_id` | Conserva cantidad, costo y cantidad recibida; incluye órdenes en cualquier estado, también borradores. |
+| `recipe_items` | `raw_material_id` | Conserva el ingrediente y cantidad de recetas. |
+| `production_order_items` | `raw_material_id` | Conserva cantidades planeadas y consumidas en órdenes de producción. |
+| `production_lot_consumptions` | `raw_material_id` | Registro histórico de consumo por lote de producción. |
+| `production_lot_traceability` | `raw_material_id` | Conserva trazabilidad y cantidad consumida desde el lote de materia prima. |
+| `raw_material_lots` | `raw_material_id` | Conserva cantidad, costo, ubicación y estado del lote, incluso en cero o agotado. |
+
+### Referencias polimórficas
+
+| Tabla | Condición |
+|---|---|
+| `inventory_movements` | `item_type = 'raw_material' AND item_id = raw_material.id` |
+| `inventory_lots` | `item_type = 'raw_material' AND item_id = raw_material.id` |
+| `inventory_reservations` | `item_type = 'raw_material' AND item_id = raw_material.id`; incluir reservas de cualquier estado. |
+
+### Referencias indirectas mediante pedido o lote
+
+| Tabla | Relación |
+|---|---|
+| `purchase_receipt_items` | `purchase_order_item_id` enlaza con `purchase_order_items.raw_material_id`; `raw_material_lot_id` enlaza con `raw_material_lots.raw_material_id`. Conserva cantidades recibidas. |
+| `production_order_consumptions` | `raw_material_lot_id` enlaza con `raw_material_lots.raw_material_id`; conserva cantidades consumidas. |
+| `production_material_consumption_operations` | `raw_material_lot_id` enlaza con `raw_material_lots.raw_material_id`; conserva operaciones de consumo e idempotencia. |
+| `quality_inspections` y `quality_release_decisions` | Sus referencias a `raw_material_lots` identifican materia prima e inspección/liberación históricas. |
+
+La tabla `recipes` representa recetas y su propia unidad de rendimiento; no identifica ingredientes. Los ingredientes consumidos por este flujo están en `recipe_items`. La columna `raw_materials.unit_of_measure_id` tiene una FK a `units_of_measure`; no se modificará ni completará automáticamente para datos existentes.
 
 ## Plan aprobado
 
-- Mostrar lotes disponibles seleccionables con su ubicación actual y capturar cantidad y motivo obligatorio en la unidad base.
-- Validar en el servidor autorización vigente, cantidad positiva y finita, motivo, estado actual del lote y saldo suficiente para una disminución.
-- Registrar aumentos como entradas y disminuciones como salidas, vinculadas al lote y auditables con el motivo.
-- Actualizar el lote, el saldo agregado y la valoración puntual de forma atómica, conservando costo unitario y `last_cost`.
-- Mantener fuera del cambio la política general de valoración, la recepción de mercancía y el significado de movimientos históricos `adjustment`.
+1. En el formulario de alta, exigir una unidad seleccionada. En el contrato/servidor, exigir y comprobar que el ID corresponde a una unidad activa y no eliminada antes de insertar.
+2. Permitir ediciones sin cambio de unidad, incluyendo materiales históricos con `unit_of_measure_id IS NULL`. El envío de la unidad igual a la existente no cuenta como cambio.
+3. Proteger en la base de datos el cambio o asignación de unidad con referencias. El guardado rechazado debe ser atómico y conservar tanto la unidad como todos los demás campos del registro.
+4. Hacer que el bloqueo y la creación de nuevas referencias se serialicen de modo que una carrera concurrente no permita cambiar la unidad mientras otra transacción agrega una referencia.
+5. No migrar unidades faltantes, reinterpretar cantidades, agregar campos/tablas, rediseñar conversiones ni mover archivos. Los materiales históricos con unidad nula y referencias no reciben una unidad en esta historia.
 
-## Pruebas aprobadas
+## Pruebas propuestas para aprobación (SKILL_pair)
 
-| Prueba | Capa |
+| Nombre de prueba | Capa responsable |
 |---|---|
-| Aumento de lote disponible con costo distinto del promedio actual: promedio ponderado correcto, redondeo a cuatro decimales, costo de lote y `last_cost` intactos | Integración de base de datos |
-| Disminución: promedio conservado, saldo no negativo, costo de lote y `last_cost` intactos | Integración de base de datos |
-| Lote agotado: cantidad cero, estado `depleted` y promedio agregado conservado cuando corresponda | Integración de base de datos |
-| Rechazo de lote en cuarentena, retenido o rechazado; cantidades inválidas; motivo ausente; disminución excesiva | Integración de base de datos |
-| Rechazo por falta de autorización | Integración de base de datos |
-| Lote, saldo agregado y movimiento se actualizan juntos; un fallo provocado tras una escritura intermedia revierte también el promedio | Integración de base de datos |
-| Selección de lote y ubicación como contexto, captura de cantidad y motivo, y revisión del saldo y kardex resultantes | Verificación manual |
+| `rawMaterialForm_requiresBaseUnitOnCreate` | Componente del formulario |
+| `fetchRawMaterialFormCatalog_excludesInactiveOrDeletedUnits` | Repositorio de catálogo |
+| `createRawMaterial_rejectsMissingOrInvalidUnitWithoutInsert` | Acción/servidor |
+| `updateRawMaterial_omitsUnitFieldWhenNotSubmitted` | Acción/servidor |
+| `rawMaterialCatalogEdit_preservesLegacyNullUnitWithOperationalReferences` | Integración de base de datos/Supabase |
+| `rawMaterialUnitChange_rejectsLotReferenceAndPreservesWholeRow` | Integración de base de datos/Supabase |
+| `rawMaterialUnitChange_rejectsPolymorphicReferencesByTypeAndPreservesWholeRow` | Integración de base de datos/Supabase |
+| `rawMaterialUnitChange_rejectsProcurementAndReceiptReferencesAndPreservesWholeRow` | Integración de base de datos/Supabase |
+| `rawMaterialUnitChange_rejectsRecipeAndProductionReferencesAndPreservesWholeRow` | Integración de base de datos/Supabase |
+| `rawMaterialUnitChange_preservesEntireRowWhenRejected` | Integración de base de datos/Supabase |
+| `rawMaterialUnitChange_allowsValidUnitWhenUnreferenced` | Integración de base de datos/Supabase |
+| `rawMaterialUnitChangeAndReferenceCreation_areSerialized` | Integración concurrente de base de datos; validación manual en dos sesiones SQL de Supabase si no hay runner concurrente disponible |
+| `rawMaterialEdit_preservesLegacyNullUnitUnlessExplicitlyChanged` | Recorrido manual de navegador |
 
-## Fuera del alcance
+Las pruebas de referencias se dividen en tres grupos; cada caso de relación intenta cambiar y quitar la unidad junto con otros campos, y verifica que la fila completa permanezca intacta. Los casos polimórficos usan el mismo `item_id` con el tipo correcto y con otro discriminador para probar ambos resultados.
 
-- Rediseñar la política general de valoración; solo se implementa el efecto puntual aprobado para estos ajustes.
-- Cambiar el costo unitario del lote o `last_cost`.
-- Ajustar lotes que no estén `available`, liberar Calidad, cambiar ubicaciones o transferir lotes.
-- Crear compras, recepciones o lotes para aumentos; la entrada física y el stock inicial se registran por compra.
-- Reinterpretar o actualizar movimientos históricos `adjustment`.
-- Crear tablas nuevas.
+| Grupo | Relaciones | Estado |
+|---|---|---|
+| 1. Lotes y referencias polimórficas | `raw_material_lots`; `inventory_movements`, `inventory_lots` e `inventory_reservations` con `item_type` correcto/incorrecto | Fixtures de las tres referencias polimórficas ejecutados manualmente tras instalar triggers; los tipos incorrectos con el mismo ID no bloquean. Concurrencia en `raw_material_lots` e `inventory_movements`: ambas direcciones observadas con dos sesiones; referencia primero rechazó el cambio con `23514`, unidad primero hizo esperar la referencia hasta el `COMMIT`. Los diez triggers quedaron verificados mediante catálogo de PostgreSQL. |
+| 2. Compras y recepción | `purchase_requisition_items`, `purchase_order_items`, `purchase_receipt_items` | Fixtures de requisición y orden de compra repetidos después de instalar triggers, sin error. El fixture de recepción se enlazó a orden, renglón, lote y ubicación; sus relaciones obligatorias están protegidas por esos registros fuente. Concurrencia cubierta mediante el helper compartido probado en `raw_material_lots` e `inventory_movements`. |
+| 3. Recetas y producción | `recipe_items`, `production_order_items`, `production_lot_consumptions`, `production_lot_traceability`, `production_order_consumptions`, `production_material_consumption_operations`, `quality_inspections`, `quality_release_decisions` | Fixtures de recetas, renglones de producción, consumos y trazabilidad ejecutados manualmente; los cuatro fixtures directos se repitieron tras instalar triggers, sin error. Las relaciones indirectas se verificaron por sus renglones y lotes fuente. La prueba de historial de Calidad pasó. Concurrencia cubierta mediante el helper compartido probado en ambas clases de referencia, directa y polimórfica. |
 
-## Estado de implementación
+La prueba de acción `updateRawMaterial_omitsUnitFieldWhenNotSubmitted` comprueba el contenido del `UPDATE` simulado: cambia un campo de catálogo y omite `unit_of_measure_id`. No demuestra persistencia de `NULL`; `rawMaterialCatalogEdit_preservesLegacyNullUnitWithOperationalReferences` la verificará en la capa de base de datos.
 
-- Criterios, alcance, valoración y lista de pruebas aprobados.
-- Ciclo 1 TDD (aumento y promedio ponderado): rojo confirmado manualmente en Supabase de desarrollo con `42883`, porque la función aún no existía.
-- Se añadió `supabase/tests/database/raw_material_lot_adjustment.sql`. El fixture usa un administrador existente con asignación explícita en `user_roles`, datos iniciales coherentes y termina en `ROLLBACK`.
-- La migración `20261027010000_add_raw_material_lot_adjustment.sql` se aplicó en Supabase de desarrollo. La prueba SQL completa se ejecutó manualmente y devolvió el ID de movimiento `9b360c7c-469d-40e5-9a53-98181b54a7ea`; no se reportaron errores de aserción.
-- Ciclo 2 TDD (disminución y promedio conservado): rojo confirmado manualmente con `22023` mientras la función solo aceptaba `entry`. Se añadió y aplicó `20261027020000_extend_raw_material_lot_adjustment.sql`; la prueba SQL completa volvió a ejecutarse y devolvió el ID de movimiento `425eaa41-b19b-4f3c-94e6-8c133b4cba12`, sin errores de aserción reportados.
-- La funcion SQL, la accion autorizada y la pagina dedicada cargan lotes disponibles con materia prima, saldo, unidad y ubicacion. El listado diferencia ambos flujos y la pantalla generica ofrece solo productos. El recorrido manual se completo el 2026-10-28.
-- El script SQL del repositorio no se ejecutó localmente: requiere Docker, que no está disponible. La evidencia de este ciclo es la ejecución manual en Supabase.
+La lista fue aprobada y ejecutada por ciclos TDD. Las pruebas locales del formulario, consulta de unidades, acción y contrato pasan. Los scripts SQL se ejecutaron manualmente en Supabase de desarrollo y usan `ROLLBACK`, salvo los fixtures temporales creados para las carreras y el navegador. Las migraciones `20261105000000` a `20261107030000` se aplicaron manualmente en Supabase; se verificó la instalación de los diez triggers. Las dos carreras se observaron en sesiones SQL independientes para una referencia directa y una polimórfica. En navegador, editar la descripción de un material heredado con unidad `NULL` y lote agotado fue exitoso; intentar asignar `kg` mostró el rechazo y Supabase confirmó que descripción, unidad, saldos y lote no cambiaron. La prueba `raw_material_unit_change_without_references.sql` pasó. Los registros persistentes de prueba se retiraron de Supabase. Los scripts SQL quedaron conectados a `db:verify`, ejecutado por CI después de restablecer Supabase local desde migraciones; la ejecución de CI en el PR está pendiente.
 
-- Ciclo 3 (agotamiento de lote y saldo agregado): verificacion manual ejecutada en Supabase de desarrollo el 2026-10-27; la consulta devolvio el ID 73b9da31-03f3-4928-a105-e9b498752190 sin errores de asercion. El SQL comprobo que ambos lotes quedan agotados, el saldo agregado llega a cero y se conservan el promedio 2.3333, last_cost y los costos unitarios.
+## Fuera de alcance
 
-- Ciclo 4 (rechazo sin autorizacion): verificacion manual ejecutada en Supabase de desarrollo el 2026-10-27. El script completo termino sin error reportado; el bloque comprobo rechazo bajo authenticated con una identidad sin asignacion admin y ausencia de escrituras.
-- Ciclo 5 (rechazo de cantidades no positivas o no finitas y motivo vacio): verificacion manual ejecutada en Supabase de desarrollo el 2026-10-27; el script completo devolvio la identidad admin de prueba y no se reportaron errores. Las aserciones comprobaron que los datos permanecieran intactos.
-- Ciclo 6 (rechazo de disminucion mayor que la cantidad del lote): verificacion manual ejecutada en Supabase de desarrollo el 2026-10-27; el script completo devolvio la identidad admin de prueba y no se reportaron errores. Se comprobaron saldos, promedio, lotes y movimientos sin cambios.
-- Ciclo 7 (rechazo por estado de Calidad no disponible): verificacion manual ejecutada en Supabase de desarrollo el 2026-10-27; el script completo devolvio la identidad admin de prueba y no se reportaron errores. Se cubrieron cuarentena, retenido y rechazado, sin cambios en saldo, promedio ni movimientos.
-- Ciclo 8 (rollback ante fallo despues de escrituras intermedias): verificacion manual ejecutada en Supabase de desarrollo el 2026-10-27; el script completo devolvio la identidad admin de prueba y no se reportaron errores. El fallo simulado al insertar el movimiento no dejo cambios en los lotes, el saldo, el promedio ni el historial.
-- Ciclo 9 (accion autorizada invoca la RPC con lote, tipo, cantidad y motivo): rojo confirmado porque la exportacion no existia; implementacion minima agregada y prueba focalizada verde (1 test). La accion usa una firma local acotada para la RPC porque el tipo generado aun no la incluye; no se modificaron tipos generados.
-- Ciclo 10 (formulario lista lotes y contexto de ubicacion): el rojo inicial exigia seleccionar un lote por defecto, comportamiento no acordado. Se corrigio la expectativa para verificar opcion visible, selector obligatorio inicialmente vacio, ubicacion asociada en la opcion y ausencia de campo de ubicacion editable. El formulario no cambio; test focalizado verde (1 test).
-## Separación de flujos aprobada
-
-- El ajuste genérico conserva su comportamiento para productos.
-- El ajuste genérico rechaza `item_type = raw_material` en el servidor antes de cualquier escritura.
-- El ajuste de materia prima se inicia desde un acceso diferenciado, permite seleccionar solo lotes disponibles y ejecuta la RPC autorizada. La RPC vuelve a validar el estado vigente del lote al momento de guardar.
-- El listado de ajustes ofrece accesos diferenciados a ajuste de productos y ajuste de materias primas por lote, ambos dentro de Inventory.
-- La revisión de otros caminos de escritura, incluida la edición de saldos desde el catálogo, queda pendiente como trabajo independiente.
-
-Pruebas agregadas al alcance aprobado:
-- `createInventoryAdjustment_rejectsRawMaterialBeforeAnyWrite`.
-- `createInventoryAdjustment_keepsProductAdjustmentsWorking`.
-- `adjustRawMaterialLotQuantity_callsAuthorizedRpcWithLotAndAdjustmentData` y rechazo de la RPC sin escrituras locales.
-- La página de Inventory solo ofrece lotes disponibles y muestra su materia prima, cantidad y ubicación.
-- Verificación manual: probar ambos accesos, ajuste de producto, ajuste de lote, lote que pierde disponibilidad y saldo/promedio/kardex después del guardado.
-
-- Ciclo 11 (acción genérica rechaza materias primas antes de escribir): rojo confirmado porque la acción completaba la inserción; se añadió una validación temprana tras la autorización. Prueba focalizada verde (2 tests), incluyendo el RPC autorizado existente.
-- Ciclo 12 (ajuste genérico conserva el comportamiento para productos): la prueba focalizada pasó verificando la inserción de un movimiento de producto con sus campos actuales. No hizo falta cambiar la implementación existente.
-- Ciclo 13 (pagina presenta solo lotes disponibles con datos de contexto): rojo confirmado porque la ruta dedicada no existia; se agrego la pagina bajo Inventory y la consulta filtra por status available. La prueba focalizada verde (1 test) verifica filtro y opcion con material, cantidad y ubicacion. Se corrigio el import a la accion de ajustes y se repitio el test.
-- Ciclo 14 (listado diferencia los accesos a producto y materia prima por lote): rojo confirmado porque solo existia el enlace generico. Se agregaron ambos accesos con sus rutas; test focalizado verde (1 test).
-- Ciclo 15 (pantalla generica solo ofrece productos): rojo confirmado porque consultaba y presentaba materias primas. Se retiro la consulta y el selector de tipo; el formulario envia item_type=product. La prueba focalizada verde (1 test) verifica que solo se consulta products, se ofrece el producto y el tipo oculto es product.
-- Ciclo 16 (pantalla generica solo consulta y presenta productos): rojo confirmado porque tambien consultaba materias primas. Se elimino la consulta de raw_materials y el selector de tipo, fijando item_type=product. Test focalizado verde (1 test); la escritura de productos conserva su prueba de accion aprobada.
-
-- Ciclo 17 (recorrido manual de ajuste en localhost y conciliacion en Supabase de desarrollo): completado el 2026-10-28 con datos de prueba desechables. Tras liberar por el flujo existente de Calidad el lote PRUEBASDASDASD, se comprobo que la pantalla inicia con "Seleccionar lote" despues de recargar. Aumentar 1 kg registro entrada vinculada al lote y dejo lote/saldo en 6, promedio, costo del lote y last_cost en 19. Disminuir 1 kg registro salida y dejo lote/saldo en 5, promedio, costo del lote y last_cost en 19. La consulta de Supabase mostro ambos movimientos con saldos 5->6 y 6->5, la misma ubicacion y estado available.
-- Hallazgo de revisión: la RPC aceptaba cantidades con precisión mayor a cuatro decimales, aunque los saldos y movimientos persisten cuatro; una cantidad como `0.00001` podía dejar un movimiento redondeado a cero. La migración `20261028010000_validate_raw_material_lot_adjustment_precision.sql` se aplicó en Supabase de desarrollo y la prueba SQL completa se ejecutó sin errores; la nueva aserción confirmó el rechazo de `0.00001` sin escrituras, y el script terminó con `ROLLBACK`.
+- Asignación masiva o automática de unidades a registros existentes sin unidad.
+- Asignar unidad a un registro heredado con referencias operativas; requiere decisión posterior.
+- Unidades de compra, presentaciones y conversiones entre unidades.
+- Cambios a unidades base de productos o recetas.
+- Reorganización de módulos o ubicación de archivos.

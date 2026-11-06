@@ -31,6 +31,7 @@ export async function fetchRawMaterialFormCatalog(
       .from('units_of_measure')
       .select('id, name, code')
       .eq('is_active', true)
+      .is('deleted_at', null)
       .order('name'),
   ]);
 

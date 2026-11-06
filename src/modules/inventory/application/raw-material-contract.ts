@@ -91,7 +91,14 @@ export function buildRawMaterialUpdate(
   form: FormData,
   updatedAt: string,
 ): RawMaterialUpdate {
-  return { ...buildRawMaterialCatalogFields(form), updated_at: updatedAt };
+  const { unit_of_measure_id, ...catalogFields } =
+    buildRawMaterialCatalogFields(form);
+
+  return {
+    ...catalogFields,
+    ...(form.has('unit_of_measure_id') ? { unit_of_measure_id } : {}),
+    updated_at: updatedAt,
+  };
 }
 
 export function normalizeRawMaterialFormValues(material: RawMaterialFormSelection) {

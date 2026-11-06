@@ -1,4 +1,4 @@
-# Backlog activo: ajustes de materias primas por lote
+# Backlog de gestión de materias primas
 
 ## Contexto
 
@@ -10,10 +10,11 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
 
 ## Historias activas
 
-No hay historias activas en este momento.
+- Ninguna.
 
 ## Historias completadas
 
+- [x] Como administrador de catálogo, quiero definir la unidad base de una materia prima y protegerla cuando tenga operaciones asociadas, para evitar reinterpretar sus cantidades históricas. Alta validada en formulario y servidor; referencias directas, polimórficas e indirectas protegidas en Supabase; pruebas de cambio permitido sin referencias y de rechazo atómico; ambas carreras verificadas con dos sesiones para `raw_material_lots` e `inventory_movements`; edición manual de una materia prima heredada con unidad `NULL` conservó la unidad y rechazó una asignación con referencias sin cambios parciales. Fixtures temporales retirados. Los SQL se conectaron a `db:verify`; queda la ejecución de CI en el PR.
 - [x] Como responsable de inventario, quiero corregir con un motivo la cantidad de un lote disponible, para mantener coherentes sus existencias y su historial de movimientos. Las pruebas SQL en Supabase cubrieron promedio ponderado, disminución, agotamiento, autorización, validaciones, precisión de cuatro decimales y rollback; el recorrido manual verificó aumento y disminución por lote con saldo, costos y kardex conciliados.
 - [x] Como administrador autorizado, quiero cancelar el alta o recuperarme de errores y capturas pendientes al crear una materia prima desde compras, para no perder mi trabajo. Las pruebas y el recorrido manual confirmaron cancelación y recarga con captura preservada, retorno del alta exitosa, agregado explícito, rechazo recuperable, persistencia de dos renglones y limpieza de la captura.
 - [x] Como administrador autorizado, quiero registrar por lote y ubicación la materia prima recibida de una orden de compra para reflejar lo que llegó y actualizar las existencias.

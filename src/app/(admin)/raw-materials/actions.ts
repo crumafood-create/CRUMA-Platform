@@ -24,6 +24,21 @@ export async function createRawMaterial(
     average_cost: 0,
   };
 
+  if (!material.unit_of_measure_id) {
+    throw new Error('Selecciona una unidad base.');
+  }
+
+  const { data: unit, error: unitError } = await supabase
+    .from('units_of_measure')
+    .select('id')
+    .eq('id', material.unit_of_measure_id)
+    .eq('is_active', true)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (unitError) throw new Error('No fue posible validar la unidad base.');
+  if (!unit) throw new Error('La unidad base seleccionada no está disponible.');
+
   await assertRawMaterialFamilyBelongsToCategory(
     supabase,
     material.category_id ?? null,

@@ -4,15 +4,15 @@
 -- in an environment that already has them.
 -- This migration requires 20261002140000_add_operational_scope_hierarchy.sql
 -- to have run first; do not apply it directly to an environment missing those
--- historical tables. Supabase's migration runner provides the transaction.
-
-LOCK TABLE public.organizations, public.plants, public.warehouses
-  IN ACCESS EXCLUSIVE MODE;
+-- historical tables. A single DO statement keeps locks, guards and DDL atomic.
 
 DO $guard$
 DECLARE
   has_scoped_rows boolean;
 BEGIN
+  LOCK TABLE public.organizations, public.plants, public.warehouses
+    IN ACCESS EXCLUSIVE MODE;
+
   IF to_regclass('public.organizations') IS NOT NULL THEN
     EXECUTE 'SELECT EXISTS (SELECT 1 FROM public.organizations)'
       INTO has_scoped_rows;
@@ -66,22 +66,22 @@ BEGIN
         USING ERRCODE = '55000';
     END IF;
   END IF;
+
+  DROP POLICY IF EXISTS organizations_admin_write ON public.organizations;
+  DROP POLICY IF EXISTS plants_admin_write ON public.plants;
+
+  ALTER TABLE public.warehouses
+    DROP CONSTRAINT IF EXISTS warehouses_plant_scope_fkey,
+    DROP CONSTRAINT IF EXISTS warehouses_scope_pair_check;
+
+  DROP INDEX IF EXISTS public.warehouses_scoped_code_unique;
+  DROP INDEX IF EXISTS public.warehouses_plant_idx;
+
+  ALTER TABLE public.warehouses
+    DROP COLUMN IF EXISTS tenant_id,
+    DROP COLUMN IF EXISTS plant_id;
+
+  DROP TABLE IF EXISTS public.plants;
+  DROP TABLE IF EXISTS public.organizations;
 END;
 $guard$;
-
-DROP POLICY IF EXISTS organizations_admin_write ON public.organizations;
-DROP POLICY IF EXISTS plants_admin_write ON public.plants;
-
-ALTER TABLE public.warehouses
-  DROP CONSTRAINT IF EXISTS warehouses_plant_scope_fkey,
-  DROP CONSTRAINT IF EXISTS warehouses_scope_pair_check;
-
-DROP INDEX IF EXISTS public.warehouses_scoped_code_unique;
-DROP INDEX IF EXISTS public.warehouses_plant_idx;
-
-ALTER TABLE public.warehouses
-  DROP COLUMN IF EXISTS tenant_id,
-  DROP COLUMN IF EXISTS plant_id;
-
-DROP TABLE IF EXISTS public.plants;
-DROP TABLE IF EXISTS public.organizations;

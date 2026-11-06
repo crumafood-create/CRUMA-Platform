@@ -10,6 +10,17 @@ function migration(): string {
 }
 
 describe('aplazamiento de scopes de organización y planta', () => {
+  it('mantiene bloqueos, guardas y eliminación en una sola sentencia', () => {
+    const block = migration().match(/DO \$guard\$([\s\S]*?)\$guard\$;/)?.[1];
+
+    expect(block).toBeDefined();
+    expect(block).toContain('LOCK TABLE public.organizations');
+    expect(block).toContain("USING ERRCODE = '55000'");
+    expect(block).toContain('DROP POLICY IF EXISTS organizations_admin_write');
+    expect(block).toContain('DROP TABLE IF EXISTS public.plants');
+    expect(block).toContain('DROP TABLE IF EXISTS public.organizations');
+  });
+
   it('detiene la migración si existen datos o asignaciones', () => {
     const sql = migration();
 

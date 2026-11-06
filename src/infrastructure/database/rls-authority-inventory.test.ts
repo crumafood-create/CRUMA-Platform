@@ -10,11 +10,11 @@ describe('inventario de autoridad RLS', () => {
   const summary = summarizeRlsDependencies();
 
   it('reconstruye las políticas vigentes sin perder su tabla', () => {
-    expect(policies).toHaveLength(213);
+    expect(policies).toHaveLength(211);
     expect(summary).toEqual({
-      policies: 213,
+      policies: 211,
       authority: {
-        is_admin_exclusive: 50,
+        is_admin_exclusive: 48,
         mixed: 0,
         not_is_admin: 163,
       },
@@ -23,7 +23,7 @@ describe('inventario de autoridad RLS', () => {
       missingReads: [],
       functionGuards: 42,
       anonWriteGrants: 136,
-      authenticatedWriteGrants: 141,
+      authenticatedWriteGrants: 139,
     });
   });
 
@@ -36,16 +36,6 @@ describe('inventario de autoridad RLS', () => {
           authority: 'not_is_admin',
           command: 'select',
           open: true,
-        }),
-        expect.objectContaining({
-          table: 'organizations',
-          policy: 'organizations_admin_write',
-          authority: 'is_admin_exclusive',
-        }),
-        expect.objectContaining({
-          table: 'plants',
-          policy: 'plants_admin_write',
-          authority: 'is_admin_exclusive',
         }),
         expect.objectContaining({
           table: 'warehouses',
@@ -67,20 +57,9 @@ describe('inventario de autoridad RLS', () => {
       ),
     ).toBe(true);
     expect(
-      policies.filter((policy) =>
+      policies.some((policy) =>
         ['organizations', 'plants'].includes(policy.table),
       ),
-    ).toEqual([
-      expect.objectContaining({
-        table: 'organizations',
-        command: 'all',
-        authority: 'is_admin_exclusive',
-      }),
-      expect.objectContaining({
-        table: 'plants',
-        command: 'all',
-        authority: 'is_admin_exclusive',
-      }),
-    ]);
+    ).toBe(false);
   });
 });

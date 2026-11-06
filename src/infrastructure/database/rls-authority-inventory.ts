@@ -191,6 +191,8 @@ const TABLE_PRIVILEGE_PATTERN =
   /\b(grant|revoke)\s+(all|select|insert|update|delete|(?:select|insert|update|delete)(?:\s*,\s*(?:select|insert|update|delete)){1,3})\s+on\s+(?:table\s+)?((?:"public"\s*\.\s*)?(?:public\s*\.\s*)?"?[A-Za-z_][\w$]*"?)\s+(?:to|from)\s+((?:"?[A-Za-z_][\w$]*"?)(?:\s*,\s*"?[A-Za-z_][\w$]*"?)*)/gi;
 
 const WRITE_PRIVILEGES = new Set(['insert', 'update', 'delete', 'all']);
+const DROP_TABLE_PATTERN =
+  /\bdrop\s+table\s+(?:if\s+exists\s+)?((?:"public"\s*\.\s*)?(?:public\s*\.\s*)?"?[A-Za-z_][\w$]*"?)/gi;
 
 type TableGrant = {
   readonly table: string;
@@ -219,6 +221,20 @@ function inventoryTableGrants(
     const sql = readFileSync(join(migrationsDirectory, migration), 'utf8')
       .replace(/--.*$/gm, '')
       .replace(/\s+/g, ' ');
+
+    for (const match of sql.matchAll(DROP_TABLE_PATTERN)) {
+      const rawTable = match[1];
+      if (!rawTable) continue;
+
+      const table = rawTable
+        .replace(/"/g, '')
+        .replace(/^public\./i, '')
+        .toLowerCase();
+
+      for (const key of grants.keys()) {
+        if (key.startsWith(`${table}.`)) grants.delete(key);
+      }
+    }
 
     for (const match of sql.matchAll(TABLE_PRIVILEGE_PATTERN)) {
       const [, operation, privileges, rawTable, rawRoles] = match;

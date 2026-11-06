@@ -131,6 +131,52 @@ describe('raw material actions', () => {
     }
   });
 
+  it.each(['inactive', 'deleted'])(
+    'rejects assigning a %s unit when updating a material',
+    async () => {
+      const currentUnitLookup = vi.fn().mockResolvedValue({
+        data: { unit_of_measure_id: UNIT_ID },
+        error: null,
+      });
+      const currentMaterialQuery: Record<string, unknown> = {
+        select: () => currentMaterialQuery,
+        eq: () => currentMaterialQuery,
+        maybeSingle: currentUnitLookup,
+      };
+      const unitQuery: Record<string, unknown> = {
+        select: () => unitQuery,
+        eq: (column: string, value: unknown) => {
+          mocks.unitFilters.push(['eq', column, value]);
+          return unitQuery;
+        },
+        is: (column: string, value: unknown) => {
+          mocks.unitFilters.push(['is', column, value]);
+          return unitQuery;
+        },
+        maybeSingle: mocks.unitLookup,
+      };
+      const update = vi.fn();
+      mocks.from.mockImplementation((table: string) =>
+        table === 'raw_materials'
+          ? { select: () => currentMaterialQuery, update }
+          : unitQuery,
+      );
+      mocks.unitLookup.mockResolvedValue({ data: null, error: null });
+      const formData = new FormData();
+      formData.set('name', 'Harina integral');
+      formData.set('slug', 'harina-integral');
+      formData.set('unit_of_measure_id', 'ffffffff-ffff-4fff-8fff-ffffffffffff');
+
+      await expect(updateRawMaterial('dddddddd-dddd-4ddd-8ddd-dddddddddddd', formData))
+        .rejects.toThrow('La unidad base seleccionada no está disponible.');
+
+      expect(currentUnitLookup).toHaveBeenCalledOnce();
+      expect(mocks.unitFilters).toContainEqual(['eq', 'is_active', true]);
+      expect(mocks.unitFilters).toContainEqual(['is', 'deleted_at', null]);
+      expect(update).not.toHaveBeenCalled();
+    },
+  );
+
   it('preserves existing inventory-owned values when catalog fields change', async () => {
     const materialId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
     const persisted = {
@@ -175,7 +221,7 @@ describe('raw material actions', () => {
     });
   });
 
-  it('omits a legacy null unit from the update while changing catalog fields', async () => {
+  it('allows catalog edits for a legacy material with no unit', async () => {
     const materialId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
     const eq = vi.fn().mockResolvedValue({ error: null });
     const update = vi.fn().mockReturnValue({ eq });
@@ -189,11 +235,13 @@ describe('raw material actions', () => {
     formData.set('minimum_stock', '2');
     formData.set('description', 'Ingrediente base');
     formData.set('is_active', 'true');
+    formData.set('unit_of_measure_id', '');
 
     await updateRawMaterial(materialId, formData);
 
     expect(update).toHaveBeenCalledOnce();
     expect(update.mock.calls[0]?.[0]).toHaveProperty('name', 'Harina integral');
-    expect(update.mock.calls[0]?.[0]).not.toHaveProperty('unit_of_measure_id');
+    expect(update.mock.calls[0]?.[0]).toHaveProperty('unit_of_measure_id', null);
+    expect(mocks.unitLookup).not.toHaveBeenCalled();
   });
 });

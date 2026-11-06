@@ -7,24 +7,28 @@ type ActionContract = {
   action: string;
   guard: string;
   table: string;
+  mutation: 'insert' | 'update';
 };
 
 const INTEGRITY_ACTIONS: ActionContract[] = [
   {
     file: '../../../app/(admin)/raw-materials/actions.ts',
     action: 'createRawMaterial',
+    mutation: 'insert',
     guard: 'assertRawMaterialFamilyBelongsToCategory(',
     table: 'raw_materials',
   },
   {
     file: '../../../app/(admin)/raw-materials/actions.ts',
     action: 'updateRawMaterial',
+    mutation: 'update',
     guard: 'assertRawMaterialFamilyBelongsToCategory(',
     table: 'raw_materials',
   },
   {
     file: '../../../app/(admin)/families/actions.ts',
     action: 'updateFamily',
+    mutation: 'update',
     guard: 'assertFamilyCategoryCanBeChanged(',
     table: 'families',
   },
@@ -46,7 +50,10 @@ describe('integridad categoría-familia antes de escrituras administrativas', ()
   it.each(INTEGRITY_ACTIONS)('protege la acción %j antes de escribir', (contract) => {
     const source = actionSource(contract);
     const guardIndex = source.indexOf(contract.guard);
-    const writeIndex = source.indexOf(`.from('${contract.table}')`);
+    const writePattern = new RegExp(
+      String.raw`\.from\(['"]${contract.table}['"]\)\s*\.${contract.mutation}\s*\(`,
+    );
+    const writeIndex = source.search(writePattern);
 
     expect(guardIndex >= 0).toBe(true);
     expect(writeIndex > guardIndex).toBe(true);

@@ -1,5 +1,9 @@
 BEGIN;
-SELECT set_config('test.material_id', gen_random_uuid()::text, true), set_config('test.old_unit_id', gen_random_uuid()::text, true), set_config('test.new_unit_id', gen_random_uuid()::text, true), set_config('test.supplier_id', gen_random_uuid()::text, true), set_config('test.location_id', gen_random_uuid()::text, true), set_config('test.order_id', gen_random_uuid()::text, true), set_config('test.order_item_id', gen_random_uuid()::text, true), set_config('test.lot_id', gen_random_uuid()::text, true), set_config('test.receipt_id', gen_random_uuid()::text, true), set_config('test.receipt_item_id', gen_random_uuid()::text, true), set_config('test.profile_id', (SELECT id::text FROM public.profiles ORDER BY created_at LIMIT 1), true);
+SELECT set_config('test.material_id', gen_random_uuid()::text, true), set_config('test.old_unit_id', gen_random_uuid()::text, true), set_config('test.new_unit_id', gen_random_uuid()::text, true), set_config('test.supplier_id', gen_random_uuid()::text, true), set_config('test.location_id', gen_random_uuid()::text, true), set_config('test.order_id', gen_random_uuid()::text, true), set_config('test.order_item_id', gen_random_uuid()::text, true), set_config('test.lot_id', gen_random_uuid()::text, true), set_config('test.receipt_id', gen_random_uuid()::text, true), set_config('test.receipt_item_id', gen_random_uuid()::text, true), set_config('test.profile_id', gen_random_uuid()::text, true);
+INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
+VALUES (current_setting('test.profile_id')::uuid, 'authenticated', 'authenticated', 'unit-receipt-' || left(current_setting('test.profile_id'), 8) || '@example.test', now(), now());
+INSERT INTO public.profiles (id, full_name, email, role)
+VALUES (current_setting('test.profile_id')::uuid, 'Unit receipt fixture', 'unit-receipt-' || left(current_setting('test.profile_id'), 8) || '@example.test', 'admin');
 INSERT INTO public.units_of_measure (id, name, code)
 VALUES
   (current_setting('test.old_unit_id')::uuid, 'Receipt old unit', 'rceu-' || left(current_setting('test.old_unit_id'), 8)),

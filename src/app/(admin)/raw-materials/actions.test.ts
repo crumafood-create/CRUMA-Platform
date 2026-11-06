@@ -36,8 +36,7 @@ describe('raw material actions', () => {
     mocks.from.mockImplementation((table: string) => {
       if (table !== 'units_of_measure') return { insert: mocks.insert };
 
-      let query: Record<string, unknown>;
-      query = {
+      const query: Record<string, unknown> = {
         select: () => query,
         eq: (column: string, value: unknown) => {
           mocks.unitFilters.push(['eq', column, value]);

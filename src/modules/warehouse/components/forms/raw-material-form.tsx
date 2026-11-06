@@ -343,6 +343,7 @@ export function RawMaterialForm({
 
             <select
               name="unit_of_measure_id"
+              required={!initialValues}
               defaultValue={
                 initialValues?.unit_of_measure_id ?? ''
               }

@@ -11,14 +11,20 @@ type TableName = 'categories' | 'families' | 'units_of_measure';
 type Result = { data: unknown; error: { message: string } | null };
 type QueryBuilder = Promise<Result> & {
   select: () => QueryBuilder;
-  is: () => QueryBuilder;
-  eq: () => QueryBuilder;
+  is: (column: string, value: unknown) => QueryBuilder;
+  eq: (column: string, value: unknown) => QueryBuilder;
   order: () => QueryBuilder;
   single: () => Promise<Result>;
 };
 
 function clientWith(fixtures: Partial<Record<TableName, Result>>) {
   const calls: TableName[] = [];
+  const filters: Array<{
+    table: TableName;
+    method: 'is' | 'eq';
+    column: string;
+    value: unknown;
+  }> = [];
 
   const client = {
     from(table: TableName) {
@@ -27,8 +33,14 @@ function clientWith(fixtures: Partial<Record<TableName, Result>>) {
       const result = fixtures[table] ?? { data: [], error: null };
       const query: QueryBuilder = Object.assign(Promise.resolve(result), {
         select() { return query; },
-        is() { return query; },
-        eq() { return query; },
+        is(column: string, value: unknown) {
+          filters.push({ table, method: 'is', column, value });
+          return query;
+        },
+        eq(column: string, value: unknown) {
+          filters.push({ table, method: 'eq', column, value });
+          return query;
+        },
         order() { return query; },
         single() { return Promise.resolve(result); },
       });
@@ -37,7 +49,7 @@ function clientWith(fixtures: Partial<Record<TableName, Result>>) {
     },
   } as unknown as TypedSupabaseClient;
 
-  return { client, calls };
+  return { client, calls, filters };
 }
 
 describe('repositorio tipado de catálogos para materias primas', () => {
@@ -122,6 +134,25 @@ describe('repositorio tipado de catálogos para materias primas', () => {
     ).rejects.toThrow('La familia de una materia prima requiere una categoría.');
 
     expect(calls).toEqual([]);
+  });
+
+  it('filters units to active and non-deleted records', async () => {
+    const { client, filters } = clientWith({});
+
+    await fetchRawMaterialFormCatalog(client);
+
+    expect(filters).toContainEqual({
+      table: 'units_of_measure',
+      method: 'eq',
+      column: 'is_active',
+      value: true,
+    });
+    expect(filters).toContainEqual({
+      table: 'units_of_measure',
+      method: 'is',
+      column: 'deleted_at',
+      value: null,
+    });
   });
 
   it.each([null, 'category-1'])(

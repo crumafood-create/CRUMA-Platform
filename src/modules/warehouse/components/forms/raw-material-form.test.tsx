@@ -4,6 +4,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { RawMaterialForm } from './raw-material-form';
 
 describe('RawMaterialForm', () => {
+  it('requires a base unit on creation', () => {
+    const { container } = render(
+      <RawMaterialForm action={vi.fn().mockResolvedValue(undefined)} />,
+    );
+
+    expect(
+      container.querySelector('select[name="unit_of_measure_id"]'),
+    ).toBeRequired();
+  });
+
   it('shows zero stock and average cost as read-only on creation', () => {
     const { container } = render(
       <RawMaterialForm action={vi.fn().mockResolvedValue(undefined)} />,

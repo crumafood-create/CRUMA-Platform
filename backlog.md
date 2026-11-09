@@ -17,6 +17,12 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
 
 ## Historias completadas
 
+- [x] **WH-01.** Como responsable de recepción, quiero consultar desde el móvil las órdenes que admiten recepción y abrir su detalle, para elegir qué compra recibir.
+  - **Prioridad:** P1.
+  - **Motivo:** un error de consulta impedía al operador navegar a las órdenes pendientes antes de usar recepción en operación.
+  - **Módulo propietario:** Warehouse.
+  - **Validación:** pruebas automatizadas de consulta, enlace y detalle; recorrido en desarrollo con `PO-20261109-8B53C4`, que mostró 25 kg recibidos y 25 kg pendientes. Los contadores quedan como hallazgo separado.
+
 - [x] Como administrador de catálogo, quiero definir la unidad base de una materia prima y protegerla cuando tenga operaciones asociadas, para evitar reinterpretar sus cantidades históricas. Alta validada en formulario y servidor; referencias directas, polimórficas e indirectas protegidas en Supabase; pruebas de cambio permitido sin referencias y de rechazo atómico; ambas carreras verificadas con dos sesiones para `raw_material_lots` e `inventory_movements`; edición manual de una materia prima heredada con unidad `NULL` conservó la unidad y rechazó una asignación con referencias sin cambios parciales. Fixtures temporales retirados. Los SQL se conectaron a `db:verify`; CI aprobó en el PR #123.
 - [x] Como responsable de inventario, quiero corregir con un motivo la cantidad de un lote disponible, para mantener coherentes sus existencias y su historial de movimientos. Las pruebas SQL en Supabase cubrieron promedio ponderado, disminución, agotamiento, autorización, validaciones, precisión de cuatro decimales y rollback; el recorrido manual verificó aumento y disminución por lote con saldo, costos y kardex conciliados.
 - [x] Como administrador autorizado, quiero cancelar el alta o recuperarme de errores y capturas pendientes al crear una materia prima desde compras, para no perder mi trabajo. Las pruebas y el recorrido manual confirmaron cancelación y recarga con captura preservada, retorno del alta exitosa, agregado explícito, rechazo recuperable, persistencia de dos renglones y limpieza de la captura.

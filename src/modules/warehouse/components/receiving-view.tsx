@@ -4,9 +4,8 @@ import { getReceivingOrders, type ReceivingOrder } from '@/modules/warehouse/ser
 
 function getStatusLabel(status: string): string {
   switch (status) {
-    case 'draft': return 'Borrador';
-    case 'pending': return 'Pendiente';
-    case 'partial': return 'Parcial';
+    case 'released': return 'Liberada';
+    case 'partially_received': return 'Parcialmente recibida';
     case 'received': return 'Recibida';
     case 'cancelled': return 'Cancelada';
     default: return status;
@@ -15,9 +14,8 @@ function getStatusLabel(status: string): string {
 
 function getStatusBadgeClass(status: string): string {
   switch (status) {
-    case 'draft': return 'bg-gray-100 text-gray-800';
-    case 'pending': return 'bg-yellow-100 text-yellow-800';
-    case 'partial': return 'bg-blue-100 text-blue-800';
+    case 'released': return 'bg-yellow-100 text-yellow-800';
+    case 'partially_received': return 'bg-blue-100 text-blue-800';
     case 'received': return 'bg-green-100 text-green-800';
     case 'cancelled': return 'bg-red-100 text-red-800';
     default: return 'bg-gray-100 text-gray-800';
@@ -38,10 +36,8 @@ export async function ReceivingView() {
 }
 
 function ReceivingCard({ order }: { order: ReceivingOrder }) {
-  const progress = order.total_items === 0 ? 0 : (order.received_items / order.total_items) * 100;
   return <Link href={`/mobile/receiving/${order.id}`} className="block min-h-44 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md sm:p-6">
     <div className="flex items-start justify-between"><div><div className="text-sm text-gray-500">Orden de Compra</div><div className="mt-1 text-2xl font-bold">{order.order_number}</div><div className="mt-3 text-sm text-gray-600">{order.supplier_name}</div></div><span className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(order.status)}`}>{getStatusLabel(order.status)}</span></div>
-    <div className="mt-6 border-t pt-4"><div className="flex justify-between text-sm"><span className="text-gray-500">Partidas</span><span className="font-semibold">{order.received_items} / {order.total_items}</span></div><div className="mt-3 h-2 rounded-full bg-gray-200"><div className="h-2 rounded-full bg-green-600" style={{ width: `${progress}%` }} /></div></div>
     <div className="mt-6 flex justify-end"><span className="font-semibold text-blue-600">Recibir →</span></div>
   </Link>;
 }

@@ -1,16 +1,14 @@
 'use server';
 
-import { requireRows } from '@/infrastructure/database/query-result';
+import { DatabaseQueryError, requireRows } from '@/infrastructure/database/query-result';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 export type ReceivingOrder = {
   id: string;
   order_number: string;
   supplier_name: string;
-  status: 'draft' | 'pending' | 'partial' | 'received' | 'cancelled' | string;
-  total_items: number;
-  received_items: number;
-  created_at?: string;
+  status: 'released' | 'partially_received' | string;
+  created_at: string;
 };
 
 export type ReceivingItem = {
@@ -46,15 +44,22 @@ type DynamicSupabaseClient = {
 export async function getReceivingOrders(): Promise<ReceivingOrder[]> {
   const supabase = await createTypedClient();
 
-  const result = await (supabase as unknown as DynamicSupabaseClient)
+  const result = await supabase
     .from('purchase_orders')
-    .select('id, order_number, supplier_name, status, total_items, received_items, created_at')
-    .in('status', ['pending', 'partial'])
+    .select('id, order_number, status, created_at, supplier:suppliers!purchase_orders_supplier_id_fkey(name)')
+    .is('deleted_at', null)
+    .in('status', ['released', 'partially_received'])
     .order('created_at', { ascending: false });
 
-  const rows = requireRows(result as Parameters<typeof requireRows>[0], 'órdenes de recepción');
+  const rows = requireRows(result, 'órdenes de recepción');
 
-  return rows as unknown as ReceivingOrder[];
+  return rows.map((order) => ({
+    id: order.id,
+    order_number: order.order_number,
+    supplier_name: order.supplier?.name ?? 'Proveedor no disponible',
+    status: order.status,
+    created_at: order.created_at,
+  }));
 }
 
 /**
@@ -63,15 +68,23 @@ export async function getReceivingOrders(): Promise<ReceivingOrder[]> {
 export async function getReceivingOrderById(id: string): Promise<ReceivingOrder | null> {
   const supabase = await createTypedClient();
 
-  const { data, error } = await (supabase as unknown as DynamicSupabaseClient)
+  const { data, error } = await supabase
     .from('purchase_orders')
-    .select('id, order_number, supplier_name, status, total_items, received_items, created_at')
+    .select('id, order_number, status, created_at, supplier:suppliers!purchase_orders_supplier_id_fkey(name)')
     .eq('id', id)
+    .is('deleted_at', null)
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) throw new DatabaseQueryError('orden de recepción', error);
+  if (!data) return null;
 
-  return data as unknown as ReceivingOrder;
+  return {
+    id: data.id,
+    order_number: data.order_number,
+    supplier_name: data.supplier?.name ?? 'Proveedor no disponible',
+    status: data.status,
+    created_at: data.created_at,
+  };
 }
 
 /**

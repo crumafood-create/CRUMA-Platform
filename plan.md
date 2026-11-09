@@ -188,3 +188,13 @@ La lista fue aprobada y ejecutada por ciclos TDD. Las pruebas locales del formul
 
 - ADR-0018 permanece Propuesto; su aceptación no se registra automáticamente por la fusión del PR.
 - La reparación del historial remoto y el `db push` siguen pendientes de autorización independiente.
+
+## WH-01 completada: recuperar la lista móvil de recepción
+
+El propietario es Warehouse. `getReceivingOrders()` consultaba columnas inexistentes (`supplier_name`, `total_items`, `received_items`) y filtraba estados heredados (`pending`, `partial`) en vez de los estados vigentes de compras (`released`, `partially_received`).
+
+La lista ahora usa la consulta Supabase tipada, la relación de proveedor, excluye órdenes eliminadas y filtra los dos estados que admiten recepción. Las tarjetas enlazan al detalle. Se retiró de la tarjeta el bloque basado en contadores no disponibles; los contadores del detalle permanecen sin cambios y como hallazgo separado.
+
+Pruebas automatizadas: 3 nuevas pruebas para la orden parcial de prueba, su enlace y el detalle con 25 kg recibidos/25 kg pendientes; 5 pruebas existentes de recepción aprobadas. Typecheck y ESLint enfocado aprobados.
+
+Verificación manual en desarrollo: `/mobile/receiving` mostró `PO-20261109-8B53C4` (Antojos to go, parcialmente recibida); al abrirla, el detalle mostró 50 kg esperados, 25 kg recibidos y 25 kg pendientes. Se observaron también `Avance 0 / 1`, `Partidas recibidas 0` y `Pendientes 1`; su interpretación no se incluyó en WH-01.

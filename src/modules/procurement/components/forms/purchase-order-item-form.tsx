@@ -6,6 +6,7 @@ interface Material {
   id: string;
   name: string;
   internal_code: string | null;
+  base_unit_label?: string;
 }
 
 interface Props {
@@ -21,7 +22,9 @@ interface Props {
 
 interface PendingCapture {
   raw_material_id: string;
+  presentation_mode: 'base_unit' | 'sealed_package';
   quantity: string;
+  base_quantity_per_presentation: string;
   unit_cost: string;
 }
 
@@ -38,7 +41,9 @@ export function PurchaseOrderItemForm({
 }: Props) {
   const [capture, setCapture] = useState<PendingCapture>({
     raw_material_id: initialMaterialId ?? '',
+    presentation_mode: 'base_unit',
     quantity: '',
+    base_quantity_per_presentation: '1',
     unit_cost: '',
   });
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +51,21 @@ export function PurchaseOrderItemForm({
   const hasUserEdited = useRef(false);
   const submissionInProgress = useRef(false);
   const storageKey = userId ? getCaptureKey(userId, purchaseOrderId) : null;
+  const selectedMaterial = materials.find((material) => material.id === capture.raw_material_id);
+  const purchaseQuantity = Number(capture.quantity);
+  const purchaseUnitPrice = Number(capture.unit_cost);
+  const baseQuantityPerPresentation = capture.presentation_mode === 'base_unit'
+    ? 1
+    : Number(capture.base_quantity_per_presentation);
+  const productAmount = Number.isFinite(purchaseQuantity) && purchaseQuantity > 0
+    && Number.isFinite(purchaseUnitPrice) && purchaseUnitPrice >= 0
+    ? (purchaseQuantity * purchaseUnitPrice).toFixed(4)
+    : null;
+  const equivalentBaseUnitPrice = Number.isFinite(baseQuantityPerPresentation)
+    && baseQuantityPerPresentation > 0
+    && Number.isFinite(purchaseUnitPrice) && purchaseUnitPrice >= 0
+    ? (purchaseUnitPrice / baseQuantityPerPresentation).toFixed(4)
+    : null;
 
   useEffect(() => {
     if (hasUserEdited.current || !storageKey) return;
@@ -63,7 +83,12 @@ export function PurchaseOrderItemForm({
 
       setCapture({
         raw_material_id: initialMaterialId ?? parsed.raw_material_id,
+        presentation_mode: parsed.presentation_mode === 'sealed_package' ? 'sealed_package' : 'base_unit',
         quantity: parsed.quantity,
+        base_quantity_per_presentation:
+          typeof parsed.base_quantity_per_presentation === 'string'
+            ? parsed.base_quantity_per_presentation
+            : '1',
         unit_cost: parsed.unit_cost,
       });
     } catch {
@@ -85,7 +110,13 @@ export function PurchaseOrderItemForm({
     if (storageKey) sessionStorage.removeItem(storageKey);
     hasUserEdited.current = true;
     setError(null);
-    setCapture({ raw_material_id: '', quantity: '', unit_cost: '' });
+    setCapture({
+      raw_material_id: '',
+      presentation_mode: 'base_unit',
+      quantity: '',
+      base_quantity_per_presentation: '1',
+      unit_cost: '',
+    });
   }
 
   async function submitCapture(event: FormEvent<HTMLFormElement>) {
@@ -99,7 +130,13 @@ export function PurchaseOrderItemForm({
     try {
       await action(new FormData(event.currentTarget));
       if (storageKey) sessionStorage.removeItem(storageKey);
-      setCapture({ raw_material_id: '', quantity: '', unit_cost: '' });
+      setCapture({
+        raw_material_id: '',
+        presentation_mode: 'base_unit',
+        quantity: '',
+        base_quantity_per_presentation: '1',
+        unit_cost: '',
+      });
     } catch {
       setError('No fue posible agregar el renglón de compra. Verifica los datos e intenta de nuevo.');
     } finally {
@@ -120,11 +157,12 @@ export function PurchaseOrderItemForm({
       />
 
       <div>
-        <label className="mb-2 block font-medium">
+        <label htmlFor="purchase-order-material" className="mb-2 block font-medium">
           Materia Prima
         </label>
 
         <select
+          id="purchase-order-material"
           name="raw_material_id"
           required
           className="w-full rounded border p-3"
@@ -151,27 +189,72 @@ export function PurchaseOrderItemForm({
       </div>
 
       <div>
-        <label className="mb-2 block font-medium">
-          Cantidad
+        <label htmlFor="purchase-presentation-mode" className="mb-2 block font-medium">
+          Presentación de compra
+        </label>
+        <select
+          id="purchase-presentation-mode"
+          name="presentation_mode"
+          required
+          className="w-full rounded border p-3"
+          value={capture.presentation_mode}
+          onChange={(event) => updateCapture(
+            'presentation_mode',
+            event.target.value as PendingCapture['presentation_mode'],
+          )}
+        >
+          <option value="base_unit">Unidad base</option>
+          <option value="sealed_package">Presentación cerrada</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="purchase-quantity" className="mb-2 block font-medium">
+          {capture.presentation_mode === 'base_unit'
+            ? `Cantidad (${selectedMaterial?.base_unit_label ?? 'unidad base'})`
+            : 'Cantidad de presentaciones'}
         </label>
 
         <input
+          id="purchase-quantity"
           type="text"
-          inputMode="decimal"
+          inputMode={capture.presentation_mode === 'base_unit' ? 'decimal' : 'numeric'}
           name="quantity"
           required
+          pattern={capture.presentation_mode === 'base_unit' ? undefined : '[0-9]+'}
           className="w-full rounded border p-3"
           value={capture.quantity}
           onChange={(event) => updateCapture('quantity', event.target.value)}
         />
       </div>
 
+      {capture.presentation_mode === 'sealed_package' ? (
+        <div>
+          <label htmlFor="purchase-package-content" className="mb-2 block font-medium">
+            {`Contenido por presentación (${selectedMaterial?.base_unit_label ?? 'unidad base'})`}
+          </label>
+          <input
+            id="purchase-package-content"
+            type="text"
+            inputMode="decimal"
+            name="base_quantity_per_presentation"
+            required
+            className="w-full rounded border p-3"
+            value={capture.base_quantity_per_presentation}
+            onChange={(event) => updateCapture('base_quantity_per_presentation', event.target.value)}
+          />
+        </div>
+      ) : null}
+
       <div>
-        <label className="mb-2 block font-medium">
-          Costo Unitario
+        <label htmlFor="purchase-unit-cost" className="mb-2 block font-medium">
+          {capture.presentation_mode === 'base_unit'
+            ? `Precio por ${selectedMaterial?.base_unit_label ?? 'unidad base'} (MXN)`
+            : 'Precio por presentación (MXN)'}
         </label>
 
         <input
+          id="purchase-unit-cost"
           type="text"
           inputMode="decimal"
           name="unit_cost"
@@ -181,6 +264,15 @@ export function PurchaseOrderItemForm({
           onChange={(event) => updateCapture('unit_cost', event.target.value)}
         />
       </div>
+
+      <p aria-live="polite" className="text-sm text-gray-700">
+        {productAmount === null
+          ? 'Importe del producto: pendiente'
+          : `Importe del producto: $${productAmount} MXN`}
+        {equivalentBaseUnitPrice === null
+          ? null
+          : ` · Equivalente: $${equivalentBaseUnitPrice} MXN/${selectedMaterial?.base_unit_label ?? 'unidad base'}`}
+      </p>
 
       <button
         type="submit"

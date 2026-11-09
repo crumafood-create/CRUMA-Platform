@@ -5,6 +5,7 @@ import {
 } from 'vitest';
 
 import {
+  assertPurchaseReceiptMatchesPresentation,
   parsePurchaseReceivingInput,
   purchaseReceivingInputSchema,
 } from './purchase-receiving-contract';
@@ -22,6 +23,15 @@ const VALID_INPUT = {
 };
 
 describe('contrato de recepción de compras', () => {
+  it('accepts whole sealed packages and rejects incomplete package quantity', () => {
+    expect(() => assertPurchaseReceiptMatchesPresentation(25, 'sealed_package', 25))
+      .not.toThrow();
+    expect(() => assertPurchaseReceiptMatchesPresentation(20, 'sealed_package', 25))
+      .toThrow('Solo se pueden aceptar presentaciones cerradas completas.');
+    expect(() => assertPurchaseReceiptMatchesPresentation(2.5, 'base_unit', 1))
+      .not.toThrow();
+  });
+
   it('acepta una recepción parcial y normaliza el lote', () => {
     expect(
       parsePurchaseReceivingInput(VALID_INPUT),

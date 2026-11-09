@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   assertPurchaseOrderTransition,
+  buildPurchaseOrderFreightUpdate,
   buildPurchaseOrderInsert,
   buildPurchaseOrderItemInsert,
   calculatePendingReceipt,
@@ -23,6 +24,17 @@ function itemForm(values: Record<string, string> = {}): FormData {
   form.set('raw_material_id', values.raw_material_id ?? 'material-1');
   form.set('quantity', values.quantity ?? '2.5');
   form.set('unit_cost', values.unit_cost ?? '12.25');
+  form.set('presentation_mode', values.presentation_mode ?? 'base_unit');
+  if (values.base_quantity_per_presentation !== undefined) {
+    form.set('base_quantity_per_presentation', values.base_quantity_per_presentation);
+  }
+  return form;
+}
+
+function freightForm(values: Record<string, string> = {}): FormData {
+  const form = new FormData();
+  form.set('purchase_order_id', values.purchase_order_id ?? 'order-1');
+  form.set('freight_amount', values.freight_amount ?? '0');
   return form;
 }
 
@@ -47,6 +59,21 @@ describe('contrato de órdenes de compra', () => {
       .toBeNull();
   });
 
+  it('accepts zero freight and a four-decimal freight amount', () => {
+    expect(buildPurchaseOrderFreightUpdate(freightForm())).toEqual({
+      purchase_order_id: 'order-1',
+      freight_amount: 0,
+    });
+    expect(buildPurchaseOrderFreightUpdate(freightForm({ freight_amount: '11.2500' }))
+      .freight_amount).toBe(11.25);
+  });
+
+  it.each(['-1', '1.00001', 'Infinity'])('rejects invalid freight: %s', (value) => {
+    expect(() => buildPurchaseOrderFreightUpdate(
+      freightForm({ freight_amount: value }),
+    )).toThrow();
+  });
+
   it.each(['09/30/2026', '2026-02-30'])(
     'rechaza fecha esperada inválida: %j',
     (expected_date) => {
@@ -65,7 +92,52 @@ describe('contrato de órdenes de compra', () => {
       unit_cost: 12.25,
       total: 30.625,
       received_quantity: 0,
+      presentation_mode: 'base_unit',
+      purchase_quantity: 2.5,
+      base_quantity_per_presentation: 1,
+      purchase_unit_price: 12.25,
     });
+  });
+
+  it('convierte una presentación cerrada y conserva el importe comercial', () => {
+    expect(buildPurchaseOrderItemInsert(itemForm({
+      presentation_mode: 'sealed_package',
+      quantity: '2',
+      base_quantity_per_presentation: '25',
+      unit_cost: '620',
+    }))).toEqual({
+      purchase_order_id: 'order-1',
+      raw_material_id: 'material-1',
+      quantity: 50,
+      unit_cost: 24.8,
+      total: 1240,
+      received_quantity: 0,
+      presentation_mode: 'sealed_package',
+      purchase_quantity: 2,
+      base_quantity_per_presentation: 25,
+      purchase_unit_price: 620,
+    });
+  });
+
+  it('conserva el precio comercial para presentaciones de conversión no exacta', () => {
+    const line = buildPurchaseOrderItemInsert(itemForm({
+      presentation_mode: 'sealed_package',
+      quantity: '3',
+      base_quantity_per_presentation: '0.3333',
+      unit_cost: '10',
+    }));
+
+    expect(line.quantity).toBe(0.9999);
+    expect(line.total).toBe(30);
+    expect(line.purchase_unit_price).toBe(10);
+  });
+
+  it.each([
+    { presentation_mode: 'sealed_package', quantity: '2.5' },
+    { presentation_mode: 'sealed_package', base_quantity_per_presentation: '0' },
+    { presentation_mode: 'unknown' },
+  ])('rechaza datos inválidos de presentación: %j', (values) => {
+    expect(() => buildPurchaseOrderItemInsert(itemForm(values))).toThrow();
   });
 
   it.each([

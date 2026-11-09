@@ -14,6 +14,88 @@ beforeEach(() => {
   sessionStorage.clear();
 });
 
+it('purchaseOrderItemForm_capturesPresentationAndPrice', () => {
+  const action = vi.fn().mockResolvedValue(undefined);
+  const view = render(
+    <PurchaseOrderItemForm
+      action={action}
+      purchaseOrderId={ORDER_ID}
+      userId={USER_ID}
+      materials={[{
+        id: MATERIAL_ID,
+        name: 'Harina de prueba',
+        internal_code: null,
+        base_unit_label: 'kg',
+      }]}
+    />,
+  );
+
+  fireEvent.change(view.container.querySelector('select[name="raw_material_id"]')!, {
+    target: { value: MATERIAL_ID },
+  });
+  fireEvent.change(screen.getByLabelText('Presentación de compra'), {
+    target: { value: 'sealed_package' },
+  });
+  fireEvent.change(view.container.querySelector('input[name="quantity"]')!, {
+    target: { value: '2' },
+  });
+  fireEvent.change(screen.getByLabelText('Contenido por presentación (kg)'), {
+    target: { value: '25' },
+  });
+  fireEvent.change(screen.getByLabelText('Precio por presentación (MXN)'), {
+    target: { value: '620' },
+  });
+
+  expect(screen.getByText(/Importe del producto: \$1240\.0000 MXN/)).toBeInTheDocument();
+  expect(screen.getByText(/Equivalente: \$24\.8000 MXN\/kg/)).toBeInTheDocument();
+  expect(JSON.parse(sessionStorage.getItem(
+    `cruma:purchase-order-item:${USER_ID}:${ORDER_ID}`,
+  )!)).toMatchObject({
+    presentation_mode: 'sealed_package',
+    quantity: '2',
+    base_quantity_per_presentation: '25',
+    unit_cost: '620',
+  });
+  expect(action).not.toHaveBeenCalled();
+});
+
+it('purchaseOrderItemForm_allowsFractionalQuantityWhenBuyingInBaseUnit', () => {
+  const action = vi.fn().mockResolvedValue(undefined);
+  const view = render(
+    <PurchaseOrderItemForm
+      action={action}
+      purchaseOrderId={ORDER_ID}
+      userId={USER_ID}
+      materials={[{
+        id: MATERIAL_ID,
+        name: 'Harina de prueba',
+        internal_code: null,
+        base_unit_label: 'kg',
+      }]}
+    />,
+  );
+
+  fireEvent.change(view.container.querySelector('select[name="raw_material_id"]')!, {
+    target: { value: MATERIAL_ID },
+  });
+  fireEvent.change(view.container.querySelector('input[name="quantity"]')!, {
+    target: { value: '2.5' },
+  });
+  fireEvent.change(view.container.querySelector('input[name="unit_cost"]')!, {
+    target: { value: '24.80' },
+  });
+
+  expect(JSON.parse(sessionStorage.getItem(
+    `cruma:purchase-order-item:${USER_ID}:${ORDER_ID}`,
+  )!)).toMatchObject({
+    presentation_mode: 'base_unit',
+    quantity: '2.5',
+    base_quantity_per_presentation: '1',
+    unit_cost: '24.80',
+  });
+  expect(action).not.toHaveBeenCalled();
+});
+
 it('purchaseOrderItems_restoresPendingCaptureAfterCancelledMaterialCreation', async () => {
   const action = vi.fn().mockResolvedValue(undefined);
   const props = {

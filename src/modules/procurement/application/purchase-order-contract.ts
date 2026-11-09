@@ -1,6 +1,4 @@
-import type {
-  PublicTableInsert,
-} from '@/infrastructure/integrations/supabase/database.types';
+import type { PublicTableInsert } from '@/infrastructure/integrations/supabase/database.types';
 
 export type PurchaseOrderStatus =
   | 'draft'
@@ -16,6 +14,33 @@ const TRANSITIONS: Record<PurchaseOrderStatus, readonly PurchaseOrderStatus[]> =
   received: [],
   cancelled: [],
 };
+
+export type PurchasePresentationMode = 'base_unit' | 'sealed_package';
+
+export interface PurchaseOrderItemInput {
+  purchase_order_id: string;
+  raw_material_id: string;
+  quantity: number;
+  unit_cost: number;
+  total: number;
+  received_quantity: 0;
+  presentation_mode: PurchasePresentationMode;
+  purchase_quantity: number;
+  base_quantity_per_presentation: number;
+  purchase_unit_price: number;
+}
+
+export interface PurchaseOrderFreightInput {
+  purchase_order_id: string;
+  freight_amount: number;
+}
+
+export interface PurchaseOrderPresentationInput {
+  presentation_mode: PurchasePresentationMode;
+  purchase_quantity: number;
+  base_quantity_per_presentation: number;
+  purchase_unit_price: number;
+}
 
 function requiredText(form: FormData, field: string): string {
   const value = form.get(field)?.toString().trim() ?? '';
@@ -58,18 +83,74 @@ export function buildPurchaseOrderInsert(
   };
 }
 
+export function buildPurchaseOrderFreightUpdate(
+  form: FormData,
+): PurchaseOrderFreightInput {
+  const freightAmount = finiteNumber(form, 'freight_amount', true);
+  const raw = requiredText(form, 'freight_amount');
+  if ((raw.split('.')[1] ?? '').length > 4 || !/^(?:\d+|\d+\.\d+|\.\d+)$/.test(raw)) {
+    throw new Error('El flete admite hasta cuatro decimales.');
+  }
+  return {
+    purchase_order_id: requiredText(form, 'purchase_order_id'),
+    freight_amount: freightAmount,
+  };
+}
+
+export function buildPurchaseOrderPresentationInput(
+  form: FormData,
+): PurchaseOrderPresentationInput {
+  const presentationMode = form.get('presentation_mode')?.toString() || 'base_unit';
+  if (presentationMode !== 'base_unit' && presentationMode !== 'sealed_package') {
+    throw new Error('La presentación de compra no es válida.');
+  }
+  const purchaseQuantity = finiteNumber(form, 'quantity', false);
+  const purchaseUnitPrice = finiteNumber(form, 'unit_cost', true);
+  const baseQuantityPerPresentation = presentationMode === 'base_unit'
+    ? 1
+    : finiteNumber(form, 'base_quantity_per_presentation', false);
+  if (presentationMode === 'sealed_package' && !Number.isInteger(purchaseQuantity)) {
+    throw new Error('La cantidad de presentaciones cerradas debe ser entera.');
+  }
+  for (const [field, value] of [
+    ['quantity', purchaseQuantity],
+    ['unit_cost', purchaseUnitPrice],
+    ...(presentationMode === 'sealed_package'
+      ? [['base_quantity_per_presentation', baseQuantityPerPresentation] as const]
+      : []),
+  ] as const) {
+    const raw = form.get(field)?.toString().trim() ?? '';
+    const decimalPart = raw.split('.')[1] ?? '';
+    if (decimalPart.length > 4) {
+      throw new Error(`El campo ${field} admite hasta cuatro decimales.`);
+    }
+    if (!/^(?:\d+|\d+\.\d+|\.\d+)$/.test(raw) || !Number.isFinite(value)) {
+      throw new Error(`El campo ${field} contiene un valor inválido.`);
+    }
+  }
+  return {
+    presentation_mode: presentationMode,
+    purchase_quantity: purchaseQuantity,
+    base_quantity_per_presentation: baseQuantityPerPresentation,
+    purchase_unit_price: purchaseUnitPrice,
+  };
+}
+
 export function buildPurchaseOrderItemInsert(
   form: FormData,
-): PublicTableInsert<'purchase_order_items'> {
-  const quantity = finiteNumber(form, 'quantity', false);
-  const unitCost = finiteNumber(form, 'unit_cost', true);
+): PurchaseOrderItemInput {
+  const presentation = buildPurchaseOrderPresentationInput(form);
+  const quantity = Number((presentation.purchase_quantity * presentation.base_quantity_per_presentation).toFixed(4));
+  const unitCost = Number((presentation.purchase_unit_price / presentation.base_quantity_per_presentation).toFixed(4));
+  const total = Number((presentation.purchase_quantity * presentation.purchase_unit_price).toFixed(4));
   return {
     purchase_order_id: requiredText(form, 'purchase_order_id'),
     raw_material_id: requiredText(form, 'raw_material_id'),
     quantity,
     unit_cost: unitCost,
-    total: Number((quantity * unitCost).toFixed(4)),
+    total,
     received_quantity: 0,
+    ...presentation,
   };
 }
 

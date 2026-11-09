@@ -7,12 +7,20 @@ import { redirect } from 'next/navigation';
 
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
-import { buildPurchaseOrderInsert } from '@/modules/procurement/application/purchase-order-contract';
+import {
+  buildPurchaseOrderFreightUpdate,
+  buildPurchaseOrderInsert,
+} from '@/modules/procurement/application/purchase-order-contract';
 import {
   assertPurchaseOrderCanCancel,
   assertPurchaseOrderCanRelease,
   assertSupplierCanReceiveOrders,
 } from '@/modules/procurement/application/purchase-order-repository';
+
+type UpdatePurchaseOrderFreightRpc = (
+  functionName: 'update_purchase_order_freight',
+  parameters: { p_order_id: string; p_freight_amount: number },
+) => Promise<{ error: { message: string } | null }>;
 
 function generateOrderNumber(): string {
   const date = new Date().toISOString().slice(0, 10).replaceAll('-', '');
@@ -35,6 +43,21 @@ export async function createPurchaseOrder(formData: FormData) {
   if (error) throw new Error('No fue posible crear la orden de compra.');
   revalidatePath('/purchase-orders');
   redirect('/purchase-orders');
+}
+
+export async function updatePurchaseOrderFreight(formData: FormData) {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.PROCUREMENT_ORDER_MANAGE,
+  );
+  const freight = buildPurchaseOrderFreightUpdate(formData);
+  const updateFreight = supabase.rpc.bind(supabase) as unknown as
+    UpdatePurchaseOrderFreightRpc;
+  const { error } = await updateFreight('update_purchase_order_freight', {
+    p_order_id: freight.purchase_order_id,
+    p_freight_amount: freight.freight_amount,
+  });
+  if (error) throw new Error('No fue posible actualizar el flete de la compra.');
+  revalidateOrder(freight.purchase_order_id);
 }
 
 export async function releasePurchaseOrder(orderId: string) {

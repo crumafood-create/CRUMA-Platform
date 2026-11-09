@@ -5706,9 +5706,13 @@ export type Database = {
       }
       purchase_order_items: {
         Row: {
+          base_quantity_per_presentation: number
           created_at: string
           id: string
+          presentation_mode: string
           purchase_order_id: string
+          purchase_quantity: number
+          purchase_unit_price: number
           quantity: number
           raw_material_id: string
           received_quantity: number
@@ -5716,9 +5720,13 @@ export type Database = {
           unit_cost: number
         }
         Insert: {
+          base_quantity_per_presentation: number
           created_at?: string
           id?: string
+          presentation_mode: string
           purchase_order_id: string
+          purchase_quantity: number
+          purchase_unit_price: number
           quantity: number
           raw_material_id: string
           received_quantity?: number
@@ -5726,9 +5734,13 @@ export type Database = {
           unit_cost?: number
         }
         Update: {
+          base_quantity_per_presentation?: number
           created_at?: string
           id?: string
+          presentation_mode?: string
           purchase_order_id?: string
+          purchase_quantity?: number
+          purchase_unit_price?: number
           quantity?: number
           raw_material_id?: string
           received_quantity?: number
@@ -5771,6 +5783,7 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           expected_date: string | null
+          freight_amount: number
           id: string
           notes: string | null
           order_date: string
@@ -5786,6 +5799,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           expected_date?: string | null
+          freight_amount?: number
           id?: string
           notes?: string | null
           order_date?: string
@@ -5801,6 +5815,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           expected_date?: string | null
+          freight_amount?: number
           id?: string
           notes?: string | null
           order_date?: string
@@ -8280,6 +8295,17 @@ export type Database = {
         }
         Returns: string
       }
+      add_purchase_order_item_with_presentation: {
+        Args: {
+          p_base_quantity_per_presentation: number
+          p_order_id: string
+          p_presentation_mode: string
+          p_purchase_quantity: number
+          p_purchase_unit_price: number
+          p_raw_material_id: string
+        }
+        Returns: string
+      }
       add_sales_order_item: {
         Args: {
           p_order_id: string
@@ -8316,6 +8342,19 @@ export type Database = {
           p_overhead_cost: number
         }
         Returns: string
+      }
+      calculate_purchase_order_line: {
+        Args: {
+          p_base_quantity_per_presentation: number
+          p_presentation_mode: string
+          p_purchase_quantity: number
+          p_purchase_unit_price: number
+        }
+        Returns: {
+          base_quantity: number
+          base_unit_cost: number
+          product_total: number
+        }[]
       }
       cancel_sales_invoice: {
         Args: { p_invoice_id: string; p_reason: string }
@@ -8398,6 +8437,10 @@ export type Database = {
       }
       decrease_product_lot_quantity: {
         Args: { p_lot_id: string; p_quantity: number }
+        Returns: undefined
+      }
+      delete_purchase_order_item: {
+        Args: { p_item_id: string }
         Returns: undefined
       }
       deliver_sales_order: { Args: { p_order_id: string }; Returns: string }
@@ -8524,6 +8567,20 @@ export type Database = {
           p_expected_status: string
           p_next_status: string
           p_quote_id: string
+        }
+        Returns: undefined
+      }
+      update_purchase_order_freight: {
+        Args: { p_freight_amount: number; p_order_id: string }
+        Returns: undefined
+      }
+      update_purchase_order_item_presentation: {
+        Args: {
+          p_base_quantity_per_presentation: number
+          p_item_id: string
+          p_presentation_mode: string
+          p_purchase_quantity: number
+          p_purchase_unit_price: number
         }
         Returns: undefined
       }

@@ -57,12 +57,19 @@ export default function ReceivingDetailClient({
       const [quantityReceived, setQuantityReceived] =
     useState('');
 
+  const [deferredItemIds, setDeferredItemIds] =
+    useState<string[]>([]);
+
+  const [notice, setNotice] =
+    useState<string | null>(null);
+
   const idempotencyKeyRef =
     useRef<string | null>(null);
 
   function resetReceivingAttempt(): void {
     idempotencyKeyRef.current = null;
     setError(null);
+    setNotice(null);
   }
 
   async function load() {
@@ -81,7 +88,7 @@ export default function ReceivingDetailClient({
         detailData.items.find(
           (item) =>
             item.received_quantity <
-            item.quantity,
+            item.quantity && !deferredItemIds.includes(item.id),
         ) ?? null;
 
       setQuantityReceived(
@@ -118,7 +125,7 @@ export default function ReceivingDetailClient({
     detail?.items.find(
       (item) =>
         item.received_quantity <
-        item.quantity,
+        item.quantity && !deferredItemIds.includes(item.id),
     ) ?? null;
 
       const pendingQuantity = currentItem
@@ -153,6 +160,17 @@ export default function ReceivingDetailClient({
       setError(
         `La cantidad no puede superar el pendiente de ${pendingQuantity}.`,
       );
+      return;
+    }
+
+    if (
+      currentItem.presentation_mode === 'sealed_package' &&
+      Math.abs(
+        parsedQuantity / currentItem.base_quantity_per_presentation -
+          Math.round(parsedQuantity / currentItem.base_quantity_per_presentation),
+      ) > 1e-8
+    ) {
+      setError('Solo se pueden aceptar presentaciones cerradas completas.');
       return;
     }
 
@@ -213,6 +231,17 @@ export default function ReceivingDetailClient({
     } finally {
       setSaving(false);
     }
+  }
+
+  function rejectCurrentPresentation(): void {
+    if (!currentItem || currentItem.presentation_mode !== 'sealed_package') return;
+    setDeferredItemIds((current) => [...new Set([...current, currentItem.id])]);
+    setQuantityReceived('');
+    setLotNumber('');
+    setExpirationDate('');
+    setLocationId('');
+    setError(null);
+    setNotice('Presentación rechazada en esta sesión. La cantidad permanece pendiente y no se registró inventario.');
   }
 
   if (pageState === 'loading') {
@@ -325,9 +354,15 @@ export default function ReceivingDetailClient({
 
       )}
 
+      {notice ? (
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">
+          {notice}
+        </div>
+      ) : null}
+
       {/* RECEPCIÓN TERMINADA */}
 
-      {!currentItem && (
+      {!currentItem && completedItems.length === detail.items.length && (
 
         <div className="rounded-2xl border border-green-200 bg-green-50 p-10 text-center">
 
@@ -353,6 +388,12 @@ export default function ReceivingDetailClient({
 
       )}
 
+      {!currentItem && completedItems.length < detail.items.length && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center text-amber-900">
+          Hay presentaciones pendientes que no se aceptaron en esta sesión. No se creó inventario para esas cantidades.
+        </div>
+      )}
+
       {/* ITEM ACTUAL */}
 
       {currentItem && (
@@ -371,6 +412,12 @@ export default function ReceivingDetailClient({
 
           </div>
 
+          <p className="mt-2 text-sm text-gray-600">
+            {currentItem.presentation_mode === 'base_unit'
+              ? `Compra directa en ${currentItem.base_unit_code}`
+              : `${currentItem.purchase_quantity} presentaciones cerradas de ${currentItem.base_quantity_per_presentation} ${currentItem.base_unit_code} cada una`}
+          </p>
+
           <div className="mt-6 grid gap-4 md:grid-cols-2">
 
             <div className="rounded-xl bg-blue-50 p-6 text-center">
@@ -383,7 +430,7 @@ export default function ReceivingDetailClient({
 
               <div className="mt-3 text-5xl font-bold text-blue-700">
 
-                {currentItem.quantity}
+                {currentItem.quantity} {currentItem.base_unit_code}
 
               </div>
 
@@ -399,7 +446,7 @@ export default function ReceivingDetailClient({
 
               <div className="mt-3 text-5xl font-bold text-green-700">
 
-                {currentItem.received_quantity}
+                {currentItem.received_quantity} {currentItem.base_unit_code}
 
               </div>
 
@@ -411,14 +458,18 @@ export default function ReceivingDetailClient({
 
           <div className="mt-8">
             <label className="block text-sm font-semibold text-gray-700">
-              Cantidad a recibir
+              {currentItem.presentation_mode === 'sealed_package'
+                ? `Cantidad aceptada (${currentItem.base_unit_code}; en paquetes completos)`
+                : `Cantidad a recibir (${currentItem.base_unit_code})`}
             </label>
 
             <input
               type="number"
               min="0"
               max={pendingQuantity}
-              step="0.001"
+              step={currentItem.presentation_mode === 'sealed_package'
+                ? currentItem.base_quantity_per_presentation
+                : '0.0001'}
               value={quantityReceived}
               onChange={(event) => {
                 setQuantityReceived(
@@ -430,7 +481,7 @@ export default function ReceivingDetailClient({
             />
 
             <p className="mt-2 text-sm text-gray-500">
-              Pendiente: {pendingQuantity}
+              Pendiente: {pendingQuantity} {currentItem.base_unit_code}
             </p>
           </div>
 
@@ -551,6 +602,17 @@ export default function ReceivingDetailClient({
               ? 'Guardando recepción...'
               : 'Confirmar recepción'}
           </button>
+
+          {currentItem.presentation_mode === 'sealed_package' ? (
+            <button
+              type="button"
+              onClick={rejectCurrentPresentation}
+              disabled={saving}
+              className="mt-3 w-full rounded-xl border border-red-300 px-6 py-3 font-semibold text-red-700"
+            >
+              Rechazar presentación y dejarla pendiente
+            </button>
+          ) : null}
 
         </div>
 

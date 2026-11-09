@@ -61,7 +61,11 @@ describe('repositorio de órdenes de compra', () => {
   it('rechaza materias primas duplicadas dentro de un borrador', async () => {
     const supabase = client({
       purchase_orders: [{ data: { id: 'order-1', status: 'draft' }, error: null }],
-      raw_materials: [{ data: { id: 'material-1' }, error: null }],
+      raw_materials: [{
+        data: { id: 'material-1', unit_of_measure_id: 'unit-1' },
+        error: null,
+      }],
+      units_of_measure: [{ data: { id: 'unit-1' }, error: null }],
       purchase_order_items: [{ data: { id: 'item-1' }, error: null }],
     });
     await expect(assertPurchaseOrderItemCanBeAdded(
@@ -69,5 +73,21 @@ describe('repositorio de órdenes de compra', () => {
       'order-1',
       'material-1',
     )).rejects.toThrow('La materia prima ya está incluida en la orden.');
+  });
+
+  it('rechaza materias primas heredadas sin unidad base', async () => {
+    const supabase = client({
+      purchase_orders: [{ data: { id: 'order-1', status: 'draft' }, error: null }],
+      raw_materials: [{
+        data: { id: 'material-1', unit_of_measure_id: null },
+        error: null,
+      }],
+    });
+
+    await expect(assertPurchaseOrderItemCanBeAdded(
+      supabase,
+      'order-1',
+      'material-1',
+    )).rejects.toThrow('La materia prima requiere una unidad base v\u00e1lida.');
   });
 });

@@ -50,3 +50,18 @@ export function parsePurchaseReceivingInput(
 
   return result.data;
 }
+
+export function assertPurchaseReceiptMatchesPresentation(
+  quantity: number,
+  presentationMode: 'base_unit' | 'sealed_package',
+  baseQuantityPerPresentation: number,
+): void {
+  if (presentationMode === 'base_unit') return;
+  if (!Number.isFinite(baseQuantityPerPresentation) || baseQuantityPerPresentation <= 0) {
+    throw new Error('La conversiÃ³n de la presentaciÃ³n no es vÃ¡lida.');
+  }
+  const packageCount = quantity / baseQuantityPerPresentation;
+  if (Math.abs(packageCount - Math.round(packageCount)) > 1e-8) {
+    throw new Error('Solo se pueden aceptar presentaciones cerradas completas.');
+  }
+}

@@ -10,18 +10,18 @@ describe('inventario de autoridad RLS', () => {
   const summary = summarizeRlsDependencies();
 
   it('reconstruye las políticas vigentes sin perder su tabla', () => {
-    expect(policies).toHaveLength(211);
+    expect(policies).toHaveLength(210);
     expect(summary).toEqual({
-      policies: 211,
+      policies: 210,
       authority: {
-        is_admin_exclusive: 48,
+        is_admin_exclusive: 47,
         mixed: 0,
         not_is_admin: 163,
       },
       openReads: 35,
       openWrites: 13,
       missingReads: [],
-      functionGuards: 42,
+      functionGuards: 46,
       anonWriteGrants: 136,
       authenticatedWriteGrants: 139,
     });

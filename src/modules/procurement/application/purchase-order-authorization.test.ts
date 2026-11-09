@@ -45,15 +45,15 @@ describe('autorización de órdenes de compra', () => {
   );
 
   it.each([
-    [ORDER_ACTIONS, 'createPurchaseOrder'],
-    [ORDER_ACTIONS, 'releasePurchaseOrder'],
-    [ORDER_ACTIONS, 'cancelPurchaseOrder'],
-    [ITEM_ACTIONS, 'createPurchaseOrderItem'],
-  ])('protege %s antes de escribir en %s', (path, action) => {
+    [ORDER_ACTIONS, 'createPurchaseOrder', '.insert('],
+    [ORDER_ACTIONS, 'releasePurchaseOrder', '.update('],
+    [ORDER_ACTIONS, 'cancelPurchaseOrder', '.update('],
+    [ITEM_ACTIONS, 'createPurchaseOrderItem', "'add_purchase_order_item_with_presentation'"],
+  ])('protege %s antes de escribir en %s', (path, action, writeTarget) => {
     const body = actionSource(path, action);
     expect(body).toContain('requireTypedAuthorizedAction(');
     expect(body).toContain('PERMISSIONS.PROCUREMENT_ORDER_MANAGE');
-    const write = Math.max(body.indexOf('.from('), body.indexOf('.rpc('));
+    const write = body.indexOf(writeTarget);
     expect(write).toBeGreaterThan(body.indexOf('requireTypedAuthorizedAction('));
   });
 

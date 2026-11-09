@@ -2,7 +2,7 @@
 
 ## Contexto
 
-Se trabaja en CRUMAFOOD con una planta, operación conectada, español, MXN y la autorización global vigente. La unidad base del catálogo ya está definida y protegida. La historia activa permite comprar presentaciones comerciales variables por orden, convertirlas a esa unidad base y conservar las condiciones históricas sin duplicar materias primas.
+Se trabaja en CRUMAFOOD con una planta, operación conectada, español, MXN y la autorización global vigente. La unidad base del catálogo ya está definida y protegida. MP-01 y WH-01 quedaron completadas y validadas en desarrollo. MP-02 permanece pendiente como P2.
 
 Stack: el existente en CRUMA, sin cambios propuestos.
 
@@ -10,12 +10,14 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
 
 ## Historias activas
 
-- [ ] **MP-01.** Como responsable de compras, quiero registrar la presentación y el precio comercial de cada compra y convertir la cantidad a la unidad base de la materia prima, para comparar y recibir compras sin duplicar artículos.
-  - **Prioridad:** P1.
-  - **Motivo:** bloquea el recorrido acordado de compra, recepción y valoración comparable antes de continuar con recetas y producción.
-  - **Dependencia:** materia prima con unidad base válida, ya implementada.
+Sin historias activas en este alcance.
 
 ## Historias completadas
+
+- [x] **MP-01.** Como responsable de compras, quiero registrar la presentación y el precio comercial de cada compra y convertir la cantidad a la unidad base de la materia prima, para comparar y recibir compras sin duplicar artículos.
+  - **Prioridad:** P1.
+  - **Motivo:** completó el recorrido acordado de compra, recepción y valoración comparable antes de continuar con recetas y producción.
+  - **Validación:** CI del PR #126 aprobó las verificaciones; el recorrido en Supabase de desarrollo confirmó compra fraccionaria, presentaciones, flete, recepción parcial, rechazo y promedio ponderado. Evidencia en `plan.md`.
 
 - [x] **WH-01.** Como responsable de recepción, quiero consultar desde el móvil las órdenes que admiten recepción y abrir su detalle, para elegir qué compra recibir.
   - **Prioridad:** P1.

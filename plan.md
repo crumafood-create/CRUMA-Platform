@@ -1,6 +1,6 @@
 # Plan de compras y gestión de materias primas
 
-## MP-01 activa: comprar presentaciones comerciales y convertirlas a unidad base
+## MP-01 completada: comprar presentaciones comerciales y convertirlas a unidad base
 
 ### Historia
 
@@ -12,9 +12,9 @@ Como responsable de compras, quiero registrar la presentación y el precio comer
 
 ### Criterios de aceptación aprobados
 
-- [ ] Dada una orden en borrador, cuando se agrega una materia prima en su unidad base o en una presentación comercial conocida al comprar, entonces el renglón conserva la presentación y el precio acordados para esa compra, convierte la cantidad a la unidad base, muestra el importe comercial como referencia y permite comparar su costo por kg o litro. La compra directa en unidad base admite cantidades fraccionarias; las presentaciones cerradas requieren unidades enteras. El cálculo usa la precisión existente y no reconstruye el importe desde un costo unitario previamente redondeado.
-- [ ] Dada una orden con presentación solicitada, cuando se registra una recepción parcial, entonces solo las cantidades aceptadas explícitamente y conformes con la presentación solicitada se contabilizan como recibidas; un bulto abierto o incompleto puede rechazarse y queda pendiente la cantidad no recibida. No se crea un subsistema de rechazos sin revisar el mecanismo existente.
-- [ ] Dada una orden con flete, cuando se agregan, modifican o retiran renglones, entonces se conserva el flete y el total se recalcula como productos más flete. El flete no afecta el costo promedio de inventario; las compras anteriores conservan su interpretación en unidad base y sus importes históricos.
+- [x] Dada una orden en borrador, cuando se agrega una materia prima en su unidad base o en una presentación comercial conocida al comprar, entonces el renglón conserva la presentación y el precio acordados para esa compra, convierte la cantidad a la unidad base, muestra el importe comercial como referencia y permite comparar su costo por kg o litro. La compra directa en unidad base admite cantidades fraccionarias; las presentaciones cerradas requieren unidades enteras. El cálculo usa la precisión existente y no reconstruye el importe desde un costo unitario previamente redondeado.
+- [x] Dada una orden con presentación solicitada, cuando se registra una recepción parcial, entonces solo las cantidades aceptadas explícitamente y conformes con la presentación solicitada se contabilizan como recibidas; un bulto abierto o incompleto puede rechazarse y queda pendiente la cantidad no recibida. No se crea un subsistema de rechazos sin revisar el mecanismo existente.
+- [x] Dada una orden con flete, cuando se agregan, modifican o retiran renglones, entonces se conserva el flete y el total se recalcula como productos más flete. El flete no afecta el costo promedio de inventario; las compras anteriores conservan su interpretación en unidad base y sus importes históricos.
 
 ### Reglas de negocio fijadas
 
@@ -56,12 +56,22 @@ Como responsable de compras, quiero registrar la presentación y el precio comer
 
 ### Estado de ejecución
 
-- Implementación preparada en una rama aislada desde `origin/main`; no se han hecho commits, publicaciones ni cambios en Supabase remoto.
-- Pruebas automatizadas locales enfocadas: 65 aprobadas en 9 archivos; `typecheck`, lint y `git diff --check` aprobados.
-- La migración y `purchase_order_presentations.sql` están conectadas a `db:test:security` y, por esa vía, a `db:verify`; su ejecución de integración desde una base reconstruida queda pendiente de CI porque Docker no está disponible localmente.
-- Los tipos generados de base de datos no se modificaron manualmente. La regeneración y comprobación contra esta migración siguen pendientes de CI o de un entorno local con Supabase/Docker.
-- El recorrido manual en navegador compra → edición/flete → recepción parcial/rechazo → lote en cuarentena queda pendiente. No se ha afirmado aún la integración con el costo promedio en ejecución real.
-- `next-env.d.ts` presenta una diferencia generada ajena a MP-01 y debe permanecer fuera del cambio.
+- Implementación integrada por PR #126 en `main` (`08bce90f`).
+- CI aprobó typecheck, lint, pruebas, build, `db:verify` (reconstrucción, migración, prueba SQL de presentaciones y tipos generados) y Storybook.
+- La migración `20261108010000_add_purchase_order_presentations.sql` se aplicó en Supabase de desarrollo `poglpqvmbrfcvtuspvtx` el 2026-11-09, tras reconciliar el historial con autorización explícita.
+- Recorrido manual de compra, recepción y Calidad completado en desarrollo el 2026-11-09; evidencia y valores abajo.
+- El promedio observado de $28.1667/kg coincide con incorporar 25 kg a $30/kg al saldo previo de 5 kg a $19/kg. MP-02 permanece pendiente como P2.
+
+
+### Evidencia manual MP-01 (2026-11-09)
+
+| Caso | Resultado observado en Supabase de desarrollo `poglpqvmbrfcvtuspvtx` |
+|---|---|
+| Compra directa fraccionaria | `PO-20261109-019593` (`d375f138-c49f-40f7-aab9-54f42358237d`): 2.5 kg a $19/kg, importe/total $47.50. La cantidad fraccionaria se guardó. |
+| Presentación comercial y flete | `PO-20261109-8B53C4` (`33d768a9-5fe0-47cf-a3af-b29042d1b630`): 2 bultos × 25 kg a $750 = 50 kg y $1,500 de producto; $100 de flete dieron total $1,600. Cambiar temporalmente a $800 conservó flete y recalculó total a $1,700; al restaurar $750 volvió a $1,600 antes de liberar. |
+| Recepción parcial y rechazo | Se aceptó un lote de 25 kg a $30/kg en cuarentena (`MP01-MANUAL-LOT-20261109-A`, `057fa979-ece1-4560-a433-5c0c2522c2fa`). Quedaron 25 kg pendientes. La presentación incompleta rechazada no generó otro lote y siguió pendiente. |
+| Liberación de Calidad y promedio | Antes: 5 kg, promedio $19/kg, `last_cost` $19/kg. Tras liberar 25 kg a $30/kg: saldo 30 kg, promedio $28.1667/kg, `last_cost` y costo del lote $30/kg. El flete de $100 no se incorporó al costo promedio. |
+
 
 ---
 

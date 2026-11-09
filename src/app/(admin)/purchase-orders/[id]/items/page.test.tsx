@@ -70,7 +70,12 @@ it('purchaseOrderItems_preselectsCreatedMaterialAndRestoresCaptureWithoutAddingL
         is: () => query,
         order: async () => ({
           data: table === 'raw_materials'
-            ? [{ id: MATERIAL_ID, name: 'Harina nueva', internal_code: null }]
+            ? [{
+              id: MATERIAL_ID,
+              name: 'Harina nueva',
+              internal_code: null,
+              unit_of_measure: { code: 'kg' },
+            }]
             : [],
           error: null,
         }),
@@ -94,6 +99,7 @@ it('purchaseOrderItems_preselectsCreatedMaterialAndRestoresCaptureWithoutAddingL
   expect(container.querySelector('select[name="raw_material_id"]')).toHaveValue(
     MATERIAL_ID,
   );
+  expect(screen.getByLabelText('Cantidad (kg)')).toBeInTheDocument();
   expect(screen.getByText('No hay artículos.')).toBeInTheDocument();
   expect(container.querySelector('input[name="quantity"]')).toHaveValue('8.25');
   expect(container.querySelector('input[name="unit_cost"]')).toHaveValue('17.40');

@@ -3,7 +3,39 @@ import { notFound } from 'next/navigation';
 
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
-import { cancelPurchaseOrder, releasePurchaseOrder } from '../actions';
+import {
+  cancelPurchaseOrder,
+  releasePurchaseOrder,
+  updatePurchaseOrderFreight,
+} from '../actions';
+
+type PurchaseOrderDetail = {
+  id: string;
+  order_number: string;
+  supplier_id: string;
+  order_date: string;
+  expected_date: string | null;
+  status: string;
+  subtotal: number;
+  freight_amount: number;
+  total: number;
+  notes: string | null;
+};
+
+type PurchaseOrderDetailReader = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (column: string, value: string) => {
+        is: (column: string, value: null) => {
+          maybeSingle: () => Promise<{
+            data: PurchaseOrderDetail | null;
+            error: { message: string } | null;
+          }>;
+        };
+      };
+    };
+  };
+};
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Borrador',
@@ -20,9 +52,9 @@ export default async function PurchaseOrderPage({
 }) {
   const { id } = await params;
   const supabase = await createTypedClient();
-  const { data: order } = await supabase
+  const { data: order } = await (supabase as unknown as PurchaseOrderDetailReader)
     .from('purchase_orders')
-    .select('id, order_number, supplier_id, order_date, expected_date, status, total, notes')
+    .select('id, order_number, supplier_id, order_date, expected_date, status, subtotal, freight_amount, total, notes')
     .eq('id', id)
     .is('deleted_at', null)
     .maybeSingle();
@@ -46,7 +78,27 @@ export default async function PurchaseOrderPage({
         <Detail label="Fecha" value={order.order_date} />
         <Detail label="Fecha esperada" value={order.expected_date ?? '-'} />
         <Detail label="Estado" value={STATUS_LABELS[order.status] ?? order.status} />
+        <Detail label="Productos" value={`$${Number(order.subtotal).toFixed(4)} MXN`} />
+        <Detail label="Flete" value={`$${Number(order.freight_amount).toFixed(4)} MXN`} />
         <Detail label="Total" value={`$${Number(order.total).toFixed(2)}`} />
+        {order.status === 'draft' ? (
+          <form action={updatePurchaseOrderFreight} className="flex flex-wrap items-end gap-3 border-t pt-4">
+            <input type="hidden" name="purchase_order_id" value={order.id} />
+            <label className="grid gap-1 font-medium">
+              Flete (MXN; puede ser cero)
+              <input
+                name="freight_amount"
+                type="number"
+                min="0"
+                step="0.0001"
+                defaultValue={order.freight_amount}
+                required
+                className="rounded border p-3"
+              />
+            </label>
+            <button type="submit" className="rounded border px-4 py-3">Guardar flete</button>
+          </form>
+        ) : null}
         {order.notes ? <Detail label="Notas" value={order.notes} /> : null}
       </section>
       <div className="flex flex-wrap gap-3">

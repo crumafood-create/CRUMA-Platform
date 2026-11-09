@@ -70,10 +70,19 @@ export async function assertPurchaseOrderItemCanBeAdded(
 ): Promise<void> {
   await draftOrder(supabase, orderId);
   const { data: material, error: materialError } = await supabase
-    .from('raw_materials').select('id').eq('id', materialId)
+    .from('raw_materials').select('id, unit_of_measure_id').eq('id', materialId)
     .eq('is_active', true).is('deleted_at', null).maybeSingle();
   if (materialError) throw new Error('No fue posible validar la materia prima.');
   if (!material) throw new Error('La materia prima no está disponible.');
+  if (!material.unit_of_measure_id) {
+    throw new Error('La materia prima requiere una unidad base v\u00e1lida.');
+  }
+  const { data: baseUnit, error: unitError } = await supabase
+    .from('units_of_measure').select('id')
+    .eq('id', material.unit_of_measure_id)
+    .eq('is_active', true).is('deleted_at', null).maybeSingle();
+  if (unitError) throw new Error('No fue posible validar la unidad base.');
+  if (!baseUnit) throw new Error('La unidad base de la materia prima no est\u00e1 disponible.');
   const { data: duplicate, error } = await supabase
     .from('purchase_order_items').select('id')
     .eq('purchase_order_id', orderId).eq('raw_material_id', materialId).maybeSingle();

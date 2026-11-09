@@ -29,3 +29,11 @@ La historia de productos (#1) se completó con implementación, pruebas, comprob
 ## Flujo de trabajo
 
 Refinar una historia a la vez con [SKILL_story](skills/story/SKILL_story.md), luego implementar con [SKILL_pair](skills/pair/SKILL_pair.md). Mantener las historias breves según [SKILL_backlog](skills/backlog/SKILL_backlog.md); el contexto general se conserva en [AGENTS.md](AGENTS.md).
+
+## Compras y recepción de materias primas
+
+- [ ] **MP-02.** Como responsable de compras, quiero cambiar el proveedor de una orden borrador conservando sus renglones, para revisar y corregir sus precios antes de confirmarla.
+  - **Prioridad:** P2.
+  - **Motivo:** cambiar de proveedor es necesario en algunos recorridos, pero la alternativa temporal es crear otro borrador; una orden confirmada no se modifica.
+  - **Módulo propietario:** Procurement.
+  - **Regla acordada:** cada orden tiene un proveedor; al cambiarlo se conservan los renglones y sus precios no se recalculan automáticamente.

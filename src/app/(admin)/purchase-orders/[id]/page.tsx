@@ -7,6 +7,7 @@ import {
   cancelPurchaseOrder,
   releasePurchaseOrder,
   updatePurchaseOrderFreight,
+  updatePurchaseOrderSupplier,
 } from '../actions';
 
 type PurchaseOrderDetail = {
@@ -61,6 +62,14 @@ export default async function PurchaseOrderPage({
   if (!order) notFound();
   const { data: supplier } = await supabase
     .from('suppliers').select('name').eq('id', order.supplier_id).maybeSingle();
+  const { data: availableSuppliers, error: suppliersError } = order.status === 'draft'
+    ? await supabase
+      .from('suppliers')
+      .select('id, name')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+    : { data: [], error: null };
+  if (suppliersError) throw new Error('No fue posible cargar los proveedores disponibles.');
   const canReceive = order.status === 'released' || order.status === 'partially_received';
   const canCancel = order.status === 'draft' || order.status === 'released';
 
@@ -74,7 +83,30 @@ export default async function PurchaseOrderPage({
         <Link href="/purchase-orders" className="rounded border px-4 py-2">Volver</Link>
       </header>
       <section className="space-y-4 rounded-2xl border p-6">
-        <Detail label="Proveedor" value={supplier?.name ?? '-'} />
+        {order.status === 'draft' ? (
+          <form action={updatePurchaseOrderSupplier} className="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="purchase_order_id" value={order.id} />
+            <label className="grid gap-1 font-medium">
+              Proveedor
+              <select
+                name="supplier_id"
+                defaultValue={order.supplier_id}
+                required
+                className="rounded border p-3"
+              >
+                {!availableSuppliers?.some((option) => option.id === order.supplier_id) ? (
+                  <option value={order.supplier_id}>{supplier?.name ?? 'Proveedor actual'}</option>
+                ) : null}
+                {(availableSuppliers ?? []).map((option) => (
+                  <option key={option.id} value={option.id}>{option.name}</option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className="rounded border px-4 py-3">
+              Guardar proveedor
+            </button>
+          </form>
+        ) : <Detail label="Proveedor" value={supplier?.name ?? '-'} />}
         <Detail label="Fecha" value={order.order_date} />
         <Detail label="Fecha esperada" value={order.expected_date ?? '-'} />
         <Detail label="Estado" value={STATUS_LABELS[order.status] ?? order.status} />

@@ -72,6 +72,38 @@ Como responsable de compras, quiero registrar la presentación y el precio comer
 | Recepción parcial y rechazo | Se aceptó un lote de 25 kg a $30/kg en cuarentena (`MP01-MANUAL-LOT-20261109-A`, `057fa979-ece1-4560-a433-5c0c2522c2fa`). Quedaron 25 kg pendientes. La presentación incompleta rechazada no generó otro lote y siguió pendiente. |
 | Liberación de Calidad y promedio | Antes: 5 kg, promedio $19/kg, `last_cost` $19/kg. Tras liberar 25 kg a $30/kg: saldo 30 kg, promedio $28.1667/kg, `last_cost` y costo del lote $30/kg. El flete de $100 no se incorporó al costo promedio. |
 
+## MP-02 activa: cambiar el proveedor de un borrador
+
+### Historia y propiedad
+
+Como responsable de compras, quiero cambiar el proveedor de una orden borrador conservando sus renglones, para revisar y corregir sus precios antes de confirmarla. **Procurement** es el módulo propietario de órdenes, proveedores y condiciones comerciales.
+
+### Criterios aprobados
+
+- [ ] Dada una orden borrador con renglones, cuando se guarda otro proveedor disponible, entonces la orden conserva sus renglones, precios, importes, flete y total.
+- [ ] Dada una orden borrador después de cambiar proveedor, cuando se corrige manualmente el precio de un renglón, entonces el sistema recalcula productos + flete; cambiar proveedor por sí solo no recalcula los precios.
+- [ ] Dada una orden cuyo estado ya no es `draft`, cuando se intenta cambiar el proveedor, entonces se rechaza la operación y no se modifica la orden.
+
+### Plan y pruebas aprobados
+
+1. Añadir el selector de proveedor disponible al detalle de la orden en borrador; conservar lectura sin controles de edición fuera de `draft`.
+2. Validar autorización y proveedor con la regla vigente; actualizar solo `supplier_id` y `updated_at`, condicionando la escritura a `status = draft` y exigiendo que se afecte/retorne una fila.
+3. Comprobar mediante prueba de persistencia que cambiar proveedor mantiene todos los renglones y valores monetarios; cubrir proveedor no disponible y orden no borrador.
+4. En una prueba independiente, cambiar manualmente el precio con cantidad y presentación constantes y comprobar el total de productos más flete.
+5. Ejecutar pruebas locales y CI; recorrer el flujo en navegador cuando esté disponible. Registrar pruebas locales, SQL/CI y recorrido manual por separado.
+
+### Fuera de alcance
+
+No cambiar proveedor en órdenes confirmadas; no modificar precios automáticamente al cambiar proveedor; no permitir más de un proveedor por orden. Para una compra confirmada con otro proveedor, la alternativa vigente es crear otro borrador.
+
+### Avance de implementación (2026-11-09)
+
+- Implementados el contrato de captura, la acción protegida por `procurement.order.manage`, la validación del proveedor activo/no eliminado, la escritura limitada a `supplier_id` y `updated_at` con condición `draft` y verificación de fila afectada, y el selector del detalle solo para borradores.
+- Pruebas automatizadas locales focales y adyacentes: 85 aprobadas en 9 archivos; typecheck, lint focal y `git diff --check` aprobados. `supabase/tests/database/purchase_order_presentations.sql` ahora contiene casos separados de conservación de renglones/valores al cambiar proveedor y de corrección manual de precio conservando flete; el SQL no se ejecutó localmente.
+- Recorrido manual en `localhost:3000`: borrador `PO-20261110-C9CA18`, con un renglón de 2.5 kg a $19/kg ($47.50) y flete de $100 (total $147.50). Se cambió de Antojos to go a `Proveedor prueba MP-02 20261110`; la orden y la lista conservaron renglón e importes. Al cambiar manualmente el precio a $20, productos subió a $50 y total a $150, con flete en $100; al restaurar $19, el total volvió a $147.50.
+- Recorrido manual de estado no editable: la orden parcialmente recibida `PO-20261109-8B53C4` muestra Antojos to go sin control Guardar proveedor.
+- Pendiente: ejecución SQL en CI. El proveedor temporal y la orden borrador se conservan en el entorno para la evidencia; no se liberó ni recibió esta orden de prueba.
+
 
 ---
 

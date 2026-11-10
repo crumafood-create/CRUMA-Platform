@@ -46,6 +46,7 @@ describe('autorización de órdenes de compra', () => {
 
   it.each([
     [ORDER_ACTIONS, 'createPurchaseOrder', '.insert('],
+    [ORDER_ACTIONS, 'updatePurchaseOrderSupplier', '.update('],
     [ORDER_ACTIONS, 'releasePurchaseOrder', '.update('],
     [ORDER_ACTIONS, 'cancelPurchaseOrder', '.update('],
     [ITEM_ACTIONS, 'createPurchaseOrderItem', "'add_purchase_order_item_with_presentation'"],

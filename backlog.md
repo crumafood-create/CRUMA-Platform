@@ -2,7 +2,7 @@
 
 ## Contexto
 
-Se trabaja en CRUMAFOOD con una planta, operación conectada, español, MXN y la autorización global vigente. La unidad base del catálogo ya está definida y protegida. MP-01 y WH-01 quedaron completadas y validadas en desarrollo. MP-02 permanece pendiente como P2.
+Se trabaja en CRUMAFOOD con una planta, operación conectada, español, MXN y la autorización global vigente. La unidad base del catálogo ya está definida y protegida. MP-01 y WH-01 quedaron completadas y validadas en desarrollo. MP-02 es la historia activa con prioridad P2.
 
 Stack: el existente en CRUMA, sin cambios propuestos.
 
@@ -10,7 +10,10 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
 
 ## Historias activas
 
-Sin historias activas en este alcance.
+- [ ] **MP-02.** Como responsable de compras, quiero cambiar el proveedor de una orden borrador conservando sus renglones, para revisar y corregir sus precios antes de confirmarla.
+  - **Prioridad:** P2.
+  - **Motivo:** cambiar de proveedor es necesario en algunos recorridos, pero la alternativa temporal es crear otro borrador; una orden confirmada no se modifica.
+  - **Módulo propietario:** Procurement.
 
 ## Historias completadas
 

@@ -35,6 +35,11 @@ export interface PurchaseOrderFreightInput {
   freight_amount: number;
 }
 
+export interface PurchaseOrderSupplierUpdate {
+  purchase_order_id: string;
+  supplier_id: string;
+}
+
 export interface PurchaseOrderPresentationInput {
   presentation_mode: PurchasePresentationMode;
   purchase_quantity: number;
@@ -94,6 +99,15 @@ export function buildPurchaseOrderFreightUpdate(
   return {
     purchase_order_id: requiredText(form, 'purchase_order_id'),
     freight_amount: freightAmount,
+  };
+}
+
+export function buildPurchaseOrderSupplierUpdate(
+  form: FormData,
+): PurchaseOrderSupplierUpdate {
+  return {
+    purchase_order_id: requiredText(form, 'purchase_order_id'),
+    supplier_id: requiredText(form, 'supplier_id'),
   };
 }
 

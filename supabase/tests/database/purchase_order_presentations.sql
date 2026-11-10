@@ -14,7 +14,9 @@ INSERT INTO public.user_roles (user_id, role)
 VALUES ('f1000000-0000-0000-0000-000000000001', 'admin');
 
 INSERT INTO public.suppliers (id, name, is_active)
-VALUES ('f2000000-0000-0000-0000-000000000001', 'Presentation Supplier', true);
+VALUES
+  ('f2000000-0000-0000-0000-000000000001', 'Presentation Supplier', true),
+  ('f2000000-0000-0000-0000-000000000002', 'Alternate Presentation Supplier', true);
 
 INSERT INTO public.units_of_measure (id, code, name, is_active)
 VALUES ('f2500000-0000-0000-0000-000000000001', 'kg-pres-test', 'Kilogram test', true);
@@ -145,6 +147,90 @@ BEGIN
   IF precision_item.quantity <> 0.9999 OR precision_item.unit_cost <> 30.0030
     OR precision_item.total <> 30 OR precision_item.purchase_unit_price <> 10 THEN
     RAISE EXCEPTION 'non-exact conversion rebuilt the amount from rounded unit cost';
+  END IF;
+END;
+$test$;
+
+-- A manual price correction recalculates products + freight without changing quantity.
+SELECT public.update_purchase_order_item_presentation(
+  current_setting('test.package_item_id')::uuid, 'sealed_package', 2, 25, 800
+);
+
+DO $test$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.purchase_order_items
+    WHERE id = current_setting('test.package_item_id')::uuid
+      AND quantity = 50 AND purchase_quantity = 2
+      AND base_quantity_per_presentation = 25
+      AND purchase_unit_price = 800 AND total = 1600
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.purchase_orders
+    WHERE id = 'f5000000-0000-0000-0000-000000000001'
+      AND subtotal = 1692 AND freight_amount = 11.25 AND total = 1703.25
+  ) THEN
+    RAISE EXCEPTION 'manual price correction did not preserve freight and recalculate totals';
+  END IF;
+END;
+$test$;
+
+-- Restore fixture price before the remaining presentation checks.
+SELECT public.update_purchase_order_item_presentation(
+  current_setting('test.package_item_id')::uuid, 'sealed_package', 2, 25, 620
+);
+
+-- Changing supplier on a draft preserves every purchase line and monetary total.
+DO $test$
+DECLARE
+  changed_rows integer;
+BEGIN
+  UPDATE public.purchase_orders
+  SET supplier_id = 'f2000000-0000-0000-0000-000000000002', updated_at = now()
+  WHERE id = 'f5000000-0000-0000-0000-000000000001'
+    AND status = 'draft';
+  GET DIAGNOSTICS changed_rows = ROW_COUNT;
+  IF changed_rows <> 1 THEN
+    RAISE EXCEPTION 'supplier change did not affect exactly one draft order';
+  END IF;
+END;
+$test$;
+
+DO $test$
+BEGIN
+  IF (
+    SELECT count(*) FROM public.purchase_order_items
+    WHERE purchase_order_id = 'f5000000-0000-0000-0000-000000000001'
+  ) <> 3 OR NOT EXISTS (
+    SELECT 1 FROM public.purchase_orders
+    WHERE id = 'f5000000-0000-0000-0000-000000000001'
+      AND supplier_id = 'f2000000-0000-0000-0000-000000000002'
+      AND subtotal = 1332 AND freight_amount = 11.25 AND total = 1343.25
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.purchase_order_items
+    WHERE id = current_setting('test.base_item_id')::uuid
+      AND raw_material_id = 'f3000000-0000-0000-0000-000000000001'
+      AND presentation_mode = 'base_unit'
+      AND quantity = 2.5 AND purchase_quantity = 2.5
+      AND unit_cost = 24.8 AND purchase_unit_price = 24.8
+      AND total = 62 AND received_quantity = 0
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.purchase_order_items
+    WHERE id = current_setting('test.package_item_id')::uuid
+      AND quantity = 50 AND purchase_quantity = 2
+      AND base_quantity_per_presentation = 25
+      AND presentation_mode = 'sealed_package' AND unit_cost = 24.8
+      AND purchase_unit_price = 620 AND total = 1240
+      AND received_quantity = 0
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.purchase_order_items
+    WHERE id = current_setting('test.precision_item_id')::uuid
+      AND presentation_mode = 'sealed_package'
+      AND quantity = 0.9999 AND purchase_quantity = 3
+      AND base_quantity_per_presentation = 0.3333
+      AND unit_cost = 30.0030 AND purchase_unit_price = 10
+      AND total = 30 AND received_quantity = 0
+  ) THEN
+    RAISE EXCEPTION 'supplier change altered draft order lines or monetary values';
   END IF;
 END;
 $test$;

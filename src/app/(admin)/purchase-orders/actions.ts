@@ -10,6 +10,7 @@ import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constant
 import {
   buildPurchaseOrderFreightUpdate,
   buildPurchaseOrderInsert,
+  buildPurchaseOrderSupplierUpdate,
 } from '@/modules/procurement/application/purchase-order-contract';
 import {
   assertPurchaseOrderCanCancel,
@@ -58,6 +59,25 @@ export async function updatePurchaseOrderFreight(formData: FormData) {
   });
   if (error) throw new Error('No fue posible actualizar el flete de la compra.');
   revalidateOrder(freight.purchase_order_id);
+}
+
+export async function updatePurchaseOrderSupplier(formData: FormData) {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.PROCUREMENT_ORDER_MANAGE,
+  );
+  const update = buildPurchaseOrderSupplierUpdate(formData);
+  await assertSupplierCanReceiveOrders(supabase, update.supplier_id);
+  const { data, error } = await supabase
+    .from('purchase_orders')
+    .update({ supplier_id: update.supplier_id, updated_at: new Date().toISOString() })
+    .eq('id', update.purchase_order_id)
+    .eq('status', 'draft')
+    .select('id')
+    .maybeSingle();
+  if (error || !data) {
+    throw new Error('No fue posible cambiar el proveedor de la orden de compra.');
+  }
+  revalidateOrder(update.purchase_order_id);
 }
 
 export async function releasePurchaseOrder(orderId: string) {

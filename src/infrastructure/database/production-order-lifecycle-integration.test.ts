@@ -114,6 +114,7 @@ describe(
         expect(packageJson).toContain(
           'pnpm run db:test:raw-material-quality && ' +
             'pnpm run db:test:production-order-lifecycle && ' +
+            'pnpm run db:test:production-order-mass-reservations && ' +
             'pnpm run db:test:production-consumption',
         );
       },

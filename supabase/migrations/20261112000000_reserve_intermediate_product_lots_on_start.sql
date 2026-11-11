@@ -47,7 +47,7 @@ CREATE POLICY production_order_product_lot_reservations_admin_read
   USING (public.is_admin(auth.uid()));
 
 REVOKE ALL ON TABLE public.production_order_product_lot_reservations
-  FROM PUBLIC, anon, authenticated;
+  FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT ON TABLE public.production_order_product_lot_reservations
   TO authenticated;
 
@@ -254,7 +254,7 @@ DECLARE
   order_row public.production_orders%ROWTYPE;
   mass_item public.production_order_items%ROWTYPE;
   lot_row public.product_lots%ROWTYPE;
-  allocation record;
+  lot_allocation record;
   existing_operation
     public.production_order_lifecycle_operations%ROWTYPE;
   requested_allocations jsonb;
@@ -308,8 +308,8 @@ BEGIN
     FROM jsonb_to_recordset(p_lot_allocations)
       AS item(product_lot_id uuid, quantity numeric)
     GROUP BY product_lot_id
-  ) AS allocation
-  WHERE allocation.product_lot_id IS NOT NULL;
+    ) AS aggregated_allocation
+  WHERE aggregated_allocation.product_lot_id IS NOT NULL;
 
   IF requested_allocations IS NULL OR EXISTS (
     SELECT 1
@@ -398,7 +398,7 @@ BEGIN
   END IF;
 
   v_allocation_count := 0;
-  FOR allocation IN
+  FOR lot_allocation IN
     SELECT product_lot_id, sum(quantity) AS quantity
     FROM jsonb_to_recordset(p_lot_allocations)
       AS item(product_lot_id uuid, quantity numeric)
@@ -407,7 +407,7 @@ BEGIN
   LOOP
     SELECT * INTO lot_row
     FROM public.product_lots
-    WHERE id = allocation.product_lot_id
+    WHERE id = lot_allocation.product_lot_id
     FOR UPDATE;
     IF NOT FOUND THEN
       RAISE EXCEPTION 'Mass lot was not found.' USING ERRCODE = 'P0002';
@@ -428,14 +428,14 @@ BEGIN
         'El lote seleccionado no está liberado y disponible para esta variedad de masa.'
         USING ERRCODE = '23514';
     END IF;
-    IF lot_row.quantity < allocation.quantity THEN
+    IF lot_row.quantity < lot_allocation.quantity THEN
       RAISE EXCEPTION
         'El peso retirado supera la cantidad disponible del lote.'
         USING ERRCODE = '23514';
     END IF;
 
     v_previous_quantity := lot_row.quantity;
-    v_quantity := lot_row.quantity - allocation.quantity;
+    v_quantity := lot_row.quantity - lot_allocation.quantity;
 
     UPDATE public.product_lots
     SET quantity = v_quantity,
@@ -454,7 +454,7 @@ BEGIN
       order_row.id,
       mass_item.id,
       lot_row.id,
-      allocation.quantity,
+      lot_allocation.quantity,
       auth.uid()
     );
 
@@ -480,7 +480,7 @@ $function$;
 
 REVOKE ALL ON FUNCTION
   public.start_production_order_with_mass_lot_reservations(uuid, jsonb, uuid)
-  FROM PUBLIC, anon;
+  FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION
   public.start_production_order_with_mass_lot_reservations(uuid, jsonb, uuid)
   TO authenticated;

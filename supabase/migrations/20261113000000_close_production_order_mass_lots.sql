@@ -194,8 +194,11 @@ BEGIN
   IF v_product_id IS NULL OR NOT EXISTS (
     SELECT 1
     FROM public.production_order_items AS item
+    JOIN public.recipe_items AS recipe_item
+      ON recipe_item.recipe_id = order_row.recipe_id
+      AND recipe_item.product_id = item.product_id
+      AND recipe_item.raw_material_id IS NULL
     WHERE item.production_order_id = order_row.id
-      AND item.product_id = v_product_id
       AND item.raw_material_id IS NULL
   ) THEN
     RAISE EXCEPTION 'Production order does not use an intermediate product.'

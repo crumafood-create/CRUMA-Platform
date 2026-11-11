@@ -1074,8 +1074,8 @@ SELECT public.start_production_order_with_mass_lot_reservations(
       'e1500000-0000-4000-8000-000000000015'
   ),
   '[
-    {"product_lot_id":"e1610000-0000-4000-8000-000000000001","quantity":0.6},
-    {"product_lot_id":"e1610000-0000-4000-8000-000000000002","quantity":0.45}
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000001","quantity":0.7},
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000002","quantity":0.35}
   ]'::jsonb,
   'e1500000-0000-4000-8000-000000000019'
 );
@@ -1090,8 +1090,8 @@ SELECT public.start_production_order_with_mass_lot_reservations(
       'e1500000-0000-4000-8000-000000000015'
   ),
   '[
-    {"product_lot_id":"e1610000-0000-4000-8000-000000000001","quantity":0.6},
-    {"product_lot_id":"e1610000-0000-4000-8000-000000000002","quantity":0.45}
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000001","quantity":0.7},
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000002","quantity":0.35}
   ]'::jsonb,
   'e1500000-0000-4000-8000-000000000019'
 );
@@ -1136,13 +1136,13 @@ BEGIN
     FROM public.production_order_product_lot_reservations
     WHERE production_order_id = first_order_id
       AND product_lot_id = 'e1610000-0000-4000-8000-000000000001'
-      AND reserved_quantity = 0.6
+      AND reserved_quantity = 0.7
   ) OR NOT EXISTS (
     SELECT 1
     FROM public.production_order_product_lot_reservations
     WHERE production_order_id = first_order_id
       AND product_lot_id = 'e1610000-0000-4000-8000-000000000002'
-      AND reserved_quantity = 0.45
+      AND reserved_quantity = 0.35
   ) THEN
     RAISE EXCEPTION
       'the weighed withdrawal was not recorded separately for both mass lots';
@@ -1151,11 +1151,11 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.product_lots
     WHERE id = 'e1610000-0000-4000-8000-000000000001'
-      AND quantity = 0.2 AND status = 'available'
+      AND quantity = 0.1 AND status = 'available'
   ) OR NOT EXISTS (
     SELECT 1 FROM public.product_lots
     WHERE id = 'e1610000-0000-4000-8000-000000000002'
-      AND quantity = 0.35 AND status = 'available'
+      AND quantity = 0.45 AND status = 'available'
   ) THEN
     RAISE EXCEPTION
       'mass availability does not reflect the atomic withdrawal';
@@ -1168,6 +1168,170 @@ BEGIN
   ) THEN
     RAISE EXCEPTION
       'the order did not start with its mass lots reserved';
+  END IF;
+END;
+$test$;
+
+DO $test$
+DECLARE
+  first_order_id uuid;
+  close_rejected boolean := false;
+BEGIN
+  SELECT production_order_id INTO first_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key =
+    'e1500000-0000-4000-8000-000000000015';
+
+  BEGIN
+    PERFORM public.complete_production_order_with_mass_lot_yield(
+      first_order_id,
+      48,
+      2,
+      'Ajuste de rendimiento de prueba',
+      '[
+        {"product_lot_id":"e1610000-0000-4000-8000-000000000001","surplus_quantity":0.7001},
+        {"product_lot_id":"e1610000-0000-4000-8000-000000000002","surplus_quantity":0.05}
+      ]'::jsonb,
+      'e1500000-0000-4000-8000-000000000020'
+    );
+
+    RAISE EXCEPTION
+      'mass completion accepted a surplus greater than the withdrawn weight'
+      USING ERRCODE = 'PZ020';
+  EXCEPTION
+    WHEN check_violation THEN close_rejected := true;
+    WHEN SQLSTATE 'PZ020' THEN close_rejected := false;
+  END;
+
+  IF NOT close_rejected THEN
+    RAISE EXCEPTION
+      'mass completion did not reject an excessive per-lot surplus';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.production_orders
+    WHERE id = first_order_id
+      AND production_status = 'in_progress'
+      AND produced_quantity IS NULL
+  ) OR EXISTS (
+    SELECT 1 FROM public.production_outputs
+    WHERE production_order_id = first_order_id
+  ) OR EXISTS (
+    SELECT 1
+    FROM public.production_order_product_lot_reservations
+    WHERE production_order_id = first_order_id
+      AND (consumed_quantity IS NOT NULL OR surplus_quantity IS NOT NULL)
+  ) THEN
+    RAISE EXCEPTION
+      'rejected mass completion left partial order, output, or reservation writes';
+  END IF;
+END;
+$test$;
+
+SELECT public.complete_production_order_with_mass_lot_yield(
+  (
+    SELECT production_order_id
+    FROM public.production_order_lifecycle_operations
+    WHERE idempotency_key =
+      'e1500000-0000-4000-8000-000000000015'
+  ),
+  48,
+  2,
+  'Ajuste de rendimiento de prueba',
+  '[
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000001","surplus_quantity":0.1},
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000002","surplus_quantity":0.05}
+  ]'::jsonb,
+  'e1500000-0000-4000-8000-000000000020'
+);
+
+-- Repeating an identical completion must return the same output.
+SELECT public.complete_production_order_with_mass_lot_yield(
+  (
+    SELECT production_order_id
+    FROM public.production_order_lifecycle_operations
+    WHERE idempotency_key =
+      'e1500000-0000-4000-8000-000000000015'
+  ),
+  48,
+  2,
+  'Ajuste de rendimiento de prueba',
+  '[
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000001","surplus_quantity":0.1},
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000002","surplus_quantity":0.05}
+  ]'::jsonb,
+  'e1500000-0000-4000-8000-000000000020'
+);
+
+DO $test$
+DECLARE
+  first_order_id uuid;
+BEGIN
+  SELECT production_order_id INTO first_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key =
+    'e1500000-0000-4000-8000-000000000015';
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.production_orders
+    WHERE id = first_order_id
+      AND production_status = 'completed'
+      AND produced_quantity = 48
+  ) THEN
+    RAISE EXCEPTION 'mass order did not close with 48 produced pieces';
+  END IF;
+
+  IF (
+    SELECT count(*) FROM public.production_outputs
+    WHERE production_order_id = first_order_id
+      AND quantity_produced = 48
+      AND quality_status = 'pending'
+  ) <> 1 OR (
+    SELECT count(*) FROM public.production_output_completion_operations
+    WHERE production_order_id = first_order_id
+      AND produced_quantity = 48
+      AND waste_quantity = 2
+  ) <> 1 THEN
+    RAISE EXCEPTION
+      'completion must create exactly one 48-piece output awaiting quality';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.production_order_product_lot_reservations
+    WHERE production_order_id = first_order_id
+      AND product_lot_id = 'e1610000-0000-4000-8000-000000000001'
+      AND reserved_quantity = 0.7
+      AND consumed_quantity = 0.6
+      AND surplus_quantity = 0.1
+  ) OR NOT EXISTS (
+    SELECT 1
+    FROM public.production_order_product_lot_reservations
+    WHERE production_order_id = first_order_id
+      AND product_lot_id = 'e1610000-0000-4000-8000-000000000002'
+      AND reserved_quantity = 0.35
+      AND consumed_quantity = 0.3
+      AND surplus_quantity = 0.05
+  ) THEN
+    RAISE EXCEPTION
+      'mass consumed and surplus weights were not reconciled per lot';
+  END IF;
+
+  IF (
+    SELECT sum(surplus_quantity)
+    FROM public.production_order_product_lot_reservations
+    WHERE production_order_id = first_order_id
+  ) <> 0.15 OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots
+    WHERE id = 'e1610000-0000-4000-8000-000000000001'
+      AND quantity = 0.1 AND status = 'available'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots
+    WHERE id = 'e1610000-0000-4000-8000-000000000002'
+      AND quantity = 0.45 AND status = 'available'
+  ) THEN
+    RAISE EXCEPTION
+      'pending surplus must remain outside available mass inventory';
   END IF;
 END;
 $test$;

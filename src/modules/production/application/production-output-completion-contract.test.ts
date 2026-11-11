@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildProductionMassLotSurplusRequest,
   buildProductionOutputCompletionRequest,
 } from './production-output-completion-contract';
 
@@ -169,3 +170,42 @@ describe(
     );
   },
 );
+
+describe('contrato de sobrantes de masa por lote', () => {
+  it('normaliza el cierre planeado de 50 Party con 48 piezas reales y dos lotes', () => {
+    expect(buildProductionMassLotSurplusRequest({
+      ...VALID_INPUT,
+      producedQuantity: 48,
+      wasteQuantity: 2,
+      varianceReason: 'Variación de rendimiento',
+      lotSurpluses: [
+        { productLotId: '55555555-5555-4555-8555-555555555555', surplusQuantity: '0.1000' },
+        { productLotId: '66666666-6666-4666-8666-666666666666', surplusQuantity: '0.05' },
+      ],
+    })).toMatchObject({
+      producedQuantity: 48,
+      wasteQuantity: 2,
+      lotSurpluses: [
+        { productLotId: '55555555-5555-4555-8555-555555555555', surplusQuantity: 0.1 },
+        { productLotId: '66666666-6666-4666-8666-666666666666', surplusQuantity: 0.05 },
+      ],
+    });
+  });
+
+  it.each([
+    { productLotId: '55555555-5555-4555-8555-555555555555', surplusQuantity: '-0.1' },
+    { productLotId: '55555555-5555-4555-8555-555555555555', surplusQuantity: '0.00001' },
+    { productLotId: 'invalid', surplusQuantity: 0 },
+  ])('rechaza sobrantes inválidos por lote: %o', (surplus) => {
+    expect(() => buildProductionMassLotSurplusRequest({
+      ...VALID_INPUT,
+      lotSurpluses: [surplus],
+    })).toThrow();
+  });
+
+  it('rechaza IDs de lote repetidos y una lista vacía', () => {
+    const surplus = { productLotId: '55555555-5555-4555-8555-555555555555', surplusQuantity: 0 };
+    expect(() => buildProductionMassLotSurplusRequest({ ...VALID_INPUT, lotSurpluses: [] })).toThrow('Registra el sobrante de cada lote de masa.');
+    expect(() => buildProductionMassLotSurplusRequest({ ...VALID_INPUT, lotSurpluses: [surplus, surplus] })).toThrow('Registra cada lote de masa una sola vez.');
+  });
+});

@@ -5249,6 +5249,7 @@ export type Database = {
       }
       production_order_product_lot_reservations: {
         Row: {
+          consumed_quantity: number | null
           created_at: string
           created_by: string
           id: string
@@ -5256,8 +5257,10 @@ export type Database = {
           production_order_id: string
           production_order_item_id: string
           reserved_quantity: number
+          surplus_quantity: number | null
         }
         Insert: {
+          consumed_quantity?: number | null
           created_at?: string
           created_by: string
           id?: string
@@ -5265,8 +5268,10 @@ export type Database = {
           production_order_id: string
           production_order_item_id: string
           reserved_quantity: number
+          surplus_quantity?: number | null
         }
         Update: {
+          consumed_quantity?: number | null
           created_at?: string
           created_by?: string
           id?: string
@@ -5274,6 +5279,7 @@ export type Database = {
           production_order_id?: string
           production_order_item_id?: string
           reserved_quantity?: number
+          surplus_quantity?: number | null
         }
         Relationships: [
           {
@@ -8487,6 +8493,17 @@ export type Database = {
       cancel_sales_invoice: {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: undefined
+      }
+      complete_production_order_with_mass_lot_yield: {
+        Args: {
+          p_idempotency_key: string
+          p_lot_surpluses: Json
+          p_produced_quantity: number
+          p_production_order_id: string
+          p_variance_reason: string
+          p_waste_quantity: number
+        }
+        Returns: string
       }
       complete_production_output_quarantine: {
         Args: {

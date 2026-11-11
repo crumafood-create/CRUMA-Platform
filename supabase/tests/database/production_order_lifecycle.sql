@@ -1176,6 +1176,7 @@ DO $test$
 DECLARE
   first_order_id uuid;
   close_rejected boolean := false;
+  rejection_message text;
 BEGIN
   SELECT production_order_id INTO first_order_id
   FROM public.production_order_lifecycle_operations
@@ -1199,7 +1200,10 @@ BEGIN
       'mass completion accepted a surplus greater than the withdrawn weight'
       USING ERRCODE = 'PZ020';
   EXCEPTION
-    WHEN check_violation THEN close_rejected := true;
+    WHEN check_violation THEN
+      GET STACKED DIAGNOSTICS rejection_message = MESSAGE_TEXT;
+      close_rejected := rejection_message =
+        'The weighed surplus cannot exceed the mass withdrawn from its lot.';
     WHEN SQLSTATE 'PZ020' THEN close_rejected := false;
   END;
 
@@ -1212,18 +1216,25 @@ BEGIN
     SELECT 1 FROM public.production_orders
     WHERE id = first_order_id
       AND production_status = 'in_progress'
-      AND produced_quantity IS NULL
-  ) OR EXISTS (
+      AND produced_quantity = 0
+  ) THEN
+    RAISE EXCEPTION 'rejected mass completion changed order status or yield';
+  END IF;
+
+  IF EXISTS (
     SELECT 1 FROM public.production_outputs
     WHERE production_order_id = first_order_id
-  ) OR EXISTS (
+  ) THEN
+    RAISE EXCEPTION 'rejected mass completion created an output';
+  END IF;
+
+  IF EXISTS (
     SELECT 1
     FROM public.production_order_product_lot_reservations
     WHERE production_order_id = first_order_id
       AND (consumed_quantity IS NOT NULL OR surplus_quantity IS NOT NULL)
   ) THEN
-    RAISE EXCEPTION
-      'rejected mass completion left partial order, output, or reservation writes';
+    RAISE EXCEPTION 'rejected mass completion closed a reservation';
   END IF;
 END;
 $test$;

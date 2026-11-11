@@ -7,10 +7,12 @@ import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import {
+  buildProductionMassLotSurplusRequest,
   buildProductionOutputCompletionRequest,
 } from '@/modules/production/application/production-output-completion-contract';
 import {
   completeProductionOutputToQuarantine,
+  completeProductionOutputWithMassLotYield,
 } from '@/modules/production/application/production-output-completion-repository';
 import {
   buildProductionOrderMassStartRequest,
@@ -327,8 +329,7 @@ export async function completeProductionOrder(
   const wasteQuantity =
     formData.get('waste_quantity');
 
-  const request =
-    buildProductionOutputCompletionRequest({
+  const completionInput = {
       productionOrderId: orderId,
       producedQuantity: Number(
         formData.get('produced_quantity'),
@@ -342,12 +343,50 @@ export async function completeProductionOrder(
         formData.get('variance_reason'),
       idempotencyKey:
         formData.get('idempotency_key'),
+    };
+
+  const { data: orderItems, error: orderItemsError } = await supabase
+    .from('production_order_items')
+    .select('product_id, raw_material_id')
+    .eq('production_order_id', orderId);
+
+  if (orderItemsError) {
+    throw new Error('No fue posible comprobar los ingredientes de la orden.');
+  }
+
+  const usesIntermediateProduct = (orderItems ?? []).some(
+    (item) => item.product_id !== null && item.raw_material_id === null,
+  );
+
+  if (usesIntermediateProduct) {
+    const lotSurpluses = [...formData.entries()]
+      .flatMap(([name, value]) => {
+        const prefix = 'mass_surplus_';
+        return name.startsWith(prefix)
+          ? [{
+              productLotId: name.slice(prefix.length),
+              surplusQuantity: value,
+            }]
+          : [];
+      });
+
+    const request = buildProductionMassLotSurplusRequest({
+      ...completionInput,
+      lotSurpluses,
     });
 
-  await completeProductionOutputToQuarantine(
-    supabase,
-    request,
-  );
+    await completeProductionOutputWithMassLotYield(
+      supabase,
+      request,
+    );
+  } else {
+    const request = buildProductionOutputCompletionRequest(completionInput);
+
+    await completeProductionOutputToQuarantine(
+      supabase,
+      request,
+    );
+  }
 
   revalidateProductionRoutes(orderId);
   revalidatePath('/qa');

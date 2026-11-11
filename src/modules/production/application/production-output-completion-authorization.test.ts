@@ -124,6 +124,14 @@ describe(
         expect(action).toContain(
           'completeProductionOutputToQuarantine(',
         );
+
+        expect(action).toContain(
+          "item.product_id !== null && item.raw_material_id === null",
+        );
+
+        expect(action).toContain(
+          'completeProductionOutputWithMassLotYield(',
+        );
       },
     );
 
@@ -162,6 +170,10 @@ describe(
 
         expect(page).toContain(
           'name="produced_quantity"',
+        );
+
+        expect(page).toContain(
+          'name={`mass_surplus_${lot.productLotId}`}',
         );
 
         expect(page).toContain(

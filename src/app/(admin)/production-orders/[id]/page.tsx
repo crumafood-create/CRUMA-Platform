@@ -47,6 +47,12 @@ type MassProductLot = {
   location_name: string | null;
 };
 
+type ReservedMassLot = {
+  productLotId: string;
+  lotNumber: string;
+  quantity: number;
+};
+
 function getStatusLabel(status: string): string {
   switch (status) {
     case 'draft':
@@ -131,6 +137,7 @@ export default async function ProductionOrderPage({
   )];
   let massProducts: MassProduct[] = [];
   let massLots: MassProductLot[] = [];
+  let reservedMassLots: ReservedMassLot[] = [];
   if (massProductIds.length > 0) {
     const [{ data: products, error: productsError }, { data: lots, error: lotsError }] =
       await Promise.all([
@@ -162,6 +169,46 @@ export default async function ProductionOrderPage({
           }]
         : [],
     );
+
+    if (order.production_status === 'in_progress') {
+      const { data: reservations, error: reservationsError } = await supabase
+        .from('production_order_product_lot_reservations')
+        .select('product_lot_id, reserved_quantity')
+        .eq('production_order_id', order.id)
+        .order('product_lot_id');
+
+      if (reservationsError) {
+        throw new Error('No fue posible cargar los lotes de masa apartados.');
+      }
+
+      const reservedLotIds = (reservations ?? []).map(
+        (reservation) => reservation.product_lot_id,
+      );
+      if (reservedLotIds.length > 0) {
+        const { data: lotRows, error: lotRowsError } = await supabase
+          .from('product_lots')
+          .select('id, lot_number')
+          .in('id', reservedLotIds);
+
+        if (lotRowsError) {
+          throw new Error('No fue posible consultar los lotes de masa apartados.');
+        }
+
+        const lotNumberById = new Map(
+          (lotRows ?? []).map((lot) => [lot.id, lot.lot_number]),
+        );
+        reservedMassLots = (reservations ?? []).flatMap((reservation) => {
+          const lotNumber = lotNumberById.get(reservation.product_lot_id);
+          return lotNumber
+            ? [{
+                productLotId: reservation.product_lot_id,
+                lotNumber,
+                quantity: Number(reservation.reserved_quantity),
+              }]
+            : [];
+        });
+      }
+    }
   }
 
   let stockRows: InventoryStockRow[] = [];
@@ -469,6 +516,36 @@ export default async function ProductionOrderPage({
               />
             </label>
 
+            {massProductIds.length > 0 && (
+              <fieldset className="grid gap-3 rounded border p-3 md:col-span-2">
+                <legend className="px-1 font-semibold">
+                  Sobrante aprovechable por lote de masa (kg)
+                </legend>
+                {reservedMassLots.length === 0 ? (
+                  <p className="text-sm text-red-700">
+                    Esta orden no tiene lotes de masa apartados para cerrar.
+                  </p>
+                ) : reservedMassLots.map((lot) => (
+                  <label key={lot.productLotId} className="text-sm">
+                    Lote {lot.lotNumber}: retirado {lot.quantity.toFixed(4)} kg
+                    <input
+                      name={`mass_surplus_${lot.productLotId}`}
+                      type="number"
+                      min="0"
+                      max={lot.quantity}
+                      step="0.0001"
+                      defaultValue="0"
+                      required
+                      className="mt-1 block w-full rounded border px-3 py-2"
+                    />
+                  </label>
+                ))}
+                <p className="text-xs text-gray-600">
+                  El consumo de cada lote se calcula como peso retirado menos sobrante. El sobrante queda pendiente de destino y fuera del inventario disponible.
+                </p>
+              </fieldset>
+            )}
+
             <label className="text-sm">
               Cantidad de merma
               <input
@@ -504,6 +581,7 @@ export default async function ProductionOrderPage({
 
             <button
               type="submit"
+              disabled={massProductIds.length > 0 && reservedMassLots.length === 0}
               className="rounded border px-4 py-2 md:col-span-2"
             >
               Conciliar y completar producción

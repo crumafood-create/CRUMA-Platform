@@ -6526,22 +6526,25 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          product_id: string | null
           quantity: number
-          raw_material_id: string
+          raw_material_id: string | null
           recipe_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
+          product_id?: string | null
           quantity: number
-          raw_material_id: string
+          raw_material_id?: string | null
           recipe_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
+          product_id?: string | null
           quantity?: number
-          raw_material_id?: string
+          raw_material_id?: string | null
           recipe_id?: string
         }
         Relationships: [
@@ -6564,6 +6567,27 @@ export type Database = {
             columns: ["raw_material_id"]
             isOneToOne: false
             referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {

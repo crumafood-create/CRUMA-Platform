@@ -1,6 +1,6 @@
 # Historias pendientes para retomar
 
-Estas historias estaban en el backlog anterior. Por indicación del usuario se conservan aquí mientras el backlog activo se enfoca en recepción de materia prima.
+Estas historias se conservan aquí hasta que el usuario decida activarlas. La historia #3 fue activada y completada; su cierre está en `backlog.md`. La historia #4 permanece pendiente.
 
 ## Contexto
 
@@ -13,18 +13,33 @@ Decisiones acordadas: solo CRUMAFOOD y una planta, sin sucursales ni franquicias
 ## Historias
 
 1. [x] Como administrador autorizado, quiero registrar productos con datos y estados válidos para utilizarlos en el catálogo.
-2. [ ] Como administrador autorizado, quiero registrar materias primas con datos válidos para utilizarlas en mis recetas.
-3. [ ] Como administrador autorizado, quiero definir una receta con sus ingredientes y rendimiento para establecer cómo producir un producto. Requiere: #1 y #2.
-4. [ ] Como administrador autorizado, quiero crear una orden desde una receta para planificar la producción con las cantidades correspondientes. Requiere: #3.
+2. [x] Como administrador autorizado, quiero registrar materias primas con datos válidos para utilizarlas en mis recetas. **Completada:** alta y edición del catálogo, unidad base obligatoria/protegida y alta desde compras están integradas; ver las historias cerradas en `backlog.md` y su evidencia en `plan.md`.
+4. [ ] Como responsable de producción e inventario, quiero planificar órdenes, registrar sus resultados y organizar las porciones de producto terminado según su preparación y condición de almacenamiento, para mantener existencias trazables y habilitar envíos foráneos con producto congelado. Requiere: #3.
 
-La historia de productos (#1) se completó con implementación, pruebas, comprobaciones SQL en Supabase y verificación manual del usuario. Su plan temporal fue retirado al comenzar la historia siguiente. Se recomienda `/code-review` antes de integrar cambios.
+   Requisito de negocio registrado, pendiente de refinamiento: cada porción de un lote terminado identifica preparación, condición de almacenamiento y cantidad en piezas. Al congelar una porción, las piezas salen del saldo de origen y entran al saldo congelado con trazabilidad. Los envíos foráneos utilizan saldo congelado solo para los productos habilitados en cada ruta.
 
-## Decisiones pendientes de refinamiento
+La historia de productos (#1) está completada e integrada; ver el historial de entregas en `backlog.md`.
 
-- Definir si las cantidades de ingredientes corresponden a una unidad o a un lote de receta y cómo interviene su rendimiento.
+## Entregas relacionadas completadas
+
+- [x] **MP-01.** Comprar presentaciones comerciales y convertirlas a unidad base. PR #126, CI y recorrido manual en Supabase de desarrollo aprobados; evidencia en `plan.md`.
+- [x] **WH-01.** Consultar desde el móvil órdenes que admiten recepción y abrir su detalle. PR #127; evidencia en `backlog.md` y `plan.md`.
+
+## Decisiones pendientes para órdenes de producción (#4)
+
 - Definir si se exige disponibilidad de stock al crear la orden en borrador o al liberarla.
-- Confirmar los estados esperados de recetas. Los estados de productos y su stock mínimo ya fueron acordados en la historia #1.
-- Precisar los contratos públicos necesarios para las fronteras entre módulos ya señaladas por la arquitectura.
+- Precisar el reparto de un lote de masa entre órdenes y reposición, incluido el registro del consumo y rendimiento reales.
+
+## Referencia de negocio para recetas (#3)
+
+- Para el MVP, cada combinación de tamaño y relleno será un producto distinto, con su propia receta. Combinaciones definidas: tequeños tradicionales y Party × queso, pizza (pepperoni con queso) y chocolate; empanadas tradicionales y minis × queso y jamón con queso. No se trata el tamaño o relleno como opciones variables de un mismo producto.
+- Cada variedad de masa es un producto intermedio distinto y tiene su propia fórmula. La receta de la masa actual utiliza sus ingredientes para producir el lote estándar de **2 kg**; otras variedades pueden tener rendimientos distintos.
+- Si los 2 kg se destinan a un solo producto, los rendimientos esperados aproximados son: Tequeños Party, **100 piezas**; Tequeños tradicionales, **60 piezas**; masa estirada, **4 láminas**; tapas para empanadas #14, **36 tapas**.
+- Una lámina cuenta como una pieza; una tapa cuenta como una pieza.
+- Empaque, separado del rendimiento: 4 láminas equivalen a **4 paquetes de 1 lámina**; 36 tapas #14 equivalen a **3 paquetes de 12 tapas**. El empaque de tequeños está **por definir**.
+- Ejemplo de planificación, no una orden: destinar 1 kg a unas 50 piezas Party y 1 kg a reponer aproximadamente 30 piezas tradicionales.
+- Los rendimientos son aproximados y describen el resultado esperado; la ejecución registrará aparte el resultado real.
+- Cambio mínimo acordado: reutilizar `products` para cada variedad intermedia y extender `recipe_items` para que un ingrediente pueda referenciar una materia prima o un producto intermedio. Cada receta final referencia una sola variedad de masa. Las materias primas pueden usarse aunque su existencia sea cero; la carga inicial de stock se hará mediante compra y recepción.
 
 ## Flujo de trabajo
 

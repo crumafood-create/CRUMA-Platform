@@ -8,11 +8,12 @@ export default async function RecipesPage() {
   const [
     { data: recipes, error },
     { data: products },
+    { data: units, error: unitsError },
   ] = await Promise.all([
     supabase
       .from('recipes')
       .select(
-        'id, name, description, yield_quantity, is_active, product_id'
+        'id, name, description, yield_quantity, unit_of_measure_id, is_active, product_id'
       )
       .order('name'),
 
@@ -21,9 +22,13 @@ export default async function RecipesPage() {
       .select('id, name')
       .is('deleted_at', null)
       .order('name'),
+
+    supabase
+      .from('units_of_measure')
+      .select('id, name, code'),
   ]);
 
-  if (error) throw new Error('No se pudieron cargar las recetas.');
+  if (error || unitsError) throw new Error('No se pudieron cargar las recetas.');
 
   const productMap = new Map(
     (products ?? []).map(
@@ -32,6 +37,9 @@ export default async function RecipesPage() {
         product.name,
       ]
     )
+  );
+  const unitMap = new Map(
+    (units ?? []).map((unit) => [unit.id, unit.code]),
   );
 
   return (
@@ -74,7 +82,10 @@ export default async function RecipesPage() {
 
                     <div>
                       Rendimiento:{' '}
-                      {recipe.yield_quantity ?? '-'}
+                      {recipe.yield_quantity ?? '-'}{' '}
+                      {recipe.unit_of_measure_id
+                        ? unitMap.get(recipe.unit_of_measure_id) ?? ''
+                        : ''}
                     </div>
 
                     <div>

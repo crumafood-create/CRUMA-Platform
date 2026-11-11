@@ -17,7 +17,9 @@ import {
   buildProductionOrderTransitionRequest,
 } from '@/modules/production/application/production-order-lifecycle-contract';
 import {
+  assertRecipeSupportsProductionOrder,
   createProductionOrderDraft,
+  IntermediateRecipeProductionUnsupportedError,
   transitionProductionOrderLifecycle,
 } from '@/modules/production/application/production-order-lifecycle-repository';
 import {
@@ -60,6 +62,13 @@ async function validateRecipeStockAvailability(
   }
 
   for (const item of items) {
+    if (!item.raw_material_id) {
+      throw new Error(
+        'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.',
+      );
+    }
+
+    const rawMaterialId = item.raw_material_id;
     const required = calculateRequiredQuantity(
       item.quantity,
       plannedQuantity,
@@ -71,14 +80,14 @@ async function validateRecipeStockAvailability(
     .select('quantity')
     .eq(
       'raw_material_id',
-      item.raw_material_id,
+      rawMaterialId,
     )
     .eq('status', 'available')
     .gt('quantity', 0);
 
     if (lotsError) {
       throw new Error(
-        `No se puede verificar stock para ingrediente ${item.raw_material_id}: ${lotsError.message}`,
+        `No se puede verificar stock para ingrediente ${rawMaterialId}: ${lotsError.message}`,
       );
     }
 
@@ -114,8 +123,9 @@ function revalidateProductionRoutes(orderId: string): void {
  * de materiales.
  */
 export async function createProductionOrder(
+  _previousState: { error: string | null },
   formData: FormData,
-): Promise<void> {
+): Promise<{ error: string | null }> {
   const { supabase } =
     await requireTypedAuthorizedAction(
       PERMISSIONS.PRODUCTION_ORDER_CREATE,
@@ -133,6 +143,16 @@ export async function createProductionOrder(
       idempotencyKey:
         formData.get('idempotency_key'),
     });
+
+  try {
+    await assertRecipeSupportsProductionOrder(supabase, request.recipeId);
+  } catch (error) {
+    if (error instanceof IntermediateRecipeProductionUnsupportedError) {
+      return { error: error.message };
+    }
+
+    throw error;
+  }
 
   await validateRecipeStockAvailability(
     supabase,

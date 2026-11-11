@@ -10,11 +10,11 @@ describe('inventario de autoridad RLS', () => {
   const summary = summarizeRlsDependencies();
 
   it('reconstruye las políticas vigentes sin perder su tabla', () => {
-    expect(policies).toHaveLength(210);
+    expect(policies).toHaveLength(211);
     expect(summary).toEqual({
-      policies: 210,
+      policies: 211,
       authority: {
-        is_admin_exclusive: 47,
+        is_admin_exclusive: 48,
         mixed: 0,
         not_is_admin: 163,
       },
@@ -25,6 +25,18 @@ describe('inventario de autoridad RLS', () => {
       anonWriteGrants: 136,
       authenticatedWriteGrants: 139,
     });
+  });
+
+  it('registra la lectura administrativa del plan de producción', () => {
+    expect(policies).toContainEqual(
+      expect.objectContaining({
+        table: 'production_order_items',
+        policy: 'production_order_items_admin_read',
+        authority: 'is_admin_exclusive',
+        command: 'select',
+        open: false,
+      }),
+    );
   });
 
   it('separa la lectura abierta de almacenes de su escritura administrativa', () => {

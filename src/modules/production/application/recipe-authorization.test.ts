@@ -51,10 +51,19 @@ describe('autorización de recetas', () => {
     expect(action).not.toContain('ingredient_id');
   });
 
+  it('limita la edición y eliminación de ingredientes al renglón de su receta', () => {
+    const action = source(ITEM_ACTIONS);
+    expect(action).toContain(".eq('id', item.id)");
+    expect(action).toContain(".eq('recipe_id', item.recipe_id)");
+    expect(action).toContain('buildRecipeItemUpdate(formData)');
+    expect(action).toContain('buildRecipeItemDelete(formData)');
+  });
+
   it.each([
     '../../../app/(admin)/recipes/page.tsx',
     '../../../app/(admin)/recipes/new/page.tsx',
     '../../../app/(admin)/recipes/[id]/page.tsx',
+    '../../../app/(admin)/recipes/[id]/edit/page.tsx',
     '../../../app/(admin)/recipes/[id]/ingredients/page.tsx',
   ])('usa cliente Supabase tipado en %s', (path) => {
     const page = source(path);

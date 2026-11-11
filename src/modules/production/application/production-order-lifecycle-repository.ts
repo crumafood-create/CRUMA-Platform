@@ -7,6 +7,34 @@ import type {
   ProductionOrderTransitionRequest,
 } from './production-order-lifecycle-contract';
 
+const INTERMEDIATE_RECIPE_ORDER_MESSAGE =
+  'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.';
+
+export class IntermediateRecipeProductionUnsupportedError extends Error {
+  constructor() {
+    super(INTERMEDIATE_RECIPE_ORDER_MESSAGE);
+    this.name = 'IntermediateRecipeProductionUnsupportedError';
+  }
+}
+
+export async function assertRecipeSupportsProductionOrder(
+  supabase: TypedSupabaseClient,
+  recipeId: string,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('recipe_items')
+    .select('product_id')
+    .eq('recipe_id', recipeId);
+
+  if (error) throw new Error(error.message);
+
+  const items = data ?? [];
+
+  if (items.some((item) => item.product_id)) {
+    throw new IntermediateRecipeProductionUnsupportedError();
+  }
+}
+
 export async function createProductionOrderDraft(
   supabase: TypedSupabaseClient,
   request: ProductionOrderCreationRequest,

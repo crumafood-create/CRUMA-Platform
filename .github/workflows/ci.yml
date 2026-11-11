@@ -143,14 +143,6 @@ jobs:
             exit 1
           fi
 
-      - name: Upload generated database types for diagnosis
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-generated-types-diagnostic
-          path: src/types/database/database.generated.ts
-          if-no-files-found: error
-
       - name: Stop local Supabase
         if: always()
         shell: bash

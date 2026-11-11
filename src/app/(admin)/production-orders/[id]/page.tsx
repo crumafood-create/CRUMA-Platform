@@ -16,8 +16,8 @@ import {
 
 type RecipeItem = {
   id: string;
-  raw_material_id: string;
-  quantity: number;
+  raw_material_id: string | null;
+  planned_quantity: number;
 };
 
 type RawMaterial = {
@@ -87,14 +87,16 @@ export default async function ProductionOrderPage({
     .eq('id', order.recipe_id)
     .single();
 
-  const { data: ingredients } = await supabase
-    .from('recipe_items')
-    .select('id, raw_material_id, quantity')
-    .eq('recipe_id', order.recipe_id)
+  const { data: ingredients, error: ingredientsError } = await supabase
+    .from('production_order_items')
+    .select('id, raw_material_id, planned_quantity')
+    .eq('production_order_id', order.id)
     .order('created_at', { ascending: true });
+  if (ingredientsError) throw new Error('No fue posible cargar el plan de materiales de la orden.');
 
-  const ingredientIds =
-    (ingredients ?? []).map((item: RecipeItem) => item.raw_material_id);
+  const ingredientIds = (ingredients ?? []).flatMap((item: RecipeItem) =>
+    item.raw_material_id ? [item.raw_material_id] : [],
+  );
 
   let materials: RawMaterial[] = [];
   if (ingredientIds.length > 0) {
@@ -138,8 +140,9 @@ export default async function ProductionOrderPage({
 
   const canProduce =
     (ingredients ?? []).every((item: RecipeItem) => {
-      const required =
-        Number(item.quantity) * Number(order.planned_quantity);
+      if (!item.raw_material_id) return false;
+
+      const required = Number(item.planned_quantity);
 
       const available =
         stockMap[item.raw_material_id] ?? 0;
@@ -240,15 +243,16 @@ export default async function ProductionOrderPage({
         {ingredients?.length ? (
           <div className="space-y-3">
             {ingredients.map((item: RecipeItem) => {
-              const material =
-                materialMap.get(item.raw_material_id);
+              const material = item.raw_material_id
+                ? materialMap.get(item.raw_material_id)
+                : undefined;
 
-              const required =
-                Number(item.quantity) *
-                Number(order.planned_quantity);
+              const required = Number(item.planned_quantity);
 
               const available =
-                stockMap[item.raw_material_id] ?? 0;
+                item.raw_material_id
+                  ? stockMap[item.raw_material_id] ?? 0
+                  : 0;
 
               const enough = available >= required;
 
@@ -260,7 +264,7 @@ export default async function ProductionOrderPage({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-medium">
-                        {material?.name ?? '-'}
+                        {material?.name ?? (item.raw_material_id ? '-' : 'Producto intermedio no admitido')}
                       </div>
 
                       <div className="text-sm text-gray-500">
@@ -283,7 +287,7 @@ export default async function ProductionOrderPage({
 
                   <div className="mt-3 grid gap-2 text-sm text-gray-600 md:grid-cols-3">
                     <div>
-                      Fórmula: {item.quantity}
+                      Plan capturado: {item.planned_quantity}
                     </div>
 
                     <div>

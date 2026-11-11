@@ -5,7 +5,13 @@ import type {
 
 type RecipeInsert = PublicTableInsert<'recipes'>;
 type RecipeUpdate = PublicTableUpdate<'recipes'>;
-type RecipeItemInsert = PublicTableInsert<'recipe_items'>;
+type RecipeItemInsert = {
+  recipe_id: string;
+  raw_material_id: string | null;
+  product_id: string | null;
+  quantity: number;
+};
+type RecipeItemUpdate = RecipeItemInsert & { id: string };
 type ValidatedRecipeInsert = RecipeInsert & { unit_of_measure_id: string };
 
 function requiredText(form: FormData, field: string): string {
@@ -49,13 +55,41 @@ export function buildRecipeInsert(form: FormData): ValidatedRecipeInsert {
 }
 
 export function buildRecipeUpdate(form: FormData, updatedAt: string): RecipeUpdate {
-  return { ...buildRecipeInsert(form), updated_at: updatedAt };
+  return {
+    name: requiredText(form, 'name'),
+    description: form.get('description')?.toString().trim() || null,
+    yield_quantity: positiveNumber(form, 'yield_quantity', 'El rendimiento'),
+    is_active: recipeState(form),
+    updated_at: updatedAt,
+  };
 }
 
 export function buildRecipeItemInsert(form: FormData): RecipeItemInsert {
+  const rawMaterialId = form.get('raw_material_id')?.toString().trim() || null;
+  const productId = form.get('product_id')?.toString().trim() || null;
+
+  if (Boolean(rawMaterialId) === Boolean(productId)) {
+    throw new Error('Selecciona una materia prima o un producto intermedio, pero no ambos.');
+  }
+
   return {
     recipe_id: requiredText(form, 'recipe_id'),
-    raw_material_id: requiredText(form, 'raw_material_id'),
+    raw_material_id: rawMaterialId,
+    product_id: productId,
     quantity: positiveNumber(form, 'quantity', 'La cantidad'),
+  };
+}
+
+export function buildRecipeItemUpdate(form: FormData): RecipeItemUpdate {
+  return {
+    ...buildRecipeItemInsert(form),
+    id: requiredText(form, 'id'),
+  };
+}
+
+export function buildRecipeItemDelete(form: FormData): { id: string; recipe_id: string } {
+  return {
+    id: requiredText(form, 'id'),
+    recipe_id: requiredText(form, 'recipe_id'),
   };
 }

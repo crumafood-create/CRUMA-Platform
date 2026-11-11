@@ -1,12 +1,17 @@
 'use client';
 
+import { useActionState } from 'react';
+
 interface Recipe {
   id: string;
   name: string;
 }
 
 interface Props {
-  action: (formData: FormData) => Promise<void>;
+  action: (
+    previousState: { error: string | null },
+    formData: FormData,
+  ) => Promise<{ error: string | null }>;
   idempotencyKey: string;
   recipes: Recipe[];
   initialValues?: {
@@ -22,9 +27,14 @@ export function ProductionOrderForm({
   recipes,
   initialValues,
 }: Props) {
+  const [state, formAction, isPending] = useActionState(
+    action,
+    { error: null },
+  );
+
   return (
     <form
-      action={action}
+      action={formAction}
       className="space-y-6 rounded-2xl border bg-white p-6"
     >
       <div>
@@ -49,6 +59,12 @@ export function ProductionOrderForm({
           ))}
         </select>
       </div>
+
+      {state.error && (
+        <p role="alert" aria-live="assertive" className="text-sm text-red-700">
+          {state.error}
+        </p>
+      )}
 
       <div>
         <label className="mb-2 block font-medium">
@@ -90,9 +106,10 @@ export function ProductionOrderForm({
 
       <button
         type="submit"
+        disabled={isPending}
         className="rounded border px-6 py-2"
       >
-        Crear Orden
+        {isPending ? 'Creando…' : 'Crear Orden'}
       </button>
     </form>
   );

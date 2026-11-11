@@ -1,4 +1,4 @@
-# Backlog de compras y gestión de materias primas
+# Backlog de compras, inventario y producción
 
 ## Contexto
 
@@ -14,6 +14,12 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
   - **Prioridad:** P2.
   - **Motivo:** cambiar de proveedor es necesario en algunos recorridos, pero la alternativa temporal es crear otro borrador; una orden confirmada no se modifica.
   - **Módulo propietario:** Procurement.
+
+- [ ] **#3.** Como administrador autorizado, quiero definir recetas de cada producto intermedio y producto final con sus ingredientes, cantidades y rendimiento esperado, para establecer las fórmulas estándar de producción.
+  - **Prioridad:** P1.
+  - **Motivo:** es el requisito directo para planificar la transformación de la masa; la historia #4 de órdenes de producción depende de esta definición.
+  - **Módulo propietario:** Production.
+  - **Estado:** pruebas automatizadas focales, typecheck y ESLint aprobados; las recetas reales de masa y Tequeños Party de queso se guardaron y consultaron en desarrollo; SQL con ROLLBACK comprobó restricciones, edición y rechazo sin escrituras parciales; el navegador mostró el rechazo claro y Supabase confirmó que no se creó una orden. Falta reconstrucción limpia y CI.
 
 ## Historias completadas
 

@@ -5,6 +5,7 @@ import type {
 } from '@/infrastructure/integrations/supabase/database.types';
 
 import {
+  assertRecipeSupportsProductionOrder,
   createProductionOrderDraft,
   transitionProductionOrderLifecycle,
 } from './production-order-lifecycle-repository';
@@ -35,6 +36,74 @@ const TRANSITION_REQUEST = {
 describe(
   'repositorio del ciclo de vida de órdenes de producción',
   () => {
+    it('permite órdenes con ingredientes de materias primas', async () => {
+      const client = {
+        from: () => {
+          const query = {
+            select: () => query,
+            eq: () => query,
+            then: (resolve: (result: unknown) => unknown) =>
+              Promise.resolve({
+                data: [{ product_id: null }, { product_id: null }],
+                error: null,
+              }).then(resolve),
+          };
+
+          return query;
+        },
+      } as unknown as TypedSupabaseClient;
+
+      await expect(
+        assertRecipeSupportsProductionOrder(client, UUIDS.recipe),
+      ).resolves.toBeUndefined();
+    });
+
+    it('rechaza antes de crear una orden si la receta usa un producto intermedio', async () => {
+      const client = {
+        from: () => {
+          const query = {
+            select: () => query,
+            eq: () => query,
+            then: (resolve: (result: unknown) => unknown) =>
+              Promise.resolve({
+                data: [{ product_id: 'dough-product' }],
+                error: null,
+              }).then(resolve),
+          };
+
+          return query;
+        },
+      } as unknown as TypedSupabaseClient;
+
+      await expect(
+        assertRecipeSupportsProductionOrder(client, UUIDS.recipe),
+      ).rejects.toThrow(
+        'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.',
+      );
+    });
+
+    it('propaga errores al comprobar compatibilidad de la receta', async () => {
+      const client = {
+        from: () => {
+          const query = {
+            select: () => query,
+            eq: () => query,
+            then: (resolve: (result: unknown) => unknown) =>
+              Promise.resolve({
+                data: null,
+                error: { message: 'No se pudieron leer ingredientes.' },
+              }).then(resolve),
+          };
+
+          return query;
+        },
+      } as unknown as TypedSupabaseClient;
+
+      await expect(
+        assertRecipeSupportsProductionOrder(client, UUIDS.recipe),
+      ).rejects.toThrow('No se pudieron leer ingredientes.');
+    });
+
     it(
       'delega la creación completa a una RPC',
       async () => {

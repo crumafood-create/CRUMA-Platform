@@ -15,7 +15,7 @@ export default async function NewRecipePage() {
   ] = await Promise.all([
     supabase
       .from('products')
-      .select('id, name')
+      .select('id, name, unit_of_measure_id')
       .is('deleted_at', null)
       .eq('status', 'active')
       .order('name'),
@@ -30,6 +30,17 @@ export default async function NewRecipePage() {
   if (productsError || unitsError) {
     throw new Error('No se pudieron cargar los datos para crear la receta.');
   }
+
+  const unitLabels = new Map(
+    (unitsOfMeasure ?? []).map((unit) => [unit.id, `${unit.code} - ${unit.name}`]),
+  );
+  const recipeProducts = (products ?? []).flatMap((product) => {
+    const unitLabel = product.unit_of_measure_id
+      ? unitLabels.get(product.unit_of_measure_id)
+      : undefined;
+
+    return unitLabel ? [{ id: product.id, name: product.name, unitLabel }] : [];
+  });
 
   return (
     <main className="space-y-6">
@@ -48,7 +59,7 @@ export default async function NewRecipePage() {
 
       <RecipeForm
         action={createRecipe}
-        products={products ?? []}
+        products={recipeProducts}
         unitsOfMeasure={unitsOfMeasure ?? []}
       />
     </main>

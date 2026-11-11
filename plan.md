@@ -1,4 +1,4 @@
-# Plan de compras y gestión de materias primas
+# Plan de historias de CRUMAFOOD
 
 ## MP-01 completada: comprar presentaciones comerciales y convertirlas a unidad base
 
@@ -240,3 +240,89 @@ La lista ahora usa la consulta Supabase tipada, la relación de proveedor, exclu
 Pruebas automatizadas: 3 nuevas pruebas para la orden parcial de prueba, su enlace y el detalle con 25 kg recibidos/25 kg pendientes; 5 pruebas existentes de recepción aprobadas. Typecheck y ESLint enfocado aprobados.
 
 Verificación manual en desarrollo: `/mobile/receiving` mostró `PO-20261109-8B53C4` (Antojos to go, parcialmente recibida); al abrirla, el detalle mostró 50 kg esperados, 25 kg recibidos y 25 kg pendientes. Se observaron también `Avance 0 / 1`, `Partidas recibidas 0` y `Pendientes 1`; su interpretación no se incluyó en WH-01.
+
+## Recetas #3 activa: definir recetas de masa y productos finales
+
+### Historia propuesta
+
+Como administrador autorizado, quiero definir recetas de cada producto intermedio y producto final con sus ingredientes, cantidades y rendimiento esperado, para establecer las fórmulas estándar de producción.
+
+**Propietario: Production**, conforme a `docs/architecture/business-core.md` (recetas, rendimiento, órdenes y consumos). Los productos y sus unidades base siguen siendo datos de Catalog.
+
+### Modelo actual y cambio mínimo propuesto
+
+- `recipes` ya asocia una fórmula con su producto de salida (`product_id`) y guarda `yield_quantity` y `unit_of_measure_id`. Cada variedad de masa será un producto de catálogo distinto con su propia receta; la fórmula de la masa actual tendrá unidad kg y rendimiento estándar 2.
+- `products` ya incluye `unit_of_measure_id`; no hace falta agregar otra unidad al producto ni una tabla de empaques.
+- Fórmula real confirmada por el usuario para el lote estándar de masa: **530 g de agua, 30 g de sal, 30 g de azúcar, 180 g de margarina y 1,230 g de harina de trigo**, total **2,000 g = 2 kg**. Para este conjunto de ingredientes pesados, se acordó usar **kg como unidad base común**; en receta equivale a 0.53 kg de agua, 0.03 kg de sal, 0.03 kg de azúcar, 0.18 kg de margarina y 1.23 kg de harina. El recorrido de navegador en desarrollo mostró las cinco materias primas activas con unidad kg.
+- Al preparar el recorrido, el catálogo mostró 30 kg de Harina de trigo con costo promedio $28.17/kg. Agua, Sal, Azúcar y Margarina quedaron con stock y costo cero; el stock inicial físico sigue fuera de esta historia.
+- Tequeño Party de queso: el usuario indicó aproximadamente **1 kg de queso por lote de 100 piezas**, además de 2 kg de la masa estándar. El usuario creó **Queso cheddar fuerte** como materia prima activa en kg, con stock y costos en cero.
+- Preparación manual en navegador: se creó el producto activo `Masa estándar` (`PRD-MASA-ESTA`, slug `masa-estandar`) sin categoría ni familia. Su unidad base quedó confirmada como kg; su Kardex muestra stock actual cero y ninguna fila de movimientos.
+- El producto existente `Tequeños Party Queso Crudos` (`TEQ-PARTY-QUESO-CRU`) conserva su identidad y se confirmó con unidad base pieza. Su Kardex muestra stock cero y ninguna fila de movimientos; el catálogo lo había encontrado sin unidad ni receta antes de completar la unidad base.
+- En el recorrido manual se creó y consultó `Receta Masa estándar CRUMAFOOD` (ID `523b7984-68a7-4b70-9691-c13305ab7ff3`), activa, asociada a `Masa estándar`, rendimiento **2 kg**, descripción “Fórmula estándar para un lote de 2 kg”. Sus cinco ingredientes quedaron registrados en la unidad base común kg.
+- La edición/captura manual dejó los ingredientes de la receta de masa en kg: Agua **0.53**, Azúcar **0.03**, Sal **0.03**, Margarina **0.18** y Harina de trigo **1.23**; total **2.00 kg**, conforme a la fórmula confirmada.
+- El navegador mostró la receta activa `Receta Tequeños Party Queso`, asociada al producto existente `Tequeños Party Queso Crudos`, con rendimiento esperado **100 pza** y los ingredientes **2 kg de Masa estándar + 1 kg de Queso cheddar fuerte**.
+- Cada tamaño y relleno es una combinación de producto final con receta propia. Tequeños: tradicional/Party × queso/pizza (pepperoni con queso)/chocolate. Empanadas: tradicional/minis × queso/jamón con queso. La primera combinación validada es Tequeño Party de queso; las demás se cargarán con sus fórmulas cuando se definan.
+- Las recetas se podrán ajustar en ingredientes, cantidades y rendimiento; el producto de salida de una receta no se reasigna. El cambio aplica a órdenes nuevas; las órdenes ya creadas conservan su plan capturado en `production_order_items`.
+- `recipe_items` solo admite `raw_material_id` y `quantity`. No puede expresar que una receta final consume el producto intermedio masa.
+- Cambio mínimo propuesto en BD: agregar a `recipe_items` una referencia nullable `product_id` a `products`; permitir `raw_material_id` nulo y exigir mediante restricción que exactamente una referencia tenga valor. Un índice único parcial limita cada receta a una sola referencia de producto intermedio. La unidad del ingrediente producto es la unidad base de ese producto; la unidad de rendimiento de cada receta debe corresponder a la unidad base de su producto de salida.
+- El formulario y la lectura de ingredientes distinguirán materias primas de productos intermedios y mostrarán su unidad. La validación permitirá materias primas con existencia cero, verificará referencias y rechazará que una receta use su propio producto de salida.
+- Hasta la historia #4, tanto la acción de crear órdenes como la RPC `create_production_order_draft` rechazarán recetas con ingredientes producto antes de escribir, con un mensaje claro. No se adaptan aún creación de lotes, escalado, reparto, consumo ni rendimiento real.
+
+### Criterios aprobados
+
+- [ ] Dada una variedad intermedia, cuando se guarda su receta, entonces queda asociada a su producto propio, conserva ingredientes en unidades base y declara su rendimiento en la unidad base del producto. Para la masa actual, el rendimiento estándar es **2 kg**.
+- [ ] Dada una receta final, cuando se guarda, entonces puede usar una sola variedad específica de masa y materias primas adicionales, y declara el rendimiento esperado en la unidad base del producto final. Para validar la masa actual y Tequeño Party de queso: **2 kg de masa + aproximadamente 1 kg de queso producen 100 piezas**; otras masas y productos pueden configurar sus propios rendimientos.
+- [ ] Dado un ingrediente, cuando se guarda, entonces referencia exactamente una materia prima o un producto intermedio válido; se permite una materia prima sin stock, se rechaza que la receta use su propio producto de salida y las recetas solo de materias primas conservan su comportamiento. Mientras #4 no esté disponible, una orden con ingrediente producto se rechaza en servidor/RPC sin crear escrituras y con un mensaje claro.
+- [ ] Dada una receta guardada, cuando se editan sus ingredientes, cantidades o rendimiento, entonces se valida y consulta la nueva fórmula; la identidad del producto de salida permanece fija. Las órdenes ya creadas conservan su plan de ingredientes capturado, y las nuevas órdenes usan la fórmula actualizada.
+
+### Pruebas aprobadas
+
+| Caso | Capa |
+|---|---|
+| Guardar receta de masa con materias primas, unidad de salida kg y rendimiento 2 | Contrato/acción y persistencia de Production |
+| Guardar y consultar la receta de la masa actual (2 kg) y la de Tequeños Party (2 kg de esa variedad, rendimiento esperado 100 piezas), con ingredientes, cantidades y unidades | Contrato, validación de referencias, persistencia y lectura de Production |
+| Guardar materias primas en una receta aun cuando su stock sea cero | Acción/repositorio y prueba de persistencia SQL |
+| Rechazar una segunda variedad de masa en la misma receta y que una receta use su propio producto de salida | Acción/repositorio, índice único y protección SQL |
+| Rechazar renglón sin referencia, con referencia indisponible o con materia prima y producto simultáneos; preservar filas existentes | Contrato/acción y restricción SQL |
+| Confirmar FK de producto, exclusividad de referencias y compatibilidad de filas históricas solo con `raw_material_id` | SQL de migración sobre reconstrucción limpia y datos existentes |
+| Mostrar nombres y unidades correctos; conservar el rendimiento en unidad de salida y empaque fuera de la fórmula | Pruebas de formulario/lectura |
+| Editar rendimiento e ingredientes, validar referencias, consultar fórmula actualizada y confirmar que órdenes existentes conservan su plan mientras nuevas órdenes usan la fórmula actual | Contrato/acción, UI y SQL de ciclo de producción |
+| Rechazar receta con ingrediente producto antes de escribir desde la acción y desde `create_production_order_draft`, con error claro; confirmar que recetas solo de materias primas siguen creando órdenes | Prueba de acción/repositorio y prueba SQL/RPC con rollback |
+| Repetir pruebas actuales de recetas con materias primas y `production_order_lifecycle` | Regresión focal |
+
+### Fuera de alcance y dependencias
+
+- Crear lotes de masa, compartir un mismo lote entre órdenes, escalado desde rendimiento, asignación/consumo por orden, control de sobreconsumo y registro de salidas reales: historia #4, órdenes de producción.
+- Reponer inventario a partir de una orden parcial, registrar mermas o modificar stock desde la receta.
+- Crear gestión de empaques, empaques de tequeños o equivalencias distintas de las confirmadas arriba.
+- Activar recetas nuevas en las órdenes actuales antes de implementar y validar el consumo de ingredientes producto en la historia #4.
+
+Prioridad **P1**. La historia #3 y estos criterios/pruebas están aprobados para implementación.
+
+### Avance de implementación
+
+- La captura y lectura de ingredientes ya contempla materias primas y una variedad intermedia, mostrando sus unidades. El servidor valida referencias activas, permite materias primas con stock cero, limita a una variedad de masa por receta y rechaza el producto de salida como ingrediente.
+- La migración `20261109000000_add_intermediate_recipe_ingredients.sql` se aplicó a Supabase de desarrollo `poglpqvmbrfcvtuspvtx`, tras confirmar que el simulacro listaba únicamente esa versión. El historial registra la versión.
+- Consulta remota: `recipe_items.product_id` es UUID; `raw_material_id` acepta NULL; el FK, check de exactamente una referencia, dos índices parciales y ambos triggers están presentes y habilitados. Las funciones trigger son `SECURITY INVOKER` y mantienen `search_path` vacío.
+- `production_order_lifecycle.sql` se ejecutó manualmente en desarrollo. Persistió y consultó fixtures sintéticos de una receta intermedia (rendimiento 2 kg, materia prima en cantidad 1.25 con stock cero) y una receta final (2 kg de esa masa, rendimiento 100 piezas); confirmó que los renglones almacenados referencian exactamente una materia prima o producto; rechazó referencias ausentes o simultáneas, el producto de salida como ingrediente, una segunda masa y la creación de una orden con ingrediente intermedio, sin dejar escrituras parciales. El archivo terminó con `ROLLBACK`; una consulta posterior confirmó cero fixtures persistidos.
+- El primer intento SQL reveló que `auth.users` crea automáticamente `profiles`; se retiró la inserción redundante de perfiles y se repitió el archivo completo con éxito.
+- Tipos regenerados desde el esquema remoto y revisión del diff: solo cambió el contrato de `recipe_items`, las relaciones nuevas del FK a producto y el boilerplate del generador (marcador PostgREST y formato de aliases genéricos). No hubo diferencias en otras tablas, funciones o enums; el archivo generado no se editó manualmente.
+- Edición implementada: nombre, descripción, estado y rendimiento son editables; el contrato no recibe ni modifica producto de salida o unidad. Los renglones existentes se pueden actualizar y eliminar, con autorización, validación de referencias y alcance por `recipe_id`.
+- La pantalla de la orden ahora lee `production_order_items.planned_quantity`, la cantidad capturada al crearla, en lugar de recalcular desde la receta vigente. El SQL de ciclo incluye una comprobación de que las órdenes existentes conservan el plan y las nuevas usan la receta editada.
+- En el worktree aislado desde `origin/main`: 52 pruebas focales de recetas aprobadas, 80 de órdenes de producción y 4 de formularios; typecheck y lint completo aprobados. La primera ejecución de órdenes detectó un cast innecesario; se cambió a la selección tipada de `product_id` y la suite completa pasó al repetirla.
+- La inspección del snapshot reveló que RLS estaba activo en `production_order_items` sin política de lectura. Se aplicó `20261110000000_allow_admin_read_production_order_items.sql` en Supabase de desarrollo `poglpqvmbrfcvtuspvtx`; el historial registra la versión. La política concede lectura solo a `authenticated` cuando `public.is_admin(auth.uid())` es verdadero.
+- `production_order_lifecycle.sql` pasó completo en desarrollo con la cobertura de snapshot antes/después de editar receta y lectura RLS admin/no-admin. El script terminó con `ROLLBACK`; una consulta de solo lectura confirmó cero productos fixture, cero operaciones de ciclo persistentes y la política instalada.
+- El primer intento en navegador para crear una orden con `Receta Tequeños Party Queso` mostró el error genérico (referencia `539991539`). Tras tipar esa condición de negocio y mostrarla en el formulario, se repitió el recorrido: apareció “Las órdenes de producción todavía no admiten productos intermedios como ingredientes.” La consulta de solo lectura a `production_orders` por las notas de ambos intentos (`PRUEBA-BLOQUEO-MASA-20261111` y `PRUEBA-BLOQUEO-MASA-20261111-2`) devolvió cero filas. La primera consulta incluyó por error una columna `status` inexistente y se corrigió retirándola; no modificó datos.
+- Verificación local adicional de la corrección del rechazo: 11 pruebas en 2 archivos aprobadas, incluyendo la presentación del mensaje en el formulario; typecheck y ESLint focal aprobados.
+- Revisión estática de `.github/workflows/ci.yml` y `package.json`: el job `database` inicia Supabase local y ejecuta `db:verify`; este reconstruye la base con `db:reset:test`, incluye `production_order_lifecycle.sql` mediante `db:test:security` y termina con `db:types:check`. Esta inspección confirma que CI está conectado, pero no sustituye una ejecución aprobada en CI.
+- Pendiente: reconstrucción limpia y CI. El recorrido de navegador del rechazo de la orden con producto intermedio quedó aprobado y se confirmó que no creó órdenes. El recorrido de recetas reales de masa y Tequeño Party de queso también se realizó; los valores del fixture SQL son sintéticos y no representan la fórmula real de CRUMAFOOD.
+
+## Requisito registrado para historia #4: producción e inventario
+
+La historia #4 permanece pendiente de refinamiento. Además de lotes de masa compartidos entre órdenes, cantidades planificadas frente a consumos y rendimientos reales, incluye esta regla confirmada:
+
+- Cada porción de un lote de producto terminado identifica la preparación, la condición de almacenamiento y la cantidad en piezas.
+- Al congelar una porción, se descuentan sus piezas del saldo de origen y se agregan al saldo congelado, conservando la trazabilidad.
+- Los envíos foráneos usan el saldo congelado solo para productos habilitados en la ruta correspondiente.
+
+No se inicia implementación de esta historia dentro de REC-03. En su refinamiento se precisará cómo interactúan Production, Inventory y el flujo de envíos con las fuentes de saldo y la autorización vigente.\n

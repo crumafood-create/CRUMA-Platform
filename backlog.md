@@ -2,7 +2,7 @@
 
 ## Contexto
 
-Se trabaja en CRUMAFOOD con una planta, operación conectada, español, MXN y la autorización global vigente. La unidad base del catálogo ya está definida y protegida. MP-01 y WH-01 quedaron completadas y validadas en desarrollo. MP-02 es la historia activa con prioridad P2.
+Se trabaja en CRUMAFOOD con una planta, operación conectada, español, MXN y la autorización global vigente. La unidad base del catálogo ya está definida y protegida. MP-01 y WH-01 quedaron completadas y validadas en desarrollo. MP-02 quedó completada y validada por CI en el PR #129.
 
 Stack: el existente en CRUMA, sin cambios propuestos.
 
@@ -10,10 +10,7 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
 
 ## Historias activas
 
-- [ ] **MP-02.** Como responsable de compras, quiero cambiar el proveedor de una orden borrador conservando sus renglones, para revisar y corregir sus precios antes de confirmarla.
-  - **Prioridad:** P2.
-  - **Motivo:** cambiar de proveedor es necesario en algunos recorridos, pero la alternativa temporal es crear otro borrador; una orden confirmada no se modifica.
-  - **Módulo propietario:** Procurement.
+Sin historias activas en este alcance.
 
 - [x] **#3.** Como administrador autorizado, quiero definir recetas de cada producto intermedio y producto final con sus ingredientes, cantidades y rendimiento esperado, para establecer las fórmulas estándar de producción.
   - **Prioridad:** P1.
@@ -22,6 +19,12 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
   - **Validación:** CI #4198 aprobó reconstrucción desde cero, migraciones, `production_order_lifecycle.sql`, `db:types:check`, typecheck, lint, pruebas, build y Storybook. En desarrollo se guardaron y consultaron las recetas reales de masa y Tequeños Party de queso; SQL con `ROLLBACK` comprobó restricciones, edición y rechazo sin escrituras parciales; el navegador mostró el rechazo claro y Supabase confirmó que no se creó una orden.
 
 ## Historias completadas
+
+- [x] **MP-02.** Como responsable de compras, quiero cambiar el proveedor de una orden borrador conservando sus renglones, para revisar y corregir sus precios antes de confirmarla.
+  - **Prioridad:** P2.
+  - **Motivo:** cambiar de proveedor es necesario en algunos recorridos, y la alternativa temporal es crear otro borrador.
+  - **Módulo propietario:** Procurement.
+  - **Validación:** 85 pruebas automatizadas locales en 9 archivos, typecheck y lint focal aprobados; recorrido manual aprobado; prueba SQL aprobada en CI del PR #129 (workflow 4193). Fusionado en `main` como `7fa3bf93`.
 
 - [x] **MP-01.** Como responsable de compras, quiero registrar la presentación y el precio comercial de cada compra y convertir la cantidad a la unidad base de la materia prima, para comparar y recibir compras sin duplicar artículos.
   - **Prioridad:** P1.

@@ -1209,7 +1209,8 @@ BEGIN
 
   IF NOT close_rejected THEN
     RAISE EXCEPTION
-      'mass completion did not reject an excessive per-lot surplus';
+      'mass completion did not reject an excessive per-lot surplus; received check violation: %',
+      coalesce(rejection_message, '<none>');
   END IF;
 
   IF NOT EXISTS (

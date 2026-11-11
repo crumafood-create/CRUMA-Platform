@@ -298,9 +298,9 @@ BEGIN
 
   SELECT jsonb_agg(
     jsonb_build_object(
-      'product_lot_id', allocation.product_lot_id,
-      'quantity', allocation.quantity
-    ) ORDER BY allocation.product_lot_id
+      'product_lot_id', aggregated_allocation.product_lot_id,
+      'quantity', aggregated_allocation.quantity
+    ) ORDER BY aggregated_allocation.product_lot_id
   )
   INTO requested_allocations
   FROM (

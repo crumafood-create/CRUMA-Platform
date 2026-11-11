@@ -81,10 +81,12 @@ export async function getProductionDetail(
   const items = await Promise.all(
     detail.items.map(async (item) => ({
       ...item,
-      suggested_lot: await getSuggestedRawMaterialLot(
-        supabase,
-        item.raw_material_id,
-      ),
+      suggested_lot: item.raw_material_id
+        ? await getSuggestedRawMaterialLot(
+            supabase,
+            item.raw_material_id,
+          )
+        : null,
     })),
   );
 

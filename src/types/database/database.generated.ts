@@ -5090,8 +5090,9 @@ export type Database = {
           created_at: string
           id: string
           planned_quantity: number
+          product_id: string | null
           production_order_id: string
-          raw_material_id: string
+          raw_material_id: string | null
           status: string
           updated_at: string
         }
@@ -5100,8 +5101,9 @@ export type Database = {
           created_at?: string
           id?: string
           planned_quantity?: number
+          product_id?: string | null
           production_order_id: string
-          raw_material_id: string
+          raw_material_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -5110,12 +5112,34 @@ export type Database = {
           created_at?: string
           id?: string
           planned_quantity?: number
+          product_id?: string | null
           production_order_id?: string
-          raw_material_id?: string
+          raw_material_id?: string | null
           status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "production_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "production_order_items_production_order_id_fkey"
             columns: ["production_order_id"]
@@ -5219,6 +5243,86 @@ export type Database = {
             columns: ["recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_order_product_lot_reservations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          product_lot_id: string
+          production_order_id: string
+          production_order_item_id: string
+          reserved_quantity: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          product_lot_id: string
+          production_order_id: string
+          production_order_item_id: string
+          reserved_quantity: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          product_lot_id?: string
+          production_order_id?: string
+          production_order_item_id?: string
+          reserved_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_order_product_lot_rese_production_order_item_id_fkey"
+            columns: ["production_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "production_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reservati_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reservations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reservations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reservations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reservations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reservations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
             referencedColumns: ["id"]
           },
         ]
@@ -8561,6 +8665,14 @@ export type Database = {
           p_idempotency_key: string
           p_labor_cost: number
           p_overhead_cost: number
+          p_production_order_id: string
+        }
+        Returns: string
+      }
+      start_production_order_with_mass_lot_reservations: {
+        Args: {
+          p_idempotency_key: string
+          p_lot_allocations: Json
           p_production_order_id: string
         }
         Returns: string

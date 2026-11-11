@@ -147,6 +147,46 @@ describe('repositorio tipado de producción móvil', () => {
     ]);
   });
 
+  it('excluye ingredientes de productos intermedios del flujo móvil FEFO de materias primas', async () => {
+    const { client, calls } = clientWith({
+      production_orders: { data: canonicalOrder, error: null },
+      recipes: { data: [{ id: 'recipe-1', name: 'Masa clásica' }], error: null },
+      production_order_items: {
+        data: [
+          {
+            id: 'item-material',
+            raw_material_id: 'material-1',
+            planned_quantity: 4,
+            consumed_quantity: 0,
+            status: 'pending',
+          },
+          {
+            id: 'item-intermediate',
+            raw_material_id: null,
+            planned_quantity: 2,
+            consumed_quantity: 0,
+            status: 'pending',
+          },
+        ],
+        error: null,
+      },
+      raw_materials: {
+        data: [{ id: 'material-1', name: 'Harina de trigo' }],
+        error: null,
+      },
+    });
+
+    const detail = await fetchMobileProductionDetail(client, 'order-1');
+
+    expect(detail.items.map((item) => item.id)).toEqual(['item-material']);
+    expect(calls.map((call) => call.table)).toEqual([
+      'production_orders',
+      'recipes',
+      'production_order_items',
+      'raw_materials',
+    ]);
+  });
+
   it('rechaza órdenes inexistentes', async () => {
     const { client } = clientWith({
       production_orders: { data: null, error: null },

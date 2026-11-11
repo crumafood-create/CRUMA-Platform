@@ -110,9 +110,7 @@ export default async function ProductionOrderPage({
     .order('created_at', { ascending: true });
   if (ingredientsError) throw new Error('No fue posible cargar el plan de materiales de la orden.');
 
-  // product_id is introduced by the versioned story #4 migration; the
-  // checked-in generated snapshot is refreshed from the migrated schema in CI.
-  const ingredients = (ingredientRows ?? []) as unknown as RecipeItem[];
+  const ingredients: RecipeItem[] = ingredientRows ?? [];
 
   const ingredientIds = (ingredients ?? []).flatMap((item: RecipeItem) =>
     item.raw_material_id ? [item.raw_material_id] : [],

@@ -74,21 +74,7 @@ export async function startProductionOrderWithMassLotReservations(
   supabase: TypedSupabaseClient,
   request: ProductionOrderMassStartRequest,
 ): Promise<string> {
-  // The RPC contract is created by the adjacent versioned migration. The
-  // generated database snapshot is refreshed after applying migrations.
-  const startMassLotsRpc = supabase.rpc.bind(supabase) as unknown as (
-    functionName: 'start_production_order_with_mass_lot_reservations',
-    args: {
-      p_production_order_id: string;
-      p_lot_allocations: { product_lot_id: string; quantity: number }[];
-      p_idempotency_key: string;
-    },
-  ) => Promise<{
-    data: string | null;
-    error: { message: string } | null;
-  }>;
-
-  const { data, error } = await startMassLotsRpc(
+  const { data, error } = await supabase.rpc(
     'start_production_order_with_mass_lot_reservations',
     {
       p_production_order_id: request.productionOrderId,

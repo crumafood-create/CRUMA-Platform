@@ -228,9 +228,9 @@ export async function startProductionOrder(
 
     if (error) throw new Error(error.message);
 
-    const hasMassIngredient = ((massItems ?? []) as unknown as Array<{
-      product_id: string | null;
-    }>).some((item) => item.product_id !== null);
+    const hasMassIngredient = (massItems ?? []).some(
+      (item) => item.product_id !== null,
+    );
 
     if (hasMassIngredient) {
       const reservations = [...formData.entries()]

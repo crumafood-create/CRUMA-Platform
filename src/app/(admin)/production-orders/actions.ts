@@ -38,7 +38,7 @@ async function validateRecipeStockAvailability(
 ) {
   const { data: recipe, error: recipeError } = await supabase
     .from('recipes')
-    .select('id')
+    .select('id, yield_quantity')
     .eq('id', recipeId)
     .single();
 
@@ -72,6 +72,7 @@ async function validateRecipeStockAvailability(
     const required = calculateRequiredQuantity(
       item.quantity,
       plannedQuantity,
+      recipe.yield_quantity,
     );
 
     const { data: lots, error: lotsError } =

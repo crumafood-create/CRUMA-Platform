@@ -141,6 +141,14 @@ VALUES
     100,
     'e1210000-0000-4000-8000-000000000002',
     true
+  ),
+  (
+    'e1300000-0000-4000-8000-000000000004',
+    'e1200000-0000-4000-8000-000000000001',
+    'Lifecycle Scaled Recipe',
+    100,
+    'e1210000-0000-4000-8000-000000000002',
+    true
   );
 
 INSERT INTO public.raw_materials (
@@ -175,6 +183,19 @@ INSERT INTO public.recipe_items (
 VALUES (
   'e1450000-0000-4000-8000-000000000001',
   'e1300000-0000-4000-8000-000000000001',
+  'e1400000-0000-4000-8000-000000000001',
+  2
+);
+
+INSERT INTO public.recipe_items (
+  id,
+  recipe_id,
+  raw_material_id,
+  quantity
+)
+VALUES (
+  'e1450000-0000-4000-8000-000000000004',
+  'e1300000-0000-4000-8000-000000000004',
   'e1400000-0000-4000-8000-000000000001',
   2
 );
@@ -822,6 +843,38 @@ BEGIN
   ) THEN
     RAISE EXCEPTION
       'cancellation audit is inconsistent';
+  END IF;
+END;
+$test$;
+
+-- Planned ingredient quantities scale by the recipe's expected yield.
+SELECT public.create_production_order_draft(
+  'e1300000-0000-4000-8000-000000000004',
+  50,
+  'Escalado de rendimiento',
+  'e1500000-0000-4000-8000-000000000013'
+);
+
+DO $test$
+DECLARE
+  scaled_order_id uuid;
+BEGIN
+  SELECT production_order_id
+  INTO scaled_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key =
+    'e1500000-0000-4000-8000-000000000013';
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.production_order_items
+    WHERE production_order_id = scaled_order_id
+      AND raw_material_id =
+        'e1400000-0000-4000-8000-000000000001'
+      AND planned_quantity = 1
+  ) THEN
+    RAISE EXCEPTION
+      '50 of 100 expected pieces must plan half of the 2 kg recipe ingredient';
   END IF;
 END;
 $test$;

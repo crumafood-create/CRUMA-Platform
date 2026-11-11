@@ -321,12 +321,37 @@ Prioridad **P1**. La historia #3 y estos criterios/pruebas están aprobados para
 - CI #4198 aprobó el commit final: reconstrucción limpia, `db:verify` completo (incluidos SQL/RLS y `db:types:check`), typecheck, lint, pruebas, build y Storybook. El recorrido de navegador del rechazo de la orden con producto intermedio quedó aprobado y se confirmó que no creó órdenes. El recorrido de recetas reales de masa y Tequeño Party de queso también se realizó; los valores del fixture SQL son sintéticos y no representan la fórmula real de CRUMAFOOD.
 - Verificación local después de los correctivos: 51 pruebas focales en 5 archivos, typecheck, lint y `git diff --check` aprobados; se incorporó el archivo generado completo desde CI. No se pudo reconstruir Supabase en este entorno porque Docker Desktop no estaba disponible; la reconstrucción y la prueba SQL se validaron en CI #4198.
 
-## Requisito registrado para historia #4: producción e inventario
+## Historia #4: órdenes de producción
 
-La historia #4 permanece pendiente de refinamiento. Además de lotes de masa compartidos entre órdenes, cantidades planificadas frente a consumos y rendimientos reales, incluye esta regla confirmada:
+**Estado:** activa; criterios aprobados para implementación. **Propietario:** Production. Inventory conserva saldos, apartados y movimientos; Quality libera lotes. Depende de REC-03, completada.
 
-- Cada porción de un lote de producto terminado identifica la preparación, la condición de almacenamiento y la cantidad en piezas.
-- Al congelar una porción, se descuentan sus piezas del saldo de origen y se agregan al saldo congelado, conservando la trazabilidad.
-- Los envíos foráneos usan el saldo congelado solo para productos habilitados en la ruta correspondiente.
+### Criterios de aceptación
 
-No se inicia implementación de esta historia dentro de REC-03. En su refinamiento se precisará cómo interactúan Production, Inventory y el flujo de envíos con las fuentes de saldo y la autorización vigente.\n
+1. La orden estima ingredientes como cantidad de receta multiplicada por piezas planeadas y dividida por el rendimiento esperado. Ejemplo: 50 piezas Party de una receta de 100 piezas y 2 kg de masa estiman 1 kg. La planificación no aparta stock.
+2. Al iniciar, el operador selecciona uno o varios lotes liberados de la misma variedad y pesa lo retirado de cada uno. Inventory aparta esas cantidades de manera atómica; órdenes concurrentes no pueden apartar más de lo disponible.
+3. Al cerrar, se registran las piezas reales y el sobrante pesado por lote. Consumo = masa retirada − sobrante. El sobrante permanece fuera del disponible hasta un único destino: incorporarlo a la siguiente preparación de la misma variedad o registrarlo como merma. Todo sobrante debe resolverse al cierre del día, con origen conservado.
+
+### Prueba de aceptación acordada
+
+Planear 50 piezas; retirar 1,050 g de dos lotes; cerrar con 48 piezas reales, 150 g de sobrante pesado y 900 g de consumo calculado por diferencia. Incorporar los 150 g una sola vez a la receta estándar de 2 kg, que mantiene sus cantidades habituales de ingredientes. Registrar por separado el sobrante incorporado y el peso real medido; 2.15 kg es esperado, no un valor impuesto. Verificar que el sobrante solo se cuente una vez en Inventory y que el nuevo lote quede disponible únicamente después de Calidad.
+
+### Plan de implementación y pruebas
+
+1. **Escalado del plan:** prueba SQL de la RPC con rendimiento distinto de 1 (50 de 100 piezas y receta de 2 kg → 1 kg planeado); añadir unitarias focales solo si protegen una regla reutilizada.
+2. **Lote y apartado al inicio:** pruebas SQL de lotes liberados de variedad coincidente, selección de varios lotes, cantidades pesadas, disponibilidad concurrente, rechazo atómico e idempotencia.
+3. **Cierre por diferencia:** registrar peso retirado, sobrante separado por lote, consumo calculado y piezas reales; verificar que los movimientos y saldos de Inventory concilien.
+4. **Destino único del sobrante:** probar espera fuera del saldo disponible, incorporación a nueva preparación (origen trazable, suma única y peso real del lote), descarte como merma, rechazo de segundo destino y resolución al cierre del día.
+5. **Compatibilidad y revisión:** mantener recetas solo de materias primas, cuarentena/liberación de Calidad y regresión del ciclo de órdenes; actualizar tipos generados si cambia el esquema.
+
+La prueba automatizada cubre como aceptación los 1,050 g retirados, 900 g consumidos, 150 g sobrantes y 48 piezas reales. Pruebas SQL transaccionales incluyen concurrencia; la reconstrucción limpia y el recorrido de navegador se documentarán por separado.
+
+### Fuera de esta primera entrega
+
+Repartir producto terminado por preparación y condición de almacenamiento, transferir saldos a congelado y limitar envíos foráneos por ruta quedan para una entrega posterior, según el requisito diferido de `pendientes.md`. No se implementan empaques ni se cambian recetas históricas.
+
+### Primer ciclo TDD
+
+Probar primero que la planificación divide las cantidades de ingredientes por el rendimiento de la receta. La prueba debe mostrar que 50 piezas de una receta Party de 100, cuya fórmula usa 2 kg de masa, generan 1 kg planeado; mantener autorización y validación de existencias.
+
+**Avance del ciclo 1:** se añadió la prueba unitaria del cálculo y reprodujo el defecto (`100` en vez de `1`); tras el cambio, las 14 pruebas de `production-order-contract.test.ts` pasan. La validación de stock en servidor ya lee `recipes.yield_quantity` y aplica la misma proporción. Se añadió una regresión SQL que comprueba que `create_production_order_draft` persista 1 kg planeado y una migración nueva que actualiza esa RPC; no se modificó el historial. Typecheck, ESLint focal y `git diff --check` pasan. El SQL no se pudo ejecutar localmente: `db:test:production-order-lifecycle` requiere Bash y el contenedor Supabase; se llamó Bash directamente y Docker respondió que el daemon no está disponible. La prueba SQL queda pendiente de una base reconstruida/CI.\n
+El siguiente ciclo debe extender el snapshot al ingrediente producto intermedio y a su lote de masa seleccionado al iniciar; la planificación seguirá sin reservar existencias.

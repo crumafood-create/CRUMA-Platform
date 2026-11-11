@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { ProductionOrderForm } from './production-order-form';
 
 const ERROR_MESSAGE =
-  'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.';
+  'No hay masa liberada suficiente para iniciar la orden.';
 
 describe('ProductionOrderForm', () => {
-  it('muestra el rechazo de recetas con productos intermedios', async () => {
+  it('muestra errores de validación devueltos por la acción', async () => {
     const action = vi.fn().mockResolvedValue({ error: ERROR_MESSAGE });
     const { container } = render(
       <ProductionOrderForm

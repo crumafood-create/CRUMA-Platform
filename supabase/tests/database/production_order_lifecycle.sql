@@ -459,33 +459,51 @@ SELECT set_config(
   true
 );
 
--- La RPC también bloquea recetas finales con ingredientes producto antes de crear órdenes.
+-- An intermediate-product order can be planned but cannot start without a lot withdrawal.
 DO $test$
 DECLARE
   order_count_before bigint;
+  intermediate_order_id uuid;
 BEGIN
   SELECT count(*)
   INTO order_count_before
   FROM public.production_orders
   WHERE recipe_id = 'e1300000-0000-4000-8000-000000000003';
 
+  PERFORM public.create_production_order_draft(
+    'e1300000-0000-4000-8000-000000000003',
+    50,
+    'Plan de masa sin apartado anticipado',
+    'e1500000-0000-4000-8000-000000000010'
+  );
+
+  SELECT production_order_id INTO intermediate_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key = 'e1500000-0000-4000-8000-000000000010';
+
+  PERFORM public.transition_production_order_lifecycle(
+    intermediate_order_id,
+    'release',
+    NULL,
+    'e1500000-0000-4000-8000-000000000020'
+  );
+
   BEGIN
-    PERFORM public.create_production_order_draft(
-      'e1300000-0000-4000-8000-000000000003',
-      1,
-      'No debe crearse con ingrediente producto',
-      'e1500000-0000-4000-8000-000000000010'
+    PERFORM public.transition_production_order_lifecycle(
+      intermediate_order_id,
+      'start',
+      NULL,
+      'e1500000-0000-4000-8000-000000000021'
     );
 
-    RAISE EXCEPTION
-      'production order RPC accepted an intermediate-product recipe'
+    RAISE EXCEPTION 'mass order started without a lot reservation'
       USING ERRCODE = 'PZ003';
   EXCEPTION
-    WHEN feature_not_supported THEN
+    WHEN check_violation THEN
       IF SQLERRM <>
-        'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.'
+        'La orden debe apartar masa de un lote liberado antes de iniciar.'
       THEN
-        RAISE EXCEPTION 'unexpected intermediate order rejection: %', SQLERRM;
+        RAISE EXCEPTION 'unexpected mass start rejection: %', SQLERRM;
       END IF;
     WHEN SQLSTATE 'PZ003' THEN
       RAISE;
@@ -495,13 +513,28 @@ BEGIN
     SELECT count(*)
     FROM public.production_orders
     WHERE recipe_id = 'e1300000-0000-4000-8000-000000000003'
-  ) <> order_count_before OR EXISTS (
+  ) <> order_count_before + 1 OR EXISTS (
     SELECT 1
     FROM public.production_order_lifecycle_operations
-    WHERE idempotency_key = 'e1500000-0000-4000-8000-000000000010'
+    WHERE idempotency_key = 'e1500000-0000-4000-8000-000000000021'
   ) THEN
     RAISE EXCEPTION
-      'rejected intermediate order left partial database writes';
+      'mass order planning or rejected start left inconsistent writes';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.production_orders
+    WHERE id = intermediate_order_id
+      AND production_status = 'released'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.production_order_items
+    WHERE production_order_id = intermediate_order_id
+      AND product_id = 'e1200000-0000-4000-8000-000000000002'
+      AND raw_material_id IS NULL
+      AND planned_quantity = 1
+  ) THEN
+    RAISE EXCEPTION
+      'intermediate mass order plan was not preserved while awaiting lot withdrawal';
   END IF;
 END;
 $test$;
@@ -875,6 +908,266 @@ BEGIN
   ) THEN
     RAISE EXCEPTION
       '50 of 100 expected pieces must plan half of the 2 kg recipe ingredient';
+  END IF;
+END;
+$test$;
+
+-- Starting an intermediate-product order reserves weighed quantities from
+-- one or more quality-released lots of the recipe's exact dough variety.
+SELECT public.create_production_order_draft(
+  'e1300000-0000-4000-8000-000000000002',
+  2,
+  'Masa disponible para apartado',
+  'e1500000-0000-4000-8000-000000000014'
+);
+
+UPDATE public.production_orders
+SET production_status = 'completed',
+  produced_quantity = 2,
+  completed_at = now()
+WHERE id = (
+  SELECT production_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key =
+    'e1500000-0000-4000-8000-000000000014'
+);
+
+INSERT INTO public.production_outputs (
+  id,
+  production_order_id,
+  product_id,
+  quantity_produced,
+  quality_status
+)
+SELECT
+  'e1600000-0000-4000-8000-000000000001',
+  operation.production_order_id,
+  'e1200000-0000-4000-8000-000000000002',
+  2,
+  'released'
+FROM public.production_order_lifecycle_operations AS operation
+WHERE operation.idempotency_key =
+  'e1500000-0000-4000-8000-000000000014';
+
+INSERT INTO public.production_outputs (
+  id,
+  production_order_id,
+  product_id,
+  quantity_produced,
+  quality_status
+)
+SELECT
+  'e1600000-0000-4000-8000-000000000002',
+  operation.production_order_id,
+  'e1200000-0000-4000-8000-000000000002',
+  2,
+  'released'
+FROM public.production_order_lifecycle_operations AS operation
+WHERE operation.idempotency_key =
+  'e1500000-0000-4000-8000-000000000014';
+
+INSERT INTO public.product_lots (
+  id,
+  product_id,
+  lot_number,
+  production_output_id,
+  initial_quantity,
+  quantity,
+  status
+)
+VALUES
+  (
+    'e1610000-0000-4000-8000-000000000001',
+    'e1200000-0000-4000-8000-000000000002',
+    'LFC-MASS-A',
+    'e1600000-0000-4000-8000-000000000001',
+    0.8,
+    0.8,
+    'available'
+  ),
+  (
+    'e1610000-0000-4000-8000-000000000002',
+    'e1200000-0000-4000-8000-000000000002',
+    'LFC-MASS-B',
+    'e1600000-0000-4000-8000-000000000002',
+    0.8,
+    0.8,
+    'available'
+  );
+
+SELECT public.create_production_order_draft(
+  'e1300000-0000-4000-8000-000000000003',
+  50,
+  'Retiro de masa de dos lotes',
+  'e1500000-0000-4000-8000-000000000015'
+);
+
+SELECT public.create_production_order_draft(
+  'e1300000-0000-4000-8000-000000000003',
+  50,
+  'Orden concurrente para el mismo lote',
+  'e1500000-0000-4000-8000-000000000016'
+);
+
+DO $test$
+DECLARE
+  first_order_id uuid;
+  second_order_id uuid;
+BEGIN
+  SELECT production_order_id INTO first_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key =
+    'e1500000-0000-4000-8000-000000000015';
+
+  SELECT production_order_id INTO second_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key =
+    'e1500000-0000-4000-8000-000000000016';
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.production_order_items
+    WHERE production_order_id = first_order_id
+      AND product_id = 'e1200000-0000-4000-8000-000000000002'
+      AND raw_material_id IS NULL
+      AND planned_quantity = 1
+  ) THEN
+    RAISE EXCEPTION
+      'scaled production plan did not capture the specific intermediate mass variety';
+  END IF;
+
+  IF first_order_id IS NULL OR second_order_id IS NULL THEN
+    RAISE EXCEPTION 'orders using an intermediate product were not created';
+  END IF;
+END;
+$test$;
+
+SELECT public.transition_production_order_lifecycle(
+  (
+    SELECT production_order_id
+    FROM public.production_order_lifecycle_operations
+    WHERE idempotency_key =
+      'e1500000-0000-4000-8000-000000000015'
+  ),
+  'release',
+  NULL,
+  'e1500000-0000-4000-8000-000000000017'
+);
+
+SELECT public.transition_production_order_lifecycle(
+  (
+    SELECT production_order_id
+    FROM public.production_order_lifecycle_operations
+    WHERE idempotency_key =
+      'e1500000-0000-4000-8000-000000000016'
+  ),
+  'release',
+  NULL,
+  'e1500000-0000-4000-8000-000000000018'
+);
+
+SELECT public.start_production_order_with_mass_lot_reservations(
+  (
+    SELECT production_order_id
+    FROM public.production_order_lifecycle_operations
+    WHERE idempotency_key =
+      'e1500000-0000-4000-8000-000000000015'
+  ),
+  '[
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000001","quantity":0.6},
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000002","quantity":0.45}
+  ]'::jsonb,
+  'e1500000-0000-4000-8000-000000000019'
+);
+
+-- Replaying the same start request is idempotent; reusing its key with
+-- different weighed quantities is rejected without another lot deduction.
+SELECT public.start_production_order_with_mass_lot_reservations(
+  (
+    SELECT production_order_id
+    FROM public.production_order_lifecycle_operations
+    WHERE idempotency_key =
+      'e1500000-0000-4000-8000-000000000015'
+  ),
+  '[
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000001","quantity":0.6},
+    {"product_lot_id":"e1610000-0000-4000-8000-000000000002","quantity":0.45}
+  ]'::jsonb,
+  'e1500000-0000-4000-8000-000000000019'
+);
+
+DO $test$
+DECLARE
+  first_order_id uuid;
+BEGIN
+  SELECT production_order_id INTO first_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key =
+    'e1500000-0000-4000-8000-000000000015';
+
+  BEGIN
+    PERFORM public.start_production_order_with_mass_lot_reservations(
+      first_order_id,
+      '[{"product_lot_id":"e1610000-0000-4000-8000-000000000001","quantity":0.5}]'::jsonb,
+      'e1500000-0000-4000-8000-000000000019'
+    );
+
+    RAISE EXCEPTION
+      'mass start idempotency accepted a different lot weight'
+      USING ERRCODE = 'PZ006';
+  EXCEPTION
+    WHEN unique_violation THEN NULL;
+    WHEN SQLSTATE 'PZ006' THEN RAISE;
+  END;
+END;
+$test$;
+
+DO $test$
+DECLARE
+  first_order_id uuid;
+BEGIN
+  SELECT production_order_id INTO first_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key =
+    'e1500000-0000-4000-8000-000000000015';
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.production_order_product_lot_reservations
+    WHERE production_order_id = first_order_id
+      AND product_lot_id = 'e1610000-0000-4000-8000-000000000001'
+      AND reserved_quantity = 0.6
+  ) OR NOT EXISTS (
+    SELECT 1
+    FROM public.production_order_product_lot_reservations
+    WHERE production_order_id = first_order_id
+      AND product_lot_id = 'e1610000-0000-4000-8000-000000000002'
+      AND reserved_quantity = 0.45
+  ) THEN
+    RAISE EXCEPTION
+      'the weighed withdrawal was not recorded separately for both mass lots';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lots
+    WHERE id = 'e1610000-0000-4000-8000-000000000001'
+      AND quantity = 0.2 AND status = 'available'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots
+    WHERE id = 'e1610000-0000-4000-8000-000000000002'
+      AND quantity = 0.35 AND status = 'available'
+  ) THEN
+    RAISE EXCEPTION
+      'mass availability does not reflect the atomic withdrawal';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.production_orders
+    WHERE id = first_order_id
+      AND production_status = 'in_progress'
+  ) THEN
+    RAISE EXCEPTION
+      'the order did not start with its mass lots reserved';
   END IF;
 END;
 $test$;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildProductionOrderMassStartRequest,
   buildProductionOrderCreationRequest,
   buildProductionOrderTransitionRequest,
 } from './production-order-lifecycle-contract';
@@ -277,3 +278,76 @@ describe(
     });
   },
 );
+
+describe('contrato de apartado de masa al iniciar una orden', () => {
+  it('normaliza pesos por lote en kg con precisión de cuatro decimales', () => {
+    expect(buildProductionOrderMassStartRequest({
+      productionOrderId: UUIDS.order,
+      idempotencyKey: UUIDS.idempotency,
+      lotReservations: [
+        {
+          productLotId: 'c1000000-0000-4000-8000-000000000001',
+          quantity: 0.6,
+        },
+        {
+          productLotId: 'c1000000-0000-4000-8000-000000000002',
+          quantity: 0.45,
+        },
+      ],
+    })).toEqual({
+      productionOrderId: UUIDS.order,
+      idempotencyKey: UUIDS.idempotency,
+      lotReservations: [
+        {
+          productLotId: 'c1000000-0000-4000-8000-000000000001',
+          quantity: 0.6,
+        },
+        {
+          productLotId: 'c1000000-0000-4000-8000-000000000002',
+          quantity: 0.45,
+        },
+      ],
+    });
+  });
+
+  it('exige al menos un lote pesado', () => {
+    expect(() => buildProductionOrderMassStartRequest({
+      productionOrderId: UUIDS.order,
+      idempotencyKey: UUIDS.idempotency,
+      lotReservations: [],
+    })).toThrow('Pesa la cantidad retirada de al menos un lote de masa.');
+  });
+
+  it.each([0, -0.1, 0.12345, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rechaza una cantidad retirada inválida: %s kg',
+    (quantity) => {
+      expect(() => buildProductionOrderMassStartRequest({
+        productionOrderId: UUIDS.order,
+        idempotencyKey: UUIDS.idempotency,
+        lotReservations: [{
+          productLotId: 'c1000000-0000-4000-8000-000000000001',
+          quantity,
+        }],
+      })).toThrow(
+        'La cantidad retirada debe ser positiva y tener como máximo cuatro decimales en kg.',
+      );
+    },
+  );
+
+  it('rechaza lotes repetidos para evitar dos capturas del mismo recipiente', () => {
+    expect(() => buildProductionOrderMassStartRequest({
+      productionOrderId: UUIDS.order,
+      idempotencyKey: UUIDS.idempotency,
+      lotReservations: [
+        {
+          productLotId: 'c1000000-0000-4000-8000-000000000001',
+          quantity: 0.5,
+        },
+        {
+          productLotId: 'c1000000-0000-4000-8000-000000000001',
+          quantity: 0.55,
+        },
+      ],
+    })).toThrow('No repitas el mismo lote de masa.');
+  });
+});

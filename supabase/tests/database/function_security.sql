@@ -13,6 +13,7 @@ DECLARE
   hardened_functions constant text[] := ARRAY[
     'public.create_production_order_items(uuid)',
     'public.create_production_order_draft(uuid,integer,text,uuid)',
+    'public.start_production_order_with_mass_lot_reservations(uuid,jsonb,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
     'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
@@ -87,6 +88,7 @@ DECLARE
   all_functions constant text[] := ARRAY[
     'public.create_production_order_items(uuid)',
     'public.create_production_order_draft(uuid,integer,text,uuid)',
+    'public.start_production_order_with_mass_lot_reservations(uuid,jsonb,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
     'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
@@ -132,6 +134,7 @@ DECLARE
   ];
    authenticated_functions constant text[] := ARRAY[
     'public.create_production_order_draft(uuid,integer,text,uuid)',
+    'public.start_production_order_with_mass_lot_reservations(uuid,jsonb,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
     'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',

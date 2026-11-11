@@ -4,36 +4,9 @@ import type {
 
 import type {
   ProductionOrderCreationRequest,
+  ProductionOrderMassStartRequest,
   ProductionOrderTransitionRequest,
 } from './production-order-lifecycle-contract';
-
-const INTERMEDIATE_RECIPE_ORDER_MESSAGE =
-  'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.';
-
-export class IntermediateRecipeProductionUnsupportedError extends Error {
-  constructor() {
-    super(INTERMEDIATE_RECIPE_ORDER_MESSAGE);
-    this.name = 'IntermediateRecipeProductionUnsupportedError';
-  }
-}
-
-export async function assertRecipeSupportsProductionOrder(
-  supabase: TypedSupabaseClient,
-  recipeId: string,
-): Promise<void> {
-  const { data, error } = await supabase
-    .from('recipe_items')
-    .select('product_id')
-    .eq('recipe_id', recipeId);
-
-  if (error) throw new Error(error.message);
-
-  const items = data ?? [];
-
-  if (items.some((item) => item.product_id)) {
-    throw new IntermediateRecipeProductionUnsupportedError();
-  }
-}
 
 export async function createProductionOrderDraft(
   supabase: TypedSupabaseClient,
@@ -92,6 +65,44 @@ export async function transitionProductionOrderLifecycle(
     throw new Error(
       'La transición no devolvió una orden de producción.',
     );
+  }
+
+  return data;
+}
+
+export async function startProductionOrderWithMassLotReservations(
+  supabase: TypedSupabaseClient,
+  request: ProductionOrderMassStartRequest,
+): Promise<string> {
+  // The RPC contract is created by the adjacent versioned migration. The
+  // generated database snapshot is refreshed after applying migrations.
+  const startMassLotsRpc = supabase.rpc.bind(supabase) as unknown as (
+    functionName: 'start_production_order_with_mass_lot_reservations',
+    args: {
+      p_production_order_id: string;
+      p_lot_allocations: { product_lot_id: string; quantity: number }[];
+      p_idempotency_key: string;
+    },
+  ) => Promise<{
+    data: string | null;
+    error: { message: string } | null;
+  }>;
+
+  const { data, error } = await startMassLotsRpc(
+    'start_production_order_with_mass_lot_reservations',
+    {
+      p_production_order_id: request.productionOrderId,
+      p_lot_allocations: request.lotReservations.map((reservation) => ({
+        product_lot_id: reservation.productLotId,
+        quantity: reservation.quantity,
+      })),
+      p_idempotency_key: request.idempotencyKey,
+    },
+  );
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    throw new Error('El inicio no devolvió una orden de producción.');
   }
 
   return data;

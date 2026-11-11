@@ -17,6 +17,7 @@ import {
 type RecipeItem = {
   id: string;
   raw_material_id: string | null;
+  product_id: string | null;
   planned_quantity: number;
 };
 
@@ -29,6 +30,21 @@ type RawMaterial = {
 type InventoryStockRow = {
   item_id: string | null;
   quantity: number | null;
+};
+
+type MassProduct = {
+  id: string;
+  name: string;
+  internal_code: string | null;
+};
+
+type MassProductLot = {
+  id: string;
+  product_id: string;
+  lot_number: string;
+  quantity: number;
+  expiration_date: string | null;
+  location_name: string | null;
 };
 
 function getStatusLabel(status: string): string {
@@ -87,12 +103,16 @@ export default async function ProductionOrderPage({
     .eq('id', order.recipe_id)
     .single();
 
-  const { data: ingredients, error: ingredientsError } = await supabase
+  const { data: ingredientRows, error: ingredientsError } = await supabase
     .from('production_order_items')
-    .select('id, raw_material_id, planned_quantity')
+    .select('*')
     .eq('production_order_id', order.id)
     .order('created_at', { ascending: true });
   if (ingredientsError) throw new Error('No fue posible cargar el plan de materiales de la orden.');
+
+  // product_id is introduced by the versioned story #4 migration; the
+  // checked-in generated snapshot is refreshed from the migrated schema in CI.
+  const ingredients = (ingredientRows ?? []) as unknown as RecipeItem[];
 
   const ingredientIds = (ingredients ?? []).flatMap((item: RecipeItem) =>
     item.raw_material_id ? [item.raw_material_id] : [],
@@ -106,6 +126,44 @@ export default async function ProductionOrderPage({
       .in('id', ingredientIds);
 
     materials = data ?? [];
+  }
+
+  const massProductIds = [...new Set(
+    ingredients.flatMap((item) => item.product_id ? [item.product_id] : []),
+  )];
+  let massProducts: MassProduct[] = [];
+  let massLots: MassProductLot[] = [];
+  if (massProductIds.length > 0) {
+    const [{ data: products, error: productsError }, { data: lots, error: lotsError }] =
+      await Promise.all([
+        supabase
+          .from('products')
+          .select('id, name, internal_code')
+          .in('id', massProductIds),
+        supabase
+          .from('inventory_product_lots_fefo')
+          .select('id, product_id, lot_number, quantity, expiration_date, location_name')
+          .in('product_id', massProductIds)
+          .order('expiration_date', { ascending: true }),
+      ]);
+
+    if (productsError || lotsError) {
+      throw new Error('No fue posible cargar las variedades y lotes disponibles de masa.');
+    }
+
+    massProducts = products ?? [];
+    massLots = (lots ?? []).flatMap((lot) =>
+      lot.id && lot.product_id && lot.lot_number
+        ? [{
+            id: lot.id,
+            product_id: lot.product_id,
+            lot_number: lot.lot_number,
+            quantity: Number(lot.quantity ?? 0),
+            expiration_date: lot.expiration_date,
+            location_name: lot.location_name,
+          }]
+        : [],
+    );
   }
 
   let stockRows: InventoryStockRow[] = [];
@@ -139,7 +197,13 @@ export default async function ProductionOrderPage({
   );
 
   const canProduce =
-    (ingredients ?? []).every((item: RecipeItem) => {
+    ingredients.every((item) => {
+      if (item.product_id) {
+        const available = massLots
+          .filter((lot) => lot.product_id === item.product_id)
+          .reduce((total, lot) => total + lot.quantity, 0);
+        return available >= Number(item.planned_quantity);
+      }
       if (!item.raw_material_id) return false;
 
       const required = Number(item.planned_quantity);
@@ -242,9 +306,12 @@ export default async function ProductionOrderPage({
 
         {ingredients?.length ? (
           <div className="space-y-3">
-            {ingredients.map((item: RecipeItem) => {
+            {ingredients.map((item) => {
               const material = item.raw_material_id
                 ? materialMap.get(item.raw_material_id)
+                : undefined;
+              const massProduct = item.product_id
+                ? massProducts.find((product) => product.id === item.product_id)
                 : undefined;
 
               const required = Number(item.planned_quantity);
@@ -252,7 +319,9 @@ export default async function ProductionOrderPage({
               const available =
                 item.raw_material_id
                   ? stockMap[item.raw_material_id] ?? 0
-                  : 0;
+                  : massLots
+                      .filter((lot) => lot.product_id === item.product_id)
+                      .reduce((total, lot) => total + lot.quantity, 0);
 
               const enough = available >= required;
 
@@ -264,11 +333,11 @@ export default async function ProductionOrderPage({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-medium">
-                        {material?.name ?? (item.raw_material_id ? '-' : 'Producto intermedio no admitido')}
+                        {material?.name ?? massProduct?.name ?? '-'}
                       </div>
 
                       <div className="text-sm text-gray-500">
-                        {material?.internal_code ?? '-'}
+                        {material?.internal_code ?? massProduct?.internal_code ?? '-'}
                       </div>
                     </div>
 
@@ -287,15 +356,15 @@ export default async function ProductionOrderPage({
 
                   <div className="mt-3 grid gap-2 text-sm text-gray-600 md:grid-cols-3">
                     <div>
-                      Plan capturado: {item.planned_quantity}
+                      Plan capturado: {item.planned_quantity} {item.product_id ? 'kg' : ''}
                     </div>
 
                     <div>
-                      Requerido: {required}
+                      Requerido: {required} {item.product_id ? 'kg' : ''}
                     </div>
 
                     <div>
-                      Disponible: {available}
+                      Disponible: {available} {item.product_id ? 'kg' : ''}
                     </div>
                   </div>
                 </div>
@@ -322,6 +391,7 @@ export default async function ProductionOrderPage({
 
             <button
               type="submit"
+              disabled={massProductIds.length > 0 && massLots.length === 0}
               className="rounded border px-4 py-2"
             >
               Liberar Orden
@@ -332,7 +402,37 @@ export default async function ProductionOrderPage({
         {order.production_status === 'released' && (
           <form
             action={startProductionOrder.bind(null, order.id)}
+            className="grid gap-3 rounded-xl border p-4"
           >
+            {massProductIds.length > 0 && (
+              <fieldset className="grid gap-3">
+                <legend className="font-semibold">Pesar masa retirada por lote (kg)</legend>
+                {massLots.length === 0 ? (
+                  <p className="text-sm text-amber-700">
+                    No hay lotes liberados y disponibles de esta variedad de masa.
+                  </p>
+                ) : massLots.map((lot) => {
+                  const product = massProducts.find((row) => row.id === lot.product_id);
+                  return (
+                    <label key={lot.id} className="grid gap-1 text-sm">
+                      <span>
+                        {product?.name ?? 'Masa'} · lote {lot.lot_number} · disponible {lot.quantity} kg
+                        {lot.location_name ? ` · ${lot.location_name}` : ''}
+                      </span>
+                      <input
+                        name={`mass_lot_${lot.id}`}
+                        type="number"
+                        min="0"
+                        max={lot.quantity}
+                        step="0.0001"
+                        inputMode="decimal"
+                        className="rounded border px-3 py-2"
+                      />
+                    </label>
+                  );
+                })}
+              </fieldset>
+            )}
             <input
               name="idempotency_key"
               type="hidden"
@@ -343,7 +443,7 @@ export default async function ProductionOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              Iniciar Producción
+              {massProductIds.length > 0 ? 'Pesar y apartar masa e iniciar' : 'Iniciar Producción'}
             </button>
           </form>
         )}

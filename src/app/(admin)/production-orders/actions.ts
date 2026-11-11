@@ -13,13 +13,13 @@ import {
   completeProductionOutputToQuarantine,
 } from '@/modules/production/application/production-output-completion-repository';
 import {
+  buildProductionOrderMassStartRequest,
   buildProductionOrderCreationRequest,
   buildProductionOrderTransitionRequest,
 } from '@/modules/production/application/production-order-lifecycle-contract';
 import {
-  assertRecipeSupportsProductionOrder,
   createProductionOrderDraft,
-  IntermediateRecipeProductionUnsupportedError,
+  startProductionOrderWithMassLotReservations,
   transitionProductionOrderLifecycle,
 } from '@/modules/production/application/production-order-lifecycle-repository';
 import {
@@ -63,9 +63,9 @@ async function validateRecipeStockAvailability(
 
   for (const item of items) {
     if (!item.raw_material_id) {
-      throw new Error(
-        'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.',
-      );
+      // Product intermediates are weighed and reserved from released lots
+      // when the order starts, not while it is planned.
+      continue;
     }
 
     const rawMaterialId = item.raw_material_id;
@@ -145,16 +145,6 @@ export async function createProductionOrder(
         formData.get('idempotency_key'),
     });
 
-  try {
-    await assertRecipeSupportsProductionOrder(supabase, request.recipeId);
-  } catch (error) {
-    if (error instanceof IntermediateRecipeProductionUnsupportedError) {
-      return { error: error.message };
-    }
-
-    throw error;
-  }
-
   await validateRecipeStockAvailability(
     supabase,
     request.recipeId,
@@ -228,11 +218,53 @@ export async function startProductionOrder(
         formData.get('idempotency_key'),
     });
 
-  const transitionedOrderId =
-    await transitionProductionOrderLifecycle(
+  let transitionedOrderId: string;
+
+  if (request.transition === 'start') {
+    const { data: massItems, error } = await supabase
+      .from('production_order_items')
+      .select('*')
+      .eq('production_order_id', orderId);
+
+    if (error) throw new Error(error.message);
+
+    const hasMassIngredient = ((massItems ?? []) as unknown as Array<{
+      product_id: string | null;
+    }>).some((item) => item.product_id !== null);
+
+    if (hasMassIngredient) {
+      const reservations = [...formData.entries()]
+        .flatMap(([name, value]) => {
+          const prefix = 'mass_lot_';
+          if (!name.startsWith(prefix) || typeof value !== 'string') return [];
+          if (!value.trim()) return [];
+
+          return [{
+            productLotId: name.slice(prefix.length),
+            quantity: Number(value),
+          }];
+        });
+
+      transitionedOrderId = await startProductionOrderWithMassLotReservations(
+        supabase,
+        buildProductionOrderMassStartRequest({
+          productionOrderId: orderId,
+          lotReservations: reservations,
+          idempotencyKey: request.idempotencyKey,
+        }),
+      );
+    } else {
+      transitionedOrderId = await transitionProductionOrderLifecycle(
+        supabase,
+        request,
+      );
+    }
+  } else {
+    transitionedOrderId = await transitionProductionOrderLifecycle(
       supabase,
       request,
     );
+  }
 
   revalidatePath('/production-orders');
   revalidatePath(

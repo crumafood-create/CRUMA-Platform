@@ -27,6 +27,26 @@ VALUES
     now()
   );
 
+INSERT INTO public.profiles (
+  id,
+  full_name,
+  email,
+  role
+)
+VALUES
+  (
+    'e1100000-0000-4000-8000-000000000001',
+    'Lifecycle Admin',
+    'lifecycle-admin@example.test',
+    'admin'
+  ),
+  (
+    'e1100000-0000-4000-8000-000000000002',
+    'Lifecycle User',
+    'lifecycle-user@example.test',
+    'client'
+  );
+
 INSERT INTO public.user_roles (
   user_id,
   role

@@ -1,6 +1,6 @@
 # Historias pendientes para retomar
 
-Estas historias se conservan aquí hasta que el usuario decida activarlas. La historia #3 fue activada y está en `backlog.md`; la historia #4 permanece pendiente.
+Estas historias se conservan aquí hasta que el usuario decida activarlas. La historia #3 fue activada y completada; su cierre está en `backlog.md`. La historia #4 permanece pendiente.
 
 ## Contexto
 

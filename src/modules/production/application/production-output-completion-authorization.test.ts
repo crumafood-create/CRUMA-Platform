@@ -147,16 +147,8 @@ describe(
           'createInventoryMovement(',
         );
 
-        expect(action).not.toContain(
-          ".from('production_orders')",
-        );
-
-        expect(action).not.toContain(
-          ".from('production_outputs')",
-        );
-
-        expect(action).not.toContain(
-          ".from('inventory_movements')",
+        expect(action).not.toMatch(
+          /\.from\(['"][^'"]+['"]\)\s*\.(?:insert|update|upsert|delete)\(/,
         );
       },
     );

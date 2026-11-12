@@ -124,6 +124,14 @@ describe(
         expect(action).toContain(
           'completeProductionOutputToQuarantine(',
         );
+
+        expect(action).toContain(
+          "item.product_id !== null && item.raw_material_id === null",
+        );
+
+        expect(action).toContain(
+          'completeProductionOutputWithMassLotYield(',
+        );
       },
     );
 
@@ -139,16 +147,8 @@ describe(
           'createInventoryMovement(',
         );
 
-        expect(action).not.toContain(
-          ".from('production_orders')",
-        );
-
-        expect(action).not.toContain(
-          ".from('production_outputs')",
-        );
-
-        expect(action).not.toContain(
-          ".from('inventory_movements')",
+        expect(action).not.toMatch(
+          /\.from\(['"][^'"]+['"]\)\s*\.(?:insert|update|upsert|delete)\(/,
         );
       },
     );
@@ -162,6 +162,10 @@ describe(
 
         expect(page).toContain(
           'name="produced_quantity"',
+        );
+
+        expect(page).toContain(
+          'name={`mass_surplus_${lot.productLotId}`}',
         );
 
         expect(page).toContain(

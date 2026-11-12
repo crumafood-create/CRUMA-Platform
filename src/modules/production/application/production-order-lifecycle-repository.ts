@@ -4,36 +4,9 @@ import type {
 
 import type {
   ProductionOrderCreationRequest,
+  ProductionOrderMassStartRequest,
   ProductionOrderTransitionRequest,
 } from './production-order-lifecycle-contract';
-
-const INTERMEDIATE_RECIPE_ORDER_MESSAGE =
-  'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.';
-
-export class IntermediateRecipeProductionUnsupportedError extends Error {
-  constructor() {
-    super(INTERMEDIATE_RECIPE_ORDER_MESSAGE);
-    this.name = 'IntermediateRecipeProductionUnsupportedError';
-  }
-}
-
-export async function assertRecipeSupportsProductionOrder(
-  supabase: TypedSupabaseClient,
-  recipeId: string,
-): Promise<void> {
-  const { data, error } = await supabase
-    .from('recipe_items')
-    .select('product_id')
-    .eq('recipe_id', recipeId);
-
-  if (error) throw new Error(error.message);
-
-  const items = data ?? [];
-
-  if (items.some((item) => item.product_id)) {
-    throw new IntermediateRecipeProductionUnsupportedError();
-  }
-}
 
 export async function createProductionOrderDraft(
   supabase: TypedSupabaseClient,
@@ -94,5 +67,68 @@ export async function transitionProductionOrderLifecycle(
     );
   }
 
+  return data;
+}
+
+export async function startProductionOrderWithMassLotReservations(
+  supabase: TypedSupabaseClient,
+  request: ProductionOrderMassStartRequest,
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'start_production_order_with_mass_lot_reservations',
+    {
+      p_production_order_id: request.productionOrderId,
+      p_lot_allocations: request.lotReservations.map((reservation) => ({
+        product_lot_id: reservation.productLotId,
+        quantity: reservation.quantity,
+      })),
+      p_idempotency_key: request.idempotencyKey,
+    },
+  );
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    throw new Error('El inicio no devolvió una orden de producción.');
+  }
+
+  return data;
+}
+
+export async function startProductionOrderWithMassSurplusReuse(
+  supabase: TypedSupabaseClient,
+  request: {
+    productionOrderId: string;
+    reservationIds: string[];
+    idempotencyKey: string;
+  },
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'start_production_order_with_mass_surplus_reuse',
+    {
+      p_production_order_id: request.productionOrderId,
+      p_reservation_ids: request.reservationIds,
+      p_idempotency_key: request.idempotencyKey,
+    },
+  );
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    throw new Error('El inicio no devolvió una orden de producción.');
+  }
+  return data;
+}
+
+export async function disposeProductionMassSurplusAsWaste(
+  supabase: TypedSupabaseClient,
+  reservationId: string,
+  reason: string,
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'dispose_production_mass_surplus_as_waste',
+    { p_reservation_id: reservationId, p_reason: reason },
+  );
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('No se confirmó el destino de merma.');
   return data;
 }

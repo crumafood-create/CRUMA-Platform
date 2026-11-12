@@ -7,19 +7,24 @@ import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import {
+  buildProductionMassLotSurplusRequest,
   buildProductionOutputCompletionRequest,
 } from '@/modules/production/application/production-output-completion-contract';
 import {
   completeProductionOutputToQuarantine,
+  completeProductionOutputWithMassLotYield,
+  completeProductionOrderWithMassOutput,
 } from '@/modules/production/application/production-output-completion-repository';
 import {
+  buildProductionOrderMassStartRequest,
   buildProductionOrderCreationRequest,
   buildProductionOrderTransitionRequest,
 } from '@/modules/production/application/production-order-lifecycle-contract';
 import {
-  assertRecipeSupportsProductionOrder,
   createProductionOrderDraft,
-  IntermediateRecipeProductionUnsupportedError,
+  disposeProductionMassSurplusAsWaste,
+  startProductionOrderWithMassSurplusReuse,
+  startProductionOrderWithMassLotReservations,
   transitionProductionOrderLifecycle,
 } from '@/modules/production/application/production-order-lifecycle-repository';
 import {
@@ -38,7 +43,7 @@ async function validateRecipeStockAvailability(
 ) {
   const { data: recipe, error: recipeError } = await supabase
     .from('recipes')
-    .select('id')
+    .select('id, yield_quantity')
     .eq('id', recipeId)
     .single();
 
@@ -63,15 +68,16 @@ async function validateRecipeStockAvailability(
 
   for (const item of items) {
     if (!item.raw_material_id) {
-      throw new Error(
-        'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.',
-      );
+      // Product intermediates are weighed and reserved from released lots
+      // when the order starts, not while it is planned.
+      continue;
     }
 
     const rawMaterialId = item.raw_material_id;
     const required = calculateRequiredQuantity(
       item.quantity,
       plannedQuantity,
+      recipe.yield_quantity,
     );
 
     const { data: lots, error: lotsError } =
@@ -143,16 +149,6 @@ export async function createProductionOrder(
       idempotencyKey:
         formData.get('idempotency_key'),
     });
-
-  try {
-    await assertRecipeSupportsProductionOrder(supabase, request.recipeId);
-  } catch (error) {
-    if (error instanceof IntermediateRecipeProductionUnsupportedError) {
-      return { error: error.message };
-    }
-
-    throw error;
-  }
 
   await validateRecipeStockAvailability(
     supabase,
@@ -227,11 +223,69 @@ export async function startProductionOrder(
         formData.get('idempotency_key'),
     });
 
-  const transitionedOrderId =
-    await transitionProductionOrderLifecycle(
+  let transitionedOrderId: string;
+
+  if (request.transition === 'start') {
+    const { data: massItems, error } = await supabase
+      .from('production_order_items')
+      .select('*')
+      .eq('production_order_id', orderId);
+
+    if (error) throw new Error(error.message);
+
+    const hasMassIngredient = (massItems ?? []).some(
+      (item) => item.product_id !== null,
+    );
+    const surplusReservations = [...formData.entries()]
+      .flatMap(([name, value]) => {
+        const prefix = 'reuse_mass_surplus_';
+        return name.startsWith(prefix) && value === 'on'
+          ? [name.slice(prefix.length)]
+          : [];
+      });
+
+    if (hasMassIngredient) {
+      const reservations = [...formData.entries()]
+        .flatMap(([name, value]) => {
+          const prefix = 'mass_lot_';
+          if (!name.startsWith(prefix) || typeof value !== 'string') return [];
+          if (!value.trim()) return [];
+
+          return [{
+            productLotId: name.slice(prefix.length),
+            quantity: Number(value),
+          }];
+        });
+
+      transitionedOrderId = await startProductionOrderWithMassLotReservations(
+        supabase,
+        buildProductionOrderMassStartRequest({
+          productionOrderId: orderId,
+          lotReservations: reservations,
+          idempotencyKey: request.idempotencyKey,
+        }),
+      );
+    } else if (surplusReservations.length > 0) {
+      transitionedOrderId = await startProductionOrderWithMassSurplusReuse(
+        supabase,
+        {
+          productionOrderId: orderId,
+          reservationIds: surplusReservations,
+          idempotencyKey: request.idempotencyKey,
+        },
+      );
+    } else {
+      transitionedOrderId = await transitionProductionOrderLifecycle(
+        supabase,
+        request,
+      );
+    }
+  } else {
+    transitionedOrderId = await transitionProductionOrderLifecycle(
       supabase,
       request,
     );
+  }
 
   revalidatePath('/production-orders');
   revalidatePath(
@@ -294,8 +348,7 @@ export async function completeProductionOrder(
   const wasteQuantity =
     formData.get('waste_quantity');
 
-  const request =
-    buildProductionOutputCompletionRequest({
+  const completionInput = {
       productionOrderId: orderId,
       producedQuantity: Number(
         formData.get('produced_quantity'),
@@ -309,13 +362,99 @@ export async function completeProductionOrder(
         formData.get('variance_reason'),
       idempotencyKey:
         formData.get('idempotency_key'),
+    };
+
+  const { data: orderItems, error: orderItemsError } = await supabase
+    .from('production_order_items')
+    .select('product_id, raw_material_id')
+    .eq('production_order_id', orderId);
+
+  if (orderItemsError) {
+    throw new Error('No fue posible comprobar los ingredientes de la orden.');
+  }
+  const { data: orderHeader, error: orderHeaderError } = await supabase
+    .from('production_orders')
+    .select('recipe_id')
+    .eq('id', orderId)
+    .single();
+  if (orderHeaderError || !orderHeader) {
+    throw new Error('No fue posible identificar la receta de la orden.');
+  }
+
+  const usesIntermediateProduct = (orderItems ?? []).some(
+    (item) => item.product_id !== null && item.raw_material_id === null,
+  );
+  const { data: outputRecipe, error: outputRecipeError } = await supabase
+    .from('recipes')
+    .select('product_id')
+    .eq('id', orderHeader.recipe_id)
+    .single();
+  if (outputRecipeError || !outputRecipe) {
+    throw new Error('No fue posible identificar el producto de la receta.');
+  }
+  const { count: intermediateUseCount, error: intermediateUseError } = await supabase
+    .from('recipe_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_id', outputRecipe.product_id);
+  if (intermediateUseError) {
+    throw new Error('No fue posible identificar si la salida es una masa intermedia.');
+  }
+
+  if (usesIntermediateProduct) {
+    const lotSurpluses = [...formData.entries()]
+      .flatMap(([name, value]) => {
+        const prefix = 'mass_surplus_';
+        return name.startsWith(prefix)
+          ? [{
+              productLotId: name.slice(prefix.length),
+              surplusQuantity: value,
+            }]
+          : [];
+      });
+
+    const request = buildProductionMassLotSurplusRequest({
+      ...completionInput,
+      lotSurpluses,
     });
 
-  await completeProductionOutputToQuarantine(
-    supabase,
-    request,
-  );
+    await completeProductionOutputWithMassLotYield(
+      supabase,
+      request,
+    );
+  } else if ((intermediateUseCount ?? 0) > 0) {
+    await completeProductionOrderWithMassOutput(supabase, {
+      productionOrderId: orderId,
+      actualMassQuantity: Number(formData.get('actual_mass_quantity')),
+      idempotencyKey: String(formData.get('idempotency_key') ?? ''),
+    });
+  } else {
+    const request = buildProductionOutputCompletionRequest(completionInput);
+
+    await completeProductionOutputToQuarantine(
+      supabase,
+      request,
+    );
+  }
 
   revalidateProductionRoutes(orderId);
   revalidatePath('/qa');
+}
+
+export async function disposeMassSurplusAsWaste(
+  reservationId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.PRODUCTION_ORDER_COMPLETE,
+  );
+  const reason = formData.get('reason');
+  if (typeof reason !== 'string' || !reason.trim()) {
+    throw new Error('Indica por qué el sobrante se registra como merma.');
+  }
+  await disposeProductionMassSurplusAsWaste(
+    supabase,
+    reservationId,
+    reason,
+  );
+  revalidatePath('/production-orders');
 }

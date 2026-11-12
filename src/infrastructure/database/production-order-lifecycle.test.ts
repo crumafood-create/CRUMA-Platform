@@ -425,6 +425,15 @@ describe(
             '} Returns: string }',
         );
 
+        expect(normalizedTypes).toContain(
+          'start_production_order_with_mass_lot_reservations: { ' +
+            'Args: { ' +
+            'p_idempotency_key: string ' +
+            'p_lot_allocations: Json ' +
+            'p_production_order_id: string ' +
+            '} Returns: string }',
+        );
+
         expect(repository).toContain(
           "await supabase.rpc(",
         );

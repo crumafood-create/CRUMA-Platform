@@ -321,12 +321,77 @@ Prioridad **P1**. La historia #3 y estos criterios/pruebas están aprobados para
 - CI #4198 aprobó el commit final: reconstrucción limpia, `db:verify` completo (incluidos SQL/RLS y `db:types:check`), typecheck, lint, pruebas, build y Storybook. El recorrido de navegador del rechazo de la orden con producto intermedio quedó aprobado y se confirmó que no creó órdenes. El recorrido de recetas reales de masa y Tequeño Party de queso también se realizó; los valores del fixture SQL son sintéticos y no representan la fórmula real de CRUMAFOOD.
 - Verificación local después de los correctivos: 51 pruebas focales en 5 archivos, typecheck, lint y `git diff --check` aprobados; se incorporó el archivo generado completo desde CI. No se pudo reconstruir Supabase en este entorno porque Docker Desktop no estaba disponible; la reconstrucción y la prueba SQL se validaron en CI #4198.
 
-## Requisito registrado para historia #4: producción e inventario
+## Historia #4: órdenes de producción
 
-La historia #4 permanece pendiente de refinamiento. Además de lotes de masa compartidos entre órdenes, cantidades planificadas frente a consumos y rendimientos reales, incluye esta regla confirmada:
+**Estado:** activa; criterios aprobados para implementación. **Propietario:** Production. Inventory conserva saldos, apartados y movimientos; Quality libera lotes. Depende de REC-03, completada.
 
-- Cada porción de un lote de producto terminado identifica la preparación, la condición de almacenamiento y la cantidad en piezas.
-- Al congelar una porción, se descuentan sus piezas del saldo de origen y se agregan al saldo congelado, conservando la trazabilidad.
-- Los envíos foráneos usan el saldo congelado solo para productos habilitados en la ruta correspondiente.
+### Criterios de aceptación
 
-No se inicia implementación de esta historia dentro de REC-03. En su refinamiento se precisará cómo interactúan Production, Inventory y el flujo de envíos con las fuentes de saldo y la autorización vigente.\n
+1. La orden estima ingredientes como cantidad de receta multiplicada por piezas planeadas y dividida por el rendimiento esperado. Ejemplo: 50 piezas Party de una receta de 100 piezas y 2 kg de masa estiman 1 kg. La planificación no aparta stock.
+2. Al iniciar, el operador selecciona uno o varios lotes liberados de la misma variedad y pesa lo retirado de cada uno. Inventory aparta esas cantidades de manera atómica; órdenes concurrentes no pueden apartar más de lo disponible.
+3. Al cerrar, se registran las piezas reales y el sobrante pesado por lote. Consumo = masa retirada − sobrante. El sobrante permanece fuera del disponible hasta un único destino: incorporarlo a la siguiente preparación de la misma variedad o registrarlo como merma. Todo sobrante debe resolverse al cierre del día, con origen conservado.
+
+### Prueba de aceptación acordada
+
+Planear 50 piezas; retirar 1,050 g de dos lotes; cerrar con 48 piezas reales, 150 g de sobrante pesado y 900 g de consumo calculado por diferencia. Incorporar los 150 g una sola vez a la receta estándar de 2 kg, que mantiene sus cantidades habituales de ingredientes. Registrar por separado el sobrante incorporado y el peso real medido; 2.15 kg es esperado, no un valor impuesto. Verificar que el sobrante solo se cuente una vez en Inventory y que el nuevo lote quede disponible únicamente después de Calidad.
+
+### Plan de implementación y pruebas
+
+1. **Escalado del plan:** prueba SQL de la RPC con rendimiento distinto de 1 (50 de 100 piezas y receta de 2 kg → 1 kg planeado); añadir unitarias focales solo si protegen una regla reutilizada.
+2. **Lote y apartado al inicio:** pruebas SQL de lotes liberados de variedad coincidente, selección de varios lotes, cantidades pesadas, disponibilidad concurrente, rechazo atómico e idempotencia.
+3. **Cierre por diferencia:** registrar peso retirado, sobrante separado por lote, consumo calculado y piezas reales; verificar que los movimientos y saldos de Inventory concilien.
+4. **Destino único del sobrante:** probar espera fuera del saldo disponible, incorporación a nueva preparación (origen trazable, suma única y peso real del lote), descarte como merma, rechazo de segundo destino y resolución al cierre del día.
+5. **Compatibilidad y revisión:** mantener recetas solo de materias primas, cuarentena/liberación de Calidad y regresión del ciclo de órdenes; actualizar tipos generados si cambia el esquema.
+
+La prueba automatizada cubre como aceptación los 1,050 g retirados, 900 g consumidos, 150 g sobrantes y 48 piezas reales. Pruebas SQL transaccionales incluyen concurrencia; la reconstrucción limpia y el recorrido de navegador se documentarán por separado.
+
+### Fuera de esta primera entrega
+
+Repartir producto terminado por preparación y condición de almacenamiento, transferir saldos a congelado y limitar envíos foráneos por ruta quedan para una entrega posterior, según el requisito diferido de `pendientes.md`. No se implementan empaques ni se cambian recetas históricas.
+
+### Primer ciclo TDD
+
+Probar primero que la planificación divide las cantidades de ingredientes por el rendimiento de la receta. La prueba debe mostrar que 50 piezas de una receta Party de 100, cuya fórmula usa 2 kg de masa, generan 1 kg planeado; mantener autorización y validación de existencias.
+
+**Avance del ciclo 1:** se añadió la prueba unitaria del cálculo y reprodujo el defecto (`100` en vez de `1`); tras el cambio, las 14 pruebas de `production-order-contract.test.ts` pasan. La validación de stock en servidor ya lee `recipes.yield_quantity` y aplica la misma proporción. Se añadió una regresión SQL que comprueba que `create_production_order_draft` persista 1 kg planeado y una migración nueva que actualiza esa RPC; no se modificó el historial. Typecheck, ESLint focal y `git diff --check` locales pasan. El job database de CI #4203 reconstruyó la base, aplicó `20261111000000_scale_production_order_plan.sql` y ejecutó `production_order_lifecycle.sql` (23 pruebas aprobadas); `db:verify` concluyó exitosamente. El job build detectó que el inventario estático de guardas de autorización pasa de 46 a 47 por esta nueva definición protegida; se actualizó la expectativa a 47. CI #4204 aprobó los jobs build, database y storybook sobre el commit 3650402c; el SQL se volvió a ejecutar en reconstrucción limpia y `db:verify` pasó.
+### Segundo ciclo TDD: apartado de masa por lote al iniciar
+
+CI #4205 aprobó el primer ciclo sobre `d3e72b53` (jobs database, build y Storybook); el escalado por rendimiento queda validado.
+
+El snapshot de `production_order_items` ahora contempla el `product_id` de la variedad intermedia. Crear y liberar el borrador no aparta masa; al iniciar, la pantalla permite pesar kg por cada lote liberado de esa variedad. La acción de servidor envía la selección a una RPC de Inventory.
+
+La migración `20261112000000_reserve_intermediate_product_lots_on_start.sql` agrega la referencia exclusiva de ingrediente, el registro por lote de peso apartado y la protección para que una transición directa a `in_progress` no omita la reserva. La RPC bloquea los lotes en orden determinista, verifica variedad, estado/calidad y saldo, descuenta `product_lots.quantity`, registra el peso exacto a cuatro decimales y transiciona la orden en la misma transacción. Esa cantidad no se escribe en `inventory_movements`, cuya columna `quantity` es entera; el registro nuevo conserva los kg y el origen exactos sin redondear gramos.
+
+La prueba SQL del ciclo de vida cubre planificación de 50 piezas con 1 kg estimado, espera sin apartado, rechazo de inicio sin lote, selección de dos lotes (0.60 + 0.45 kg), saldo restante por lote y reintento idempotente. El nuevo script `run-production-order-mass-reservation-concurrency.sh`, conectado a `db:verify`, inicia dos sesiones PostgreSQL contra un lote con 1.5 kg: ambas solicitan 1 kg; una conserva el bloqueo mientras la otra espera. Debe ganar una sola orden y la rechazada debe permanecer liberada, sin reserva ni escritura parcial.
+
+**Validación local del ciclo 2:** 22 pruebas focales aprobadas; typecheck, ESLint focal y `git diff --check` aprobados. El entorno local no tiene Docker daemon, por lo que la base y SQL se validaron en CI.
+
+La primera ejecución del ciclo 2, CI #4206, detectó que el tipo generado debía actualizarse, un error de alias en la agregación SQL y expectativas estáticas antiguas del comando de pruebas. CI #4207 confirmó el error de alias en `production_order_lifecycle.sql` y detectó casts temporales incompatibles con la comprobación de build. Se corrigió el alias, se conectó el RPC a los tipos generados reales recuperados del artefacto de CI, y el flujo móvil FEFO se restringió a ingredientes de materias primas; los productos intermedios se reservan por el ciclo de lotes y no se presentan como materiales FEFO.
+
+**Ciclo 2 validado por CI #4208 sobre `0fdd3935`:** el job `database` reconstruyó Supabase desde cero y aplicó `20261112000000_reserve_intermediate_product_lots_on_start.sql`; `production_order_lifecycle.sql` pasó; `run-production-order-mass-reservation-concurrency.sh` ejecutó dos sesiones PostgreSQL simultáneas contra el mismo lote (una apartó el kg y la otra fue rechazada por saldo insuficiente); `db:types:check` informó `DATABASE_TYPES_CURRENT=OK`. También pasaron `build` (typecheck, lint, pruebas y build) y Storybook. Los tres jobs concluyeron en verde. El PR #132 permanece en borrador; no se ha fusionado.
+
+### Tercer ciclo TDD: cierre con piezas reales y sobrante por lote
+
+La RPC `complete_production_order_with_mass_lot_yield` cierra de forma atómica las reservas de masa, crea una salida pendiente de Calidad con las piezas reales y registra por lote `consumed_quantity = reserved_quantity - surplus_quantity` y `surplus_quantity`. El excedente queda fuera de `product_lots.quantity` y pendiente de destino. El formulario lista cada lote apartado y captura su sobrante pesado; la acción conserva autorización, distingue la receta con producto intermedio y delega el cierre a la RPC tipada. La vía existente para órdenes solo con materias primas permanece igual.
+
+La regresión SQL planea 50 piezas, retira 0.7000 kg y 0.3500 kg de dos lotes, y cierra con 48 piezas, 0.1000 kg y 0.0500 kg de sobrante: verifica consumos de 0.6000 kg y 0.3000 kg, 0.1500 kg pendiente fuera del disponible y una única salida `pending` en Calidad. También intenta cerrar con sobrante mayor que el retiro y comprueba rechazo específico, sin cambios en orden, salida o reservas; luego repite el cierre válido con la misma llave y verifica que no duplica registros.
+
+**Ejecuciones CI del ciclo 3:** CI #4210 sobre `8419fe11` detectó que la aserción de atomicidad esperaba `produced_quantity IS NULL`, aunque la RPC inicializa ese campo en cero; el inventario de seguridad también debía contar la nueva guarda `is_admin`. Se corrigieron ambas expectativas y se recuperó `database.generated.ts` completo del artefacto generado por CI; su diff se limita a las dos columnas de cierre y la nueva RPC. CI #4211 reconstruyó la base y pasó build, pruebas y Storybook, pero la aserción del sobrante excesivo identificó que la RPC comparaba el producto de salida del pedido con el producto intermedio de entrada. CI #4212 registró ese diagnóstico; se corrigió la relación para vincular el ingrediente de `production_order_items` con el producto intermedio de `recipe_items`.
+
+**Ciclo 3 validado por CI #4213 sobre `f4e594ea`:** el job `database` reconstruyó Supabase desde cero, aplicó la migración de cierre, ejecutó y aprobó `production_order_lifecycle.sql` y `db:types:check`. La regresión confirmó el cierre de 50 piezas planeadas con 48 reales; consumos de 0.6000 kg y 0.3000 kg y sobrantes por lote de 0.1000 kg y 0.0500 kg; el rechazo por sobrante superior al peso retirado sin cambios parciales; una única salida pendiente de Calidad después del reintento; y los 0.1500 kg de sobrante fuera del saldo disponible. También pasaron build (typecheck, lint, pruebas y build) y Storybook. No se ha hecho un recorrido de navegador de este cierre. El PR #132 permanece en borrador.
+
+**Verificación local tras las correcciones del ciclo 3:** 75 pruebas enfocadas en 8 archivos, typecheck, ESLint focal y `git diff --check` aprobados. CI #4213 aprobó el SQL y `db:types:check` en reconstrucción limpia; CI #4214 volvió a aprobar el head documental `0ceef90a`. El PR #132 permanece en borrador.
+
+### Cuarto ciclo TDD: destino del sobrante por lote
+
+El sobrante debe permanecer fuera del saldo disponible hasta que el jefe de producción elija un destino. La decisión se registra una sola vez por sobrante: merma, o incorporación a una orden posterior cuya receta produzca la misma variedad. Al completar esa preparación, la salida debe conservar el peso real medido y enlazar el nuevo lote liberado por Calidad con cada lote de origen del sobrante incorporado. La preparación estándar conserva las cantidades de ingredientes de su receta; el sobrante se suma por separado al peso esperado.
+
+El repositorio no tiene un proceso de cierre de turno/día. La primera implementación hará visibles los sobrantes sin resolver y sus destinos en Producción; no inventará un módulo de cierre diario. La operación deberá poder comprobar que el listado de pendientes está vacío al terminar la jornada.
+
+**Ciclo 4 implementado, pendiente de CI:** cada sobrante cerrado puede recibir un único destino. La merma requiere motivo; la reutilización se asigna al iniciar una orden liberada de la misma variedad. La preparación mantiene los ingredientes estándar de su receta, registra el peso real por separado y deja la salida en cuarentena. Al liberar Calidad, el peso real pasa una sola vez al lote disponible y al movimiento de inventario, y las referencias de los sobrantes reutilizados se enlazan al lote nuevo.
+
+La pantalla de inicio de Producción muestra los sobrantes aún sin destino; el detalle de la orden de masa permite iniciar una preparación con sobrantes de esa misma variedad o descartarlos como merma. La pantalla de Calidad identifica el peso real de una salida de masa. No hay un cierre diario en el sistema; verificar que la lista de sobrantes pendientes quede vacía al final de la jornada es el control operativo vigente.
+
+La regresión `production_order_lifecycle.sql` cubre los dos sobrantes del ciclo anterior (100 g y 50 g), su reutilización conjunta en una nueva preparación, rechazo de variedad distinta y de un segundo destino, merma con motivo, idempotencia del cierre y peso medido de 2.15 kg. También verifica que el sobrante quede fuera del disponible hasta Calidad y que al liberar se cree un lote/movimiento de 2.15 kg con trazabilidad hacia ambos orígenes. `finished_product_quality_release.sql` ejercita la RPC real de liberación de Calidad para ese peso. `function_security.sql` ahora comprueba permisos, `SECURITY DEFINER` y `search_path` de las nuevas RPC y funciones de trigger.
+
+**Verificación del ciclo 4:** 16 pruebas unitarias focales, ESLint focal, typecheck y `git diff --check` aprobados localmente tras incorporar el archivo completo de tipos producido por CI. CI #4216 reconstruyó la base desde cero y aplicó la migración; `db:lint`, `function_security.sql`, `production_order_lifecycle.sql` (incluida reutilización, merma y peso medido), `finished_product_quality_release.sql` y las pruebas de consistencia de migraciones pasaron. `db:types:check` identificó que faltaba versionar el esquema generado; se recuperó intacto del artefacto de CI. CI #4217 aprobó typecheck, lint y Storybook, y detectó dos expectativas estáticas desactualizadas; se ajustaron sus conteos RLS y la prueba de escrituras fragmentadas para permitir las lecturas de validación existentes sin admitir escrituras directas. Las nueve pruebas corregidas pasaron localmente. **CI #4218 aprobó el commit `587e2cdd`:** `database` pasó reconstrucción limpia, migración, SQL de seguridad/ciclo/Calidad y `db:types:check`; `build` pasó typecheck, lint, pruebas y build; Storybook también pasó. No hay Docker local. El recorrido manual del ciclo 4 sigue pendiente. El PR #132 permanece en borrador.

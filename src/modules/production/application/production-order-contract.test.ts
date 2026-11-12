@@ -35,6 +35,10 @@ describe('contrato tipado de órdenes de producción', () => {
     expect(calculateRequiredQuantity(2.5, 4)).toBe(10);
   });
 
+  it('escala la cantidad planeada según el rendimiento esperado de la receta', () => {
+    expect(calculateRequiredQuantity(2, 50, 100)).toBe(1);
+  });
+
   it('suma stock disponible y normaliza nulos', () => {
     expect(sumAvailableStock([{ quantity: 4 }, { quantity: null }])).toBe(4);
   });

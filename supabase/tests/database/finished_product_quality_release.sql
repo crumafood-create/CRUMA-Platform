@@ -72,6 +72,9 @@ INSERT INTO public.inventory_locations (
   'Finished Goods Location'
 );
 
+INSERT INTO public.units_of_measure (id, name, code)
+VALUES ('fd000000-0000-4000-8000-000000000001', 'Kilogram', 'FGR-KG');
+
 INSERT INTO public.products (
   id,
   slug,
@@ -86,6 +89,17 @@ INSERT INTO public.products (
   'active'
 );
 
+INSERT INTO public.products (
+  id, slug, internal_code, name, status, unit_of_measure_id
+) VALUES (
+  'f4000000-0000-4000-8000-000000000002',
+  'finished-release-dough',
+  'FG-D1',
+  'Finished Release Dough',
+  'active',
+  'fd000000-0000-4000-8000-000000000001'
+);
+
 INSERT INTO public.recipes (
   id,
   product_id,
@@ -95,6 +109,17 @@ INSERT INTO public.recipes (
   'f5000000-0000-4000-8000-000000000001',
   'f4000000-0000-4000-8000-000000000001',
   'Finished Release Recipe',
+  true
+);
+
+INSERT INTO public.recipes (
+  id, product_id, name, yield_quantity, unit_of_measure_id, is_active
+) VALUES (
+  'f5000000-0000-4000-8000-000000000002',
+  'f4000000-0000-4000-8000-000000000002',
+  'Finished Release Dough Recipe',
+  2,
+  'fd000000-0000-4000-8000-000000000001',
   true
 );
 
@@ -144,6 +169,19 @@ INSERT INTO public.production_orders (
   now()
 );
 
+INSERT INTO public.production_orders (
+  id, production_number, recipe_id, production_status,
+  planned_quantity, produced_quantity, completed_at
+) VALUES (
+  'f8000000-0000-4000-8000-000000000002',
+  'FG-MASS-001',
+  'f5000000-0000-4000-8000-000000000002',
+  'completed',
+  2,
+  1,
+  now()
+);
+
 INSERT INTO public.production_order_items (
   id,
   production_order_id,
@@ -188,6 +226,18 @@ INSERT INTO public.production_outputs (
   'pending'
 );
 
+INSERT INTO public.production_outputs (
+  id, production_order_id, product_id, quantity_produced,
+  mass_quantity_produced, quality_status
+) VALUES (
+  'fa000000-0000-4000-8000-000000000002',
+  'f8000000-0000-4000-8000-000000000002',
+  'f4000000-0000-4000-8000-000000000002',
+  1,
+  2.15,
+  'pending'
+);
+
 INSERT INTO public.quality_inspections (
   id,
   production_order_id,
@@ -210,6 +260,18 @@ INSERT INTO public.quality_inspections (
   12,
   12,
   0
+);
+
+INSERT INTO public.quality_inspections (
+  id, production_order_id, production_output_id, inspector_id,
+  subject_type, status, result, sampled_quantity,
+  accepted_quantity, rejected_quantity
+) VALUES (
+  'fb000000-0000-4000-8000-000000000002',
+  'f8000000-0000-4000-8000-000000000002',
+  'fa000000-0000-4000-8000-000000000002',
+  'f1000000-0000-4000-8000-000000000001',
+  'production_output', 'passed', 'ok', 1, 1, 0
 );
 
 DO $test$
@@ -275,6 +337,25 @@ SELECT set_config(
   'request.jwt.claim.sub',
   'f1000000-0000-4000-8000-000000000001',
   true
+);
+
+SELECT public.release_finished_product_quality_to_inventory(
+  'fb000000-0000-4000-8000-000000000002',
+  'DOUGH-LOT-215',
+  '2099-12-31',
+  'f2000000-0000-4000-8000-000000000001',
+  'f3000000-0000-4000-8000-000000000001',
+  'fc000000-0000-4000-8000-000000000002',
+  'Lote pesado después de incorporar sobrante'
+);
+SELECT public.release_finished_product_quality_to_inventory(
+  'fb000000-0000-4000-8000-000000000002',
+  'DOUGH-LOT-215',
+  '2099-12-31',
+  'f2000000-0000-4000-8000-000000000001',
+  'f3000000-0000-4000-8000-000000000001',
+  'fc000000-0000-4000-8000-000000000002',
+  'Lote pesado después de incorporar sobrante'
 );
 
 DO $test$
@@ -420,6 +501,31 @@ BEGIN
   ) <> 1 THEN
     RAISE EXCEPTION
       'inventory entry was not created once';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.production_outputs
+    WHERE id = 'fa000000-0000-4000-8000-000000000002'
+      AND quality_status = 'released'
+      AND mass_quantity_produced = 2.15
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots
+    WHERE production_output_id = 'fa000000-0000-4000-8000-000000000002'
+      AND lot_number = 'DOUGH-LOT-215'
+      AND initial_quantity = 2.15
+      AND quantity = 2.15
+      AND status = 'available'
+  ) OR (
+    SELECT count(*) FROM public.inventory_movements
+    WHERE reference_type = 'production_lot'
+      AND reference_id = (
+        SELECT id FROM public.product_lots
+        WHERE production_output_id = 'fa000000-0000-4000-8000-000000000002'
+      )
+      AND quantity = 2.15
+  ) <> 1 THEN
+    RAISE EXCEPTION
+      'Quality did not release exactly the weighed 2.15 kg mass output';
   END IF;
 
   IF (

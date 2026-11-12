@@ -10,18 +10,18 @@ describe('inventario de autoridad RLS', () => {
   const summary = summarizeRlsDependencies();
 
   it('reconstruye las políticas vigentes sin perder su tabla', () => {
-    expect(policies).toHaveLength(211);
+    expect(policies).toHaveLength(213);
     expect(summary).toEqual({
-      policies: 211,
+      policies: 213,
       authority: {
-        is_admin_exclusive: 48,
+        is_admin_exclusive: 50,
         mixed: 0,
         not_is_admin: 163,
       },
       openReads: 35,
       openWrites: 13,
       missingReads: [],
-      functionGuards: 46,
+      functionGuards: 53,
       anonWriteGrants: 136,
       authenticatedWriteGrants: 139,
     });
@@ -32,6 +32,18 @@ describe('inventario de autoridad RLS', () => {
       expect.objectContaining({
         table: 'production_order_items',
         policy: 'production_order_items_admin_read',
+        authority: 'is_admin_exclusive',
+        command: 'select',
+        open: false,
+      }),
+    );
+  });
+
+  it('limita la lectura de reservas de lotes de masa a administradores', () => {
+    expect(policies).toContainEqual(
+      expect.objectContaining({
+        table: 'production_order_product_lot_reservations',
+        policy: 'production_order_product_lot_reservations_admin_read',
         authority: 'is_admin_exclusive',
         command: 'select',
         open: false,

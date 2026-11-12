@@ -102,6 +102,20 @@ VALUES (
   'Lifecycle Party',
   'active',
   'e1210000-0000-4000-8000-000000000002'
+), (
+  'e1200000-0000-4000-8000-000000000004',
+  'lifecycle-other-dough',
+  'LFC-D2',
+  'Lifecycle Other Dough',
+  'active',
+  'e1210000-0000-4000-8000-000000000001'
+), (
+  'e1200000-0000-4000-8000-000000000005',
+  'lifecycle-other-party',
+  'LFC-PARTY2',
+  'Lifecycle Other Party',
+  'active',
+  'e1210000-0000-4000-8000-000000000002'
 );
 
 INSERT INTO public.recipes (
@@ -146,6 +160,22 @@ VALUES
     'e1300000-0000-4000-8000-000000000004',
     'e1200000-0000-4000-8000-000000000001',
     'Lifecycle Scaled Recipe',
+    100,
+    'e1210000-0000-4000-8000-000000000002',
+    true
+  ),
+  (
+    'e1300000-0000-4000-8000-000000000005',
+    'e1200000-0000-4000-8000-000000000004',
+    'Lifecycle Other Dough Recipe',
+    2,
+    'e1210000-0000-4000-8000-000000000001',
+    true
+  ),
+  (
+    'e1300000-0000-4000-8000-000000000006',
+    'e1200000-0000-4000-8000-000000000005',
+    'Lifecycle Other Intermediate Recipe',
     100,
     'e1210000-0000-4000-8000-000000000002',
     true
@@ -194,6 +224,19 @@ INSERT INTO public.recipe_items (
   quantity
 )
 VALUES (
+  'e1450000-0000-4000-8000-000000000005',
+  'e1300000-0000-4000-8000-000000000005',
+  'e1400000-0000-4000-8000-000000000001',
+  1.25
+);
+
+INSERT INTO public.recipe_items (
+  id,
+  recipe_id,
+  raw_material_id,
+  quantity
+)
+VALUES (
   'e1450000-0000-4000-8000-000000000004',
   'e1300000-0000-4000-8000-000000000004',
   'e1400000-0000-4000-8000-000000000001',
@@ -223,6 +266,16 @@ VALUES (
   'e1450000-0000-4000-8000-000000000003',
   'e1300000-0000-4000-8000-000000000003',
   'e1200000-0000-4000-8000-000000000002',
+  2
+);
+
+INSERT INTO public.recipe_items (
+  id, recipe_id, product_id, quantity
+)
+VALUES (
+  'e1450000-0000-4000-8000-000000000006',
+  'e1300000-0000-4000-8000-000000000006',
+  'e1200000-0000-4000-8000-000000000004',
   2
 );
 
@@ -1344,6 +1397,266 @@ BEGIN
   ) THEN
     RAISE EXCEPTION
       'pending surplus must remain outside available mass inventory';
+  END IF;
+END;
+$test$;
+
+-- Fixture independiente para verificar el destino de merma.
+RESET ROLE;
+INSERT INTO public.production_orders (
+  id, production_number, recipe_id, production_status,
+  planned_quantity, produced_quantity, completed_at
+) VALUES (
+  'e1800000-0000-4000-8000-000000000003',
+  'LFC-WASTE-003',
+  'e1300000-0000-4000-8000-000000000003',
+  'completed', 1, 1, now()
+);
+INSERT INTO public.production_order_items (
+  id, production_order_id, product_id, planned_quantity,
+  consumed_quantity, status
+) VALUES (
+  'e1900000-0000-4000-8000-000000000003',
+  'e1800000-0000-4000-8000-000000000003',
+  'e1200000-0000-4000-8000-000000000002',
+  0.1, 0.1, 'completed'
+);
+INSERT INTO public.production_order_product_lot_reservations (
+  id, production_order_id, production_order_item_id,
+  product_lot_id, reserved_quantity, consumed_quantity,
+  surplus_quantity, created_by
+) VALUES (
+  'e1910000-0000-4000-8000-000000000003',
+  'e1800000-0000-4000-8000-000000000003',
+  'e1900000-0000-4000-8000-000000000003',
+  'e1610000-0000-4000-8000-000000000001',
+  0.1, 0, 0.1, 'e1100000-0000-4000-8000-000000000001'
+);
+SET LOCAL ROLE authenticated;
+
+-- Cada sobrante recibe un único destino: merma o la siguiente orden de la misma variedad.
+DO $test$
+DECLARE
+  party_order_id uuid;
+  dough_order_id uuid;
+  first_reservation_id uuid;
+  second_reservation_id uuid;
+  output_id uuid;
+BEGIN
+  SELECT production_order_id INTO party_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key = 'e1500000-0000-4000-8000-000000000015';
+
+  SELECT id INTO first_reservation_id
+  FROM public.production_order_product_lot_reservations
+  WHERE production_order_id = party_order_id
+    AND product_lot_id = 'e1610000-0000-4000-8000-000000000001';
+  SELECT id INTO second_reservation_id
+  FROM public.production_order_product_lot_reservations
+  WHERE production_order_id = party_order_id
+    AND product_lot_id = 'e1610000-0000-4000-8000-000000000002';
+
+  PERFORM public.create_production_order_draft(
+    'e1300000-0000-4000-8000-000000000005',
+    2,
+    'Otra variedad de masa',
+    'e1500000-0000-4000-8000-000000000024'
+  );
+  SELECT production_order_id INTO output_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key = 'e1500000-0000-4000-8000-000000000024';
+  PERFORM public.transition_production_order_lifecycle(
+    output_id, 'release', NULL,
+    'e1500000-0000-4000-8000-000000000025'
+  );
+  BEGIN
+    PERFORM public.start_production_order_with_mass_surplus_reuse(
+      output_id, ARRAY[second_reservation_id],
+      'e1500000-0000-4000-8000-000000000026'
+    );
+    RAISE EXCEPTION 'a surplus was reused in another mass variety'
+      USING ERRCODE = 'PZ031';
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+    WHEN SQLSTATE 'PZ031' THEN RAISE;
+  END;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.production_order_product_lot_reservations
+    WHERE id = second_reservation_id
+      AND surplus_disposition IS NULL
+  ) THEN
+    RAISE EXCEPTION 'rejected cross-variety reuse changed the source surplus';
+  END IF;
+
+  PERFORM public.dispose_production_mass_surplus_as_waste(
+    'e1910000-0000-4000-8000-000000000003',
+    'Recorte no reutilizable'
+  );
+
+  PERFORM public.create_production_order_draft(
+    'e1300000-0000-4000-8000-000000000002',
+    2,
+    'Reutilizar sobrante en masa estándar',
+    'e1500000-0000-4000-8000-000000000021'
+  );
+  SELECT production_order_id INTO dough_order_id
+  FROM public.production_order_lifecycle_operations
+  WHERE idempotency_key = 'e1500000-0000-4000-8000-000000000021';
+  PERFORM public.transition_production_order_lifecycle(
+    dough_order_id, 'release', NULL,
+    'e1500000-0000-4000-8000-000000000022'
+  );
+  PERFORM public.start_production_order_with_mass_surplus_reuse(
+    dough_order_id,
+    ARRAY[first_reservation_id, second_reservation_id],
+    'e1500000-0000-4000-8000-000000000023'
+  );
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.production_order_product_lot_reservations
+    WHERE id = 'e1910000-0000-4000-8000-000000000003'
+      AND surplus_disposition = 'waste'
+      AND surplus_disposition_reason = 'Recorte no reutilizable'
+      AND surplus_destination_production_order_id IS NULL
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.production_order_product_lot_reservations
+    WHERE id = first_reservation_id
+      AND surplus_disposition = 'reuse'
+      AND surplus_destination_production_order_id = dough_order_id
+      AND surplus_quantity = 0.1
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.production_order_product_lot_reservations
+    WHERE id = second_reservation_id
+      AND surplus_disposition = 'reuse'
+      AND surplus_destination_production_order_id = dough_order_id
+      AND surplus_quantity = 0.05
+  ) THEN
+    RAISE EXCEPTION 'surplus destination was not recorded with its source';
+  END IF;
+
+  BEGIN
+    PERFORM public.dispose_production_mass_surplus_as_waste(
+      second_reservation_id, 'Segundo destino no permitido'
+    );
+    RAISE EXCEPTION 'a reused surplus accepted a second destination'
+      USING ERRCODE = 'PZ030';
+  EXCEPTION
+    WHEN check_violation THEN NULL;
+    WHEN SQLSTATE 'PZ030' THEN RAISE;
+  END;
+
+  -- Fixture: ingredientes del siguiente lote ya fueron consumidos.
+  PERFORM set_config('test.mass_dough_order_id', dough_order_id::text, true);
+END;
+$test$;
+
+RESET ROLE;
+  UPDATE public.production_order_items
+  SET consumed_quantity = planned_quantity,
+      status = 'completed'
+  WHERE production_order_id = current_setting('test.mass_dough_order_id')::uuid;
+SET LOCAL ROLE authenticated;
+
+DO $test$
+DECLARE
+  dough_order_id uuid;
+  output_id uuid;
+BEGIN
+  dough_order_id := current_setting('test.mass_dough_order_id')::uuid;
+  output_id := public.complete_production_order_with_mass_output(
+    dough_order_id, 2.15,
+    'e1500000-0000-4000-8000-000000000027'
+  );
+  IF public.complete_production_order_with_mass_output(
+      dough_order_id, 2.15,
+      'e1500000-0000-4000-8000-000000000027'
+    ) IS DISTINCT FROM output_id THEN
+    RAISE EXCEPTION 'mass output completion was not idempotent';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.production_outputs
+    WHERE id = output_id
+      AND production_order_id = dough_order_id
+      AND mass_quantity_produced = 2.15
+      AND quantity_produced = 1
+      AND quality_status = 'pending'
+  ) OR (
+    SELECT count(*) FROM public.production_order_product_lot_reservations
+    WHERE surplus_destination_production_order_id = dough_order_id
+      AND surplus_destination_output_id = output_id
+      AND surplus_disposition = 'reuse'
+  ) <> 2 THEN
+    RAISE EXCEPTION
+      'new mass batch did not record measured weight and source linkage before Quality';
+  END IF;
+
+  IF (
+    SELECT count(*) FROM public.production_outputs
+    WHERE production_order_id = dough_order_id
+  ) <> 1 THEN
+    RAISE EXCEPTION 'retry duplicated the new mass output';
+  END IF;
+END;
+$test$;
+
+-- Emula la escritura atómica de Calidad después de una inspección aprobada.
+RESET ROLE;
+UPDATE public.production_outputs
+SET quality_status = 'released'
+WHERE id = (
+  SELECT production_output_id
+  FROM public.production_mass_output_completion_operations
+  WHERE idempotency_key = 'e1500000-0000-4000-8000-000000000027'
+);
+INSERT INTO public.product_lots (
+  id, product_id, lot_number, production_order_id, production_output_id,
+  initial_quantity, quantity, status
+)
+SELECT
+  'e1610000-0000-4000-8000-000000000003',
+  output.product_id,
+  'LFC-MASS-REUSED',
+  output.production_order_id,
+  output.id,
+  output.quantity_produced,
+  output.quantity_produced,
+  'available'
+FROM public.production_outputs AS output
+JOIN public.production_mass_output_completion_operations AS completion
+  ON completion.production_output_id = output.id
+WHERE completion.idempotency_key = 'e1500000-0000-4000-8000-000000000027';
+INSERT INTO public.inventory_movements (
+  item_type, item_id, product_id, movement_type, quantity,
+  reference_type, reference_id, created_by, notes
+)
+SELECT
+  'product', lot.product_id, lot.product_id, 'entry', 1,
+  'production_lot', lot.id, 'e1100000-0000-4000-8000-000000000001',
+  'Mass output quality release fixture'
+FROM public.product_lots AS lot
+WHERE lot.id = 'e1610000-0000-4000-8000-000000000003';
+SET LOCAL ROLE authenticated;
+
+DO $test$
+BEGIN
+  IF (
+    SELECT count(*) FROM public.production_order_product_lot_reservations
+    WHERE surplus_destination_product_lot_id = 'e1610000-0000-4000-8000-000000000003'
+      AND surplus_disposition = 'reuse'
+  ) <> 2 OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots
+    WHERE id = 'e1610000-0000-4000-8000-000000000003'
+      AND initial_quantity = 2.15
+      AND quantity = 2.15
+      AND status = 'available'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.inventory_movements
+    WHERE reference_id = 'e1610000-0000-4000-8000-000000000003'
+      AND quantity = 2.15
+  ) THEN
+    RAISE EXCEPTION
+      'Quality release did not preserve the measured mass or source lot traceability';
   END IF;
 END;
 $test$;

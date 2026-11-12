@@ -6,6 +6,7 @@ import type {
 
 import {
   completeProductionOutputToQuarantine,
+  completeProductionOrderWithMassOutput,
   completeProductionOutputWithMassLotYield,
 } from './production-output-completion-repository';
 
@@ -196,6 +197,33 @@ describe('cierre de masa por lote', () => {
         p_production_order_id: REQUEST.productionOrderId,
         p_variance_reason: 'Variación de rendimiento',
         p_waste_quantity: 2,
+      },
+    ]]);
+  });
+});
+
+describe('cierre de preparación intermedia de masa', () => {
+  it('envía el peso real en kg a la RPC atómica de finalización', async () => {
+    const calls: unknown[] = [];
+    const client = {
+      rpc: async (...args: unknown[]) => {
+        calls.push(args);
+        return { data: '77777777-7777-4777-8777-777777777777', error: null };
+      },
+    } as unknown as TypedSupabaseClient;
+
+    await expect(completeProductionOrderWithMassOutput(client, {
+      productionOrderId: REQUEST.productionOrderId,
+      actualMassQuantity: 2.15,
+      idempotencyKey: REQUEST.idempotencyKey,
+    })).resolves.toBe('77777777-7777-4777-8777-777777777777');
+
+    expect(calls).toEqual([[
+      'complete_production_order_with_mass_output',
+      {
+        p_production_order_id: REQUEST.productionOrderId,
+        p_actual_mass_quantity: 2.15,
+        p_idempotency_key: REQUEST.idempotencyKey,
       },
     ]]);
   });

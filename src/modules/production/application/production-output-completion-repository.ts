@@ -66,3 +66,24 @@ export async function completeProductionOutputWithMassLotYield(
 
   return data;
 }
+
+export async function completeProductionOrderWithMassOutput(
+  supabase: TypedSupabaseClient,
+  request: {
+    productionOrderId: string;
+    actualMassQuantity: number;
+    idempotencyKey: string;
+  },
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'complete_production_order_with_mass_output',
+    {
+      p_production_order_id: request.productionOrderId,
+      p_actual_mass_quantity: request.actualMassQuantity,
+      p_idempotency_key: request.idempotencyKey,
+    },
+  );
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('El cierre no devolvió una salida de masa.');
+  return data;
+}

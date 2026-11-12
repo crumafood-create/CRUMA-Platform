@@ -13,6 +13,7 @@ import {
 import {
   completeProductionOutputToQuarantine,
   completeProductionOutputWithMassLotYield,
+  completeProductionOrderWithMassOutput,
 } from '@/modules/production/application/production-output-completion-repository';
 import {
   buildProductionOrderMassStartRequest,
@@ -21,6 +22,8 @@ import {
 } from '@/modules/production/application/production-order-lifecycle-contract';
 import {
   createProductionOrderDraft,
+  disposeProductionMassSurplusAsWaste,
+  startProductionOrderWithMassSurplusReuse,
   startProductionOrderWithMassLotReservations,
   transitionProductionOrderLifecycle,
 } from '@/modules/production/application/production-order-lifecycle-repository';
@@ -233,6 +236,13 @@ export async function startProductionOrder(
     const hasMassIngredient = (massItems ?? []).some(
       (item) => item.product_id !== null,
     );
+    const surplusReservations = [...formData.entries()]
+      .flatMap(([name, value]) => {
+        const prefix = 'reuse_mass_surplus_';
+        return name.startsWith(prefix) && value === 'on'
+          ? [name.slice(prefix.length)]
+          : [];
+      });
 
     if (hasMassIngredient) {
       const reservations = [...formData.entries()]
@@ -254,6 +264,15 @@ export async function startProductionOrder(
           lotReservations: reservations,
           idempotencyKey: request.idempotencyKey,
         }),
+      );
+    } else if (surplusReservations.length > 0) {
+      transitionedOrderId = await startProductionOrderWithMassSurplusReuse(
+        supabase,
+        {
+          productionOrderId: orderId,
+          reservationIds: surplusReservations,
+          idempotencyKey: request.idempotencyKey,
+        },
       );
     } else {
       transitionedOrderId = await transitionProductionOrderLifecycle(
@@ -353,10 +372,33 @@ export async function completeProductionOrder(
   if (orderItemsError) {
     throw new Error('No fue posible comprobar los ingredientes de la orden.');
   }
+  const { data: orderHeader, error: orderHeaderError } = await supabase
+    .from('production_orders')
+    .select('recipe_id')
+    .eq('id', orderId)
+    .single();
+  if (orderHeaderError || !orderHeader) {
+    throw new Error('No fue posible identificar la receta de la orden.');
+  }
 
   const usesIntermediateProduct = (orderItems ?? []).some(
     (item) => item.product_id !== null && item.raw_material_id === null,
   );
+  const { data: outputRecipe, error: outputRecipeError } = await supabase
+    .from('recipes')
+    .select('product_id')
+    .eq('id', orderHeader.recipe_id)
+    .single();
+  if (outputRecipeError || !outputRecipe) {
+    throw new Error('No fue posible identificar el producto de la receta.');
+  }
+  const { count: intermediateUseCount, error: intermediateUseError } = await supabase
+    .from('recipe_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_id', outputRecipe.product_id);
+  if (intermediateUseError) {
+    throw new Error('No fue posible identificar si la salida es una masa intermedia.');
+  }
 
   if (usesIntermediateProduct) {
     const lotSurpluses = [...formData.entries()]
@@ -379,6 +421,12 @@ export async function completeProductionOrder(
       supabase,
       request,
     );
+  } else if ((intermediateUseCount ?? 0) > 0) {
+    await completeProductionOrderWithMassOutput(supabase, {
+      productionOrderId: orderId,
+      actualMassQuantity: Number(formData.get('actual_mass_quantity')),
+      idempotencyKey: String(formData.get('idempotency_key') ?? ''),
+    });
   } else {
     const request = buildProductionOutputCompletionRequest(completionInput);
 
@@ -390,4 +438,23 @@ export async function completeProductionOrder(
 
   revalidateProductionRoutes(orderId);
   revalidatePath('/qa');
+}
+
+export async function disposeMassSurplusAsWaste(
+  reservationId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.PRODUCTION_ORDER_COMPLETE,
+  );
+  const reason = formData.get('reason');
+  if (typeof reason !== 'string' || !reason.trim()) {
+    throw new Error('Indica por qué el sobrante se registra como merma.');
+  }
+  await disposeProductionMassSurplusAsWaste(
+    supabase,
+    reservationId,
+    reason,
+  );
+  revalidatePath('/production-orders');
 }

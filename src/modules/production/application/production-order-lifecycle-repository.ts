@@ -93,3 +93,42 @@ export async function startProductionOrderWithMassLotReservations(
 
   return data;
 }
+
+export async function startProductionOrderWithMassSurplusReuse(
+  supabase: TypedSupabaseClient,
+  request: {
+    productionOrderId: string;
+    reservationIds: string[];
+    idempotencyKey: string;
+  },
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'start_production_order_with_mass_surplus_reuse',
+    {
+      p_production_order_id: request.productionOrderId,
+      p_reservation_ids: request.reservationIds,
+      p_idempotency_key: request.idempotencyKey,
+    },
+  );
+
+  if (error) throw new Error(error.message);
+  if (!data) {
+    throw new Error('El inicio no devolvió una orden de producción.');
+  }
+  return data;
+}
+
+export async function disposeProductionMassSurplusAsWaste(
+  supabase: TypedSupabaseClient,
+  reservationId: string,
+  reason: string,
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'dispose_production_mass_surplus_as_waste',
+    { p_reservation_id: reservationId, p_reason: reason },
+  );
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('No se confirmó el destino de merma.');
+  return data;
+}

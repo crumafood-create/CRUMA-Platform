@@ -6,6 +6,8 @@ import type {
 
 import {
   createProductionOrderDraft,
+  startProductionOrderWithMassSurplusReuse,
+  disposeProductionMassSurplusAsWaste,
   startProductionOrderWithMassLotReservations,
   transitionProductionOrderLifecycle,
 } from './production-order-lifecycle-repository';
@@ -289,3 +291,54 @@ describe(
     );
   },
 );
+
+describe('destino de sobrantes de masa', () => {
+  it('delega la reutilización de sobrantes de la misma variedad a la RPC atómica', async () => {
+    const calls: unknown[] = [];
+    const client = {
+      rpc: async (...args: unknown[]) => {
+        calls.push(args);
+        return { data: UUIDS.order, error: null };
+      },
+    } as unknown as TypedSupabaseClient;
+
+    await expect(startProductionOrderWithMassSurplusReuse(client, {
+      productionOrderId: UUIDS.order,
+      reservationIds: ['c1000000-0000-4000-8000-000000000001'],
+      idempotencyKey: UUIDS.idempotency,
+    })).resolves.toBe(UUIDS.order);
+
+    expect(calls).toEqual([[
+      'start_production_order_with_mass_surplus_reuse',
+      {
+        p_production_order_id: UUIDS.order,
+        p_reservation_ids: ['c1000000-0000-4000-8000-000000000001'],
+        p_idempotency_key: UUIDS.idempotency,
+      },
+    ]]);
+  });
+
+  it('envía a merma solo el sobrante indicado y su motivo', async () => {
+    const calls: unknown[] = [];
+    const client = {
+      rpc: async (...args: unknown[]) => {
+        calls.push(args);
+        return { data: UUIDS.order, error: null };
+      },
+    } as unknown as TypedSupabaseClient;
+
+    await expect(disposeProductionMassSurplusAsWaste(
+      client,
+      'c1000000-0000-4000-8000-000000000002',
+      'No reutilizable',
+    )).resolves.toBe(UUIDS.order);
+
+    expect(calls).toEqual([[
+      'dispose_production_mass_surplus_as_waste',
+      {
+        p_reservation_id: 'c1000000-0000-4000-8000-000000000002',
+        p_reason: 'No reutilizable',
+      },
+    ]]);
+  });
+});

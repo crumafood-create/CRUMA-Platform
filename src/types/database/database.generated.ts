@@ -4947,6 +4947,68 @@ export type Database = {
           },
         ]
       }
+      production_mass_output_completion_operations: {
+        Row: {
+          actual_mass_quantity: number
+          completed_at: string
+          completed_by: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          production_order_id: string
+          production_output_id: string
+        }
+        Insert: {
+          actual_mass_quantity: number
+          completed_at?: string
+          completed_by: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          production_order_id: string
+          production_output_id: string
+        }
+        Update: {
+          actual_mass_quantity?: number
+          completed_at?: string
+          completed_by?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          production_order_id?: string
+          production_output_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_mass_output_completion_ope_production_output_id_fkey"
+            columns: ["production_output_id"]
+            isOneToOne: true
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_mass_output_completion_oper_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: true
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_mass_output_completion_operations_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "production_mass_output_completion_operations_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_material_consumption_operations: {
         Row: {
           consumed_by: string
@@ -5257,6 +5319,13 @@ export type Database = {
           production_order_id: string
           production_order_item_id: string
           reserved_quantity: number
+          surplus_destination_output_id: string | null
+          surplus_destination_product_lot_id: string | null
+          surplus_destination_production_order_id: string | null
+          surplus_disposition: string | null
+          surplus_disposition_at: string | null
+          surplus_disposition_by: string | null
+          surplus_disposition_reason: string | null
           surplus_quantity: number | null
         }
         Insert: {
@@ -5268,6 +5337,13 @@ export type Database = {
           production_order_id: string
           production_order_item_id: string
           reserved_quantity: number
+          surplus_destination_output_id?: string | null
+          surplus_destination_product_lot_id?: string | null
+          surplus_destination_production_order_id?: string | null
+          surplus_disposition?: string | null
+          surplus_disposition_at?: string | null
+          surplus_disposition_by?: string | null
+          surplus_disposition_reason?: string | null
           surplus_quantity?: number | null
         }
         Update: {
@@ -5279,14 +5355,70 @@ export type Database = {
           production_order_id?: string
           production_order_item_id?: string
           reserved_quantity?: number
+          surplus_destination_output_id?: string | null
+          surplus_destination_product_lot_id?: string | null
+          surplus_destination_production_order_id?: string | null
+          surplus_disposition?: string | null
+          surplus_disposition_at?: string | null
+          surplus_disposition_by?: string | null
+          surplus_disposition_reason?: string | null
           surplus_quantity?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "production_order_product_lot__surplus_destination_output_i_fkey"
+            columns: ["surplus_destination_output_id"]
+            isOneToOne: false
+            referencedRelation: "production_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot__surplus_destination_product__fkey"
+            columns: ["surplus_destination_product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot__surplus_destination_product__fkey"
+            columns: ["surplus_destination_product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot__surplus_destination_product__fkey"
+            columns: ["surplus_destination_product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot__surplus_destination_producti_fkey"
+            columns: ["surplus_destination_production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "production_order_product_lot_rese_production_order_item_id_fkey"
             columns: ["production_order_item_id"]
             isOneToOne: false
             referencedRelation: "production_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reserv_surplus_disposition_by_fkey"
+            columns: ["surplus_disposition_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reserv_surplus_disposition_by_fkey"
+            columns: ["surplus_disposition_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -5475,6 +5607,7 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
+          mass_quantity_produced: number | null
           product_id: string
           production_order_id: string
           quality_status: string
@@ -5488,6 +5621,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          mass_quantity_produced?: number | null
           product_id: string
           production_order_id: string
           quality_status?: string
@@ -5501,6 +5635,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          mass_quantity_produced?: number | null
           product_id?: string
           production_order_id?: string
           quality_status?: string
@@ -8505,6 +8640,14 @@ export type Database = {
         }
         Returns: string
       }
+      complete_production_order_with_mass_output: {
+        Args: {
+          p_actual_mass_quantity: number
+          p_idempotency_key: string
+          p_production_order_id: string
+        }
+        Returns: string
+      }
       complete_production_output_quarantine: {
         Args: {
           p_idempotency_key: string
@@ -8596,6 +8739,10 @@ export type Database = {
           p_inspection_id: string
           p_reason: string
         }
+        Returns: string
+      }
+      dispose_production_mass_surplus_as_waste: {
+        Args: { p_reason: string; p_reservation_id: string }
         Returns: string
       }
       generate_purchase_requisition_number: { Args: never; Returns: string }
@@ -8691,6 +8838,14 @@ export type Database = {
           p_idempotency_key: string
           p_lot_allocations: Json
           p_production_order_id: string
+        }
+        Returns: string
+      }
+      start_production_order_with_mass_surplus_reuse: {
+        Args: {
+          p_idempotency_key: string
+          p_production_order_id: string
+          p_reservation_ids: string[]
         }
         Returns: string
       }

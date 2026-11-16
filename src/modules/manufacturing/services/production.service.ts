@@ -1,7 +1,10 @@
-'use server';
-
-import { requireRows } from '@/infrastructure/database/query-result';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
+import {
+  fetchMobileProductionOrders,
+} from '@/modules/production/application/mobile-production-repository';
+import type {
+  MobileProductionOrderSummary,
+} from '@/modules/production/application/mobile-production-contract';
 
 export type ProductionOrderSummary = {
   id: string;
@@ -12,28 +15,27 @@ export type ProductionOrderSummary = {
   created_at?: string;
 };
 
-/**
- * Obtiene las órdenes de producción activas (liberadas o en progreso)
- */
+export function toProductionOrderSummaries(
+  orders: readonly MobileProductionOrderSummary[],
+): ProductionOrderSummary[] {
+  return orders
+    .filter(
+      (order) =>
+        order.production_status === 'released' ||
+        order.production_status === 'in_progress',
+    )
+    .map((order) => ({
+      id: order.id,
+      order_number: order.production_number,
+      product_name: order.recipe_name,
+      quantity: order.planned_quantity,
+      status: order.production_status,
+      created_at: order.created_at,
+    }));
+}
+
+/** Obtiene las órdenes liberadas o en producción para la lista móvil. */
 export async function getProductionOrders(): Promise<ProductionOrderSummary[]> {
-  const supabase = await createTypedClient();
-
-  // Casteo a tipo seguro usando unknown
-  const result = await (supabase as unknown as {
-    from: (table: string) => {
-      select: (cols: string) => {
-        in: (col: string, values: string[]) => {
-          order: (col: string, opts: { ascending: boolean }) => Promise<unknown>;
-        };
-      };
-    };
-  })
-    .from('production_orders')
-    .select('id, order_number, product_name, quantity, status, created_at')
-    .in('status', ['released', 'in_progress'])
-    .order('created_at', { ascending: false });
-
-  const rows = requireRows(result as Parameters<typeof requireRows>[0], 'órdenes de producción');
-
-  return rows as unknown as ProductionOrderSummary[];
+  const orders = await fetchMobileProductionOrders(await createTypedClient());
+  return toProductionOrderSummaries(orders);
 }

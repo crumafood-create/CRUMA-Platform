@@ -177,7 +177,7 @@ describe('cierre de masa por lote', () => {
     await expect(completeProductionOutputWithMassLotYield(client, {
       ...REQUEST,
       producedQuantity: 48,
-      wasteQuantity: 2,
+      wasteQuantity: 0,
       varianceReason: 'Variación de rendimiento',
       lotSurpluses: [
         { productLotId: '55555555-5555-4555-8555-555555555555', surplusQuantity: 0.1 },
@@ -196,7 +196,7 @@ describe('cierre de masa por lote', () => {
         p_produced_quantity: 48,
         p_production_order_id: REQUEST.productionOrderId,
         p_variance_reason: 'Variación de rendimiento',
-        p_waste_quantity: 2,
+        p_waste_quantity: 0,
       },
     ]]);
   });

@@ -176,7 +176,7 @@ describe('contrato de sobrantes de masa por lote', () => {
     expect(buildProductionMassLotSurplusRequest({
       ...VALID_INPUT,
       producedQuantity: 48,
-      wasteQuantity: 2,
+      wasteQuantity: 0,
       varianceReason: 'Variación de rendimiento',
       lotSurpluses: [
         { productLotId: '55555555-5555-4555-8555-555555555555', surplusQuantity: '0.1000' },
@@ -184,7 +184,7 @@ describe('contrato de sobrantes de masa por lote', () => {
       ],
     })).toMatchObject({
       producedQuantity: 48,
-      wasteQuantity: 2,
+      wasteQuantity: 0,
       lotSurpluses: [
         { productLotId: '55555555-5555-4555-8555-555555555555', surplusQuantity: 0.1 },
         { productLotId: '66666666-6666-4666-8666-666666666666', surplusQuantity: 0.05 },

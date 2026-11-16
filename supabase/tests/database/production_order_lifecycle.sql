@@ -1240,7 +1240,7 @@ BEGIN
     PERFORM public.complete_production_order_with_mass_lot_yield(
       first_order_id,
       48,
-      2,
+      0,
       'Ajuste de rendimiento de prueba',
       '[
         {"product_lot_id":"e1610000-0000-4000-8000-000000000001","surplus_quantity":0.7001},
@@ -1301,7 +1301,7 @@ SELECT public.complete_production_order_with_mass_lot_yield(
       'e1500000-0000-4000-8000-000000000015'
   ),
   48,
-  2,
+  0,
   'Ajuste de rendimiento de prueba',
   '[
     {"product_lot_id":"e1610000-0000-4000-8000-000000000001","surplus_quantity":0.1},
@@ -1319,7 +1319,7 @@ SELECT public.complete_production_order_with_mass_lot_yield(
       'e1500000-0000-4000-8000-000000000015'
   ),
   48,
-  2,
+  0,
   'Ajuste de rendimiento de prueba',
   '[
     {"product_lot_id":"e1610000-0000-4000-8000-000000000001","surplus_quantity":0.1},
@@ -1355,7 +1355,8 @@ BEGIN
     SELECT count(*) FROM public.production_output_completion_operations
     WHERE production_order_id = first_order_id
       AND produced_quantity = 48
-      AND waste_quantity = 2
+      AND waste_quantity = 0
+      AND variance_reason = 'Ajuste de rendimiento de prueba'
   ) <> 1 THEN
     RAISE EXCEPTION
       'completion must create exactly one 48-piece output awaiting quality';

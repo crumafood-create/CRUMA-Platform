@@ -26,7 +26,7 @@ export async function consumeProductionMaterialFefo(
   request: ProductionMaterialConsumptionRequest,
 ): Promise<string> {
   const consumeMaterial =
-    supabase.rpc as unknown as
+    supabase.rpc.bind(supabase) as unknown as
       ConsumeProductionMaterialFefoRpc;
 
   const { data, error } =

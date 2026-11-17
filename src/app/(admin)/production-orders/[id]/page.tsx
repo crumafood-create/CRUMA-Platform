@@ -11,12 +11,14 @@ import {
   startProductionOrder,
   completeProductionOrder,
   cancelProductionOrder,
+  disposeMassSurplusAsWaste,
 } from '../actions';
 
 
 type RecipeItem = {
   id: string;
   raw_material_id: string | null;
+  product_id: string | null;
   planned_quantity: number;
 };
 
@@ -29,6 +31,34 @@ type RawMaterial = {
 type InventoryStockRow = {
   item_id: string | null;
   quantity: number | null;
+};
+
+type MassProduct = {
+  id: string;
+  name: string;
+  internal_code: string | null;
+};
+
+type MassProductLot = {
+  id: string;
+  product_id: string;
+  lot_number: string;
+  quantity: number;
+  expiration_date: string | null;
+  location_name: string | null;
+};
+
+type ReservedMassLot = {
+  productLotId: string;
+  lotNumber: string;
+  quantity: number;
+};
+
+type PendingMassSurplus = {
+  reservationId: string;
+  productLotId: string;
+  lotNumber: string;
+  quantity: number;
 };
 
 function getStatusLabel(status: string): string {
@@ -83,16 +113,31 @@ export default async function ProductionOrderPage({
 
   const { data: recipe } = await supabase
     .from('recipes')
-    .select('id, name, description')
+    .select('id, name, description, product_id')
     .eq('id', order.recipe_id)
     .single();
 
-  const { data: ingredients, error: ingredientsError } = await supabase
+  const { count: outputIntermediateUseCount } = await supabase
+    .from('recipe_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_id', recipe?.product_id ?? '');
+  const isMassOutput = (outputIntermediateUseCount ?? 0) > 0;
+
+  const { data: massOutput } = await supabase
+    .from('production_outputs')
+    .select('mass_quantity_produced')
+    .eq('production_order_id', order.id)
+    .not('mass_quantity_produced', 'is', null)
+    .maybeSingle();
+
+  const { data: ingredientRows, error: ingredientsError } = await supabase
     .from('production_order_items')
-    .select('id, raw_material_id, planned_quantity')
+    .select('*')
     .eq('production_order_id', order.id)
     .order('created_at', { ascending: true });
   if (ingredientsError) throw new Error('No fue posible cargar el plan de materiales de la orden.');
+
+  const ingredients: RecipeItem[] = ingredientRows ?? [];
 
   const ingredientIds = (ingredients ?? []).flatMap((item: RecipeItem) =>
     item.raw_material_id ? [item.raw_material_id] : [],
@@ -106,6 +151,120 @@ export default async function ProductionOrderPage({
       .in('id', ingredientIds);
 
     materials = data ?? [];
+  }
+
+  const massProductIds = [...new Set(
+    ingredients.flatMap((item) => item.product_id ? [item.product_id] : []),
+  )];
+  let massProducts: MassProduct[] = [];
+  let massLots: MassProductLot[] = [];
+  let reservedMassLots: ReservedMassLot[] = [];
+  let pendingMassSurpluses: PendingMassSurplus[] = [];
+  let sourceMassSurpluses: Array<{
+    reservationId: string;
+    lotNumber: string;
+    quantity: number;
+    disposition: string | null;
+  }> = [];
+
+  const { data: orderMassReservations, error: orderMassReservationsError } = await supabase
+    .from('production_order_product_lot_reservations')
+    .select('id, product_lot_id, reserved_quantity, surplus_quantity, surplus_disposition')
+    .eq('production_order_id', order.id)
+    .order('product_lot_id');
+  if (orderMassReservationsError) {
+    throw new Error('No fue posible consultar los lotes de masa de la orden.');
+  }
+  const orderLotIds = (orderMassReservations ?? []).map((row) => row.product_lot_id);
+  const { data: orderLotRows, error: orderLotRowsError } = orderLotIds.length
+    ? await supabase.from('product_lots').select('id, lot_number').in('id', orderLotIds)
+    : { data: [], error: null };
+  if (orderLotRowsError) throw new Error('No fue posible consultar los lotes de masa.');
+  const orderLotNames = new Map((orderLotRows ?? []).map((lot) => [lot.id, lot.lot_number]));
+  sourceMassSurpluses = (orderMassReservations ?? []).flatMap((row) => {
+    const lotNumber = orderLotNames.get(row.product_lot_id);
+    return row.surplus_quantity && Number(row.surplus_quantity) > 0 && lotNumber
+      ? [{
+          reservationId: row.id,
+          lotNumber,
+          quantity: Number(row.surplus_quantity),
+          disposition: row.surplus_disposition,
+        }]
+      : [];
+  });
+
+  if (isMassOutput && recipe?.product_id) {
+    const { data: pendingRows, error: pendingError } = await supabase
+      .from('production_order_product_lot_reservations')
+      .select('id, product_lot_id, surplus_quantity')
+      .not('surplus_quantity', 'is', null)
+      .gt('surplus_quantity', 0)
+      .is('surplus_disposition', null);
+    if (pendingError) throw new Error('No fue posible consultar los sobrantes pendientes.');
+    const pendingLotIds = (pendingRows ?? []).map((row) => row.product_lot_id);
+    if (pendingLotIds.length) {
+      const { data: pendingLots, error: pendingLotsError } = await supabase
+        .from('product_lots')
+        .select('id, product_id, lot_number')
+        .in('id', pendingLotIds);
+      if (pendingLotsError) throw new Error('No fue posible consultar el origen de los sobrantes.');
+      const pendingLotById = new Map((pendingLots ?? []).map((lot) => [lot.id, lot]));
+      pendingMassSurpluses = (pendingRows ?? []).flatMap((row) => {
+        const lot = pendingLotById.get(row.product_lot_id);
+        return lot?.product_id === recipe.product_id && lot.lot_number
+          ? [{
+              reservationId: row.id,
+              productLotId: row.product_lot_id,
+              lotNumber: lot.lot_number,
+              quantity: Number(row.surplus_quantity),
+            }]
+          : [];
+      });
+    }
+  }
+
+  if (massProductIds.length > 0) {
+    const [{ data: products, error: productsError }, { data: lots, error: lotsError }] =
+      await Promise.all([
+        supabase
+          .from('products')
+          .select('id, name, internal_code')
+          .in('id', massProductIds),
+        supabase
+          .from('inventory_product_lots_fefo')
+          .select('id, product_id, lot_number, quantity, expiration_date, location_name')
+          .in('product_id', massProductIds)
+          .order('expiration_date', { ascending: true }),
+      ]);
+
+    if (productsError || lotsError) {
+      throw new Error('No fue posible cargar las variedades y lotes disponibles de masa.');
+    }
+
+    massProducts = products ?? [];
+    massLots = (lots ?? []).flatMap((lot) =>
+      lot.id && lot.product_id && lot.lot_number
+        ? [{
+            id: lot.id,
+            product_id: lot.product_id,
+            lot_number: lot.lot_number,
+            quantity: Number(lot.quantity ?? 0),
+            expiration_date: lot.expiration_date,
+            location_name: lot.location_name,
+          }]
+        : [],
+    );
+
+    if (order.production_status === 'in_progress') {
+      reservedMassLots = (orderMassReservations ?? []).flatMap((reservation) => {
+        const lotNumber = orderLotNames.get(reservation.product_lot_id);
+        return lotNumber ? [{
+          productLotId: reservation.product_lot_id,
+          lotNumber,
+          quantity: Number(reservation.reserved_quantity),
+        }] : [];
+      });
+    }
   }
 
   let stockRows: InventoryStockRow[] = [];
@@ -139,7 +298,13 @@ export default async function ProductionOrderPage({
   );
 
   const canProduce =
-    (ingredients ?? []).every((item: RecipeItem) => {
+    ingredients.every((item) => {
+      if (item.product_id) {
+        const available = massLots
+          .filter((lot) => lot.product_id === item.product_id)
+          .reduce((total, lot) => total + lot.quantity, 0);
+        return available >= Number(item.planned_quantity);
+      }
       if (!item.raw_material_id) return false;
 
       const required = Number(item.planned_quantity);
@@ -195,7 +360,9 @@ export default async function ProductionOrderPage({
             Producido
           </div>
           <div className="font-semibold">
-            {order.produced_quantity ?? 0}
+            {massOutput?.mass_quantity_produced !== null && massOutput?.mass_quantity_produced !== undefined
+              ? `${Number(massOutput.mass_quantity_produced).toFixed(4)} kg`
+              : order.produced_quantity ?? 0}
           </div>
         </div>
 
@@ -242,9 +409,12 @@ export default async function ProductionOrderPage({
 
         {ingredients?.length ? (
           <div className="space-y-3">
-            {ingredients.map((item: RecipeItem) => {
+            {ingredients.map((item) => {
               const material = item.raw_material_id
                 ? materialMap.get(item.raw_material_id)
+                : undefined;
+              const massProduct = item.product_id
+                ? massProducts.find((product) => product.id === item.product_id)
                 : undefined;
 
               const required = Number(item.planned_quantity);
@@ -252,7 +422,9 @@ export default async function ProductionOrderPage({
               const available =
                 item.raw_material_id
                   ? stockMap[item.raw_material_id] ?? 0
-                  : 0;
+                  : massLots
+                      .filter((lot) => lot.product_id === item.product_id)
+                      .reduce((total, lot) => total + lot.quantity, 0);
 
               const enough = available >= required;
 
@@ -264,11 +436,11 @@ export default async function ProductionOrderPage({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-medium">
-                        {material?.name ?? (item.raw_material_id ? '-' : 'Producto intermedio no admitido')}
+                        {material?.name ?? massProduct?.name ?? '-'}
                       </div>
 
                       <div className="text-sm text-gray-500">
-                        {material?.internal_code ?? '-'}
+                        {material?.internal_code ?? massProduct?.internal_code ?? '-'}
                       </div>
                     </div>
 
@@ -287,15 +459,15 @@ export default async function ProductionOrderPage({
 
                   <div className="mt-3 grid gap-2 text-sm text-gray-600 md:grid-cols-3">
                     <div>
-                      Plan capturado: {item.planned_quantity}
+                      Plan capturado: {item.planned_quantity} {item.product_id ? 'kg' : ''}
                     </div>
 
                     <div>
-                      Requerido: {required}
+                      Requerido: {required} {item.product_id ? 'kg' : ''}
                     </div>
 
                     <div>
-                      Disponible: {available}
+                      Disponible: {available} {item.product_id ? 'kg' : ''}
                     </div>
                   </div>
                 </div>
@@ -322,6 +494,7 @@ export default async function ProductionOrderPage({
 
             <button
               type="submit"
+              disabled={massProductIds.length > 0 && massLots.length === 0}
               className="rounded border px-4 py-2"
             >
               Liberar Orden
@@ -332,7 +505,54 @@ export default async function ProductionOrderPage({
         {order.production_status === 'released' && (
           <form
             action={startProductionOrder.bind(null, order.id)}
+            className="grid gap-3 rounded-xl border p-4"
           >
+            {massProductIds.length > 0 && (
+              <fieldset className="grid gap-3">
+                <legend className="font-semibold">Pesar masa retirada por lote (kg)</legend>
+                {massLots.length === 0 ? (
+                  <p className="text-sm text-amber-700">
+                    No hay lotes liberados y disponibles de esta variedad de masa.
+                  </p>
+                ) : massLots.map((lot) => {
+                  const product = massProducts.find((row) => row.id === lot.product_id);
+                  return (
+                    <label key={lot.id} className="grid gap-1 text-sm">
+                      <span>
+                        {product?.name ?? 'Masa'} · lote {lot.lot_number} · disponible {lot.quantity} kg
+                        {lot.location_name ? ` · ${lot.location_name}` : ''}
+                      </span>
+                      <input
+                        name={`mass_lot_${lot.id}`}
+                        type="number"
+                        min="0"
+                        max={lot.quantity}
+                        step="0.0001"
+                        inputMode="decimal"
+                        className="rounded border px-3 py-2"
+                      />
+                    </label>
+                  );
+                })}
+              </fieldset>
+            )}
+            {isMassOutput && pendingMassSurpluses.length > 0 && (
+              <fieldset className="grid gap-2 rounded border p-3">
+                <legend className="font-semibold">Sobrantes de esta variedad para incorporar</legend>
+                <p className="text-sm text-gray-600">
+                  Se agregan al lote nuevo; las cantidades habituales de la receta no cambian.
+                </p>
+                {pendingMassSurpluses.map((surplus) => (
+                  <label key={surplus.reservationId} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name={`reuse_mass_surplus_${surplus.reservationId}`}
+                    />
+                    Lote {surplus.lotNumber}: {surplus.quantity.toFixed(4)} kg
+                  </label>
+                ))}
+              </fieldset>
+            )}
             <input
               name="idempotency_key"
               type="hidden"
@@ -343,7 +563,7 @@ export default async function ProductionOrderPage({
               type="submit"
               className="rounded border px-4 py-2"
             >
-              Iniciar Producción
+              {massProductIds.length > 0 ? 'Pesar y apartar masa e iniciar' : 'Iniciar Producción'}
             </button>
           </form>
         )}
@@ -356,22 +576,65 @@ export default async function ProductionOrderPage({
             )}
             className="grid gap-4 rounded-xl border p-4 md:grid-cols-2"
           >
-            <label className="text-sm">
-              Cantidad realmente producida
-              <input
-                name="produced_quantity"
-                type="number"
-                min="1"
-                step="1"
-                defaultValue={Number(
-                  order.planned_quantity,
-                )}
-                required
-                className="mt-1 block w-full rounded border px-3 py-2"
-              />
-            </label>
+            {isMassOutput ? (
+              <label className="text-sm">
+                Peso real del lote (kg)
+                <input
+                  name="actual_mass_quantity"
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  inputMode="decimal"
+                  required
+                  className="mt-1 block w-full rounded border px-3 py-2"
+                />
+              </label>
+            ) : (
+              <label className="text-sm">
+                Cantidad realmente producida
+                <input
+                  name="produced_quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  defaultValue={Number(order.planned_quantity)}
+                  required
+                  className="mt-1 block w-full rounded border px-3 py-2"
+                />
+              </label>
+            )}
 
-            <label className="text-sm">
+            {massProductIds.length > 0 && (
+              <fieldset className="grid gap-3 rounded border p-3 md:col-span-2">
+                <legend className="px-1 font-semibold">
+                  Sobrante aprovechable por lote de masa (kg)
+                </legend>
+                {reservedMassLots.length === 0 ? (
+                  <p className="text-sm text-red-700">
+                    Esta orden no tiene lotes de masa apartados para cerrar.
+                  </p>
+                ) : reservedMassLots.map((lot) => (
+                  <label key={lot.productLotId} className="text-sm">
+                    Lote {lot.lotNumber}: retirado {lot.quantity.toFixed(4)} kg
+                    <input
+                      name={`mass_surplus_${lot.productLotId}`}
+                      type="number"
+                      min="0"
+                      max={lot.quantity}
+                      step="0.0001"
+                      defaultValue="0"
+                      required
+                      className="mt-1 block w-full rounded border px-3 py-2"
+                    />
+                  </label>
+                ))}
+                <p className="text-xs text-gray-600">
+                  El consumo de cada lote se calcula como peso retirado menos sobrante. El sobrante queda pendiente de destino y fuera del inventario disponible.
+                </p>
+              </fieldset>
+            )}
+
+            {!isMassOutput && <label className="text-sm">
               Cantidad de merma
               <input
                 name="waste_quantity"
@@ -382,9 +645,9 @@ export default async function ProductionOrderPage({
                 required
                 className="mt-1 block w-full rounded border px-3 py-2"
               />
-            </label>
+            </label>}
 
-            <label className="text-sm md:col-span-2">
+            {!isMassOutput && <label className="text-sm md:col-span-2">
               Motivo de la variación
               <textarea
                 name="variance_reason"
@@ -396,7 +659,7 @@ export default async function ProductionOrderPage({
               <span className="mt-1 block text-xs text-gray-500">
                 Déjalo vacío únicamente cuando la producción coincida con el rendimiento planeado.
               </span>
-            </label>
+            </label>}
 
             <input
               name="idempotency_key"
@@ -406,11 +669,33 @@ export default async function ProductionOrderPage({
 
             <button
               type="submit"
+              disabled={massProductIds.length > 0 && reservedMassLots.length === 0}
               className="rounded border px-4 py-2 md:col-span-2"
             >
-              Conciliar y completar producción
+              {isMassOutput ? 'Registrar peso y enviar a Calidad' : 'Conciliar y completar producción'}
             </button>
           </form>
+        )}
+
+        {sourceMassSurpluses.length > 0 && (
+          <section className="grid gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 md:col-span-2">
+            <h2 className="font-semibold">Destino de sobrantes de masa</h2>
+            {sourceMassSurpluses.map((surplus) => (
+              <div key={surplus.reservationId} className="flex flex-wrap items-center justify-between gap-3 border-t border-amber-200 pt-3">
+                <span>
+                  Lote {surplus.lotNumber}: {surplus.quantity.toFixed(4)} kg · {surplus.disposition ?? 'Pendiente de destino'}
+                </span>
+                {!surplus.disposition && (
+                  <form action={disposeMassSurplusAsWaste.bind(null, surplus.reservationId)} className="flex flex-wrap gap-2">
+                    <input name="reason" required maxLength={500} placeholder="Motivo de merma" className="rounded border px-2 py-1" />
+                    <button type="submit" className="rounded border border-amber-700 px-3 py-1 text-amber-900">
+                      Registrar como merma
+                    </button>
+                  </form>
+                )}
+              </div>
+            ))}
+          </section>
         )}
 
         {order.production_status !== 'completed' &&

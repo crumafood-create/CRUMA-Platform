@@ -5,8 +5,10 @@ import type {
 } from '@/infrastructure/integrations/supabase/database.types';
 
 import {
-  assertRecipeSupportsProductionOrder,
   createProductionOrderDraft,
+  startProductionOrderWithMassSurplusReuse,
+  disposeProductionMassSurplusAsWaste,
+  startProductionOrderWithMassLotReservations,
   transitionProductionOrderLifecycle,
 } from './production-order-lifecycle-repository';
 
@@ -36,74 +38,6 @@ const TRANSITION_REQUEST = {
 describe(
   'repositorio del ciclo de vida de órdenes de producción',
   () => {
-    it('permite órdenes con ingredientes de materias primas', async () => {
-      const client = {
-        from: () => {
-          const query = {
-            select: () => query,
-            eq: () => query,
-            then: (resolve: (result: unknown) => unknown) =>
-              Promise.resolve({
-                data: [{ product_id: null }, { product_id: null }],
-                error: null,
-              }).then(resolve),
-          };
-
-          return query;
-        },
-      } as unknown as TypedSupabaseClient;
-
-      await expect(
-        assertRecipeSupportsProductionOrder(client, UUIDS.recipe),
-      ).resolves.toBeUndefined();
-    });
-
-    it('rechaza antes de crear una orden si la receta usa un producto intermedio', async () => {
-      const client = {
-        from: () => {
-          const query = {
-            select: () => query,
-            eq: () => query,
-            then: (resolve: (result: unknown) => unknown) =>
-              Promise.resolve({
-                data: [{ product_id: 'dough-product' }],
-                error: null,
-              }).then(resolve),
-          };
-
-          return query;
-        },
-      } as unknown as TypedSupabaseClient;
-
-      await expect(
-        assertRecipeSupportsProductionOrder(client, UUIDS.recipe),
-      ).rejects.toThrow(
-        'Las órdenes de producción todavía no admiten productos intermedios como ingredientes.',
-      );
-    });
-
-    it('propaga errores al comprobar compatibilidad de la receta', async () => {
-      const client = {
-        from: () => {
-          const query = {
-            select: () => query,
-            eq: () => query,
-            then: (resolve: (result: unknown) => unknown) =>
-              Promise.resolve({
-                data: null,
-                error: { message: 'No se pudieron leer ingredientes.' },
-              }).then(resolve),
-          };
-
-          return query;
-        },
-      } as unknown as TypedSupabaseClient;
-
-      await expect(
-        assertRecipeSupportsProductionOrder(client, UUIDS.recipe),
-      ).rejects.toThrow('No se pudieron leer ingredientes.');
-    });
-
     it(
       'delega la creación completa a una RPC',
       async () => {
@@ -299,6 +233,42 @@ describe(
       },
     );
 
+    it('envía los lotes pesados a la RPC atómica de inicio', async () => {
+      const calls: unknown[] = [];
+      const client = {
+        rpc: async (...args: unknown[]) => {
+          calls.push(args);
+          return { data: UUIDS.order, error: null };
+        },
+      } as unknown as TypedSupabaseClient;
+
+      await expect(
+        startProductionOrderWithMassLotReservations(
+          client,
+          {
+            productionOrderId: UUIDS.order,
+            lotReservations: [
+              { productLotId: 'c1000000-0000-4000-8000-000000000001', quantity: 0.6 },
+              { productLotId: 'c1000000-0000-4000-8000-000000000002', quantity: 0.45 },
+            ],
+            idempotencyKey: UUIDS.idempotency,
+          },
+        ),
+      ).resolves.toBe(UUIDS.order);
+
+      expect(calls).toEqual([[
+        'start_production_order_with_mass_lot_reservations',
+        {
+          p_production_order_id: UUIDS.order,
+          p_lot_allocations: [
+            { product_lot_id: 'c1000000-0000-4000-8000-000000000001', quantity: 0.6 },
+            { product_lot_id: 'c1000000-0000-4000-8000-000000000002', quantity: 0.45 },
+          ],
+          p_idempotency_key: UUIDS.idempotency,
+        },
+      ]]);
+    });
+
     it(
       'rechaza una transición sin orden',
       async () => {
@@ -321,3 +291,54 @@ describe(
     );
   },
 );
+
+describe('destino de sobrantes de masa', () => {
+  it('delega la reutilización de sobrantes de la misma variedad a la RPC atómica', async () => {
+    const calls: unknown[] = [];
+    const client = {
+      rpc: async (...args: unknown[]) => {
+        calls.push(args);
+        return { data: UUIDS.order, error: null };
+      },
+    } as unknown as TypedSupabaseClient;
+
+    await expect(startProductionOrderWithMassSurplusReuse(client, {
+      productionOrderId: UUIDS.order,
+      reservationIds: ['c1000000-0000-4000-8000-000000000001'],
+      idempotencyKey: UUIDS.idempotency,
+    })).resolves.toBe(UUIDS.order);
+
+    expect(calls).toEqual([[
+      'start_production_order_with_mass_surplus_reuse',
+      {
+        p_production_order_id: UUIDS.order,
+        p_reservation_ids: ['c1000000-0000-4000-8000-000000000001'],
+        p_idempotency_key: UUIDS.idempotency,
+      },
+    ]]);
+  });
+
+  it('envía a merma solo el sobrante indicado y su motivo', async () => {
+    const calls: unknown[] = [];
+    const client = {
+      rpc: async (...args: unknown[]) => {
+        calls.push(args);
+        return { data: UUIDS.order, error: null };
+      },
+    } as unknown as TypedSupabaseClient;
+
+    await expect(disposeProductionMassSurplusAsWaste(
+      client,
+      'c1000000-0000-4000-8000-000000000002',
+      'No reutilizable',
+    )).resolves.toBe(UUIDS.order);
+
+    expect(calls).toEqual([[
+      'dispose_production_mass_surplus_as_waste',
+      {
+        p_reservation_id: 'c1000000-0000-4000-8000-000000000002',
+        p_reason: 'No reutilizable',
+      },
+    ]]);
+  });
+});

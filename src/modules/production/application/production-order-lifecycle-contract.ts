@@ -36,6 +36,73 @@ export type ProductionOrderTransitionRequest =
     idempotencyKey: string;
   }>;
 
+export type ProductionOrderMassLotReservation = Readonly<{
+  productLotId: string;
+  quantity: number;
+}>;
+
+export type ProductionOrderMassStartRequest = Readonly<{
+  productionOrderId: string;
+  lotReservations: readonly ProductionOrderMassLotReservation[];
+  idempotencyKey: string;
+}>;
+
+export function buildProductionOrderMassStartRequest(input: {
+  productionOrderId: unknown;
+  lotReservations: unknown;
+  idempotencyKey: unknown;
+}): ProductionOrderMassStartRequest {
+  const productionOrderId = requiredUuid(
+    input.productionOrderId,
+    'La orden de producción no es válida.',
+  );
+  const idempotencyKey = requiredUuid(
+    input.idempotencyKey,
+    'La clave de idempotencia no es válida.',
+  );
+
+  if (!Array.isArray(input.lotReservations) || input.lotReservations.length === 0) {
+    throw new Error('Pesa la cantidad retirada de al menos un lote de masa.');
+  }
+
+  const seenLotIds = new Set<string>();
+  const lotReservations = input.lotReservations.map((candidate) => {
+    if (candidate === null || typeof candidate !== 'object') {
+      throw new Error('La selección de lotes de masa no es válida.');
+    }
+
+    const lot = candidate as Record<string, unknown>;
+    const productLotId = requiredUuid(
+      lot.productLotId,
+      'El lote de masa seleccionado no es válido.',
+    );
+    const quantity = lot.quantity;
+
+    if (
+      typeof quantity !== 'number' ||
+      !Number.isFinite(quantity) ||
+      quantity <= 0 ||
+      Math.round(quantity * 10_000) / 10_000 !== quantity
+    ) {
+      throw new Error(
+        'La cantidad retirada debe ser positiva y tener como máximo cuatro decimales en kg.',
+      );
+    }
+    if (seenLotIds.has(productLotId)) {
+      throw new Error('No repitas el mismo lote de masa.');
+    }
+
+    seenLotIds.add(productLotId);
+    return Object.freeze({ productLotId, quantity });
+  });
+
+  return Object.freeze({
+    productionOrderId,
+    lotReservations: Object.freeze(lotReservations),
+    idempotencyKey,
+  });
+}
+
 function requiredUuid(
   value: unknown,
   message: string,

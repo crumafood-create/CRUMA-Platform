@@ -1,6 +1,6 @@
 # Historias pendientes para retomar
 
-Estas historias se conservan aquí hasta que el usuario decida activarlas. La historia #3 fue activada y completada; su cierre está en `backlog.md`. La historia #4 permanece pendiente.
+Estas historias se conservan aquí hasta que el usuario decida activarlas. Las historias #3 y #4 fueron activadas; #3 está completada y #4 está activa en `backlog.md`.
 
 ## Contexto
 
@@ -14,10 +14,6 @@ Decisiones acordadas: solo CRUMAFOOD y una planta, sin sucursales ni franquicias
 
 1. [x] Como administrador autorizado, quiero registrar productos con datos y estados válidos para utilizarlos en el catálogo.
 2. [x] Como administrador autorizado, quiero registrar materias primas con datos válidos para utilizarlas en mis recetas. **Completada:** alta y edición del catálogo, unidad base obligatoria/protegida y alta desde compras están integradas; ver las historias cerradas en `backlog.md` y su evidencia en `plan.md`.
-4. [ ] Como responsable de producción e inventario, quiero planificar órdenes, registrar sus resultados y organizar las porciones de producto terminado según su preparación y condición de almacenamiento, para mantener existencias trazables y habilitar envíos foráneos con producto congelado. Requiere: #3.
-
-   Requisito de negocio registrado, pendiente de refinamiento: cada porción de un lote terminado identifica preparación, condición de almacenamiento y cantidad en piezas. Al congelar una porción, las piezas salen del saldo de origen y entran al saldo congelado con trazabilidad. Los envíos foráneos utilizan saldo congelado solo para los productos habilitados en cada ruta.
-
 La historia de productos (#1) está completada e integrada; ver el historial de entregas en `backlog.md`.
 
 ## Entregas relacionadas completadas
@@ -25,10 +21,9 @@ La historia de productos (#1) está completada e integrada; ver el historial de 
 - [x] **MP-01.** Comprar presentaciones comerciales y convertirlas a unidad base. PR #126, CI y recorrido manual en Supabase de desarrollo aprobados; evidencia en `plan.md`.
 - [x] **WH-01.** Consultar desde el móvil órdenes que admiten recepción y abrir su detalle. PR #127; evidencia en `backlog.md` y `plan.md`.
 
-## Decisiones pendientes para órdenes de producción (#4)
+## Requisito diferido: porciones de producto terminado
 
-- Definir si se exige disponibilidad de stock al crear la orden en borrador o al liberarla.
-- Precisar el reparto de un lote de masa entre órdenes y reposición, incluido el registro del consumo y rendimiento reales.
+- Cada porción de un lote terminado debe identificar preparación, condición de almacenamiento y cantidad en piezas. Al congelar, se descuentan piezas del saldo de origen y se agregan al congelado con trazabilidad. Los envíos foráneos usan saldo congelado solo para productos habilitados en la ruta. No forma parte de la primera entrega activa de la historia #4.
 
 ## Referencia de negocio para recetas (#3)
 

@@ -60,10 +60,15 @@ export function toProductionOrderState(
 }
 
 export function calculateRequiredQuantity(
-  quantityPerUnit: number,
+  quantityPerRecipeYield: number,
   plannedQuantity: number,
+  recipeYieldQuantity = 1,
 ): number {
-  return quantityPerUnit * plannedQuantity;
+  if (recipeYieldQuantity <= 0) {
+    throw new Error('El rendimiento de la receta debe ser mayor que cero.');
+  }
+
+  return quantityPerRecipeYield * plannedQuantity / recipeYieldQuantity;
 }
 
 export function sumAvailableStock(

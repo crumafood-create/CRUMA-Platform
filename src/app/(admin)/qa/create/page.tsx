@@ -11,7 +11,7 @@ export default async function CreateQualityInspectionPage({
   let query = supabase
     .from('production_outputs')
     .select(`
-      id, quantity_produced, production_order_id, quality_status,
+      id, quantity_produced, mass_quantity_produced, production_order_id, quality_status,
       products(name),
       production_orders(production_number)
     `)
@@ -24,7 +24,7 @@ export default async function CreateQualityInspectionPage({
   const options = (outputs ?? []).map((output) => ({
     id: output.id,
     quantity: output.quantity_produced,
-    label: `${output.production_orders?.production_number ?? '-'} · ${output.products?.name ?? '-'}`,
+    label: `${output.production_orders?.production_number ?? '-'} · ${output.products?.name ?? '-'}${output.mass_quantity_produced !== null ? ` · ${Number(output.mass_quantity_produced).toFixed(4)} kg` : ''}`,
   }));
 
   return (

@@ -13,6 +13,7 @@ DECLARE
   hardened_functions constant text[] := ARRAY[
     'public.create_production_order_items(uuid)',
     'public.create_production_order_draft(uuid,integer,text,uuid)',
+    'public.start_production_order_with_mass_lot_reservations(uuid,jsonb,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
     'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
@@ -47,7 +48,13 @@ DECLARE
     'public.consume_production_material_fefo(uuid,text,uuid)',
     'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)',
     'public.guard_recipe_item_output_product()',
-    'public.guard_production_order_recipe_ingredients()'
+    'public.guard_production_order_recipe_ingredients()',
+    'public.dispose_production_mass_surplus_as_waste(uuid,text)',
+    'public.start_production_order_with_mass_surplus_reuse(uuid,uuid[],uuid)',
+    'public.complete_production_order_with_mass_output(uuid,numeric,uuid)',
+    'public.apply_mass_output_quantity_to_product_lot()',
+    'public.apply_mass_output_quantity_to_inventory_movement()',
+    'public.link_reused_mass_surplus_to_product_lot()'
   ];
 BEGIN
   FOREACH signature IN ARRAY hardened_functions LOOP
@@ -87,6 +94,7 @@ DECLARE
   all_functions constant text[] := ARRAY[
     'public.create_production_order_items(uuid)',
     'public.create_production_order_draft(uuid,integer,text,uuid)',
+    'public.start_production_order_with_mass_lot_reservations(uuid,jsonb,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
     'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
@@ -128,10 +136,17 @@ DECLARE
     'public.consume_production_material_fefo(uuid,text,uuid)',
     'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)',
     'public.guard_recipe_item_output_product()',
-    'public.guard_production_order_recipe_ingredients()'
+    'public.guard_production_order_recipe_ingredients()',
+    'public.dispose_production_mass_surplus_as_waste(uuid,text)',
+    'public.start_production_order_with_mass_surplus_reuse(uuid,uuid[],uuid)',
+    'public.complete_production_order_with_mass_output(uuid,numeric,uuid)',
+    'public.apply_mass_output_quantity_to_product_lot()',
+    'public.apply_mass_output_quantity_to_inventory_movement()',
+    'public.link_reused_mass_surplus_to_product_lot()'
   ];
    authenticated_functions constant text[] := ARRAY[
     'public.create_production_order_draft(uuid,integer,text,uuid)',
+    'public.start_production_order_with_mass_lot_reservations(uuid,jsonb,uuid)',
     'public.transition_production_order_lifecycle(uuid,text,text,uuid)',
     'public.settle_production_cost(uuid,numeric,numeric,uuid)',
     'public.decrease_product_lot_quantity(uuid,numeric)',
@@ -155,7 +170,10 @@ DECLARE
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
     'public.consume_production_material_fefo(uuid,text,uuid)',
-    'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)'
+    'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)',
+    'public.dispose_production_mass_surplus_as_waste(uuid,text)',
+    'public.start_production_order_with_mass_surplus_reuse(uuid,uuid[],uuid)',
+    'public.complete_production_order_with_mass_output(uuid,numeric,uuid)'
   ];
 BEGIN
   FOREACH signature IN ARRAY all_functions LOOP
@@ -285,7 +303,13 @@ DECLARE
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
     'public.consume_production_material_fefo(uuid,text,uuid)',
-    'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)'
+    'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)',
+    'public.dispose_production_mass_surplus_as_waste(uuid,text)',
+    'public.start_production_order_with_mass_surplus_reuse(uuid,uuid[],uuid)',
+    'public.complete_production_order_with_mass_output(uuid,numeric,uuid)',
+    'public.apply_mass_output_quantity_to_product_lot()',
+    'public.apply_mass_output_quantity_to_inventory_movement()',
+    'public.link_reused_mass_surplus_to_product_lot()'
   ];
 BEGIN
   FOREACH signature IN ARRAY secured_functions LOOP

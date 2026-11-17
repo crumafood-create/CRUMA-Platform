@@ -10,6 +10,9 @@ describe('trazabilidad canónica de producción', () => {
     expect(page).toContain('createTypedClient(');
     expect(page).toContain(".from('production_order_consumptions')");
     expect(page).toContain(".from('product_lots')");
+    expect(page).toContain(".from('production_order_product_lot_reservations')");
+    expect(page).toContain('Sobrantes de masa reutilizados');
+    expect(page).toContain('if (consumptionsError)');
     expect(page).not.toContain('production_lot_consumptions');
     expect(page).not.toContain(".from('inventory_lots')");
     expect(page).not.toContain(': any');

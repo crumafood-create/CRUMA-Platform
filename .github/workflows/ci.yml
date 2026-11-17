@@ -134,6 +134,7 @@ jobs:
           echo "Supabase local started successfully."
 
       - name: Verify database baseline, security, and generated types
+        id: database_verify
         shell: bash
         run: |
           if ! pnpm db:verify
@@ -142,6 +143,15 @@ jobs:
             git diff -- src/types/database/database.generated.ts
             exit 1
           fi
+
+      - name: Upload generated database types for diagnosis
+        if: failure() && steps.database_verify.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-generated-types-${{ github.run_id }}-${{ github.run_attempt }}
+          path: src/types/database/database.generated.ts
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Stop local Supabase
         if: always()

@@ -181,7 +181,11 @@ describe(
     );
 
     expect(action).not.toContain(
-      ".from('production_order_items')",
+      ".from('production_order_items').update(",
+    );
+
+    expect(action).not.toContain(
+      ".from('production_order_items').insert(",
     );
 
     expect(action).not.toContain(

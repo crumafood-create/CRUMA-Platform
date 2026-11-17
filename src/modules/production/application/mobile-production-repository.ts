@@ -137,14 +137,21 @@ export async function fetchMobileProductionDetail(
     loadOrderItems(supabase, orderId),
   ]);
 
+  // This mobile flow consumes raw materials by FEFO lot. Intermediate-product
+  // ingredients are handled by the mass-lot lifecycle, not this screen.
+  const materialRows = rows.filter(
+    (row): row is typeof row & { raw_material_id: string } =>
+      row.raw_material_id !== null,
+  );
+
   const materials = await loadRawMaterials(
     supabase,
-    rows.map((row) => row.raw_material_id),
+    materialRows.map((row) => row.raw_material_id),
   );
 
   return {
     order: normalizeMobileProductionOrder(order, recipes.get(order.recipe_id)),
-    items: rows.map((row) =>
+    items: materialRows.map((row) =>
       normalizeMobileProductionItem(row, materials.get(row.raw_material_id)),
     ),
   };

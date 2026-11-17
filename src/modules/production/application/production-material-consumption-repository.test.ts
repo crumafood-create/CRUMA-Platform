@@ -19,9 +19,16 @@ const REQUEST = {
 describe('repositorio de consumo de materia prima', () => {
   it('delega el consumo FEFO completo a una RPC', async () => {
     const calls: unknown[] = [];
+    const rest = {};
 
     const client = {
-      rpc: async (...args: unknown[]) => {
+      rest,
+      rpc: async function (this: { rest?: object }, ...args: unknown[]) {
+        if (this.rest !== rest) {
+          throw new TypeError(
+            "Cannot read properties of undefined (reading 'rest')",
+          );
+        }
         calls.push(args);
 
         return {

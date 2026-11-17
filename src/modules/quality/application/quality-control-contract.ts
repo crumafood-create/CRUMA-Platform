@@ -41,6 +41,24 @@ export type ProductLotQualitySampleInspectionRequest = {
   defects: QualityDefectInput[];
 };
 
+export const PRODUCT_LOT_QUALITY_SAMPLE_DESTINATIONS = [
+  'returned_to_lot',
+  'direct_waste',
+] as const;
+
+export type ProductLotQualitySampleDispositionDestination =
+  (typeof PRODUCT_LOT_QUALITY_SAMPLE_DESTINATIONS)[number];
+
+export type ProductLotQualitySampleDispositionRequest = {
+  qualityInspectionId: string;
+  sampleId: string;
+  quantity: number;
+  destination: ProductLotQualitySampleDispositionDestination;
+  returnAuthorized: boolean;
+  reason: string;
+  idempotencyKey: string;
+};
+
 function value(formData: FormData, key: string): string {
   return formData.get(key)?.toString().trim() ?? '';
 }
@@ -133,6 +151,55 @@ export function buildProductLotQualitySampleInspectionRequest(
     criteria: inspectionCriteria,
     // The database validates defect quantity against the reserved sample.
     defects: defects(formData),
+  };
+}
+
+export function buildProductLotQualitySampleDispositionRequest(
+  formData: FormData,
+): ProductLotQualitySampleDispositionRequest {
+  const qualityInspectionId = value(formData, 'quality_inspection_id');
+  const sampleId = value(formData, 'quality_sample_id');
+  if (!qualityInspectionId || !sampleId) {
+    throw new Error('La inspección y la muestra de Calidad son obligatorias.');
+  }
+
+  const quantity = positiveInteger(
+    value(formData, 'quantity'),
+    'La cantidad de disposición debe ser un entero positivo.',
+  );
+  const destination = value(formData, 'destination');
+  if (!PRODUCT_LOT_QUALITY_SAMPLE_DESTINATIONS.includes(
+    destination as ProductLotQualitySampleDispositionDestination,
+  )) {
+    throw new Error('El destino de la muestra no es válido.');
+  }
+
+  const returnAuthorized = formData.get('return_authorized') === 'on';
+  if (destination === 'returned_to_lot' && !returnAuthorized) {
+    throw new Error('Calidad debe autorizar explícitamente el retorno de la muestra.');
+  }
+  if (destination === 'direct_waste' && returnAuthorized) {
+    throw new Error('La merma directa no puede incluir autorización de retorno.');
+  }
+
+  const reason = value(formData, 'reason');
+  if (!reason) {
+    throw new Error('El motivo de disposición es obligatorio.');
+  }
+
+  const idempotencyKey = value(formData, 'idempotency_key');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
+    throw new Error('La clave de reintento de disposición no es válida.');
+  }
+
+  return {
+    qualityInspectionId,
+    sampleId,
+    quantity,
+    destination: destination as ProductLotQualitySampleDispositionDestination,
+    returnAuthorized,
+    reason,
+    idempotencyKey,
   };
 }
 

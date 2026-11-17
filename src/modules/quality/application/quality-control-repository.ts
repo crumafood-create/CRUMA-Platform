@@ -4,6 +4,7 @@ import type {
   QualityDecision,
   QualityInspectionRequest,
   ProductLotQualitySampleInspectionRequest,
+  ProductLotQualitySampleDispositionRequest,
   RawMaterialQualityInspectionRequest,
 } from './quality-control-contract';
 
@@ -32,6 +33,27 @@ export async function recordProductLotQualitySampleInspection(
   );
   if (error) throw new Error(error.message);
   if (!data) throw new Error('La inspección de muestra no devolvió un identificador.');
+  return data;
+}
+
+export async function decideProductLotQualitySampleDisposition(
+  supabase: TypedSupabaseClient,
+  request: ProductLotQualitySampleDispositionRequest,
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'decide_product_lot_quality_sample_disposition',
+    {
+      p_sample_id: request.sampleId,
+      p_quality_inspection_id: request.qualityInspectionId,
+      p_quantity: request.quantity,
+      p_destination: request.destination,
+      p_return_authorized: request.returnAuthorized,
+      p_reason: request.reason,
+      p_idempotency_key: request.idempotencyKey,
+    },
+  );
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('La disposición no devolvió un identificador.');
   return data;
 }
 

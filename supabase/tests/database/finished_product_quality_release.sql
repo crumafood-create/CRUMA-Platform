@@ -1310,4 +1310,270 @@ $quality_sample_inspection$;
 
 RESET ROLE;
 
+-- Sample disposition is separate from inspection. Exercise full return, full
+-- quality waste, mixed per-piece destinations, authorization, and retries.
+INSERT INTO public.production_outputs (
+  id, production_order_id, product_id, quantity_produced, quality_status
+) VALUES
+  ('fa000000-0000-4000-8000-000000000003', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 48, 'released'),
+  ('fa000000-0000-4000-8000-000000000004', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 48, 'released'),
+  ('fa000000-0000-4000-8000-000000000005', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 48, 'released');
+
+INSERT INTO public.product_lots (
+  id, product_id, lot_number, production_order_id, production_output_id,
+  expiration_date, initial_quantity, quantity, status, inventory_location_id,
+  warehouse_id, location_name, released_at, released_by
+) VALUES
+  ('fc000000-0000-4000-8000-000000000003', 'f4000000-0000-4000-8000-000000000001', 'SAMPLE-RETURN-48', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000003', CURRENT_DATE + 30, 48, 43, 'available', 'f3000000-0000-4000-8000-000000000001', 'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location', now(), 'f1000000-0000-4000-8000-000000000001'),
+  ('fc000000-0000-4000-8000-000000000004', 'f4000000-0000-4000-8000-000000000001', 'SAMPLE-WASTE-48', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000004', CURRENT_DATE + 30, 48, 43, 'available', 'f3000000-0000-4000-8000-000000000001', 'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location', now(), 'f1000000-0000-4000-8000-000000000001'),
+  ('fc000000-0000-4000-8000-000000000005', 'f4000000-0000-4000-8000-000000000001', 'SAMPLE-MIXED-48', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000005', CURRENT_DATE + 30, 48, 43, 'available', 'f3000000-0000-4000-8000-000000000001', 'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location', now(), 'f1000000-0000-4000-8000-000000000001');
+
+INSERT INTO public.product_lot_storage_balances (
+  product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity,
+  quality_sampling_pending_quantity, quality_sampling_reserved_quantity
+) VALUES
+  ('fc000000-0000-4000-8000-000000000003', 0, 43, 0, 0, 5),
+  ('fc000000-0000-4000-8000-000000000004', 0, 43, 0, 0, 5),
+  ('fc000000-0000-4000-8000-000000000005', 0, 43, 0, 0, 5);
+
+INSERT INTO public.product_lot_quality_samples (
+  id, product_lot_id, purpose, quantity, status, created_by
+) VALUES
+  ('fd000000-0000-4000-8000-000000000201', 'fc000000-0000-4000-8000-000000000003', 'immediate_inspection', 2, 'pending_disposition', 'f1000000-0000-4000-8000-000000000001'),
+  ('fd000000-0000-4000-8000-000000000202', 'fc000000-0000-4000-8000-000000000003', 'safety_retention', 3, 'in_custody', 'f1000000-0000-4000-8000-000000000001'),
+  ('fd000000-0000-4000-8000-000000000203', 'fc000000-0000-4000-8000-000000000004', 'immediate_inspection', 2, 'pending_disposition', 'f1000000-0000-4000-8000-000000000001'),
+  ('fd000000-0000-4000-8000-000000000204', 'fc000000-0000-4000-8000-000000000004', 'safety_retention', 3, 'in_custody', 'f1000000-0000-4000-8000-000000000001'),
+  ('fd000000-0000-4000-8000-000000000205', 'fc000000-0000-4000-8000-000000000005', 'immediate_inspection', 2, 'pending_disposition', 'f1000000-0000-4000-8000-000000000001'),
+  ('fd000000-0000-4000-8000-000000000206', 'fc000000-0000-4000-8000-000000000005', 'safety_retention', 3, 'in_custody', 'f1000000-0000-4000-8000-000000000001');
+
+INSERT INTO public.quality_inspections (
+  id, production_order_id, production_output_id, inspector_id, subject_type,
+  product_lot_quality_sample_id, status, result, sampled_quantity,
+  accepted_quantity, rejected_quantity
+) VALUES
+  ('fb000000-0000-4000-8000-000000000101', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000003', 'f1000000-0000-4000-8000-000000000001', 'product_lot_quality_sample', 'fd000000-0000-4000-8000-000000000201', 'passed', 'ok', 2, 2, 0),
+  ('fb000000-0000-4000-8000-000000000102', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000004', 'f1000000-0000-4000-8000-000000000001', 'product_lot_quality_sample', 'fd000000-0000-4000-8000-000000000203', 'passed', 'ok', 2, 2, 0),
+  ('fb000000-0000-4000-8000-000000000103', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000005', 'f1000000-0000-4000-8000-000000000001', 'product_lot_quality_sample', 'fd000000-0000-4000-8000-000000000205', 'passed', 'ok', 2, 2, 0);
+
+INSERT INTO public.inventory_movements (
+  item_type, item_id, product_id, movement_type, quantity, reference_type,
+  reference_id, warehouse_id, created_by, notes
+) VALUES
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 43, 'sample-disposition-fixture', 'fc000000-0000-4000-8000-000000000003', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Saldo congelado de prueba'),
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 43, 'sample-disposition-fixture', 'fc000000-0000-4000-8000-000000000004', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Saldo congelado de prueba'),
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 43, 'sample-disposition-fixture', 'fc000000-0000-4000-8000-000000000005', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Saldo congelado de prueba');
+
+SELECT set_config('request.jwt.claim.sub', 'f1000000-0000-4000-8000-000000000001', true);
+SET LOCAL ROLE authenticated;
+
+DO $quality_sample_disposition$
+DECLARE
+  v_return_id uuid;
+  v_retry_id uuid;
+  v_waste_id uuid;
+  v_mixed_return_id uuid;
+  v_mixed_waste_id uuid;
+BEGIN
+  BEGIN
+    PERFORM public.decide_product_lot_quality_sample_disposition(
+      'fd000000-0000-4000-8000-000000000201', 'fb000000-0000-4000-8000-000000000102',
+      2, 'direct_waste', false,
+      'Intento de usar una inspección de otra muestra',
+      'fd000000-0000-4000-8000-000000000307'
+    );
+    RAISE EXCEPTION 'inspection unrelated to the sample was accepted';
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM NOT LIKE '%must be inspected before disposition%' THEN RAISE; END IF;
+  END;
+
+  BEGIN
+    PERFORM public.decide_product_lot_quality_sample_disposition(
+      'fd000000-0000-4000-8000-000000000201', 'fb000000-0000-4000-8000-000000000101',
+      2, 'returned_to_lot', false,
+      'Intento de retorno sin autorización de Calidad',
+      'fd000000-0000-4000-8000-000000000301'
+    );
+    RAISE EXCEPTION 'sample return without Quality authorization was accepted';
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM NOT LIKE '%explicit Quality authorization%' THEN RAISE; END IF;
+  END;
+
+  IF (SELECT count(*) FROM public.product_lot_quality_sample_dispositions) <> 0
+    OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_storage_balances
+      WHERE product_lot_id = 'fc000000-0000-4000-8000-000000000003'
+        AND raw_frozen_quantity = 43 AND quality_sampling_reserved_quantity = 5
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lots
+      WHERE id = 'fc000000-0000-4000-8000-000000000003' AND quantity = 43
+    ) THEN
+    RAISE EXCEPTION 'unauthorized return changed sample, inventory, or movement state';
+  END IF;
+
+  v_return_id := public.decide_product_lot_quality_sample_disposition(
+    'fd000000-0000-4000-8000-000000000201', 'fb000000-0000-4000-8000-000000000101',
+    2, 'returned_to_lot', true,
+    'Calidad verificó que las piezas siguen intactas',
+    'fd000000-0000-4000-8000-000000000302'
+  );
+  v_retry_id := public.decide_product_lot_quality_sample_disposition(
+    'fd000000-0000-4000-8000-000000000201', 'fb000000-0000-4000-8000-000000000101',
+    2, 'returned_to_lot', true,
+    'Calidad verificó que las piezas siguen intactas',
+    'fd000000-0000-4000-8000-000000000302'
+  );
+  IF v_return_id IS DISTINCT FROM v_retry_id
+    OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_storage_balances
+      WHERE product_lot_id = 'fc000000-0000-4000-8000-000000000003'
+        AND raw_frozen_quantity = 45 AND quality_sampling_reserved_quantity = 3
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lots
+      WHERE id = 'fc000000-0000-4000-8000-000000000003' AND quantity = 45
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.production_outputs
+      WHERE id = 'fa000000-0000-4000-8000-000000000003' AND quantity_produced = 48
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_quality_samples
+      WHERE id = 'fd000000-0000-4000-8000-000000000202'
+        AND quantity = 3 AND status = 'in_custody'
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_quality_sample_dispositions AS disposition
+      WHERE disposition.id = v_return_id
+        AND disposition.quantity = 2
+        AND disposition.destination = 'returned_to_lot'
+        AND disposition.return_authorized
+        AND disposition.authorized_by = 'f1000000-0000-4000-8000-000000000001'
+        AND disposition.decided_by = 'f1000000-0000-4000-8000-000000000001'
+        AND disposition.decided_at IS NOT NULL
+    ) OR (SELECT count(*) FROM public.inventory_movements
+      WHERE reference_type = 'product_lot_quality_sample_disposition'
+        AND reference_id = v_return_id AND movement_type = 'entry' AND quantity = 2) <> 1 THEN
+    RAISE EXCEPTION 'returning the intact two-piece sample did not leave 45 available, 3 in custody, and 48 gross';
+  END IF;
+
+  v_waste_id := public.decide_product_lot_quality_sample_disposition(
+    'fd000000-0000-4000-8000-000000000203', 'fb000000-0000-4000-8000-000000000102',
+    2, 'direct_waste', false,
+    'Muestra consumida en prueba destructiva',
+    'fd000000-0000-4000-8000-000000000303'
+  );
+  v_retry_id := public.decide_product_lot_quality_sample_disposition(
+    'fd000000-0000-4000-8000-000000000203', 'fb000000-0000-4000-8000-000000000102',
+    2, 'direct_waste', false,
+    'Muestra consumida en prueba destructiva',
+    'fd000000-0000-4000-8000-000000000303'
+  );
+  IF v_waste_id IS DISTINCT FROM v_retry_id OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_storage_balances
+      WHERE product_lot_id = 'fc000000-0000-4000-8000-000000000004'
+        AND raw_frozen_quantity = 43 AND quality_sampling_reserved_quantity = 3
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lots
+      WHERE id = 'fc000000-0000-4000-8000-000000000004' AND quantity = 43
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.production_outputs
+      WHERE id = 'fa000000-0000-4000-8000-000000000004' AND quantity_produced = 48
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_quality_samples
+      WHERE id = 'fd000000-0000-4000-8000-000000000204'
+        AND quantity = 3 AND status = 'in_custody'
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_quality_sample_dispositions AS disposition
+      WHERE disposition.id = v_waste_id AND disposition.quantity = 2
+        AND disposition.destination = 'direct_waste'
+        AND disposition.reason = 'Muestra consumida en prueba destructiva'
+        AND disposition.decided_by = 'f1000000-0000-4000-8000-000000000001'
+        AND disposition.decided_at IS NOT NULL
+    ) OR (SELECT count(*) FROM public.inventory_movements
+      WHERE reference_type = 'product_lot_quality_sample_disposition'
+        AND reference_id = v_waste_id) <> 0
+    OR (SELECT count(*) FROM public.product_lot_quality_sample_dispositions
+      WHERE idempotency_key = 'fd000000-0000-4000-8000-000000000303') <> 1 THEN
+    RAISE EXCEPTION 'destructive test did not leave 43 available, record two quality-waste pieces, retain 3 in custody, and preserve 48 gross';
+  END IF;
+
+  v_mixed_return_id := public.decide_product_lot_quality_sample_disposition(
+    'fd000000-0000-4000-8000-000000000205', 'fb000000-0000-4000-8000-000000000103',
+    1, 'returned_to_lot', true,
+    'Calidad autorizó devolver una pieza intacta',
+    'fd000000-0000-4000-8000-000000000304'
+  );
+  v_retry_id := public.decide_product_lot_quality_sample_disposition(
+    'fd000000-0000-4000-8000-000000000205', 'fb000000-0000-4000-8000-000000000103',
+    1, 'returned_to_lot', true,
+    'Calidad autorizó devolver una pieza intacta',
+    'fd000000-0000-4000-8000-000000000304'
+  );
+  IF v_mixed_return_id IS DISTINCT FROM v_retry_id THEN
+    RAISE EXCEPTION 'retrying a partial sample return did not return the existing decision';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_quality_samples AS sample
+    WHERE sample.id = 'fd000000-0000-4000-8000-000000000205'
+      AND sample.status = 'partially_disposed'
+      AND sample.decided_at IS NULL
+  ) OR (SELECT count(*) FROM public.product_lot_quality_sample_dispositions
+      WHERE sample_id = 'fd000000-0000-4000-8000-000000000205') <> 1
+    OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_storage_balances
+      WHERE product_lot_id = 'fc000000-0000-4000-8000-000000000005'
+        AND raw_frozen_quantity = 44 AND quality_sampling_reserved_quantity = 4
+    ) THEN
+    RAISE EXCEPTION 'partial per-piece disposition did not preserve the remaining reserved sample piece';
+  END IF;
+  v_mixed_waste_id := public.decide_product_lot_quality_sample_disposition(
+    'fd000000-0000-4000-8000-000000000205', 'fb000000-0000-4000-8000-000000000103',
+    1, 'direct_waste', false,
+    'Una pieza se consumió en una prueba destructiva',
+    'fd000000-0000-4000-8000-000000000305'
+  );
+  IF NOT EXISTS (
+      SELECT 1 FROM public.product_lot_storage_balances
+      WHERE product_lot_id = 'fc000000-0000-4000-8000-000000000005'
+        AND raw_frozen_quantity = 44 AND quality_sampling_reserved_quantity = 3
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lots
+      WHERE id = 'fc000000-0000-4000-8000-000000000005' AND quantity = 44
+    ) OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_quality_samples
+      WHERE id = 'fd000000-0000-4000-8000-000000000205'
+        AND quantity = 2 AND status = 'mixed_disposition' AND destination = 'mixed'
+    ) OR (SELECT count(*) FROM public.product_lot_quality_sample_dispositions
+      WHERE sample_id = 'fd000000-0000-4000-8000-000000000205') <> 2
+    OR (SELECT count(*) FROM public.inventory_movements
+      WHERE reference_type = 'product_lot_quality_sample_disposition'
+        AND reference_id IN (v_mixed_return_id, v_mixed_waste_id)) <> 1 THEN
+    RAISE EXCEPTION 'distinct per-piece destinations or their retry were not reconciled exactly once';
+  END IF;
+END;
+$quality_sample_disposition$;
+
+RESET ROLE;
+
+SELECT set_config('request.jwt.claim.sub', 'f1000000-0000-4000-8000-000000000002', true);
+SET LOCAL ROLE authenticated;
+
+DO $quality_sample_disposition_authorization$
+BEGIN
+  IF (SELECT count(*) FROM public.product_lot_quality_sample_dispositions) <> 0 THEN
+    RAISE EXCEPTION 'non-admin user read product sample disposition records';
+  END IF;
+
+  BEGIN
+    PERFORM public.decide_product_lot_quality_sample_disposition(
+      'fd000000-0000-4000-8000-000000000201', 'fb000000-0000-4000-8000-000000000101',
+      1, 'direct_waste', false,
+      'Intento de disposición sin autorización administrativa',
+      'fd000000-0000-4000-8000-000000000306'
+    );
+    RAISE EXCEPTION 'non-admin user decided a quality sample disposition';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+END;
+$quality_sample_disposition_authorization$;
+
+RESET ROLE;
+
 ROLLBACK;

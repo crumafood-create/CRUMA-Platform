@@ -7,6 +7,7 @@ import {
 
 import {
   decideQualityRelease,
+  decideProductLotQualitySampleDisposition,
   decideRawMaterialQualityRelease,
   disposeFinishedProductNonconformance,
 } from '../actions';
@@ -28,6 +29,11 @@ const decisionLabel: Record<string, string> = {
 const dispositionLabel: Record<string, string> = {
   scrap: 'Descarte',
   rework: 'Retrabajo',
+};
+
+const qualitySampleDestinationLabel: Record<string, string> = {
+  returned_to_lot: 'Devuelta al mismo lote',
+  direct_waste: 'Merma directa de Calidad',
 };
 
 export default async function QualityInspectionPage({
@@ -94,16 +100,36 @@ export default async function QualityInspectionPage({
   }
 
   let qualitySampleLotNumber: string | null = null;
+  let qualitySample: {
+    id: string;
+    product_lot_id: string;
+    quantity: number;
+    purpose: string;
+    status: string;
+    destination: string | null;
+    reason: string | null;
+    decided_at: string | null;
+  } | null = null;
+  let sampleDispositions: {
+    id: string;
+    quantity: number;
+    destination: string;
+    return_authorized: boolean;
+    reason: string;
+    decided_by: string;
+    decided_at: string;
+  }[] = [];
   if (inspection.product_lot_quality_sample_id) {
     const { data: sample, error: sampleError } = await supabase
       .from('product_lot_quality_samples')
-      .select('product_lot_id')
+      .select('id, product_lot_id, quantity, purpose, status, destination, reason, decided_at')
       .eq('id', inspection.product_lot_quality_sample_id)
       .maybeSingle();
     if (sampleError) {
       throw new Error('No fue posible consultar el lote de la muestra.');
     }
     if (sample) {
+      qualitySample = sample;
       const { data: sampleLot, error: sampleLotError } = await supabase
         .from('product_lots')
         .select('lot_number')
@@ -113,6 +139,17 @@ export default async function QualityInspectionPage({
         throw new Error('No fue posible consultar el lote de inventario de la muestra.');
       }
       qualitySampleLotNumber = sampleLot?.lot_number ?? null;
+
+      const { data: decisions, error: decisionsError } = await supabase
+        .from('product_lot_quality_sample_dispositions')
+        .select('id, quantity, destination, return_authorized, reason, decided_by, decided_at')
+        .eq('sample_id', sample.id)
+        .order('decided_at')
+        .order('id');
+      if (decisionsError) {
+        throw new Error('No fue posible consultar las decisiones de la muestra.');
+      }
+      sampleDispositions = decisions ?? [];
     }
   }
 
@@ -178,6 +215,13 @@ export default async function QualityInspectionPage({
     inspection.subject_type === 'raw_material_lot';
   const isProductLotSample =
     inspection.subject_type === 'product_lot_quality_sample';
+  const disposedSampleQuantity = sampleDispositions.reduce(
+    (total, disposition) => total + disposition.quantity,
+    0,
+  );
+  const samplePendingQuantity = qualitySample
+    ? Math.max(qualitySample.quantity - disposedSampleQuantity, 0)
+    : 0;
 
   const subjectName = isRawMaterial
     ? inspection.raw_material_lots
@@ -420,11 +464,104 @@ export default async function QualityInspectionPage({
       ) : null}
 
       {isProductLotSample ? (
-        <section className="rounded-2xl border p-6">
-          <h2 className="text-xl font-semibold">Muestra apartada para disposición</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            La inspección quedó vinculada a la orden y salida de producción. La cantidad permanece apartada hasta que Calidad registre su destino.
+        <section className="space-y-4 rounded-2xl border p-6">
+          <h2 className="text-xl font-semibold">Destino de la muestra</h2>
+          <p className="text-sm text-gray-600">
+            La aprobación de la inspección y el destino se registran por separado.
+            Las piezas sin destino siguen apartadas.
           </p>
+          <p>
+            Muestra de {qualitySample?.quantity ?? inspection.sampled_quantity}
+            {' piezas · Pendientes de destino: '}
+            {samplePendingQuantity}
+          </p>
+
+          {sampleDispositions.map((sampleDisposition) => (
+            <div key={sampleDisposition.id} className="rounded border p-3 text-sm">
+              <strong>
+                {sampleDisposition.quantity} ·{' '}
+                {qualitySampleDestinationLabel[sampleDisposition.destination] ??
+                  sampleDisposition.destination}
+              </strong>
+              <p>{sampleDisposition.reason}</p>
+              <p className="text-gray-500">
+                {new Date(sampleDisposition.decided_at).toLocaleString('es-MX')}
+                {' · Responsable: '}
+                {sampleDisposition.decided_by}
+                {sampleDisposition.return_authorized
+                  ? ' · Retorno autorizado por Calidad'
+                  : ''}
+              </p>
+            </div>
+          ))}
+
+          {qualitySample && samplePendingQuantity > 0 ? (
+            <form
+              action={decideProductLotQualitySampleDisposition}
+              className="space-y-3 rounded border p-4"
+            >
+              <input type="hidden" name="quality_inspection_id" value={id} />
+              <input type="hidden" name="quality_sample_id" value={qualitySample.id} />
+              <input
+                type="hidden"
+                name="idempotency_key"
+                value={dispositionIdempotencyKey}
+              />
+
+              <label className="block text-sm">
+                Piezas por decidir (máximo {samplePendingQuantity})
+                <input
+                  name="quantity"
+                  type="number"
+                  min="1"
+                  max={samplePendingQuantity}
+                  step="1"
+                  defaultValue="1"
+                  required
+                  className="mt-1 w-full rounded border px-3 py-2"
+                />
+              </label>
+
+              <label className="block text-sm">
+                Destino
+                <select
+                  name="destination"
+                  required
+                  defaultValue="returned_to_lot"
+                  className="mt-1 w-full rounded border px-3 py-2"
+                >
+                  <option value="returned_to_lot">Devolver al mismo lote</option>
+                  <option value="direct_waste">Merma directa de Calidad</option>
+                </select>
+              </label>
+
+              <label className="flex items-start gap-2 text-sm">
+                <input name="return_authorized" type="checkbox" className="mt-1" />
+                <span>
+                  Calidad autoriza el retorno y verificó que las piezas siguen intactas
+                  y conservaron las condiciones de higiene y conservación.
+                </span>
+              </label>
+
+              <label className="block text-sm">
+                Motivo de la decisión
+                <textarea
+                  name="reason"
+                  required
+                  maxLength={500}
+                  className="mt-1 min-h-20 w-full rounded border px-3 py-2"
+                />
+              </label>
+
+              <button type="submit" className="rounded border px-4 py-2">
+                Registrar destino de estas piezas
+              </button>
+            </form>
+          ) : (
+            <p className="text-sm text-green-700">
+              Toda la muestra inmediata tiene un destino registrado.
+            </p>
+          )}
         </section>
       ) : decision ? (
         <section className="rounded-2xl border p-6">

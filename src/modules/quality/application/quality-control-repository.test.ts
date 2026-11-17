@@ -3,12 +3,41 @@ import { describe, expect, it } from 'vitest';
 import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase/database.types';
 
 import {
+  decideProductLotQualitySampleDisposition,
   decideQualityRelease,
   recordProductLotQualitySampleInspection,
   recordQualityInspection,
 } from './quality-control-repository';
 
 describe('repositorio de control de calidad', () => {
+  it('registra la disposición idempotente de una porción de muestra', async () => {
+    const calls: unknown[] = [];
+    const client = { rpc: async (...args: unknown[]) => {
+      calls.push(args);
+      return { data: 'sample-disposition-1', error: null };
+    } } as unknown as TypedSupabaseClient;
+
+    await expect(decideProductLotQualitySampleDisposition(client, {
+      qualityInspectionId: 'inspection-1',
+      sampleId: 'sample-1',
+      quantity: 1,
+      destination: 'returned_to_lot',
+      returnAuthorized: true,
+      reason: 'Calidad verificó que siguió intacta',
+      idempotencyKey: 'fd000000-0000-4000-8000-000000000301',
+    })).resolves.toBe('sample-disposition-1');
+
+    expect(calls).toEqual([['decide_product_lot_quality_sample_disposition', {
+      p_sample_id: 'sample-1',
+      p_quality_inspection_id: 'inspection-1',
+      p_quantity: 1,
+      p_destination: 'returned_to_lot',
+      p_return_authorized: true,
+      p_reason: 'Calidad verificó que siguió intacta',
+      p_idempotency_key: 'fd000000-0000-4000-8000-000000000301',
+    }]]);
+  });
+
   it('registra y evalúa la inspección en una sola RPC', async () => {
     const calls: unknown[] = [];
     const client = { rpc: async (...args: unknown[]) => {

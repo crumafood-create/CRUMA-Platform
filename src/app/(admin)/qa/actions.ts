@@ -7,12 +7,15 @@ import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.g
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import {
   assertQualityDecision,
+  buildProductLotQualitySampleDispositionRequest,
   buildProductLotQualitySampleInspectionRequest,
   buildQualityInspectionRequest,
   buildRawMaterialQualityInspectionRequest,
 } from '@/modules/quality/application/quality-control-contract';
 import {
   decideQualityRelease as persistQualityDecision,
+  decideProductLotQualitySampleDisposition as
+    persistProductLotQualitySampleDisposition,
   decideRawMaterialQualityRelease as persistRawMaterialQualityDecision,
   recordProductLotQualitySampleInspection as persistProductLotQualitySampleInspection,
   recordQualityInspection as persistQualityInspection,
@@ -69,6 +72,23 @@ export async function recordProductLotQualitySampleInspection(
   revalidatePath('/lots/storage-conditions');
   revalidatePath('/mobile/picking');
   redirect(`/qa/${inspectionId}`);
+}
+
+export async function decideProductLotQualitySampleDisposition(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.QUALITY_RELEASE_DECIDE,
+  );
+  const request = buildProductLotQualitySampleDispositionRequest(formData);
+  await persistProductLotQualitySampleDisposition(supabase, request);
+
+  revalidatePath('/qa');
+  revalidatePath(`/qa/${request.qualityInspectionId}`);
+  revalidatePath('/lots');
+  revalidatePath('/lots/storage-conditions');
+  revalidatePath('/mobile/picking');
+  redirect(`/qa/${request.qualityInspectionId}`);
 }
 
 export async function decideQualityRelease(

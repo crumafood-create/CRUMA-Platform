@@ -117,7 +117,7 @@ BEGIN
         USING ERRCODE = '23514';
     END IF;
 
-    SELECT candidate INTO product_lot
+    SELECT candidate.* INTO product_lot
     FROM public.product_lots AS candidate
     JOIN public.product_lot_storage_balances AS balance
       ON balance.product_lot_id = candidate.id

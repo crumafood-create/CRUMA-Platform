@@ -165,7 +165,7 @@ BEGIN
         USING ERRCODE = '22023';
     END IF;
 
-    SELECT candidate INTO product_lot
+    SELECT candidate.* INTO product_lot
     FROM public.product_lots AS candidate
     JOIN public.production_outputs AS output
       ON output.id = candidate.production_output_id

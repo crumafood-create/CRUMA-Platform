@@ -547,4 +547,362 @@ BEGIN
 END;
 $test$;
 
+-- A 48-piece raw output can be split into fresh, frozen-in-process, and
+-- released frozen balances while retaining the same production lot.
+UPDATE public.production_outputs
+SET quantity_produced = 48
+WHERE id = 'fa000000-0000-4000-8000-000000000001';
+
+UPDATE public.product_lots
+SET initial_quantity = 48, quantity = 48
+WHERE production_output_id = 'fa000000-0000-4000-8000-000000000001';
+
+UPDATE public.inventory_movements
+SET quantity = 48
+WHERE reference_type = 'production_lot'
+  AND reference_id = (
+    SELECT id FROM public.product_lots
+    WHERE production_output_id = 'fa000000-0000-4000-8000-000000000001'
+  );
+
+INSERT INTO public.preparation_types (id, slug, name)
+VALUES ('f9000000-0000-4000-8000-000000000001', 'storage-test-raw', 'Crudo');
+UPDATE public.products
+SET preparation_type_id = 'f9000000-0000-4000-8000-000000000001'
+WHERE id = 'f4000000-0000-4000-8000-000000000001';
+
+INSERT INTO public.customers (id, customer_code, name)
+VALUES ('fa000000-0000-4000-8000-000000000010', 'STORAGE-TEST', 'Storage Test Customer');
+INSERT INTO public.sales_orders (
+  id, order_number, customer_id, status, subtotal, total
+) VALUES (
+  'fa000000-0000-4000-8000-000000000011', 'SO-STORAGE-TEST',
+  'fa000000-0000-4000-8000-000000000010', 'confirmed', 11, 11
+);
+INSERT INTO public.sales_order_items (
+  id, sales_order_id, product_id, quantity, unit_price, discount, total
+) VALUES (
+  'fa000000-0000-4000-8000-000000000012',
+  'fa000000-0000-4000-8000-000000000011',
+  'f4000000-0000-4000-8000-000000000001', 11, 1, 0, 11
+);
+INSERT INTO public.picking_orders (id, sales_order_id, status)
+VALUES (
+  'fa000000-0000-4000-8000-000000000013',
+  'fa000000-0000-4000-8000-000000000011', 'in_progress'
+);
+INSERT INTO public.picking_order_items (
+  id, picking_order_id, product_id, quantity
+) VALUES (
+  'fa000000-0000-4000-8000-000000000014',
+  'fa000000-0000-4000-8000-000000000013',
+  'f4000000-0000-4000-8000-000000000001', 11
+);
+INSERT INTO public.inventory_reservations (
+  item_type, item_id, reference_type, reference_id, quantity, status, notes
+) VALUES (
+  'product', 'f4000000-0000-4000-8000-000000000001',
+  'sales_order', 'fa000000-0000-4000-8000-000000000011',
+  11, 'active', 'Storage-condition picking acceptance test'
+);
+
+CREATE TEMP TABLE test_freezing_operation (id uuid PRIMARY KEY);
+CREATE TEMP TABLE test_freezing_decisions (
+  id uuid PRIMARY KEY,
+  idempotency_key uuid NOT NULL
+);
+GRANT SELECT, INSERT ON test_freezing_operation,
+  test_freezing_decisions TO authenticated;
+
+SELECT set_config(
+  'request.jwt.claim.sub',
+  'f1000000-0000-4000-8000-000000000001',
+  true
+);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_freezing_operation (id)
+SELECT public.start_product_lot_freezing(
+  lot.id,
+  24,
+  'Prueba de aceptación: congelación parcial',
+  'fd000000-0000-4000-8000-000000000101'
+)
+FROM public.product_lots AS lot
+WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001';
+
+DO $test$
+DECLARE
+  v_operation_id uuid;
+BEGIN
+  SELECT id INTO v_operation_id FROM test_freezing_operation;
+  IF public.start_product_lot_freezing(
+    (SELECT lot.id FROM public.product_lots AS lot
+      WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'),
+    24,
+    'Prueba de aceptación: congelación parcial',
+    'fd000000-0000-4000-8000-000000000101'
+  ) IS DISTINCT FROM v_operation_id THEN
+    RAISE EXCEPTION 'restarting the same freezing request did not return its prior operation';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = (
+      SELECT lot.id FROM public.product_lots AS lot
+      WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+    )
+      AND balance.fresh_quantity = 24
+      AND balance.raw_frozen_quantity = 0
+      AND balance.freezing_quantity = 24
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots AS lot
+    WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+      AND lot.quantity = 24
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.inventory_available_to_promise AS stock
+    WHERE stock.item_type = 'product'
+      AND stock.item_id = 'f4000000-0000-4000-8000-000000000001'
+      AND stock.available_quantity = 13
+  ) THEN
+    RAISE EXCEPTION 'starting freezing did not remove 24 pieces from fresh, ATP and picking availability';
+  END IF;
+
+  INSERT INTO test_freezing_decisions (id, idempotency_key)
+  SELECT public.resolve_product_lot_freezing(
+    v_operation_id, 10, 'raw_frozen', false,
+    'Congelación confirmada de 10 piezas',
+    'fd000000-0000-4000-8000-000000000102'
+  ), 'fd000000-0000-4000-8000-000000000102';
+
+  INSERT INTO test_freezing_decisions (id, idempotency_key)
+  SELECT public.resolve_product_lot_freezing(
+    v_operation_id, 8, 'fresh', true,
+    'Verificación autorizada: no llegaron a congelarse y conservaron condiciones',
+    'fd000000-0000-4000-8000-000000000103'
+  ), 'fd000000-0000-4000-8000-000000000103';
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = (
+      SELECT lot.id FROM public.product_lots AS lot
+      WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+    )
+      AND balance.fresh_quantity = 32
+      AND balance.raw_frozen_quantity = 10
+      AND balance.freezing_quantity = 6
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots AS lot
+    WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+      AND lot.quantity = 42
+  ) THEN
+    RAISE EXCEPTION 'partial interruption decisions did not leave 32 fresh, 10 frozen and 6 held';
+  END IF;
+
+  PERFORM public.confirm_picking_item_with_condition(
+    'fa000000-0000-4000-8000-000000000014',
+    'PT-FG-001', 'raw_frozen', 4
+  );
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = (
+      SELECT lot.id FROM public.product_lots AS lot
+      WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+    )
+      AND balance.fresh_quantity = 32
+      AND balance.raw_frozen_quantity = 6
+      AND balance.freezing_quantity = 6
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots AS lot
+    WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+      AND lot.quantity = 38
+  ) THEN
+    RAISE EXCEPTION 'picking four frozen pieces changed the wrong storage balance';
+  END IF;
+
+  BEGIN
+    PERFORM public.confirm_picking_item_with_condition(
+      'fa000000-0000-4000-8000-000000000014',
+      'PT-FG-001', 'raw_frozen', 7
+    );
+    RAISE EXCEPTION 'picking accepted more raw-frozen pieces than were available';
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM NOT LIKE '%Faltan 1 piezas de la condición raw_frozen%' THEN RAISE; END IF;
+  END;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = (
+      SELECT lot.id FROM public.product_lots AS lot
+      WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+    )
+      AND balance.fresh_quantity = 32
+      AND balance.raw_frozen_quantity = 6
+      AND balance.freezing_quantity = 6
+  ) OR (SELECT quantity FROM public.inventory_reservations
+      WHERE reference_type = 'sales_order'
+        AND reference_id = 'fa000000-0000-4000-8000-000000000011'
+        AND status = 'active') <> 7 THEN
+    RAISE EXCEPTION 'rejected frozen shortage changed a balance or the remaining commitment';
+  END IF;
+  IF (SELECT picked_quantity FROM public.picking_order_items
+      WHERE id = 'fa000000-0000-4000-8000-000000000014') <> 4
+    OR (SELECT count(*) FROM public.picking_lot_allocations
+      WHERE picking_order_item_id = 'fa000000-0000-4000-8000-000000000014') <> 1
+    OR (SELECT count(*) FROM public.inventory_movements
+      WHERE reference_type = 'picking_lot_allocation'
+        AND reference_id = 'fa000000-0000-4000-8000-000000000013') <> 1 THEN
+    RAISE EXCEPTION 'rejected condition shortage left a partial picking allocation or movement';
+  END IF;
+
+  INSERT INTO public.production_outputs (
+    id, production_order_id, product_id, quantity_produced, quality_status
+  ) SELECT
+    'fa000000-0000-4000-8000-000000000020',
+    output.production_order_id, output.product_id, 3, 'released'
+  FROM public.production_outputs AS output
+  WHERE output.id = 'fa000000-0000-4000-8000-000000000001';
+
+  INSERT INTO public.product_lots (
+    id, product_id, lot_number, production_order_id, production_output_id,
+    expiration_date, initial_quantity, quantity, status
+  ) SELECT
+    'fa000000-0000-4000-8000-000000000021',
+    output.product_id, 'PT-FG-FEFO-FIRST', output.production_order_id,
+    output.id, '2090-01-01', 3, 3, 'available'
+  FROM public.production_outputs AS output
+  WHERE output.id = 'fa000000-0000-4000-8000-000000000020';
+
+  INSERT INTO public.product_lot_storage_balances (
+    product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity
+  ) VALUES (
+    'fa000000-0000-4000-8000-000000000021', 0, 3, 0
+  );
+
+  INSERT INTO public.inventory_movements (
+    item_type, item_id, product_id, movement_type, quantity,
+    reference_type, reference_id, warehouse_id, created_by, notes
+  ) VALUES (
+    'product', 'f4000000-0000-4000-8000-000000000001',
+    'f4000000-0000-4000-8000-000000000001', 'entry', 3,
+    'production_lot', 'fa000000-0000-4000-8000-000000000021',
+    'f2000000-0000-4000-8000-000000000001',
+    'f1000000-0000-4000-8000-000000000001', 'FEFO test lot'
+  );
+
+  PERFORM public.confirm_picking_item_with_condition(
+    'fa000000-0000-4000-8000-000000000014',
+    'PT-FG-FEFO-FIRST', 'raw_frozen', 1
+  );
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.picking_lot_allocations AS allocation
+    WHERE allocation.picking_order_item_id = 'fa000000-0000-4000-8000-000000000014'
+      AND allocation.product_lot_id = 'fa000000-0000-4000-8000-000000000021'
+      AND allocation.quantity = 1
+      AND allocation.storage_condition = 'raw_frozen'
+  ) THEN
+    RAISE EXCEPTION 'picking did not allocate the first eligible FEFO lot in the selected condition';
+  END IF;
+
+  IF public.resolve_product_lot_freezing(
+    v_operation_id, 8, 'fresh', true,
+    'Verificación autorizada: no llegaron a congelarse y conservaron condiciones',
+    'fd000000-0000-4000-8000-000000000103'
+  ) IS DISTINCT FROM (SELECT id FROM test_freezing_decisions
+                      WHERE idempotency_key = 'fd000000-0000-4000-8000-000000000103') THEN
+    RAISE EXCEPTION 'retrying a prior freezing decision did not return its prior result';
+  END IF;
+
+  BEGIN
+    PERFORM public.resolve_product_lot_freezing(
+      v_operation_id, 7, 'raw_frozen', false,
+      'Intento de resolver más que las 6 piezas pendientes',
+      'fd000000-0000-4000-8000-000000000104'
+    );
+    RAISE EXCEPTION 'freezing decision exceeded its pending quantity';
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM NOT LIKE '%pending freezing quantity%' THEN RAISE; END IF;
+  END;
+
+  PERFORM public.resolve_product_lot_freezing(
+    v_operation_id, 6, 'raw_frozen', false,
+    'Congelación parcial completada',
+    'fd000000-0000-4000-8000-000000000105'
+  );
+
+  BEGIN
+    PERFORM public.resolve_product_lot_freezing(
+      v_operation_id, 1, 'fresh', true,
+      'Intento de devolver una pieza ya confirmada como congelada',
+      'fd000000-0000-4000-8000-000000000106'
+    );
+    RAISE EXCEPTION 'confirmed raw-frozen pieces were changed back to fresh';
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM NOT LIKE '%Decision exceeds pending freezing quantity%' THEN RAISE; END IF;
+  END;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = (
+      SELECT lot.id FROM public.product_lots AS lot
+      WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+    )
+      AND balance.fresh_quantity = 32
+      AND balance.raw_frozen_quantity = 12
+      AND balance.freezing_quantity = 0
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lots AS lot
+    WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+      AND lot.quantity = 44
+  ) THEN
+    RAISE EXCEPTION 'resolving the last 6 pieces did not reconcile the product lot after picking';
+  END IF;
+
+  IF (SELECT count(*) FROM public.product_lot_freezing_decisions AS decision
+      WHERE decision.operation_id = v_operation_id) <> 3
+    OR (SELECT count(*) FROM public.inventory_movements
+      WHERE reference_type IN ('product_lot_freezing_start', 'product_lot_freezing_decision')
+        AND (reference_id = v_operation_id OR reference_id IN (
+          SELECT decision.id FROM public.product_lot_freezing_decisions AS decision
+          WHERE decision.operation_id = v_operation_id
+        ))) <> 4 THEN
+    RAISE EXCEPTION 'freezing retries duplicated a decision or inventory movement';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.product_lot_freezing_decisions AS decision
+    WHERE decision.operation_id = v_operation_id
+      AND (decision.product_lot_id IS DISTINCT FROM (
+        SELECT lot.id FROM public.product_lots AS lot
+        WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+      ) OR decision.reason IS NULL OR decision.decided_by IS NULL OR decision.decided_at IS NULL)
+  ) THEN
+    RAISE EXCEPTION 'freezing decision audit data is incomplete';
+  END IF;
+END;
+$test$;
+
+RESET ROLE;
+
+SELECT set_config(
+  'request.jwt.claim.sub',
+  'f1000000-0000-4000-8000-000000000002',
+  true
+);
+SET LOCAL ROLE authenticated;
+
+DO $test$
+BEGIN
+  IF (SELECT count(*) FROM public.product_lot_storage_balances) <> 0
+    OR (SELECT count(*) FROM public.product_lot_freezing_operations) <> 0
+    OR (SELECT count(*) FROM public.product_lot_freezing_decisions) <> 0 THEN
+    RAISE EXCEPTION 'non-admin user read administrative storage-condition records';
+  END IF;
+END;
+$test$;
+
+RESET ROLE;
+
 ROLLBACK;

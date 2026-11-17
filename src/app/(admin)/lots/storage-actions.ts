@@ -1,0 +1,49 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+
+import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
+import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
+
+type StorageRpc = {
+  rpc: (name: string, args: Record<string, string | number | boolean | null>) =>
+    Promise<{ data: string | null; error: { message: string } | null }>;
+};
+
+export async function startProductLotFreezing(formData: FormData) {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE,
+  );
+  const client = supabase as unknown as StorageRpc;
+  const quantity = Number(formData.get('quantity'));
+  const { error } = await client.rpc('start_product_lot_freezing', {
+    p_product_lot_id: formData.get('product_lot_id')?.toString() ?? '',
+    p_quantity: quantity,
+    p_reason: formData.get('reason')?.toString() ?? '',
+    p_idempotency_key: formData.get('idempotency_key')?.toString() ?? '',
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath('/lots/storage-conditions');
+  revalidatePath('/lots');
+}
+
+export async function resolveProductLotFreezing(formData: FormData) {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE,
+  );
+  const client = supabase as unknown as StorageRpc;
+  const destination = formData.get('destination')?.toString() ?? '';
+  const { error } = await client.rpc('resolve_product_lot_freezing', {
+    p_operation_id: formData.get('operation_id')?.toString() ?? '',
+    p_quantity: Number(formData.get('quantity')),
+    p_destination: destination,
+    p_conservation_verified: destination === 'fresh'
+      && formData.get('conservation_verified') === 'on',
+    p_reason: formData.get('reason')?.toString() ?? '',
+    p_idempotency_key: formData.get('idempotency_key')?.toString() ?? '',
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath('/lots/storage-conditions');
+  revalidatePath('/lots');
+  revalidatePath('/mobile/picking');
+}

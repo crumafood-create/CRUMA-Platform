@@ -10,6 +10,7 @@ getPickingDetail,
 type PickingDetail,
 type PickingDetailItem,
 } from './actions';
+import type { StorageCondition } from '../actions';
 
 // ============================================================================
 // TIPOS
@@ -89,6 +90,8 @@ const [pageState, setPageState] = useState<PageState>('loading');
 const [globalError, setGlobalError] = useState<string | null>(null);
 
 const [scannedLot, setScannedLot] = useState('');
+const [storageCondition, setStorageCondition] = useState<StorageCondition>('fresh');
+const [pickQuantity, setPickQuantity] = useState(1);
 const [isSaving, setIsSaving] = useState(false);
 
 const currentItem =
@@ -127,6 +130,8 @@ void loadDetail();
 
 useEffect(() => {
 setScannedLot('');
+setStorageCondition('fresh');
+setPickQuantity(1);
 }, [currentItem?.id]);
 
 async function handleConfirmPicking() {
@@ -143,7 +148,12 @@ setIsSaving(true);
 setGlobalError(null);
 
 try {
-await confirmPicking(currentItem.id, code);
+await confirmPicking(
+currentItem.id,
+code,
+currentItem.condition_managed ? storageCondition : undefined,
+currentItem.condition_managed ? pickQuantity : undefined,
+);
 setScannedLot('');
 await loadDetail();
 } catch (error) {
@@ -188,6 +198,10 @@ status={pickingStatus}
 item={currentItem}
 scannedLot={scannedLot}
 onScannedLotChange={setScannedLot}
+storageCondition={storageCondition}
+onStorageConditionChange={setStorageCondition}
+pickQuantity={pickQuantity}
+onPickQuantityChange={setPickQuantity}
 onConfirm={handleConfirmPicking}
 isSaving={isSaving}
 />
@@ -300,6 +314,10 @@ type PickingItemSectionProps = {
 item: PickingDetailItem;
 scannedLot: string;
 onScannedLotChange: (value: string) => void;
+storageCondition: StorageCondition;
+onStorageConditionChange: (value: StorageCondition) => void;
+pickQuantity: number;
+onPickQuantityChange: (value: number) => void;
 onConfirm: () => Promise<void>;
 isSaving: boolean;
 };
@@ -308,9 +326,20 @@ function PickingItemSection({
 item,
 scannedLot,
 onScannedLotChange,
+storageCondition,
+onStorageConditionChange,
+pickQuantity,
+onPickQuantityChange,
 onConfirm,
 isSaving,
 }: PickingItemSectionProps) {
+const conditionLot = storageCondition === 'fresh'
+  ? item.suggested_fresh_lot : item.suggested_frozen_lot;
+const suggestedLot = item.condition_managed ? conditionLot : item.suggested_lot;
+const conditionBalance = storageCondition === 'fresh'
+  ? item.condition_balances?.fresh ?? 0
+  : item.condition_balances?.raw_frozen ?? 0;
+const conditionShortage = Math.max(pickQuantity - conditionBalance, 0);
 return (
 <div
   className={`rounded-2xl border p-6 ${getItemCardClass(item.status)}`}
@@ -341,6 +370,37 @@ Restante
 </div>
 </div>
 
+{item.condition_managed && item.condition_balances && (
+<section className="rounded-xl border bg-white p-4 md:col-span-2" aria-label="Saldos por condición">
+<h3 className="font-semibold text-gray-900">Saldo disponible por condición</h3>
+<div className="mt-2 flex flex-wrap gap-4 text-sm">
+<span>Fresco: <strong>{item.condition_balances.fresh}</strong> piezas</span>
+<span>Crudo congelado: <strong>{item.condition_balances.raw_frozen}</strong> piezas</span>
+<span>En congelación: <strong>{item.condition_balances.freezing}</strong> apartadas</span>
+</div>
+<div className="mt-4 grid gap-3 sm:grid-cols-2">
+<label className={`cursor-pointer rounded-lg border p-3 ${storageCondition === 'fresh' ? 'border-blue-600 bg-blue-50' : ''}`}>
+<input type="radio" name="storageCondition" value="fresh" checked={storageCondition === 'fresh'}
+onChange={() => { onStorageConditionChange('fresh'); onScannedLotChange(''); }} />{' '}Fresco ({item.condition_balances.fresh})
+</label>
+<label className={`cursor-pointer rounded-lg border p-3 ${storageCondition === 'raw_frozen' ? 'border-blue-600 bg-blue-50' : ''}`}>
+<input type="radio" name="storageCondition" value="raw_frozen" checked={storageCondition === 'raw_frozen'}
+onChange={() => { onStorageConditionChange('raw_frozen'); onScannedLotChange(''); }} />{' '}Crudo congelado ({item.condition_balances.raw_frozen})
+</label>
+</div>
+<label className="mt-4 block text-sm font-semibold text-gray-700">
+Cantidad de piezas a surtir
+<input type="number" min={1} step={1}
+max={Math.max(item.quantity - item.picked_quantity, 1)} value={pickQuantity}
+onChange={(event) => onPickQuantityChange(Math.max(1, Number(event.target.value) || 1))}
+className="mt-1 block w-full rounded-lg border border-gray-300 p-3" disabled={isSaving} />
+</label>
+{conditionShortage > 0 && <p role="alert" className="mt-2 text-sm font-medium text-red-700">
+Faltan {conditionShortage} piezas en la condición seleccionada.
+</p>}
+</section>
+)}
+
 <div className="space-y-3 rounded-xl bg-blue-50 p-6">
 <div className="text-xs font-medium uppercase text-blue-700">
 Lote Sugerido
@@ -348,7 +408,7 @@ Lote Sugerido
 
 <div className="rounded-lg bg-white p-4 text-center shadow-sm">
 <div className="text-3xl font-bold text-blue-900">
-{item.suggested_lot?.lot_number ?? 'SIN LOTE'}
+{suggestedLot?.lot_number ?? 'SIN LOTE'}
 </div>
 </div>
 
@@ -356,14 +416,14 @@ Lote Sugerido
 <div>
 <div className="text-xs text-blue-700">📍 Ubicación</div>
 <div className="font-semibold text-blue-900">
-{item.suggested_lot?.location_name ?? 'Sin ubicación'}
+{suggestedLot?.location_name ?? 'Sin ubicación'}
 </div>
 </div>
 
 <div>
 <div className="text-xs text-blue-700">Disponible</div>
 <div className="font-semibold text-blue-900">
-{item.suggested_lot?.quantity ?? 0} unidades
+{suggestedLot?.quantity ?? 0} unidades
 </div>
 </div>
 </div>
@@ -405,7 +465,7 @@ onScannedLotChange(code);
 <button
 type="button"
 onClick={() => void onConfirm()}
-disabled={isSaving || !scannedLot.trim()}
+disabled={isSaving || !scannedLot.trim() || (item.condition_managed && conditionShortage > 0)}
 className="mt-6 w-full rounded-lg bg-green-600 px-4 py-4 font-bold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
 >
 {isSaving ? (

@@ -23,7 +23,10 @@ export default async function ProductionLotsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-4xl font-bold">Lotes producidos</h1>
           <p className="text-sm text-gray-500">Inventario liberado y trazabilidad por orden.</p></div>
-        <Link href="/lots/release" className="rounded border px-4 py-2">Liberar salida</Link>
+        <div className="flex gap-2">
+          <Link href="/lots/storage-conditions" className="rounded border px-4 py-2">Condiciones de almacenamiento</Link>
+          <Link href="/lots/release" className="rounded border px-4 py-2">Liberar salida</Link>
+        </div>
       </div>
       <section className="space-y-3 rounded-2xl border p-6">
         {lots?.length ? lots.map((lot) => (

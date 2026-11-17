@@ -4233,11 +4233,112 @@ export type Database = {
           },
         ]
       }
+      product_lot_quality_samples: {
+        Row: {
+          created_at: string
+          created_by: string
+          decided_at: string | null
+          decided_by: string | null
+          destination: string | null
+          id: string
+          product_lot_id: string
+          purpose: string
+          quantity: number
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          decided_at?: string | null
+          decided_by?: string | null
+          destination?: string | null
+          id?: string
+          product_lot_id: string
+          purpose: string
+          quantity: number
+          reason?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          destination?: string | null
+          id?: string
+          product_lot_id?: string
+          purpose?: string
+          quantity?: number
+          reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_quality_samples_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_lot_storage_balances: {
         Row: {
           freezing_quantity: number
           fresh_quantity: number
           product_lot_id: string
+          quality_sampling_pending_quantity: number
+          quality_sampling_reserved_quantity: number
           raw_frozen_quantity: number
           updated_at: string
         }
@@ -4245,6 +4346,8 @@ export type Database = {
           freezing_quantity?: number
           fresh_quantity?: number
           product_lot_id: string
+          quality_sampling_pending_quantity?: number
+          quality_sampling_reserved_quantity?: number
           raw_frozen_quantity?: number
           updated_at?: string
         }
@@ -4252,6 +4355,8 @@ export type Database = {
           freezing_quantity?: number
           fresh_quantity?: number
           product_lot_id?: string
+          quality_sampling_pending_quantity?: number
+          quality_sampling_reserved_quantity?: number
           raw_frozen_quantity?: number
           updated_at?: string
         }
@@ -9082,6 +9187,8 @@ export type Database = {
           lot_number: string
           lot_quantity: number
           product_lot_id: string
+          quality_sampling_pending_quantity: number
+          quality_sampling_reserved_quantity: number
           raw_frozen_quantity: number
         }[]
       }

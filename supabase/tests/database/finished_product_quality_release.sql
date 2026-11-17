@@ -890,7 +890,7 @@ CREATE TEMP TABLE test_quality_sampling_operations (
   decision_id uuid,
   PRIMARY KEY (product_lot_id, stage)
 );
-GRANT SELECT, INSERT ON test_quality_sampling_operations TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON test_quality_sampling_operations TO authenticated;
 
 SET LOCAL ROLE authenticated;
 

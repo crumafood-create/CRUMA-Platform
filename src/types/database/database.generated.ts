@@ -4233,6 +4233,81 @@ export type Database = {
           },
         ]
       }
+      product_lot_quality_sample_dispositions: {
+        Row: {
+          authorized_by: string | null
+          decided_at: string
+          decided_by: string
+          destination: string
+          id: string
+          idempotency_key: string
+          quantity: number
+          reason: string
+          return_authorized: boolean
+          sample_id: string
+        }
+        Insert: {
+          authorized_by?: string | null
+          decided_at?: string
+          decided_by: string
+          destination: string
+          id?: string
+          idempotency_key: string
+          quantity: number
+          reason: string
+          return_authorized?: boolean
+          sample_id: string
+        }
+        Update: {
+          authorized_by?: string | null
+          decided_at?: string
+          decided_by?: string
+          destination?: string
+          id?: string
+          idempotency_key?: string
+          quantity?: number
+          reason?: string
+          return_authorized?: boolean
+          sample_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_authorized_by_fkey"
+            columns: ["authorized_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_authorized_by_fkey"
+            columns: ["authorized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_sample_id_fkey"
+            columns: ["sample_id"]
+            isOneToOne: false
+            referencedRelation: "product_lot_quality_samples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_lot_quality_samples: {
         Row: {
           created_at: string
@@ -9141,6 +9216,18 @@ export type Database = {
       }
       decide_approval: {
         Args: { p_approval_id: string; p_decision: string }
+        Returns: string
+      }
+      decide_product_lot_quality_sample_disposition: {
+        Args: {
+          p_destination: string
+          p_idempotency_key: string
+          p_quality_inspection_id: string
+          p_quantity: number
+          p_reason: string
+          p_return_authorized: boolean
+          p_sample_id: string
+        }
         Returns: string
       }
       decide_quality_release: {

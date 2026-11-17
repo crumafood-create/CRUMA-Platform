@@ -4,6 +4,7 @@ import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase
 
 import {
   decideQualityRelease,
+  recordProductLotQualitySampleInspection,
   recordQualityInspection,
 } from './quality-control-repository';
 
@@ -35,6 +36,34 @@ describe('repositorio de control de calidad', () => {
       p_notes: '',
       p_output_id: 'output-1',
       p_sampled_quantity: 5,
+    }]]);
+  });
+
+  it('registra inspección de muestra con cantidad determinada por la base', async () => {
+    const calls: unknown[] = [];
+    const client = { rpc: async (...args: unknown[]) => {
+      calls.push(args);
+      return { data: 'inspection-sample-1', error: null };
+    } } as unknown as TypedSupabaseClient;
+
+    await expect(recordProductLotQualitySampleInspection(client, {
+      sampleId: 'sample-1',
+      notes: 'Integridad verificada',
+      criteria: [{
+        criterion: 'Integridad', expectedValue: 'Sin roturas',
+        actualValue: 'Integras', passed: true,
+      }],
+      defects: [],
+    })).resolves.toBe('inspection-sample-1');
+
+    expect(calls).toEqual([['record_product_lot_quality_sample_inspection', {
+      p_criteria: [{
+        criterion: 'Integridad', expected_value: 'Sin roturas',
+        actual_value: 'Integras', passed: true,
+      }],
+      p_defects: [],
+      p_notes: 'Integridad verificada',
+      p_sample_id: 'sample-1',
     }]]);
   });
 

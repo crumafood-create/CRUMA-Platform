@@ -34,6 +34,13 @@ export type RawMaterialQualityInspectionRequest = {
   defects: QualityDefectInput[];
 };
 
+export type ProductLotQualitySampleInspectionRequest = {
+  sampleId: string;
+  notes: string | null;
+  criteria: QualityCriterionInput[];
+  defects: QualityDefectInput[];
+};
+
 function value(formData: FormData, key: string): string {
   return formData.get(key)?.toString().trim() ?? '';
 }
@@ -79,7 +86,7 @@ function criteria(formData: FormData): QualityCriterionInput[] {
 
 function defects(
   formData: FormData,
-  sampled: number,
+  sampled?: number,
   allowDecimal = false,
 ): QualityDefectInput[] {
   const defectType = value(formData, 'defect_type');
@@ -98,7 +105,7 @@ function defects(
       'La cantidad defectuosa debe ser un entero positivo.',
     );
 
-  if (quantity > sampled) {
+  if (sampled !== undefined && quantity > sampled) {
     throw new Error('La cantidad defectuosa no puede superar la muestra.');
   }
   return [{
@@ -107,6 +114,26 @@ function defects(
     quantity,
     description: optional(value(formData, 'defect_description')),
   }];
+}
+
+export function buildProductLotQualitySampleInspectionRequest(
+  formData: FormData,
+): ProductLotQualitySampleInspectionRequest {
+  const sampleId = value(formData, 'quality_sample_id');
+  if (!sampleId) {
+    throw new Error('La muestra de Calidad es obligatoria.');
+  }
+  const inspectionCriteria = criteria(formData);
+  if (inspectionCriteria.length === 0) {
+    throw new Error('La inspeccion requiere al menos un criterio.');
+  }
+  return {
+    sampleId,
+    notes: optional(value(formData, 'notes')),
+    criteria: inspectionCriteria,
+    // The database validates defect quantity against the reserved sample.
+    defects: defects(formData),
+  };
 }
 
 export function buildQualityInspectionRequest(

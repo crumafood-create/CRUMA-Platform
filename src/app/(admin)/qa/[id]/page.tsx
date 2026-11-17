@@ -46,6 +46,7 @@ export default async function QualityInspectionPage({
     .select(`
       id,
       subject_type,
+      product_lot_quality_sample_id,
       status,
       result,
       sampled_quantity,
@@ -90,6 +91,29 @@ export default async function QualityInspectionPage({
 
   if (!inspection) {
     notFound();
+  }
+
+  let qualitySampleLotNumber: string | null = null;
+  if (inspection.product_lot_quality_sample_id) {
+    const { data: sample, error: sampleError } = await supabase
+      .from('product_lot_quality_samples')
+      .select('product_lot_id')
+      .eq('id', inspection.product_lot_quality_sample_id)
+      .maybeSingle();
+    if (sampleError) {
+      throw new Error('No fue posible consultar el lote de la muestra.');
+    }
+    if (sample) {
+      const { data: sampleLot, error: sampleLotError } = await supabase
+        .from('product_lots')
+        .select('lot_number')
+        .eq('id', sample.product_lot_id)
+        .maybeSingle();
+      if (sampleLotError) {
+        throw new Error('No fue posible consultar el lote de inventario de la muestra.');
+      }
+      qualitySampleLotNumber = sampleLot?.lot_number ?? null;
+    }
   }
 
   const [
@@ -152,6 +176,8 @@ export default async function QualityInspectionPage({
 
   const isRawMaterial =
     inspection.subject_type === 'raw_material_lot';
+  const isProductLotSample =
+    inspection.subject_type === 'product_lot_quality_sample';
 
   const subjectName = isRawMaterial
     ? inspection.raw_material_lots
@@ -161,7 +187,13 @@ export default async function QualityInspectionPage({
         ?.products?.name ??
       'Producto terminado';
 
-  const subjectReference = isRawMaterial
+  const subjectReference = isProductLotSample
+    ? `Lote ${qualitySampleLotNumber ?? '-'} · orden ${
+        inspection.production_outputs
+          ?.production_orders
+          ?.production_number ?? '-'
+      }`
+    : isRawMaterial
     ? `Lote ${
         inspection.raw_material_lots
           ?.lot_number ?? '-'
@@ -185,7 +217,9 @@ export default async function QualityInspectionPage({
           </h1>
 
           <p className="text-gray-500">
-            {isRawMaterial
+            {isProductLotSample
+              ? 'Muestra de producto terminado'
+              : isRawMaterial
               ? 'Materia prima'
               : 'Producto terminado'}
             {' · '}
@@ -299,6 +333,13 @@ export default async function QualityInspectionPage({
         </section>
       )}
 
+      {isProductLotSample && (
+        <section className="rounded-2xl border p-6">
+          <h2 className="text-xl font-semibold">Lote de inventario</h2>
+          <p className="mt-2">{qualitySampleLotNumber ?? '-'}</p>
+        </section>
+      )}
+
       <section className="space-y-3 rounded-2xl border p-6">
         <h2 className="text-xl font-semibold">
           Criterios
@@ -378,7 +419,14 @@ export default async function QualityInspectionPage({
         </section>
       ) : null}
 
-      {decision ? (
+      {isProductLotSample ? (
+        <section className="rounded-2xl border p-6">
+          <h2 className="text-xl font-semibold">Muestra apartada para disposición</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            La inspección quedó vinculada a la orden y salida de producción. La cantidad permanece apartada hasta que Calidad registre su destino.
+          </p>
+        </section>
+      ) : decision ? (
         <section className="rounded-2xl border p-6">
           <h2 className="text-xl font-semibold">
             Decisión:{' '}

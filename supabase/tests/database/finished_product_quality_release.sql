@@ -1201,8 +1201,112 @@ BEGIN
     OR (SELECT count(*) FROM public.product_lot_quality_samples) <> 0 THEN
     RAISE EXCEPTION 'non-admin user read administrative storage-condition records';
   END IF;
+
+  BEGIN
+    PERFORM public.record_product_lot_quality_sample_inspection(
+      'fa000000-0000-4000-8000-000000000031',
+      'Intento sin autorización',
+      '[{"criterion":"Integridad","passed":true}]'::jsonb,
+      '[]'::jsonb
+    );
+    RAISE EXCEPTION 'non-admin user recorded a product quality sample inspection';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
 END;
 $test$;
+
+RESET ROLE;
+
+SELECT set_config('request.jwt.claim.sub', 'f1000000-0000-4000-8000-000000000001', true);
+SET LOCAL ROLE authenticated;
+
+DO $quality_sample_inspection$
+DECLARE
+  v_sample_id uuid;
+  v_inspection_id uuid;
+  v_lot_id uuid;
+  v_lot_quantity numeric;
+  v_frozen_quantity integer;
+BEGIN
+  SELECT sample.id, sample.product_lot_id
+  INTO v_sample_id, v_lot_id
+  FROM public.product_lot_quality_samples AS sample
+  JOIN public.product_lots AS lot ON lot.id = sample.product_lot_id
+  WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+    AND sample.purpose = 'immediate_inspection'
+    AND sample.status = 'pending_inspection';
+
+  SELECT lot.quantity, balance.raw_frozen_quantity
+  INTO v_lot_quantity, v_frozen_quantity
+  FROM public.product_lots AS lot
+  JOIN public.product_lot_storage_balances AS balance
+    ON balance.product_lot_id = lot.id
+  WHERE lot.id = v_lot_id;
+
+  v_inspection_id := public.record_product_lot_quality_sample_inspection(
+    v_sample_id,
+    'Inspección de prueba de muestra inmediata',
+    '[{"criterion":"Integridad","expected_value":"Sin roturas","actual_value":"Íntegras","passed":true}]'::jsonb,
+    '[]'::jsonb
+  );
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.quality_inspections AS inspection
+    WHERE inspection.id = v_inspection_id
+      AND inspection.subject_type = 'product_lot_quality_sample'
+      AND inspection.product_lot_quality_sample_id = v_sample_id
+      AND inspection.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+      AND inspection.production_order_id = (
+        SELECT output.production_order_id FROM public.production_outputs AS output
+        WHERE output.id = 'fa000000-0000-4000-8000-000000000001'
+      )
+      AND inspection.sampled_quantity = 2
+      AND inspection.accepted_quantity = 2
+      AND inspection.rejected_quantity = 0
+      AND inspection.status = 'passed'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lot_quality_samples AS sample
+    WHERE sample.id = v_sample_id
+      AND sample.status = 'pending_disposition'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.quality_inspection_items AS item
+    WHERE item.inspection_id = v_inspection_id
+      AND item.criterion = 'Integridad'
+      AND item.passed = true
+  ) THEN
+    RAISE EXCEPTION 'immediate sample inspection did not preserve its source, fixed quantity and result';
+  END IF;
+
+  IF (SELECT lot.quantity FROM public.product_lots AS lot WHERE lot.id = v_lot_id)
+      IS DISTINCT FROM v_lot_quantity
+    OR (SELECT balance.raw_frozen_quantity
+      FROM public.product_lot_storage_balances AS balance
+      WHERE balance.product_lot_id = v_lot_id)
+      IS DISTINCT FROM v_frozen_quantity THEN
+    RAISE EXCEPTION 'recording sample inspection changed the inventory balance before disposition';
+  END IF;
+
+  BEGIN
+    PERFORM public.record_product_lot_quality_sample_inspection(
+      v_sample_id,
+      'Reintento de inspección',
+      '[{"criterion":"Integridad","passed":true}]'::jsonb,
+      '[]'::jsonb
+    );
+    RAISE EXCEPTION 'an already inspected sample was inspected a second time';
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM NOT LIKE '%already has an inspection%' THEN RAISE; END IF;
+  END;
+
+  IF (SELECT count(*) FROM public.quality_inspections AS inspection
+      WHERE inspection.product_lot_quality_sample_id = v_sample_id) <> 1
+    OR (SELECT count(*) FROM public.quality_inspection_items AS item
+      WHERE item.inspection_id = v_inspection_id) <> 1 THEN
+    RAISE EXCEPTION 'retrying sample inspection duplicated inspection data';
+  END IF;
+END;
+$quality_sample_inspection$;
 
 RESET ROLE;
 

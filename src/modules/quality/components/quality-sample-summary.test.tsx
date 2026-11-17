@@ -13,6 +13,7 @@ describe('QualitySampleSummary', () => {
             lotNumber: 'PARTY-001',
             productName: 'Tequeño Party Queso Crudo',
             immediateInspection: 2,
+            immediateSampleId: 'sample-1',
             safetyRetention: 3,
           },
         ]}
@@ -22,6 +23,10 @@ describe('QualitySampleSummary', () => {
     expect(screen.getByText('Tequeño Party Queso Crudo · lote PARTY-001')).toBeInTheDocument();
     expect(screen.getByText('Inspección inmediata').nextElementSibling).toHaveTextContent('2 piezas');
     expect(screen.getByText('Retención de seguridad').nextElementSibling).toHaveTextContent('3 piezas');
+    expect(screen.getByRole('link', { name: 'Inspeccionar muestra' })).toHaveAttribute(
+      'href',
+      '/qa/samples/sample-1/inspect',
+    );
     expect(container.querySelector('input, select, textarea')).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertQualityDecision,
   buildQualityInspectionRequest,
+  buildProductLotQualitySampleInspectionRequest,
 } from './quality-control-contract';
 
 function validForm(): FormData {
@@ -27,6 +28,29 @@ describe('contrato de control de calidad', () => {
         criterion: 'Apariencia',
         expectedValue: 'Uniforme',
         actualValue: 'Uniforme',
+        passed: true,
+      }],
+      defects: [],
+    });
+  });
+
+  it('construye inspecciÃ³n de muestra sin aceptar del formulario la cantidad apartada', () => {
+    const data = new FormData();
+    data.set('quality_sample_id', 'sample-1');
+    data.set('sampled_quantity', '999');
+    data.set('notes', 'Prueba de integridad');
+    data.set('criterion_1', 'Integridad');
+    data.set('expected_1', 'Sin roturas');
+    data.set('actual_1', 'Ãntegras');
+    data.set('passed_1', 'on');
+
+    expect(buildProductLotQualitySampleInspectionRequest(data)).toEqual({
+      sampleId: 'sample-1',
+      notes: 'Prueba de integridad',
+      criteria: [{
+        criterion: 'Integridad',
+        expectedValue: 'Sin roturas',
+        actualValue: 'Ãntegras',
         passed: true,
       }],
       defects: [],

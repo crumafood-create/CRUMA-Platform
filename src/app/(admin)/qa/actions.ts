@@ -7,12 +7,14 @@ import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.g
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import {
   assertQualityDecision,
+  buildProductLotQualitySampleInspectionRequest,
   buildQualityInspectionRequest,
   buildRawMaterialQualityInspectionRequest,
 } from '@/modules/quality/application/quality-control-contract';
 import {
   decideQualityRelease as persistQualityDecision,
   decideRawMaterialQualityRelease as persistRawMaterialQualityDecision,
+  recordProductLotQualitySampleInspection as persistProductLotQualitySampleInspection,
   recordQualityInspection as persistQualityInspection,
   recordRawMaterialQualityInspection as persistRawMaterialQualityInspection,
 } from '@/modules/quality/application/quality-control-repository';
@@ -43,6 +45,29 @@ export async function recordQualityInspection(
 
   revalidatePath('/qa');
   revalidatePath('/production-orders');
+  redirect(`/qa/${inspectionId}`);
+}
+
+export async function recordProductLotQualitySampleInspection(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.QUALITY_INSPECTION_MANAGE,
+    );
+
+  const request =
+    buildProductLotQualitySampleInspectionRequest(formData);
+  const inspectionId =
+    await persistProductLotQualitySampleInspection(
+      supabase,
+      request,
+    );
+
+  revalidatePath('/qa');
+  revalidatePath('/qa/create');
+  revalidatePath('/lots/storage-conditions');
+  revalidatePath('/mobile/picking');
   redirect(`/qa/${inspectionId}`);
 }
 

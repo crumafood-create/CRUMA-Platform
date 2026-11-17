@@ -1,8 +1,11 @@
+import Link from 'next/link';
+
 export type QualitySampleSummary = {
   lotId: string;
   lotNumber: string;
   productName: string;
   immediateInspection: number;
+  immediateSampleId: string | null;
   safetyRetention: number;
 };
 
@@ -27,6 +30,14 @@ export function QualitySampleSummary({
             <div>
               <dt>Inspección inmediata</dt>
               <dd>{sample.immediateInspection} piezas</dd>
+              {sample.immediateSampleId ? (
+                <Link
+                  href={`/qa/samples/${sample.immediateSampleId}/inspect`}
+                  className="mt-2 inline-flex rounded border px-3 py-2"
+                >
+                  Inspeccionar muestra
+                </Link>
+              ) : null}
             </div>
             <div>
               <dt>Retención de seguridad</dt>

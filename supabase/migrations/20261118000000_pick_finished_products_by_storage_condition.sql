@@ -117,10 +117,7 @@ BEGIN
         USING ERRCODE = '23514';
     END IF;
 
-    SELECT candidate, CASE p_storage_condition
-      WHEN 'fresh' THEN balance.fresh_quantity
-      ELSE balance.raw_frozen_quantity END
-    INTO product_lot, condition_quantity
+    SELECT candidate.* INTO product_lot
     FROM public.product_lots AS candidate
     JOIN public.product_lot_storage_balances AS balance
       ON balance.product_lot_id = candidate.id
@@ -143,6 +140,12 @@ BEGIN
       RAISE EXCEPTION 'No released FEFO lot is available for condition %.',
         p_storage_condition USING ERRCODE = '23514';
     END IF;
+    SELECT CASE p_storage_condition
+      WHEN 'fresh' THEN balance.fresh_quantity
+      ELSE balance.raw_frozen_quantity END
+    INTO condition_quantity
+    FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = product_lot.id;
     IF upper(btrim(p_lot_number)) IS DISTINCT FROM upper(product_lot.lot_number) THEN
       RAISE EXCEPTION 'Scanned lot is not the next FEFO lot for condition %.',
         p_storage_condition USING ERRCODE = '23514';

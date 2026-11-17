@@ -671,6 +671,10 @@ WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001';
 DO $test$
 DECLARE
   v_operation_id uuid;
+  v_fresh_quantity integer;
+  v_freezing_quantity integer;
+  v_lot_quantity numeric;
+  v_atp_quantity numeric;
 BEGIN
   SELECT id INTO v_operation_id FROM test_freezing_operation;
   IF public.start_product_lot_freezing(
@@ -683,26 +687,23 @@ BEGIN
     RAISE EXCEPTION 'restarting the same freezing request did not return its prior operation';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM public.product_lot_storage_balances AS balance
-    WHERE balance.product_lot_id = (
-      SELECT lot.id FROM public.product_lots AS lot
-      WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
-    )
-      AND balance.fresh_quantity = 24
-      AND balance.raw_frozen_quantity = 0
-      AND balance.freezing_quantity = 24
-  ) OR NOT EXISTS (
-    SELECT 1 FROM public.product_lots AS lot
-    WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
-      AND lot.quantity = 24
-  ) OR NOT EXISTS (
-    SELECT 1 FROM public.inventory_available_to_promise AS stock
-    WHERE stock.item_type = 'product'
-      AND stock.item_id = 'f4000000-0000-4000-8000-000000000001'
-      AND stock.available_quantity = 13
-  ) THEN
-    RAISE EXCEPTION 'starting freezing did not remove 24 pieces from fresh, ATP and picking availability';
+  SELECT balance.fresh_quantity, balance.freezing_quantity, lot.quantity
+  INTO v_fresh_quantity, v_freezing_quantity, v_lot_quantity
+  FROM public.product_lot_storage_balances AS balance
+  JOIN public.product_lots AS lot ON lot.id = balance.product_lot_id
+  WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001';
+  SELECT coalesce(sum(stock.available_quantity), 0)
+  INTO v_atp_quantity
+  FROM public.inventory_available_to_promise AS stock
+  WHERE stock.item_type = 'product'
+    AND stock.item_id = 'f4000000-0000-4000-8000-000000000001';
+  IF v_fresh_quantity IS DISTINCT FROM 24
+    OR v_freezing_quantity IS DISTINCT FROM 24
+    OR v_lot_quantity IS DISTINCT FROM 24
+    OR v_atp_quantity IS DISTINCT FROM 13 THEN
+    RAISE EXCEPTION
+      'freezing balance mismatch: fresh %, in-process %, lot %, ATP % (expected 24, 24, 24, 13)',
+      v_fresh_quantity, v_freezing_quantity, v_lot_quantity, v_atp_quantity;
   END IF;
 
   INSERT INTO test_freezing_decisions (id, idempotency_key)

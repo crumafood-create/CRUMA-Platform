@@ -457,9 +457,36 @@ BEGIN
 END;
 $test$;
 
--- Direct reading of the audit table remains restricted by RLS.
+-- Administrators can read material consumptions and their source lots for traceability.
 SET LOCAL ROLE authenticated;
 
+SELECT set_config(
+  'request.jwt.claim.sub',
+  'fb100000-0000-0000-0000-000000000001',
+  true
+);
+
+DO $test$
+BEGIN
+  IF (
+    SELECT count(*)
+    FROM public.production_order_consumptions consumption
+    JOIN public.production_order_items item
+      ON item.id = consumption.production_order_item_id
+    JOIN public.raw_materials material
+      ON material.id = item.raw_material_id
+    JOIN public.raw_material_lots lot
+      ON lot.id = consumption.raw_material_lot_id
+    WHERE item.production_order_id =
+      'fb600000-0000-0000-0000-000000000001'
+  ) <> 2 THEN
+    RAISE EXCEPTION
+      'admin cannot read material consumptions with their source lots';
+  END IF;
+END;
+$test$;
+
+-- Ordinary users cannot read production material consumption or audit rows.
 SELECT set_config(
   'request.jwt.claim.sub',
   'fb100000-0000-0000-0000-000000000002',
@@ -468,6 +495,14 @@ SELECT set_config(
 
 DO $test$
 BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM public.production_order_consumptions
+  ) THEN
+    RAISE EXCEPTION
+      'normal user read production material consumptions';
+  END IF;
+
   IF (
     SELECT count(*)
     FROM public.production_material_consumption_operations

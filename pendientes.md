@@ -42,8 +42,16 @@ Refinar una historia a la vez con [SKILL_story](skills/story/SKILL_story.md), lu
 
 ## Compras y recepción de materias primas
 
-- [ ] **MP-02.** Como responsable de compras, quiero cambiar el proveedor de una orden borrador conservando sus renglones, para revisar y corregir sus precios antes de confirmarla.
+- [x] **MP-02.** Como responsable de compras, quiero cambiar el proveedor de una orden borrador conservando sus renglones, para revisar y corregir sus precios antes de confirmarla. **Completada:** PR #129 fusionado; CI #4193 pasó la prueba SQL y el cierre documental entró por PR #131.
   - **Prioridad:** P2.
   - **Motivo:** cambiar de proveedor es necesario en algunos recorridos, pero la alternativa temporal es crear otro borrador; una orden confirmada no se modifica.
   - **Módulo propietario:** Procurement.
   - **Regla acordada:** cada orden tiene un proveedor; al cambiarlo se conservan los renglones y sus precios no se recalculan automáticamente.
+
+## Calidad: reglas pendientes de habilitación
+
+- **Cocidos congelados:** cantidad confirmada de inspección inmediata de 2 piezas y retención de 2 piezas; aún no se habilita en la implementación inicial de muestreo.
+- **Masa sin levadura:** 0.100 kg por lote es referencia pendiente de confirmación; falta decidir si se guarda una porción adicional de retención.
+- **Discos #14, lote común:** falta definir la cantidad de inspección inmediata y si la retención común será exactamente 2 o 3 discos.
+- **Discos #14, lote mensual seleccionado:** 12 discos en paquete comercial cerrado para empaque/duración; falta confirmar si sustituyen la retención común y definir la cantidad de inspección inmediata.
+- **Productos con levadura:** no habilitar hasta confirmar fórmulas y controles por etapa; la retención propuesta de 4 piezas crudas congeladas y 2 cocidas congeladas está pendiente de validar por presentación.

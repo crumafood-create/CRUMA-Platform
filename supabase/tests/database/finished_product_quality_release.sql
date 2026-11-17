@@ -671,10 +671,21 @@ BEGIN
 
   INSERT INTO test_freezing_decisions (id, idempotency_key)
   SELECT public.resolve_product_lot_freezing(
-    v_operation_id, 10, 'raw_frozen', false,
-    'Congelación confirmada de 10 piezas',
+    v_operation_id, 15, 'raw_frozen', false,
+    'Congelación confirmada de 15 piezas en el primer tramo',
     'fd000000-0000-4000-8000-000000000102'
   ), 'fd000000-0000-4000-8000-000000000102';
+
+  IF public.resolve_product_lot_freezing(
+    v_operation_id, 15, 'raw_frozen', false,
+    'Congelación confirmada de 15 piezas en el primer tramo',
+    'fd000000-0000-4000-8000-000000000102'
+  ) IS DISTINCT FROM (
+    SELECT id FROM test_freezing_decisions
+    WHERE idempotency_key = 'fd000000-0000-4000-8000-000000000102'
+  ) THEN
+    RAISE EXCEPTION 'retrying the first frozen sample allocation did not return its prior result';
+  END IF;
 
   INSERT INTO test_freezing_decisions (id, idempotency_key)
   SELECT public.resolve_product_lot_freezing(
@@ -691,13 +702,41 @@ BEGIN
     )
       AND balance.fresh_quantity = 32
       AND balance.raw_frozen_quantity = 10
-      AND balance.freezing_quantity = 6
+      AND balance.freezing_quantity = 1
   ) OR NOT EXISTS (
     SELECT 1 FROM public.product_lots AS lot
     WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
       AND lot.quantity = 42
   ) THEN
-    RAISE EXCEPTION 'partial interruption decisions did not leave 32 fresh, 10 frozen and 6 held';
+    RAISE EXCEPTION 'partial freeze did not leave 32 fresh, 10 usable frozen, and 1 unresolved';
+  END IF;
+
+  IF (
+    SELECT output.quantity_produced - lot.quantity - balance.freezing_quantity
+    FROM public.production_outputs AS output
+    JOIN public.product_lots AS lot ON lot.production_output_id = output.id
+    JOIN public.product_lot_storage_balances AS balance
+      ON balance.product_lot_id = lot.id
+    WHERE output.id = 'fa000000-0000-4000-8000-000000000001'
+  ) <> 5 THEN
+    RAISE EXCEPTION 'the first partial freeze did not reserve exactly five quality samples';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    JOIN public.product_lots AS lot ON lot.id = balance.product_lot_id
+    WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+      AND balance.quality_sampling_pending_quantity = 0
+      AND balance.quality_sampling_reserved_quantity = 5
+      AND balance.raw_frozen_quantity = 10
+  ) OR (SELECT count(*) FROM public.product_lot_quality_samples AS sample
+      JOIN public.product_lots AS lot ON lot.id = sample.product_lot_id
+      WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
+        AND ((sample.purpose = 'immediate_inspection' AND sample.quantity = 2
+            AND sample.status = 'pending_inspection')
+          OR (sample.purpose = 'safety_retention' AND sample.quantity = 3
+            AND sample.status = 'in_custody'))) <> 2 THEN
+    RAISE EXCEPTION 'the first threshold crossing did not allocate the 2+3 samples exactly once';
   END IF;
 
   PERFORM public.confirm_picking_item_with_condition(
@@ -713,7 +752,7 @@ BEGIN
     )
       AND balance.fresh_quantity = 32
       AND balance.raw_frozen_quantity = 6
-      AND balance.freezing_quantity = 6
+      AND balance.freezing_quantity = 1
   ) OR NOT EXISTS (
     SELECT 1 FROM public.product_lots AS lot
     WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
@@ -740,7 +779,7 @@ BEGIN
     )
       AND balance.fresh_quantity = 32
       AND balance.raw_frozen_quantity = 6
-      AND balance.freezing_quantity = 6
+      AND balance.freezing_quantity = 1
   ) OR (SELECT quantity FROM public.inventory_reservations
       WHERE reference_type = 'sales_order'
         AND reference_id = 'fa000000-0000-4000-8000-000000000011'
@@ -798,7 +837,237 @@ INSERT INTO public.inventory_movements (
   'f1000000-0000-4000-8000-000000000001', 'FEFO test lot'
 );
 
+-- Separate lots exercise sample accumulation, exact threshold and the rule
+-- that independent lots do not pool pieces to reach the threshold.
+INSERT INTO public.production_outputs (
+  id, production_order_id, product_id, quantity_produced, quality_status
+) VALUES
+  ('fa000000-0000-4000-8000-000000000030', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 10, 'released'),
+  ('fa000000-0000-4000-8000-000000000040', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 5, 'released'),
+  ('fa000000-0000-4000-8000-000000000050', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 4, 'released'),
+  ('fa000000-0000-4000-8000-000000000060', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 1, 'released');
+
+WITH sample_lots(output_id, lot_id, lot_number, quantity) AS (
+  VALUES
+    ('fa000000-0000-4000-8000-000000000030'::uuid, 'fa000000-0000-4000-8000-000000000031'::uuid, 'PT-QA-SAMPLE-3-4', 10),
+    ('fa000000-0000-4000-8000-000000000040'::uuid, 'fa000000-0000-4000-8000-000000000041'::uuid, 'PT-QA-SAMPLE-EXACT-5', 5),
+    ('fa000000-0000-4000-8000-000000000050'::uuid, 'fa000000-0000-4000-8000-000000000051'::uuid, 'PT-QA-SAMPLE-UNDER-5-A', 4),
+    ('fa000000-0000-4000-8000-000000000060'::uuid, 'fa000000-0000-4000-8000-000000000061'::uuid, 'PT-QA-SAMPLE-UNDER-5-B', 1)
+)
+INSERT INTO public.product_lots (
+  id, product_id, lot_number, production_order_id, production_output_id,
+  expiration_date, initial_quantity, quantity, status
+)
+SELECT sample_lots.lot_id, output.product_id, sample_lots.lot_number,
+  output.production_order_id, output.id, '2090-01-01',
+  sample_lots.quantity, sample_lots.quantity, 'available'
+FROM sample_lots
+JOIN public.production_outputs AS output ON output.id = sample_lots.output_id;
+
+INSERT INTO public.product_lot_storage_balances (
+  product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity
+)
+VALUES
+  ('fa000000-0000-4000-8000-000000000031', 10, 0, 0),
+  ('fa000000-0000-4000-8000-000000000041', 5, 0, 0),
+  ('fa000000-0000-4000-8000-000000000051', 4, 0, 0),
+  ('fa000000-0000-4000-8000-000000000061', 1, 0, 0);
+
+INSERT INTO public.inventory_movements (
+  item_type, item_id, product_id, movement_type, quantity,
+  reference_type, reference_id, warehouse_id, created_by, notes
+)
+VALUES
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 10, 'production_lot', 'fa000000-0000-4000-8000-000000000031', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality sampling partial-threshold fixture'),
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 5, 'production_lot', 'fa000000-0000-4000-8000-000000000041', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality sampling exact-threshold fixture'),
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 4, 'production_lot', 'fa000000-0000-4000-8000-000000000051', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality sampling under-threshold fixture A'),
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 1, 'production_lot', 'fa000000-0000-4000-8000-000000000061', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality sampling under-threshold fixture B');
+
+CREATE TEMP TABLE test_quality_sampling_operations (
+  product_lot_id uuid NOT NULL,
+  stage text NOT NULL,
+  operation_id uuid NOT NULL,
+  decision_id uuid,
+  PRIMARY KEY (product_lot_id, stage)
+);
+GRANT SELECT, INSERT ON test_quality_sampling_operations TO authenticated;
+
 SET LOCAL ROLE authenticated;
+
+DO $sampling_threshold$
+DECLARE
+  v_operation_id uuid;
+  v_decision_id uuid;
+  v_retry_id uuid;
+  v_lot_id uuid;
+  v_quantity integer;
+  v_key uuid;
+BEGIN
+  -- Three confirmed pieces remain apart; the next confirmation of four
+  -- crosses the threshold for this lot only and leaves two available.
+  v_lot_id := 'fa000000-0000-4000-8000-000000000031';
+  v_operation_id := public.start_product_lot_freezing(
+    v_lot_id, 3, 'Prueba de umbral: primer tramo de tres',
+    'fd000000-0000-4000-8000-000000000201'
+  );
+  INSERT INTO test_quality_sampling_operations
+  VALUES (v_lot_id, 'first', v_operation_id, NULL);
+  v_decision_id := public.resolve_product_lot_freezing(
+    v_operation_id, 3, 'raw_frozen', false,
+    'Confirmación parcial de tres piezas',
+    'fd000000-0000-4000-8000-000000000202'
+  );
+  UPDATE test_quality_sampling_operations SET decision_id = v_decision_id
+  WHERE product_lot_id = v_lot_id AND stage = 'first';
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = v_lot_id
+      AND balance.quality_sampling_pending_quantity = 3
+      AND balance.quality_sampling_reserved_quantity = 0
+      AND balance.raw_frozen_quantity = 0
+  ) OR EXISTS (
+    SELECT 1 FROM public.inventory_product_lot_storage_pick_suggestions AS suggestion
+    WHERE suggestion.lot_id = v_lot_id AND suggestion.storage_condition = 'raw_frozen'
+  ) THEN
+    RAISE EXCEPTION 'three confirmed frozen pieces were not held outside available stock';
+  END IF;
+
+  v_operation_id := public.start_product_lot_freezing(
+    v_lot_id, 4, 'Prueba de umbral: segundo tramo de cuatro',
+    'fd000000-0000-4000-8000-000000000203'
+  );
+  INSERT INTO test_quality_sampling_operations
+  VALUES (v_lot_id, 'second', v_operation_id, NULL);
+  v_key := 'fd000000-0000-4000-8000-000000000204';
+  v_decision_id := public.resolve_product_lot_freezing(
+    v_operation_id, 4, 'raw_frozen', false,
+    'Confirmación parcial de cuatro piezas', v_key
+  );
+  UPDATE test_quality_sampling_operations SET decision_id = v_decision_id
+  WHERE product_lot_id = v_lot_id AND stage = 'second';
+  v_retry_id := public.resolve_product_lot_freezing(
+    v_operation_id, 4, 'raw_frozen', false,
+    'Confirmación parcial de cuatro piezas', v_key
+  );
+  IF v_retry_id IS DISTINCT FROM v_decision_id THEN
+    RAISE EXCEPTION 'retrying the second partial confirmation did not return its prior result';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = v_lot_id
+      AND balance.quality_sampling_pending_quantity = 0
+      AND balance.quality_sampling_reserved_quantity = 5
+      AND balance.raw_frozen_quantity = 2
+  ) OR (SELECT count(*) FROM public.product_lot_quality_samples AS sample
+      WHERE sample.product_lot_id = v_lot_id) <> 2
+    OR (SELECT coalesce(sum(sample.quantity), 0)
+      FROM public.product_lot_quality_samples AS sample
+      WHERE sample.product_lot_id = v_lot_id) <> 5
+    OR (SELECT quantity_produced FROM public.production_outputs
+      WHERE id = 'fa000000-0000-4000-8000-000000000030') <> 10
+    OR NOT EXISTS (
+      SELECT 1 FROM public.inventory_product_lot_storage_pick_suggestions AS suggestion
+      WHERE suggestion.lot_id = v_lot_id
+        AND suggestion.storage_condition = 'raw_frozen'
+        AND suggestion.quantity = 2
+    ) THEN
+    RAISE EXCEPTION 'crossing three plus four did not reserve five once and expose only two';
+  END IF;
+
+  IF (SELECT count(*) FROM public.inventory_movements AS movement
+      WHERE (movement.reference_type = 'product_lot_freezing_start'
+          AND movement.reference_id IN (
+            SELECT operation_id FROM test_quality_sampling_operations
+            WHERE product_lot_id = v_lot_id
+          ))
+        OR (movement.reference_type = 'product_lot_freezing_decision'
+          AND movement.reference_id IN (
+            SELECT decision_id FROM test_quality_sampling_operations
+            WHERE product_lot_id = v_lot_id
+          ))) <> 3 THEN
+    RAISE EXCEPTION 'the retry duplicated a start, confirmation or inventory movement';
+  END IF;
+
+  -- Exactly five are all reserved and none is available.
+  v_lot_id := 'fa000000-0000-4000-8000-000000000041';
+  v_operation_id := public.start_product_lot_freezing(
+    v_lot_id, 5, 'Prueba de umbral exacto',
+    'fd000000-0000-4000-8000-000000000205'
+  );
+  PERFORM public.resolve_product_lot_freezing(
+    v_operation_id, 5, 'raw_frozen', false,
+    'Confirmación exacta de cinco piezas',
+    'fd000000-0000-4000-8000-000000000206'
+  );
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = v_lot_id
+      AND balance.quality_sampling_pending_quantity = 0
+      AND balance.quality_sampling_reserved_quantity = 5
+      AND balance.raw_frozen_quantity = 0
+  ) OR EXISTS (
+    SELECT 1 FROM public.inventory_product_lot_storage_pick_suggestions AS suggestion
+    WHERE suggestion.lot_id = v_lot_id AND suggestion.storage_condition = 'raw_frozen'
+  ) THEN
+    RAISE EXCEPTION 'an exact five-piece lot exposed pieces before sample disposition';
+  END IF;
+
+  -- A lot that ends below five remains isolated for Quality disposition;
+  -- the four-piece lot and the one-piece lot must never pool their quantities.
+  FOREACH v_lot_id IN ARRAY ARRAY[
+    'fa000000-0000-4000-8000-000000000051'::uuid,
+    'fa000000-0000-4000-8000-000000000061'::uuid
+  ] LOOP
+    SELECT balance.fresh_quantity INTO v_quantity
+    FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = v_lot_id;
+    v_operation_id := public.start_product_lot_freezing(
+      v_lot_id, v_quantity, 'Prueba de lotes separados debajo del umbral',
+      gen_random_uuid()
+    );
+    PERFORM public.resolve_product_lot_freezing(
+      v_operation_id, v_quantity, 'raw_frozen', false,
+      'Lote final debajo del umbral, pendiente de Calidad', gen_random_uuid()
+    );
+  END LOOP;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = 'fa000000-0000-4000-8000-000000000051'
+      AND balance.quality_sampling_pending_quantity = 4
+      AND balance.quality_sampling_reserved_quantity = 0
+      AND balance.raw_frozen_quantity = 0
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id = 'fa000000-0000-4000-8000-000000000061'
+      AND balance.quality_sampling_pending_quantity = 1
+      AND balance.quality_sampling_reserved_quantity = 0
+      AND balance.raw_frozen_quantity = 0
+  ) OR EXISTS (
+    SELECT 1 FROM public.product_lot_quality_samples AS sample
+    WHERE sample.product_lot_id IN (
+      'fa000000-0000-4000-8000-000000000051',
+      'fa000000-0000-4000-8000-000000000061'
+    )
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.get_product_lot_storage_balances(
+      'f4000000-0000-4000-8000-000000000001'
+    ) AS balances
+    WHERE balances.product_lot_id = 'fa000000-0000-4000-8000-000000000051'
+      AND balances.quality_sampling_pending_quantity = 4
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.get_product_lot_storage_balances(
+      'f4000000-0000-4000-8000-000000000001'
+    ) AS balances
+    WHERE balances.product_lot_id = 'fa000000-0000-4000-8000-000000000061'
+      AND balances.quality_sampling_pending_quantity = 1
+  ) THEN
+    RAISE EXCEPTION 'independent under-threshold lots were pooled or made available';
+  END IF;
+END;
+$sampling_threshold$;
 
 DO $test$
 DECLARE
@@ -842,8 +1111,8 @@ BEGIN
   END;
 
   PERFORM public.resolve_product_lot_freezing(
-    v_operation_id, 6, 'raw_frozen', false,
-    'Congelación parcial completada',
+    v_operation_id, 1, 'raw_frozen', false,
+    'Congelación parcial completada en un segundo tramo',
     'fd000000-0000-4000-8000-000000000105'
   );
 
@@ -865,14 +1134,30 @@ BEGIN
       WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
     )
       AND balance.fresh_quantity = 32
-      AND balance.raw_frozen_quantity = 12
+      AND balance.raw_frozen_quantity = 7
       AND balance.freezing_quantity = 0
   ) OR NOT EXISTS (
     SELECT 1 FROM public.product_lots AS lot
     WHERE lot.production_output_id = 'fa000000-0000-4000-8000-000000000001'
-      AND lot.quantity = 44
+      AND lot.quantity = 39
   ) THEN
-    RAISE EXCEPTION 'resolving the last 6 pieces did not reconcile the product lot after picking';
+    RAISE EXCEPTION 'resolving the final frozen piece duplicated samples or misreconciled the lot after picking';
+  END IF;
+
+  IF (
+    SELECT output.quantity_produced - lot.quantity - balance.freezing_quantity
+      - coalesce((
+        SELECT sum(allocation.quantity)
+        FROM public.picking_lot_allocations AS allocation
+        WHERE allocation.product_lot_id = lot.id
+      ), 0)
+    FROM public.production_outputs AS output
+    JOIN public.product_lots AS lot ON lot.production_output_id = output.id
+    JOIN public.product_lot_storage_balances AS balance
+      ON balance.product_lot_id = lot.id
+    WHERE output.id = 'fa000000-0000-4000-8000-000000000001'
+  ) <> 5 THEN
+    RAISE EXCEPTION 'partial confirmations or retries duplicated or lost the five sample pieces';
   END IF;
 
   IF (SELECT count(*) FROM public.product_lot_freezing_decisions AS decision
@@ -912,7 +1197,8 @@ DO $test$
 BEGIN
   IF (SELECT count(*) FROM public.product_lot_storage_balances) <> 0
     OR (SELECT count(*) FROM public.product_lot_freezing_operations) <> 0
-    OR (SELECT count(*) FROM public.product_lot_freezing_decisions) <> 0 THEN
+    OR (SELECT count(*) FROM public.product_lot_freezing_decisions) <> 0
+    OR (SELECT count(*) FROM public.product_lot_quality_samples) <> 0 THEN
     RAISE EXCEPTION 'non-admin user read administrative storage-condition records';
   END IF;
 END;

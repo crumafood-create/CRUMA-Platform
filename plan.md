@@ -424,7 +424,7 @@ El usuario confirmó que el PR #132 quedó fusionado en `main`. CI #4224 validó
 
 ## Historia #5: saldos por condición y picking de producto terminado
 
-**Estado:** implementación en curso, criterios aprobados. **Propietario:** Inventory para saldos/movimientos; Warehouse para picking. **Dependencia:** historia #4 completada. Las reglas automáticas por ruta quedan fuera de alcance.
+**Estado:** completada. **Propietario:** Inventory para saldos/movimientos; Warehouse para picking. **Dependencia:** historia #4 completada. Las reglas automáticas por ruta quedan fuera de alcance.
 
 ### Criterios aprobados
 
@@ -464,3 +464,31 @@ El lote de producto terminado `MP05-TEQ-PARTY-48-20261117`, Tequeños Party Ques
 Se creó el pedido de prueba `SO-20261117-64D540` por 11 piezas y se confirmó el picking. La interfaz mostró 32 frescas, 10 congeladas y 6 apartadas. Tras surtir 4 crudas congeladas, mostró 4 de 11 surtidas y saldos 32/6/6. Al solicitar las 7 restantes, mostró `Faltan 1 piezas en la condición seleccionada`; el picking y los saldos siguieron en 4 de 11 y 32/6/6. La interfaz bloqueó la confirmación por falta de saldo; el rechazo atómico del servidor se comprueba por separado en la regresión SQL de CI.
 
 La consulta de solo lectura en Supabase de desarrollo verificó la asignación guardada: pedido `SO-20261117-64D540`, 4 piezas surtidas desde `MP05-TEQ-PARTY-48-20261117`, `storage_condition = raw_frozen`, y orden de armado `OP-B31B0983E2264A54A0492C4AF7973D27`. La cámara no estuvo disponible; se capturó manualmente el lote sugerido. El saldo de 6 piezas en congelación permanece pendiente de decisión al cierre del recorrido.
+
+### Cierre — PR #133
+
+El PR #133 quedó fusionado en `main` como `52fdc9b0`; la rama local `main` se sincronizó con `origin/main` en ese commit. CI #4236 pasó para el commit documental `a8e3e438`; los jobs `database`, `build` y `storybook` concluyeron correctamente. La evidencia de navegador y la consulta de solo lectura están registradas arriba. El recorrido observó 32 piezas frescas, 6 crudas congeladas y 6 apartadas; el pedido `SO-20261117-64D540` surtió 4 crudas congeladas del lote `MP05-TEQ-PARTY-48-20261117`, enlazado a `OP-B31B0983E2264A54A0492C4AF7973D27`. La solicitud de 7 piezas mostró faltante de 1 y no cambió el saldo ni la asignación. Las 6 piezas apartadas permanecen pendientes de disposición.
+
+## Historia #6: muestreo y retención de producto crudo congelado
+
+**Estado:** implementación aprobada; primer ciclo pendiente de prueba SQL. **Propietario:** Quality para inspección y disposición; Inventory conserva saldos, custodia y movimientos; Production es la fuente de la orden y la salida. La salida mantiene la relación con la orden; al crearse el lote de inventario, las muestras quedan vinculadas a ese lote y a la porción que representan.
+
+### Alcance aprobado
+
+Aplicar primero a tequeños y empanadas crudos congelados. Al confirmar saldo congelado, apartar una sola vez por lote/producto/relleno/preparación 2 piezas para inspección inmediata y 3 piezas para retención, antes de habilitar cualquier excedente para reservas o picking. Nueva inspección muestra ambas cantidades en solo lectura y con unidad. La orden conserva la producción bruta.
+
+Se mantienen los destinos acordados: retorno de muestra intacta al mismo lote con autorización de Calidad; merma directa de Calidad para muestra consumida; custodia para muestra intacta conservada como testigo; disposición pendiente si hay duda. Cada movimiento conserva cantidad, origen, destino, fecha y responsable. La custodia se consulta al cierre diario. El indicador mensual compara las muestras intactas en custodia de lotes producidos ese mes con la producción bruta de la misma preparación y condición; para crudo congelado, el denominador incluye las piezas confirmadas en esa condición antes del apartado. La merma directa se presenta aparte y se compara con la meta de 0.1 %–0.5 %.
+
+### Umbral aprobado
+
+Acumular confirmaciones parciales del mismo lote, producto, relleno y preparación. Mientras haya menos de cinco piezas crudas congeladas confirmadas, se mantienen apartadas y fuera de reservas y picking. Al llegar a cinco, apartar 2 para inspección inmediata y 3 para retención en una sola operación; solo el excedente queda disponible. Si un lote termina con menos de cinco, permanece apartado para disposición de Calidad. No se combinan cantidades entre lotes.
+
+### Prueba inicial propuesta
+
+En `finished_product_quality_release.sql`, partir de 48 piezas de un producto crudo; congelar solo una parte, confirmar cantidades en varias operaciones y reintentar una confirmación. Verificar que, al completar el umbral acordado, se aparten exactamente 2 piezas inmediatas y 3 de retención una sola vez, que solo el excedente confirmado se sume al saldo crudo congelado disponible, que el saldo fresco no cambie fuera de la cantidad congelada, que ATP/picking excluyan las muestras y que la orden conserve las 48 piezas brutas. Añadir el caso de 3 confirmadas (0 disponibles) y luego 4 más (5 apartadas una vez, 2 disponibles), el reintento idempotente de la segunda confirmación, exactamente 5 (0 disponibles), y dos lotes independientes de 4 y 1 que permanecen apartados sin combinarse.
+
+El ciclo SQL cubre el flujo existente de 48 piezas (confirmación parcial, devolución autorizada a fresco, picking, rechazo por saldo y reintentos) y agrega los casos aprobados de muestreo: 3 confirmadas no disponibles; 4 posteriores cruzan el umbral, apartan 2+3 una vez y dejan 2; reintentar no duplica decisiones ni movimientos; exactamente 5 deja 0 disponibles; lotes separados de 4 y 1 permanecen apartados sin combinarse. La migración `20261119000000_reserve_frozen_quality_samples.sql` agrega saldos de umbral y muestras, y ajusta la confirmación para que el excedente sea el único que entra al inventario disponible. La pantalla de condición muestra los saldos pendientes y apartados.
+
+La regresión está en `db:test:finished-product-release`, que forma parte de `db:test:security` dentro de `db:verify` ejecutado por el job `database` de CI. `pnpm typecheck` pasó. El intento local por `pnpm db:test:finished-product-release` no llegó a ejecutar SQL: pnpm primero necesitó permisos para su lock del store; tras habilitarlos, el runner falló porque el daemon de Docker (`dockerDesktopLinuxEngine`) no está activo. Por tanto, no se afirma que el SQL haya pasado. Se validará en CI sobre una reconstrucción limpia cuando la rama se publique; publicar requiere autorización explícita independiente. La regeneración de tipos sigue pendiente de ejecutar con la migración aplicada en una base limpia; no se editó manualmente `database.generated.ts`.
+
+Las reglas de cocidos congelados, masa, discos #14 y productos con levadura se documentan en `pendientes.md` como pendientes de habilitación; sus cantidades no se extrapolan ni se usan como valores por defecto.

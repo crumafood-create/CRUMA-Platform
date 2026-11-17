@@ -606,6 +606,43 @@ INSERT INTO public.inventory_reservations (
   11, 'active', 'Storage-condition picking acceptance test'
 );
 
+-- Prepare the later-expiring lot as the database owner; authenticated callers
+-- intentionally have read-only access to product_lots.
+INSERT INTO public.production_outputs (
+  id, production_order_id, product_id, quantity_produced, quality_status
+) SELECT
+  'fa000000-0000-4000-8000-000000000020',
+  output.production_order_id, output.product_id, 3, 'released'
+FROM public.production_outputs AS output
+WHERE output.id = 'fa000000-0000-4000-8000-000000000001';
+
+INSERT INTO public.product_lots (
+  id, product_id, lot_number, production_order_id, production_output_id,
+  expiration_date, initial_quantity, quantity, status
+) SELECT
+  'fa000000-0000-4000-8000-000000000021',
+  output.product_id, 'PT-FG-FEFO-FIRST', output.production_order_id,
+  output.id, '2090-01-01', 3, 3, 'available'
+FROM public.production_outputs AS output
+WHERE output.id = 'fa000000-0000-4000-8000-000000000020';
+
+INSERT INTO public.product_lot_storage_balances (
+  product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity
+) VALUES (
+  'fa000000-0000-4000-8000-000000000021', 0, 3, 0
+);
+
+INSERT INTO public.inventory_movements (
+  item_type, item_id, product_id, movement_type, quantity,
+  reference_type, reference_id, warehouse_id, created_by, notes
+) VALUES (
+  'product', 'f4000000-0000-4000-8000-000000000001',
+  'f4000000-0000-4000-8000-000000000001', 'entry', 3,
+  'production_lot', 'fa000000-0000-4000-8000-000000000021',
+  'f2000000-0000-4000-8000-000000000001',
+  'f1000000-0000-4000-8000-000000000001', 'FEFO test lot'
+);
+
 CREATE TEMP TABLE test_freezing_operation (id uuid PRIMARY KEY);
 CREATE TEMP TABLE test_freezing_decisions (
   id uuid PRIMARY KEY,
@@ -755,41 +792,6 @@ BEGIN
         AND reference_id = 'fa000000-0000-4000-8000-000000000013') <> 1 THEN
     RAISE EXCEPTION 'rejected condition shortage left a partial picking allocation or movement';
   END IF;
-
-  INSERT INTO public.production_outputs (
-    id, production_order_id, product_id, quantity_produced, quality_status
-  ) SELECT
-    'fa000000-0000-4000-8000-000000000020',
-    output.production_order_id, output.product_id, 3, 'released'
-  FROM public.production_outputs AS output
-  WHERE output.id = 'fa000000-0000-4000-8000-000000000001';
-
-  INSERT INTO public.product_lots (
-    id, product_id, lot_number, production_order_id, production_output_id,
-    expiration_date, initial_quantity, quantity, status
-  ) SELECT
-    'fa000000-0000-4000-8000-000000000021',
-    output.product_id, 'PT-FG-FEFO-FIRST', output.production_order_id,
-    output.id, '2090-01-01', 3, 3, 'available'
-  FROM public.production_outputs AS output
-  WHERE output.id = 'fa000000-0000-4000-8000-000000000020';
-
-  INSERT INTO public.product_lot_storage_balances (
-    product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity
-  ) VALUES (
-    'fa000000-0000-4000-8000-000000000021', 0, 3, 0
-  );
-
-  INSERT INTO public.inventory_movements (
-    item_type, item_id, product_id, movement_type, quantity,
-    reference_type, reference_id, warehouse_id, created_by, notes
-  ) VALUES (
-    'product', 'f4000000-0000-4000-8000-000000000001',
-    'f4000000-0000-4000-8000-000000000001', 'entry', 3,
-    'production_lot', 'fa000000-0000-4000-8000-000000000021',
-    'f2000000-0000-4000-8000-000000000001',
-    'f1000000-0000-4000-8000-000000000001', 'FEFO test lot'
-  );
 
   PERFORM public.confirm_picking_item_with_condition(
     'fa000000-0000-4000-8000-000000000014',

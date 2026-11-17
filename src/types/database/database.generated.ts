@@ -1778,6 +1778,13 @@ export type Database = {
             foreignKeyName: "finished_product_quality_release_operations_product_lot_id_fkey"
             columns: ["product_lot_id"]
             isOneToOne: true
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "finished_product_quality_release_operations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: true
             referencedRelation: "inventory_product_lots_fefo"
             referencedColumns: ["id"]
           },
@@ -3411,6 +3418,7 @@ export type Database = {
           picking_order_item_id: string
           product_lot_id: string
           quantity: number
+          storage_condition: string | null
         }
         Insert: {
           created_at?: string
@@ -3419,6 +3427,7 @@ export type Database = {
           picking_order_item_id: string
           product_lot_id: string
           quantity: number
+          storage_condition?: string | null
         }
         Update: {
           created_at?: string
@@ -3427,6 +3436,7 @@ export type Database = {
           picking_order_item_id?: string
           product_lot_id?: string
           quantity?: number
+          storage_condition?: string | null
         }
         Relationships: [
           {
@@ -3455,6 +3465,13 @@ export type Database = {
             columns: ["product_lot_id"]
             isOneToOne: false
             referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "picking_lot_allocations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
             referencedColumns: ["lot_id"]
           },
           {
@@ -3551,6 +3568,13 @@ export type Database = {
             columns: ["product_lot_id"]
             isOneToOne: false
             referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "picking_order_items_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
             referencedColumns: ["lot_id"]
           },
           {
@@ -4034,6 +4058,230 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_lot_freezing_decisions: {
+        Row: {
+          conservation_verified: boolean
+          decided_at: string
+          decided_by: string
+          destination: string
+          id: string
+          idempotency_key: string
+          operation_id: string
+          product_lot_id: string
+          quantity: number
+          reason: string
+        }
+        Insert: {
+          conservation_verified?: boolean
+          decided_at?: string
+          decided_by: string
+          destination: string
+          id?: string
+          idempotency_key: string
+          operation_id: string
+          product_lot_id: string
+          quantity: number
+          reason: string
+        }
+        Update: {
+          conservation_verified?: boolean
+          decided_at?: string
+          decided_by?: string
+          destination?: string
+          id?: string
+          idempotency_key?: string
+          operation_id?: string
+          product_lot_id?: string
+          quantity?: number
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_freezing_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_decisions_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "product_lot_freezing_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_decisions_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_decisions_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_decisions_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_decisions_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_lot_freezing_operations: {
+        Row: {
+          destination: string
+          id: string
+          idempotency_key: string
+          product_lot_id: string
+          reason: string
+          requested_quantity: number
+          resolved_at: string | null
+          started_at: string
+          started_by: string
+          status: string
+        }
+        Insert: {
+          destination?: string
+          id?: string
+          idempotency_key: string
+          product_lot_id: string
+          reason: string
+          requested_quantity: number
+          resolved_at?: string | null
+          started_at?: string
+          started_by: string
+          status?: string
+        }
+        Update: {
+          destination?: string
+          id?: string
+          idempotency_key?: string
+          product_lot_id?: string
+          reason?: string
+          requested_quantity?: number
+          resolved_at?: string | null
+          started_at?: string
+          started_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_freezing_operations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_operations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_operations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_operations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_operations_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_operations_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_lot_storage_balances: {
+        Row: {
+          freezing_quantity: number
+          fresh_quantity: number
+          product_lot_id: string
+          raw_frozen_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          freezing_quantity?: number
+          fresh_quantity?: number
+          product_lot_id: string
+          raw_frozen_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          freezing_quantity?: number
+          fresh_quantity?: number
+          product_lot_id?: string
+          raw_frozen_quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_storage_balances_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_storage_balances_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_storage_balances_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_storage_balances_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: true
+            referencedRelation: "product_lots"
             referencedColumns: ["id"]
           },
         ]
@@ -4900,6 +5148,13 @@ export type Database = {
             foreignKeyName: "production_lot_traceability_product_lot_id_fkey"
             columns: ["product_lot_id"]
             isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "production_lot_traceability_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
             referencedRelation: "inventory_product_lots_fefo"
             referencedColumns: ["id"]
           },
@@ -5383,6 +5638,13 @@ export type Database = {
             foreignKeyName: "production_order_product_lot__surplus_destination_product__fkey"
             columns: ["surplus_destination_product_lot_id"]
             isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot__surplus_destination_product__fkey"
+            columns: ["surplus_destination_product_lot_id"]
+            isOneToOne: false
             referencedRelation: "inventory_product_lots_fefo"
             referencedColumns: ["id"]
           },
@@ -5447,6 +5709,13 @@ export type Database = {
             columns: ["product_lot_id"]
             isOneToOne: false
             referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "production_order_product_lot_reservations_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
             referencedColumns: ["lot_id"]
           },
           {
@@ -8456,6 +8725,41 @@ export type Database = {
           },
         ]
       }
+      inventory_product_lot_storage_pick_suggestions: {
+        Row: {
+          created_at: string | null
+          expiration_date: string | null
+          location_name: string | null
+          lot_id: string | null
+          lot_number: string | null
+          product_id: string | null
+          quantity: number | null
+          storage_condition: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_product_lots_fefo: {
         Row: {
           expiration_date: string | null
@@ -8670,6 +8974,15 @@ export type Database = {
         Args: { p_lot_number: string; p_picking_item_id: string }
         Returns: string
       }
+      confirm_picking_item_with_condition: {
+        Args: {
+          p_lot_number: string
+          p_picking_item_id: string
+          p_quantity: number
+          p_storage_condition: string
+        }
+        Returns: string
+      }
       confirm_sales_order: { Args: { p_order_id: string }; Returns: string }
       consume_production_material_fefo: {
         Args: {
@@ -8746,6 +9059,43 @@ export type Database = {
         Returns: string
       }
       generate_purchase_requisition_number: { Args: never; Returns: string }
+      get_pending_product_lot_freezing_operations: {
+        Args: never
+        Returns: {
+          lot_number: string
+          operation_id: string
+          pending_quantity: number
+          product_lot_id: string
+          product_name: string
+          reason: string
+          requested_quantity: number
+          started_at: string
+        }[]
+      }
+      get_product_lot_storage_balances: {
+        Args: { p_product_id: string }
+        Returns: {
+          expiration_date: string
+          freezing_quantity: number
+          fresh_quantity: number
+          location_name: string
+          lot_number: string
+          lot_quantity: number
+          product_lot_id: string
+          raw_frozen_quantity: number
+        }[]
+      }
+      get_product_lot_storage_pick_suggestion: {
+        Args: { p_product_id: string; p_storage_condition: string }
+        Returns: {
+          expiration_date: string
+          location_name: string
+          lot_id: string
+          lot_number: string
+          quantity: number
+          storage_condition: string
+        }[]
+      }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
       issue_sales_invoice: {
         Args: {
@@ -8824,12 +9174,32 @@ export type Database = {
         }
         Returns: string
       }
+      resolve_product_lot_freezing: {
+        Args: {
+          p_conservation_verified: boolean
+          p_destination: string
+          p_idempotency_key: string
+          p_operation_id: string
+          p_quantity: number
+          p_reason: string
+        }
+        Returns: string
+      }
       settle_production_cost: {
         Args: {
           p_idempotency_key: string
           p_labor_cost: number
           p_overhead_cost: number
           p_production_order_id: string
+        }
+        Returns: string
+      }
+      start_product_lot_freezing: {
+        Args: {
+          p_idempotency_key: string
+          p_product_lot_id: string
+          p_quantity: number
+          p_reason: string
         }
         Returns: string
       }

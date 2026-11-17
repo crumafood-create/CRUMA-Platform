@@ -10,14 +10,23 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
 
 ## Historias activas
 
-- [ ] **#4.** Como responsable de producción, quiero planificar órdenes con la masa específica, pesar y apartar masa de lotes liberados al iniciar, registrar consumo, piezas reales y destino de sobrantes, para mantener la producción y sus lotes trazables.
+- [x] **#4.** Como responsable de producción, quiero planificar órdenes con la masa específica, pesar y apartar masa de lotes liberados al iniciar, registrar consumo, piezas reales y destino de sobrantes, para mantener la producción y sus lotes trazables.
   - **Prioridad:** P1.
   - **Motivo:** #3 ya permite definir las recetas; producción necesita ejecutar esas fórmulas con cantidades y lotes reales sin sobreconsumir inventario.
   - **Módulo propietario:** Production. Inventory conserva los saldos y apartados; Quality controla la liberación de lotes.
   - **Requiere:** #3 completada.
   - **Criterios aprobados:** (1) La cantidad estimada de ingredientes escala como `cantidad de receta × piezas planeadas ÷ rendimiento esperado`; planear 50 Party de una receta de 100 piezas y 2 kg de masa estima 1 kg, sin apartarlo hasta iniciar. (2) Al iniciar, el operador selecciona uno o varios lotes liberados de la misma variedad y pesa por lote; la operación aparta las cantidades en forma atómica y dos órdenes concurrentes no pueden apartar más que el saldo disponible. (3) Al cerrar, se registran las piezas reales y el sobrante por lote; el consumo es la diferencia. El sobrante queda fuera del saldo disponible hasta su único destino: incorporarlo a la siguiente preparación de la misma variedad o registrarlo como merma, con resolución al cierre del día y trazabilidad al lote origen.
   - **Prueba de aceptación:** planear 50 piezas; retirar 1,050 g de dos lotes; registrar 48 piezas reales y 150 g de sobrante pesado, con 900 g de consumo calculado. Reincorporar los 150 g una sola vez a la siguiente preparación estándar de 2 kg, registrar por separado sobrante incorporado y peso real (ejemplo esperado: 2.15 kg), y comprobar que el lote solo suma una vez al inventario y queda disponible después de Calidad.
-  - **Plan y pruebas:** ciclos de TDD secuenciales en `plan.md`; incluye SQL transaccional y concurrencia. Repartir producto terminado por preparación y condición de almacenamiento queda para una entrega posterior.
+  - **Validación:** CI #4224 aprobó reconstrucción limpia, migraciones, SQL/RLS, tipos generados, typecheck, lint, pruebas, build y Storybook. El usuario confirmó la fusión del PR #132 y el recorrido manual en desarrollo; la inspección de Calidad usó datos de prueba.
+
+- [ ] **#5.** Como responsable de inventario y preparación de pedidos, quiero separar por lote los saldos frescos, crudos congelados y apartados, para congelar, resolver interrupciones y surtir pedidos desde la condición elegida con trazabilidad.
+  - **Prioridad:** P1.
+  - **Motivo:** el picking y las reservas deben reconocer la condición física; los apartados de congelación deben salir de la disponibilidad y dos operaciones concurrentes no pueden comprometer las mismas piezas.
+  - **Módulo propietario:** Inventory mantiene los saldos y movimientos; Warehouse ejecuta picking; Quality conserva los criterios de conservación.
+  - **Requiere:** #4 completada.
+  - **Criterios aprobados:** (1) iniciar congelación aparta cantidad entera del saldo fresco del lote y del disponible del producto tras proteger reservas; el apartado queda fuera de reservas y picking. (2) decisiones parciales registran lote, cantidad, destino, motivo, responsable y fecha; solo se devuelve a fresco el saldo aún pendiente con verificación autorizada de que no se congeló y conservó condiciones. Las piezas confirmadas como congeladas no pueden reclasificarse por ubicación, edición de lote ni picking; los pendientes siguen apartados y cada reintento idempotente no duplica movimientos. (3) picking selecciona fresco o crudo congelado, aplica FEFO dentro de la condición, muestra faltantes y valida disponibilidad en servidor; los productos sin condición conservan el flujo actual.
+  - **Prueba de aceptación:** de 48 piezas frescas apartar 24; confirmar 10 congeladas, devolver 8 a fresco y dejar 6 apartadas (32/10/6). Surtir 4 congeladas para quedar 32/6/6; rechazar el intento de surtir 7 sin cambios. Una vez resueltas las 6 pendientes, rechazar el retorno a fresco de una pieza ya congelada sin modificar saldos ni movimientos. Probar FEFO con varios lotes, reintentos, dos congelaciones concurrentes y la carrera congelación/reserva.
+  - **Plan y pruebas:** ciclos secuenciales documentados en `plan.md`; SQL transaccional, RLS, FEFO, idempotencia y concurrencia en dos sesiones. Reglas automáticas de condición por ruta quedan fuera y se refinarán en una historia posterior.
 
 - [x] **#3.** Como administrador autorizado, quiero definir recetas de cada producto intermedio y producto final con sus ingredientes, cantidades y rendimiento esperado, para establecer las fórmulas estándar de producción.
   - **Prioridad:** P1.

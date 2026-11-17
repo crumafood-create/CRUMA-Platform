@@ -6,7 +6,12 @@ import { createTypedClient } from '@/infrastructure/integrations/supabase/server
 import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.guard';
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 
-import { getSuggestedLot, type SuggestedLot } from '../actions';
+import {
+  getSuggestedLot,
+  type ConditionLot,
+  type StorageCondition,
+  type SuggestedLot,
+} from '../actions';
 
 export type PickingAllocation = {
   quantity: number;
@@ -23,6 +28,10 @@ export type PickingDetailItem = {
   product: { id: string; name: string } | null;
   picked_lot: { lot_number: string } | null;
   suggested_lot: SuggestedLot;
+  condition_managed: boolean;
+  condition_balances: { fresh: number; raw_frozen: number; freezing: number } | null;
+  suggested_fresh_lot: ConditionLot | null;
+  suggested_frozen_lot: ConditionLot | null;
   allocations: PickingAllocation[];
 };
 
@@ -34,16 +43,31 @@ export type PickingDetail = {
 export async function confirmPicking(
   pickingItemId: string,
   lotNumber: string,
+  storageCondition?: StorageCondition,
+  quantity?: number,
 ): Promise<void> {
   const { supabase } = await requireTypedAuthorizedAction(
     PERMISSIONS.SALES_ORDER_PREPARE,
   );
   const scannedLotNumber = lotNumber.trim();
   if (!scannedLotNumber) throw new Error('El lote es obligatorio.');
-  const { data: pickingId, error } = await supabase.rpc('confirm_picking_item', {
-    p_picking_item_id: pickingItemId,
-    p_lot_number: scannedLotNumber,
-  });
+  const pickingClient = supabase as unknown as {
+    rpc: (
+      functionName: string,
+      args: Record<string, string | number | null>,
+    ) => Promise<{ data: string | null; error: { message: string } | null }>;
+  };
+  const { data: pickingId, error } = storageCondition
+    ? await pickingClient.rpc('confirm_picking_item_with_condition', {
+        p_picking_item_id: pickingItemId,
+        p_lot_number: scannedLotNumber,
+        p_storage_condition: storageCondition,
+        p_quantity: quantity ?? 0,
+      })
+    : await supabase.rpc('confirm_picking_item', {
+        p_picking_item_id: pickingItemId,
+        p_lot_number: scannedLotNumber,
+      });
   if (error || !pickingId) {
     throw new Error(error?.message ?? 'No fue posible confirmar el picking.');
   }
@@ -67,6 +91,22 @@ export async function getPickingDetail(pickingId: string): Promise<PickingDetail
   `).eq('picking_order_id', pickingId).order('created_at');
   if (error) throw new Error(error.message);
 
+  const storageClient = supabase as unknown as {
+    rpc: (
+      functionName: 'get_product_lot_storage_balances',
+      args: { p_product_id: string },
+    ) => Promise<{ data: Array<{
+      product_lot_id: string;
+      lot_number: string;
+      expiration_date: string | null;
+      location_name: string | null;
+      lot_quantity: number;
+      fresh_quantity: number;
+      raw_frozen_quantity: number;
+      freezing_quantity: number;
+    }> | null; error: { message: string } | null }>;
+  };
+
   const normalized = await Promise.all((items ?? []).map(async (row) => {
     const product = Array.isArray(row.products) ? row.products[0] ?? null : row.products;
     const pickedLot = Array.isArray(row.product_lots)
@@ -76,6 +116,30 @@ export async function getPickingDetail(pickingId: string): Promise<PickingDetail
         ? allocation.product_lots[0] ?? null : allocation.product_lots;
       return { quantity: Number(allocation.quantity), lotNumber: lot?.lot_number ?? '-' };
     });
+    const conditionRows = product
+      ? await storageClient.rpc('get_product_lot_storage_balances', {
+          p_product_id: product.id,
+        })
+      : { data: [], error: null };
+    if (conditionRows.error) throw new Error(conditionRows.error.message);
+    const conditionManaged = (conditionRows.data?.length ?? 0) > 0;
+    const freshRows = conditionRows.data?.filter((lot) => lot.fresh_quantity > 0) ?? [];
+    const frozenRows = conditionRows.data?.filter((lot) => lot.raw_frozen_quantity > 0) ?? [];
+    const toSuggested = (lots: typeof conditionRows.data, condition: StorageCondition): ConditionLot | null => {
+      const first = lots?.[0];
+      return first ? {
+        id: first.product_lot_id,
+        lot_number: first.lot_number,
+        quantity: condition === 'fresh' ? first.fresh_quantity : first.raw_frozen_quantity,
+        location_name: first.location_name,
+        expiration_date: first.expiration_date,
+        storage_condition: condition,
+      } : null;
+    };
+    const sortedFresh = freshRows.sort((a, b) =>
+      (a.expiration_date ?? '9999-12-31').localeCompare(b.expiration_date ?? '9999-12-31'));
+    const sortedFrozen = frozenRows.sort((a, b) =>
+      (a.expiration_date ?? '9999-12-31').localeCompare(b.expiration_date ?? '9999-12-31'));
     return {
       id: row.id,
       picking_order_id: row.picking_order_id,
@@ -85,7 +149,15 @@ export async function getPickingDetail(pickingId: string): Promise<PickingDetail
       status: row.status,
       product,
       picked_lot: pickedLot ? { lot_number: pickedLot.lot_number } : null,
-      suggested_lot: product ? await getSuggestedLot(product.id) : null,
+      suggested_lot: product && !conditionManaged ? await getSuggestedLot(product.id) : null,
+      condition_managed: conditionManaged,
+      condition_balances: conditionManaged ? {
+        fresh: conditionRows.data?.reduce((sum, lot) => sum + lot.fresh_quantity, 0) ?? 0,
+        raw_frozen: conditionRows.data?.reduce((sum, lot) => sum + lot.raw_frozen_quantity, 0) ?? 0,
+        freezing: conditionRows.data?.reduce((sum, lot) => sum + lot.freezing_quantity, 0) ?? 0,
+      } : null,
+      suggested_fresh_lot: conditionManaged ? toSuggested(sortedFresh, 'fresh') : null,
+      suggested_frozen_lot: conditionManaged ? toSuggested(sortedFrozen, 'raw_frozen') : null,
       allocations,
     };
   }));

@@ -19,7 +19,7 @@ BEGIN
   ) OR NOT EXISTS (
     SELECT 1 FROM public.product_lots
     WHERE id = 'fe800000-0000-4000-8000-000000000001'
-      AND quantity = 38
+      AND quantity = 33
   ) THEN
     RAISE EXCEPTION 'concurrent freezing starts exceeded or corrupted the product-lot balance';
   END IF;

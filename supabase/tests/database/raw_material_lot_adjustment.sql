@@ -36,8 +36,8 @@ DO $test$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.raw_materials WHERE id = current_setting('test.material_id')::uuid AND current_stock = 12 AND average_cost = 2.3333 AND last_cost = 1.5)
     THEN RAISE EXCEPTION 'aggregate stock or weighted average is incorrect'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 8 AND status = 'available' AND unit_cost = 4 AND inventory_location_id = current_setting('test.location_id')::uuid)
-    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 4 AND unit_cost = 1.5)
+  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 8 AND remaining_value = 32 AND status = 'available' AND unit_cost = 4 AND inventory_location_id = current_setting('test.location_id')::uuid)
+    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 4 AND remaining_value = 6 AND unit_cost = 1.5)
     THEN RAISE EXCEPTION 'selected or unselected lot changed incorrectly'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.inventory_movements WHERE item_id = current_setting('test.material_id')::uuid AND movement_type = 'entry' AND quantity = 2 AND reference_type = 'manual_adjustment' AND reference_id = current_setting('test.selected_lot_id')::uuid AND notes = 'Corrección de conteo físico de prueba')
     THEN RAISE EXCEPTION 'adjustment movement is missing or inconsistent'; END IF;
@@ -53,8 +53,8 @@ DO $test$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.raw_materials WHERE id = current_setting('test.material_id')::uuid AND current_stock = 10 AND average_cost = 2.3333 AND last_cost = 1.5)
     THEN RAISE EXCEPTION 'decrease changed average cost or aggregate stock incorrectly'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 6 AND status = 'available' AND unit_cost = 4 AND inventory_location_id = current_setting('test.location_id')::uuid)
-    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 4 AND unit_cost = 1.5)
+  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 6 AND remaining_value = 24 AND status = 'available' AND unit_cost = 4 AND inventory_location_id = current_setting('test.location_id')::uuid)
+    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 4 AND remaining_value = 6 AND unit_cost = 1.5)
     THEN RAISE EXCEPTION 'decrease changed the wrong lot or its unit cost'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.inventory_movements WHERE item_id = current_setting('test.material_id')::uuid AND movement_type = 'exit' AND quantity = 2 AND previous_stock = 12 AND new_stock = 10 AND reference_type = 'manual_adjustment' AND reference_id = current_setting('test.selected_lot_id')::uuid AND notes = 'Corrección de conteo físico de prueba')
     THEN RAISE EXCEPTION 'decrease movement is missing or inconsistent'; END IF;
@@ -80,7 +80,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.raw_materials WHERE id = current_setting('test.material_id')::uuid AND current_stock = 10 AND average_cost = 2.3333 AND last_cost = 1.5)
     OR (SELECT count(*) FROM public.inventory_movements WHERE item_id = current_setting('test.material_id')::uuid) <> 3
     THEN RAISE EXCEPTION 'under-precision quantity changed the balance, average cost, or movement history'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 6 AND status = 'available' AND unit_cost = 4)
+  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 6 AND remaining_value = 24 AND status = 'available' AND unit_cost = 4)
     THEN RAISE EXCEPTION 'under-precision quantity changed the selected lot'; END IF;
 END;
 $test$;
@@ -104,8 +104,8 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.raw_materials WHERE id = current_setting('test.material_id')::uuid AND current_stock = 10 AND average_cost = 2.3333 AND last_cost = 1.5)
     OR (SELECT count(*) FROM public.inventory_movements WHERE item_id = current_setting('test.material_id')::uuid) <> 3
     THEN RAISE EXCEPTION 'excessive decrease changed stock, valuation, or movement history'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 6 AND status = 'available' AND unit_cost = 4)
-    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 4 AND status = 'available' AND unit_cost = 1.5)
+  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 6 AND remaining_value = 24 AND status = 'available' AND unit_cost = 4)
+    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 4 AND remaining_value = 6 AND status = 'available' AND unit_cost = 1.5)
     THEN RAISE EXCEPTION 'excessive decrease changed lot balances'; END IF;
 END;
 $test$;
@@ -215,8 +215,8 @@ DO $test$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.raw_materials WHERE id = current_setting('test.material_id')::uuid AND current_stock = 4 AND average_cost = 2.3333 AND last_cost = 1.5)
     THEN RAISE EXCEPTION 'exhausting a lot changed aggregate balance or valuation incorrectly'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 0 AND status = 'depleted' AND unit_cost = 4 AND inventory_location_id = current_setting('test.location_id')::uuid)
-    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 4 AND status = 'available' AND unit_cost = 1.5)
+  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 0 AND remaining_value = 0 AND status = 'depleted' AND unit_cost = 4 AND inventory_location_id = current_setting('test.location_id')::uuid)
+    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 4 AND remaining_value = 6 AND status = 'available' AND unit_cost = 1.5)
     THEN RAISE EXCEPTION 'exhausting a lot changed the wrong lot or its attributes'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.inventory_movements WHERE item_id = current_setting('test.material_id')::uuid AND movement_type = 'exit' AND quantity = 6 AND previous_stock = 10 AND new_stock = 4 AND reference_type = 'manual_adjustment' AND reference_id = current_setting('test.selected_lot_id')::uuid AND notes = 'Agotar lote de prueba')
     THEN RAISE EXCEPTION 'lot exhaustion movement is missing or inconsistent'; END IF;
@@ -232,8 +232,8 @@ DO $test$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.raw_materials WHERE id = current_setting('test.material_id')::uuid AND current_stock = 0 AND average_cost = 2.3333 AND last_cost = 1.5)
     THEN RAISE EXCEPTION 'zero aggregate balance did not preserve the last average cost'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 0 AND status = 'depleted' AND unit_cost = 1.5 AND inventory_location_id = current_setting('test.location_id')::uuid)
-    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 0 AND status = 'depleted' AND unit_cost = 4)
+  IF NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.other_lot_id')::uuid AND quantity = 0 AND remaining_value = 0 AND status = 'depleted' AND unit_cost = 1.5 AND inventory_location_id = current_setting('test.location_id')::uuid)
+    OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots WHERE id = current_setting('test.selected_lot_id')::uuid AND quantity = 0 AND remaining_value = 0 AND status = 'depleted' AND unit_cost = 4)
     THEN RAISE EXCEPTION 'zero aggregate balance left a lot in an incorrect state'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.inventory_movements WHERE item_id = current_setting('test.material_id')::uuid AND movement_type = 'exit' AND quantity = 4 AND previous_stock = 4 AND new_stock = 0 AND reference_type = 'manual_adjustment' AND reference_id = current_setting('test.other_lot_id')::uuid AND notes = 'Agotar saldo de prueba')
     THEN RAISE EXCEPTION 'final exhaustion movement is missing or inconsistent'; END IF;

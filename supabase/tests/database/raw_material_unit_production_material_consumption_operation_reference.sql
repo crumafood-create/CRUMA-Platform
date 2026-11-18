@@ -19,9 +19,12 @@ VALUES (current_setting('test.production_order_id')::uuid, 'UNIT-OP-' || left(cu
 INSERT INTO public.production_order_items (id, production_order_id, raw_material_id, planned_quantity, consumed_quantity, status)
 VALUES (current_setting('test.order_item_id')::uuid, current_setting('test.production_order_id')::uuid, current_setting('test.material_id')::uuid, 1, 1, 'completed');
 INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, quantity, unit_cost, status)
-VALUES (current_setting('test.raw_lot_id')::uuid, current_setting('test.material_id')::uuid, 'UNIT-OP-' || left(current_setting('test.raw_lot_id'), 8), 0, 3.2, 'depleted');
+VALUES (current_setting('test.raw_lot_id')::uuid, current_setting('test.material_id')::uuid, 'UNIT-OP-' || left(current_setting('test.raw_lot_id'), 8), 1, 3.2, 'available');
 INSERT INTO public.production_order_consumptions (id, production_order_item_id, raw_material_lot_id, quantity)
 VALUES (current_setting('test.consumption_id')::uuid, current_setting('test.order_item_id')::uuid, current_setting('test.raw_lot_id')::uuid, 1);
+UPDATE public.raw_material_lots
+SET quantity = 0, status = 'depleted'
+WHERE id = current_setting('test.raw_lot_id')::uuid;
 INSERT INTO public.inventory_movements (id, item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)
 VALUES (current_setting('test.entry_movement_id')::uuid, 'raw_material', current_setting('test.material_id')::uuid, 'entry', 1, 0, 1, 'opening_balance', current_setting('test.raw_lot_id')::uuid, 'Fixture apertura');
 INSERT INTO public.inventory_movements (id, item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)

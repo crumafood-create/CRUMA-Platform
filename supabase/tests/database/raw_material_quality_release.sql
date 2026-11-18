@@ -196,6 +196,16 @@ BEGIN
     RAISE EXCEPTION
       'received raw material lots were not quarantined';
   END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.raw_material_lots
+    WHERE lot_number IN ('RQM-RELEASE', 'RQM-HOLD', 'RQM-REJECT')
+      AND remaining_value IS DISTINCT FROM round(quantity * unit_cost, 4)
+  ) THEN
+    RAISE EXCEPTION
+      'received quarantine lots were not initialized at quantity times unit cost';
+  END IF;
 END;
 $test$;
 
@@ -381,6 +391,7 @@ BEGIN
     FROM public.raw_material_lots
     WHERE lot_number = 'RQM-RELEASE'
       AND quantity = 4.5000
+      AND remaining_value = 18.0000
       AND status = 'available'
   ) THEN
     RAISE EXCEPTION
@@ -392,6 +403,7 @@ BEGIN
     FROM public.raw_material_lots
     WHERE lot_number = 'RQM-HOLD'
       AND quantity = 2.2500
+      AND remaining_value = 9.0000
       AND status = 'hold'
   ) THEN
     RAISE EXCEPTION
@@ -403,6 +415,7 @@ BEGIN
     FROM public.raw_material_lots
     WHERE lot_number = 'RQM-REJECT'
       AND quantity = 1.2500
+      AND remaining_value = 5.0000
       AND status = 'rejected'
   ) THEN
     RAISE EXCEPTION

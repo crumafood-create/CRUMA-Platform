@@ -587,6 +587,178 @@ export type Database = {
         }
         Relationships: []
       }
+      cheese_preparation_operations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string
+          operation_type: string
+          output_cost: number
+          output_lot_id: string | null
+          output_material_id: string
+          output_quantity: number
+          output_weight_kg: number
+          piece_count: number | null
+          reason: string
+          secondary_cost: number
+          secondary_lot_id: string | null
+          secondary_material_id: string | null
+          secondary_quantity: number
+          source_cost: number
+          source_lot_id: string
+          source_material_id: string
+          source_quantity: number
+          source_unit_cost: number
+          stick_presentation: string | null
+          unexplained_cost: number
+          unexplained_quantity: number
+          waste_cost: number
+          waste_quantity: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key: string
+          operation_type: string
+          output_cost: number
+          output_lot_id?: string | null
+          output_material_id: string
+          output_quantity: number
+          output_weight_kg: number
+          piece_count?: number | null
+          reason: string
+          secondary_cost?: number
+          secondary_lot_id?: string | null
+          secondary_material_id?: string | null
+          secondary_quantity?: number
+          source_cost: number
+          source_lot_id: string
+          source_material_id: string
+          source_quantity: number
+          source_unit_cost: number
+          stick_presentation?: string | null
+          unexplained_cost: number
+          unexplained_quantity: number
+          waste_cost: number
+          waste_quantity: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string
+          operation_type?: string
+          output_cost?: number
+          output_lot_id?: string | null
+          output_material_id?: string
+          output_quantity?: number
+          output_weight_kg?: number
+          piece_count?: number | null
+          reason?: string
+          secondary_cost?: number
+          secondary_lot_id?: string | null
+          secondary_material_id?: string | null
+          secondary_quantity?: number
+          source_cost?: number
+          source_lot_id?: string
+          source_material_id?: string
+          source_quantity?: number
+          source_unit_cost?: number
+          stick_presentation?: string | null
+          unexplained_cost?: number
+          unexplained_quantity?: number
+          waste_cost?: number
+          waste_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cheese_preparation_operations_output_lot_id_fkey"
+            columns: ["output_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_output_material_id_fkey"
+            columns: ["output_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_purchase_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_output_material_id_fkey"
+            columns: ["output_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_output_material_id_fkey"
+            columns: ["output_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_secondary_lot_id_fkey"
+            columns: ["secondary_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_secondary_material_id_fkey"
+            columns: ["secondary_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_purchase_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_secondary_material_id_fkey"
+            columns: ["secondary_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_secondary_material_id_fkey"
+            columns: ["secondary_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "raw_material_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_purchase_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "mrp_requirements"
+            referencedColumns: ["raw_material_id"]
+          },
+          {
+            foreignKeyName: "cheese_preparation_operations_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cold_chain_logs: {
         Row: {
           delivery_id: string | null
@@ -7103,6 +7275,7 @@ export type Database = {
           lot_number: string
           quantity: number
           raw_material_id: string
+          remaining_value: number
           status: string
           supplier_lot: string | null
           unit_cost: number
@@ -7116,6 +7289,7 @@ export type Database = {
           lot_number: string
           quantity?: number
           raw_material_id: string
+          remaining_value: number
           status?: string
           supplier_lot?: string | null
           unit_cost?: number
@@ -7129,6 +7303,7 @@ export type Database = {
           lot_number?: string
           quantity?: number
           raw_material_id?: string
+          remaining_value?: number
           status?: string
           supplier_lot?: string | null
           unit_cost?: number
@@ -9421,6 +9596,34 @@ export type Database = {
           p_item_id: string
           p_lot_number: string
           p_quantity: number
+        }
+        Returns: string
+      }
+      record_cheese_cut: {
+        Args: {
+          p_idempotency_key: string
+          p_piece_count: number
+          p_reason: string
+          p_source_lot_id: string
+          p_source_quantity_kg: number
+          p_stick_material_id: string
+          p_stick_presentation: string
+          p_stick_weight_kg: number
+          p_trim_material_id: string
+          p_trim_weight_kg: number
+          p_waste_weight_kg: number
+        }
+        Returns: string
+      }
+      record_cheese_grating: {
+        Args: {
+          p_grated_material_id: string
+          p_grated_weight_kg: number
+          p_idempotency_key: string
+          p_reason: string
+          p_source_quantity_kg: number
+          p_trim_lot_id: string
+          p_waste_weight_kg: number
         }
         Returns: string
       }

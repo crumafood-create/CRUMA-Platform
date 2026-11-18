@@ -60,7 +60,10 @@ export default async function ProductionOrdersPage({
           <h1 className="mt-2 text-3xl font-black text-brand-black">Producción</h1>
           <p className="mt-1 text-sm text-brand-gray-75">Órdenes atrasadas primero y avance visible por corrida.</p>
         </div>
-        <Link href="/production-orders/new"><Button>Nueva orden</Button></Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/cheese-preparation"><Button variant="outline">Preparación de queso</Button></Link>
+          <Link href="/production-orders/new"><Button>Nueva orden</Button></Link>
+        </div>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">

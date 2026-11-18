@@ -96,10 +96,10 @@ BEGIN
      OR NOT stick_material.is_active OR stick_material.deleted_at IS NOT NULL
      OR NOT trim_material.is_active OR trim_material.deleted_at IS NOT NULL
      OR p_stick_material_id = p_trim_material_id OR source_lot.raw_material_id IN (p_stick_material_id, p_trim_material_id)
-     OR stick_material.internal_code IS DISTINCT FROM CASE p_stick_presentation
+     OR stick_material.internal_code IS DISTINCT FROM (CASE p_stick_presentation
        WHEN 'party' THEN 'MP-PAL-QUESO-PARTY'
        ELSE 'MP-PAL-QUESO-TRAD'
-     END THEN
+     END) THEN
     RAISE EXCEPTION 'Cheese preparation materials are unavailable or not distinct.' USING ERRCODE = '23514';
   END IF;
   SELECT code INTO source_unit_code FROM public.units_of_measure WHERE id = source_material.unit_of_measure_id AND is_active AND deleted_at IS NULL;

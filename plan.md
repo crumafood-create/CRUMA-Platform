@@ -527,6 +527,12 @@ Verificación local de este ciclo: 22 pruebas unitarias focales pasaron en 3 arc
 
 CI #4251 para el commit documental `01373a9c` pasó los tres jobs `database`, `build` y `storybook`, confirmando el último commit publicado.
 
+**CI #4255, último commit `7a59760c`:** los tres jobs `database`, `build` y `storybook` pasaron. `database` reconstruyó la base desde cero, aplicó todas las migraciones, pasó `db lint`, ejecutó `finished_product_quality_release.sql` y confirmó los tipos generados. La regresión verificó el cierre diario repetido sin filas duplicadas; para octubre, 3 muestras en custodia de lotes producidos ese mes sobre 48 piezas de producción bruta (6.25%), 2 de merma directa separadas, exclusión de la muestra del lote producido en septiembre y estado pendiente cuando falta el cierre del último día. `build` pasó typecheck, lint, pruebas y build; `storybook` pasó sus pruebas y baselines.
+
+En desarrollo, `.env.local` apunta a `poglpqvmbrfcvtuspvtx.supabase.co` y `supabase/.temp/project-ref` coincide con `poglpqvmbrfcvtuspvtx`. El simulacro listó únicamente `20261125000000_add_quality_retention_closes_and_monthly_indicator.sql`; se aplicó con autorización y `migration list` confirmó la versión registrada, sin otras migraciones pendientes.
+
+El recorrido manual de `/qa/retention` queda pendiente: la habilidad de Computer Use no logró conectar su canal nativo tras reiniciar y repetir la selección de aplicaciones. No se cerró el día ni se hicieron escrituras desde la interfaz. El comportamiento de cierre idempotente, indicador pendiente, merma separada y filtro por mes de producción queda validado por la regresión SQL de CI; falta verificar visualmente esas salidas y el cierre repetido en la aplicación de desarrollo antes de pasar el PR #134 a listo para revisión.
+
 ### Ciclo de cierre diario y retención mensual (en curso)
 
 El módulo propietario sigue siendo Quality. La migración `20261125000000_add_quality_retention_closes_and_monthly_indicator.sql` agrega un cierre diario idempotente por fecha: en una sola transacción registra las muestras de seguridad intactas que estén en custodia. El operador cierra la fecha actual; no se permite reconstruir cierres históricos a partir del estado de hoy. El historial conserva la cantidad y fecha de cada fotografía; repetir la misma fecha devuelve el cierre previo sin volver a insertar partidas. Solo administradores pueden cerrar o consultar.

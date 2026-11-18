@@ -1637,13 +1637,13 @@ INSERT INTO public.product_lot_storage_balances (
   product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity,
   quality_sampling_pending_quantity, quality_sampling_reserved_quantity
 ) VALUES (
-  'fe000000-0000-4000-8000-000000000028', 0, 10, 0, 0, 2
+  'fe000000-0000-4000-8000-000000000028', 0, 9, 0, 0, 3
 );
 INSERT INTO public.product_lot_quality_samples (
   id, product_lot_id, purpose, quantity, status, created_by, created_at
 ) VALUES (
   'fe000000-0000-4000-8000-000000000029',
-  'fe000000-0000-4000-8000-000000000028', 'safety_retention', 2,
+  'fe000000-0000-4000-8000-000000000028', 'safety_retention', 3,
   'in_custody', 'f1000000-0000-4000-8000-000000000001', '2026-10-01 12:00:00-06'
 );
 INSERT INTO public.product_lot_quality_samples (

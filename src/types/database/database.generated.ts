@@ -7275,6 +7275,7 @@ export type Database = {
           lot_number: string
           quantity: number
           raw_material_id: string
+          remaining_value: number
           status: string
           supplier_lot: string | null
           unit_cost: number
@@ -7288,6 +7289,7 @@ export type Database = {
           lot_number: string
           quantity?: number
           raw_material_id: string
+          remaining_value: number
           status?: string
           supplier_lot?: string | null
           unit_cost?: number
@@ -7301,6 +7303,7 @@ export type Database = {
           lot_number?: string
           quantity?: number
           raw_material_id?: string
+          remaining_value?: number
           status?: string
           supplier_lot?: string | null
           unit_cost?: number

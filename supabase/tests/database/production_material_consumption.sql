@@ -642,7 +642,7 @@ BEGIN
       ON lot.id = consumption.raw_material_lot_id
     WHERE item.production_order_id =
       'fb600000-0000-0000-0000-000000000001'
-  ) <> 2 THEN
+  ) <> 3 THEN
     RAISE EXCEPTION
       'admin cannot read material consumptions with their source lots';
   END IF;

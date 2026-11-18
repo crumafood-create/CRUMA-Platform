@@ -7022,6 +7022,78 @@ export type Database = {
           },
         ]
       }
+      quality_retention_daily_close_items: {
+        Row: {
+          daily_close_id: string
+          id: string
+          quantity: number
+          sample_id: string
+        }
+        Insert: {
+          daily_close_id: string
+          id?: string
+          quantity: number
+          sample_id: string
+        }
+        Update: {
+          daily_close_id?: string
+          id?: string
+          quantity?: number
+          sample_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_retention_daily_close_items_daily_close_id_fkey"
+            columns: ["daily_close_id"]
+            isOneToOne: false
+            referencedRelation: "quality_retention_daily_closes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_retention_daily_close_items_sample_id_fkey"
+            columns: ["sample_id"]
+            isOneToOne: false
+            referencedRelation: "product_lot_quality_samples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_retention_daily_closes: {
+        Row: {
+          close_date: string
+          closed_at: string
+          closed_by: string
+          id: string
+        }
+        Insert: {
+          close_date: string
+          closed_at?: string
+          closed_by: string
+          id?: string
+        }
+        Update: {
+          close_date?: string
+          closed_at?: string
+          closed_by?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_retention_daily_closes_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "quality_retention_daily_closes_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       raw_material_lots: {
         Row: {
           created_at: string
@@ -9123,6 +9195,10 @@ export type Database = {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: undefined
       }
+      close_quality_retention_day: {
+        Args: { p_close_date: string }
+        Returns: string
+      }
       complete_production_order_with_mass_lot_yield: {
         Args: {
           p_idempotency_key: string
@@ -9298,6 +9374,29 @@ export type Database = {
           lot_number: string
           quantity: number
           storage_condition: string
+        }[]
+      }
+      get_quality_retention_daily_closes: {
+        Args: { p_limit?: number }
+        Returns: {
+          close_date: string
+          closed_at: string
+          retained_quantity: number
+          retained_sample_count: number
+        }[]
+      }
+      get_quality_retention_monthly_indicator: {
+        Args: { p_month: string }
+        Returns: {
+          direct_quality_waste_quantity: number
+          gross_production_quantity: number
+          month_closed: boolean
+          preparation_name: string
+          preparation_type_id: string
+          product_id: string
+          product_name: string
+          retained_quantity: number
+          retention_percentage: number
         }[]
       }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }

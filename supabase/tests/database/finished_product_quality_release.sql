@@ -1584,15 +1584,14 @@ INSERT INTO public.production_outputs (
 INSERT INTO public.product_lots (
   id, product_id, lot_number, production_order_id, production_output_id,
   expiration_date, initial_quantity, quantity, status, inventory_location_id,
-  warehouse_id, location_name, created_by
+  warehouse_id, location_name
 ) VALUES (
   'fe000000-0000-4000-8000-000000000014',
   'fe000000-0000-4000-8000-000000000010', 'QA-RET-MONTH-LOT',
   'fe000000-0000-4000-8000-000000000012',
   'fe000000-0000-4000-8000-000000000013', '2026-12-31', 48, 43, 'available',
   'f3000000-0000-4000-8000-000000000001',
-  'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location',
-  'f1000000-0000-4000-8000-000000000001'
+  'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location'
 );
 INSERT INTO public.product_lot_storage_balances (
   product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity,
@@ -1625,15 +1624,14 @@ INSERT INTO public.production_outputs (
 INSERT INTO public.product_lots (
   id, product_id, lot_number, production_order_id, production_output_id,
   expiration_date, initial_quantity, quantity, status, inventory_location_id,
-  warehouse_id, location_name, created_by
+  warehouse_id, location_name
 ) VALUES (
   'fe000000-0000-4000-8000-000000000028',
   'fe000000-0000-4000-8000-000000000010', 'QA-RET-OTHER-MONTH-LOT',
   'fe000000-0000-4000-8000-000000000026',
   'fe000000-0000-4000-8000-000000000027', '2026-12-31', 12, 12, 'available',
   'f3000000-0000-4000-8000-000000000001',
-  'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location',
-  'f1000000-0000-4000-8000-000000000001'
+  'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location'
 );
 INSERT INTO public.product_lot_storage_balances (
   product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity,

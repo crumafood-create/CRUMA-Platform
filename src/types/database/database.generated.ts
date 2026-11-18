@@ -4233,11 +4233,187 @@ export type Database = {
           },
         ]
       }
+      product_lot_quality_sample_dispositions: {
+        Row: {
+          authorized_by: string | null
+          decided_at: string
+          decided_by: string
+          destination: string
+          id: string
+          idempotency_key: string
+          quantity: number
+          reason: string
+          return_authorized: boolean
+          sample_id: string
+        }
+        Insert: {
+          authorized_by?: string | null
+          decided_at?: string
+          decided_by: string
+          destination: string
+          id?: string
+          idempotency_key: string
+          quantity: number
+          reason: string
+          return_authorized?: boolean
+          sample_id: string
+        }
+        Update: {
+          authorized_by?: string | null
+          decided_at?: string
+          decided_by?: string
+          destination?: string
+          id?: string
+          idempotency_key?: string
+          quantity?: number
+          reason?: string
+          return_authorized?: boolean
+          sample_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_authorized_by_fkey"
+            columns: ["authorized_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_authorized_by_fkey"
+            columns: ["authorized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_sample_dispositions_sample_id_fkey"
+            columns: ["sample_id"]
+            isOneToOne: false
+            referencedRelation: "product_lot_quality_samples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_lot_quality_samples: {
+        Row: {
+          created_at: string
+          created_by: string
+          decided_at: string | null
+          decided_by: string | null
+          destination: string | null
+          id: string
+          product_lot_id: string
+          purpose: string
+          quantity: number
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          decided_at?: string | null
+          decided_by?: string | null
+          destination?: string | null
+          id?: string
+          product_lot_id: string
+          purpose: string
+          quantity: number
+          reason?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          destination?: string | null
+          id?: string
+          product_lot_id?: string
+          purpose?: string
+          quantity?: number
+          reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_quality_samples_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_quality_samples_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_lot_storage_balances: {
         Row: {
           freezing_quantity: number
           fresh_quantity: number
           product_lot_id: string
+          quality_sampling_pending_quantity: number
+          quality_sampling_reserved_quantity: number
           raw_frozen_quantity: number
           updated_at: string
         }
@@ -4245,6 +4421,8 @@ export type Database = {
           freezing_quantity?: number
           fresh_quantity?: number
           product_lot_id: string
+          quality_sampling_pending_quantity?: number
+          quality_sampling_reserved_quantity?: number
           raw_frozen_quantity?: number
           updated_at?: string
         }
@@ -4252,6 +4430,8 @@ export type Database = {
           freezing_quantity?: number
           fresh_quantity?: number
           product_lot_id?: string
+          quality_sampling_pending_quantity?: number
+          quality_sampling_reserved_quantity?: number
           raw_frozen_quantity?: number
           updated_at?: string
         }
@@ -6645,6 +6825,7 @@ export type Database = {
           inspected_at: string
           inspector_id: string
           notes: string | null
+          product_lot_quality_sample_id: string | null
           production_order_id: string | null
           production_output_id: string | null
           purchase_receipt_item_id: string | null
@@ -6663,6 +6844,7 @@ export type Database = {
           inspected_at?: string
           inspector_id: string
           notes?: string | null
+          product_lot_quality_sample_id?: string | null
           production_order_id?: string | null
           production_output_id?: string | null
           purchase_receipt_item_id?: string | null
@@ -6681,6 +6863,7 @@ export type Database = {
           inspected_at?: string
           inspector_id?: string
           notes?: string | null
+          product_lot_quality_sample_id?: string | null
           production_order_id?: string | null
           production_output_id?: string | null
           purchase_receipt_item_id?: string | null
@@ -6705,6 +6888,13 @@ export type Database = {
             columns: ["inspector_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_inspections_product_lot_quality_sample_id_fkey"
+            columns: ["product_lot_quality_sample_id"]
+            isOneToOne: false
+            referencedRelation: "product_lot_quality_samples"
             referencedColumns: ["id"]
           },
           {
@@ -6828,6 +7018,78 @@ export type Database = {
             columns: ["raw_material_lot_id"]
             isOneToOne: false
             referencedRelation: "raw_material_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_retention_daily_close_items: {
+        Row: {
+          daily_close_id: string
+          id: string
+          quantity: number
+          sample_id: string
+        }
+        Insert: {
+          daily_close_id: string
+          id?: string
+          quantity: number
+          sample_id: string
+        }
+        Update: {
+          daily_close_id?: string
+          id?: string
+          quantity?: number
+          sample_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_retention_daily_close_items_daily_close_id_fkey"
+            columns: ["daily_close_id"]
+            isOneToOne: false
+            referencedRelation: "quality_retention_daily_closes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_retention_daily_close_items_sample_id_fkey"
+            columns: ["sample_id"]
+            isOneToOne: false
+            referencedRelation: "product_lot_quality_samples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_retention_daily_closes: {
+        Row: {
+          close_date: string
+          closed_at: string
+          closed_by: string
+          id: string
+        }
+        Insert: {
+          close_date: string
+          closed_at?: string
+          closed_by: string
+          id?: string
+        }
+        Update: {
+          close_date?: string
+          closed_at?: string
+          closed_by?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_retention_daily_closes_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "quality_retention_daily_closes_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -8933,6 +9195,10 @@ export type Database = {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: undefined
       }
+      close_quality_retention_day: {
+        Args: { p_close_date: string }
+        Returns: string
+      }
       complete_production_order_with_mass_lot_yield: {
         Args: {
           p_idempotency_key: string
@@ -9028,6 +9294,18 @@ export type Database = {
         Args: { p_approval_id: string; p_decision: string }
         Returns: string
       }
+      decide_product_lot_quality_sample_disposition: {
+        Args: {
+          p_destination: string
+          p_idempotency_key: string
+          p_quality_inspection_id: string
+          p_quantity: number
+          p_reason: string
+          p_return_authorized: boolean
+          p_sample_id: string
+        }
+        Returns: string
+      }
       decide_quality_release: {
         Args: { p_decision: string; p_inspection_id: string; p_reason: string }
         Returns: string
@@ -9082,6 +9360,8 @@ export type Database = {
           lot_number: string
           lot_quantity: number
           product_lot_id: string
+          quality_sampling_pending_quantity: number
+          quality_sampling_reserved_quantity: number
           raw_frozen_quantity: number
         }[]
       }
@@ -9094,6 +9374,29 @@ export type Database = {
           lot_number: string
           quantity: number
           storage_condition: string
+        }[]
+      }
+      get_quality_retention_daily_closes: {
+        Args: { p_limit?: number }
+        Returns: {
+          close_date: string
+          closed_at: string
+          retained_quantity: number
+          retained_sample_count: number
+        }[]
+      }
+      get_quality_retention_monthly_indicator: {
+        Args: { p_month: string }
+        Returns: {
+          direct_quality_waste_quantity: number
+          gross_production_quantity: number
+          month_closed: boolean
+          preparation_name: string
+          preparation_type_id: string
+          product_id: string
+          product_name: string
+          retained_quantity: number
+          retention_percentage: number
         }[]
       }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
@@ -9118,6 +9421,15 @@ export type Database = {
           p_item_id: string
           p_lot_number: string
           p_quantity: number
+        }
+        Returns: string
+      }
+      record_product_lot_quality_sample_inspection: {
+        Args: {
+          p_criteria: Json
+          p_defects: Json
+          p_notes: string
+          p_sample_id: string
         }
         Returns: string
       }

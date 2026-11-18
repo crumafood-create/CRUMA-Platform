@@ -3,8 +3,59 @@ import type { TypedSupabaseClient } from '@/infrastructure/integrations/supabase
 import type {
   QualityDecision,
   QualityInspectionRequest,
+  ProductLotQualitySampleInspectionRequest,
+  ProductLotQualitySampleDispositionRequest,
   RawMaterialQualityInspectionRequest,
 } from './quality-control-contract';
+
+export async function recordProductLotQualitySampleInspection(
+  supabase: TypedSupabaseClient,
+  request: ProductLotQualitySampleInspectionRequest,
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'record_product_lot_quality_sample_inspection',
+    {
+      p_criteria: request.criteria.map((item) => ({
+        criterion: item.criterion,
+        expected_value: item.expectedValue,
+        actual_value: item.actualValue,
+        passed: item.passed,
+      })),
+      p_defects: request.defects.map((defect) => ({
+        defect_type: defect.defectType,
+        severity: defect.severity,
+        quantity: defect.quantity,
+        description: defect.description,
+      })),
+      p_notes: request.notes ?? '',
+      p_sample_id: request.sampleId,
+    },
+  );
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('La inspección de muestra no devolvió un identificador.');
+  return data;
+}
+
+export async function decideProductLotQualitySampleDisposition(
+  supabase: TypedSupabaseClient,
+  request: ProductLotQualitySampleDispositionRequest,
+): Promise<string> {
+  const { data, error } = await supabase.rpc(
+    'decide_product_lot_quality_sample_disposition',
+    {
+      p_sample_id: request.sampleId,
+      p_quality_inspection_id: request.qualityInspectionId,
+      p_quantity: request.quantity,
+      p_destination: request.destination,
+      p_return_authorized: request.returnAuthorized,
+      p_reason: request.reason,
+      p_idempotency_key: request.idempotencyKey,
+    },
+  );
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('La disposición no devolvió un identificador.');
+  return data;
+}
 
 export async function recordQualityInspection(
   supabase: TypedSupabaseClient,

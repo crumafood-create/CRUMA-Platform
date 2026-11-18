@@ -1,5 +1,3 @@
-import { recordQualityInspection } from '@/app/(admin)/qa/actions';
-
 type OutputOption = {
   id: string;
   label: string;
@@ -7,34 +5,61 @@ type OutputOption = {
 };
 
 type Props = {
+  action: (formData: FormData) => Promise<void>;
   outputs: OutputOption[];
   initialOutputId?: string;
+  sample?: {
+    id: string;
+    label: string;
+    quantity: number;
+  };
 };
 
-export function QualityInspectionForm({ outputs, initialOutputId }: Props) {
+export function QualityInspectionForm({
+  action,
+  outputs,
+  initialOutputId,
+  sample,
+}: Props) {
   return (
-    <form action={recordQualityInspection} className="space-y-5 rounded-2xl border p-6">
-      <label className="block text-sm">
-        Salida de producción
-        <select
-          name="production_output_id"
-          defaultValue={initialOutputId ?? ''}
-          required
-          className="mt-1 block w-full rounded border px-3 py-2"
-        >
-          <option value="">Selecciona una salida</option>
-          {outputs.map((output) => (
-            <option key={output.id} value={output.id}>
-              {output.label} · {output.quantity} unidades
-            </option>
-          ))}
-        </select>
-      </label>
+    <form action={action} className="space-y-5 rounded-2xl border p-6">
+      {sample ? (
+        <>
+          <input type="hidden" name="quality_sample_id" value={sample.id} />
+          <label className="block text-sm">
+            Muestra apartada
+            <input value={sample.label} readOnly className="mt-1 block w-full rounded border bg-gray-50 px-3 py-2" />
+          </label>
+          <label className="block text-sm">
+            Cantidad muestreada
+            <input value={`${sample.quantity} piezas`} readOnly className="mt-1 block w-full rounded border bg-gray-50 px-3 py-2" />
+          </label>
+        </>
+      ) : (
+        <>
+          <label className="block text-sm">
+            Salida de producción
+            <select
+              name="production_output_id"
+              defaultValue={initialOutputId ?? ''}
+              required
+              className="mt-1 block w-full rounded border px-3 py-2"
+            >
+              <option value="">Selecciona una salida</option>
+              {outputs.map((output) => (
+                <option key={output.id} value={output.id}>
+                  {output.label} · {output.quantity} unidades
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <label className="block text-sm">
-        Cantidad muestreada
-        <input name="sampled_quantity" type="number" min="1" step="1" required className="mt-1 block w-full rounded border px-3 py-2" />
-      </label>
+          <label className="block text-sm">
+            Cantidad muestreada
+            <input name="sampled_quantity" type="number" min="1" step="1" required className="mt-1 block w-full rounded border px-3 py-2" />
+          </label>
+        </>
+      )}
 
       {[1, 2, 3].map((index) => (
         <fieldset key={index} className="grid gap-3 rounded border p-4 md:grid-cols-4">

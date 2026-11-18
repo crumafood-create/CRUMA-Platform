@@ -14,6 +14,8 @@ export type StorageLot = {
   fresh_quantity: number;
   raw_frozen_quantity: number;
   freezing_quantity: number;
+  quality_sampling_pending_quantity: number;
+  quality_sampling_reserved_quantity: number;
   product_name: string;
 };
 
@@ -137,6 +139,8 @@ export default function StorageConditionsClient({
           <span>Fresco <strong>{lot.fresh_quantity}</strong></span>
           <span>Crudo congelado <strong>{lot.raw_frozen_quantity}</strong></span>
           <span>En congelación <strong>{lot.freezing_quantity}</strong></span>
+          <span>Apartado bajo umbral, pendiente de Calidad <strong>{lot.quality_sampling_pending_quantity}</strong></span>
+          <span>Muestras apartadas para Calidad <strong>{lot.quality_sampling_reserved_quantity}</strong></span>
         </div>
         <FreezingStartForm lot={lot} />
       </article>) : <p className="text-sm text-gray-600">No hay lotes liberados que manejen condición de almacenamiento.</p>}

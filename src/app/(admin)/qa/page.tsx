@@ -78,6 +78,12 @@ export default async function QualityPage() {
 
         <div className="flex flex-wrap gap-2">
           <Link
+            href="/qa/retention"
+            className="rounded border px-4 py-2"
+          >
+            Retención y cierres
+          </Link>
+          <Link
             href="/qa/create"
             className="rounded border px-4 py-2"
           >
@@ -99,6 +105,9 @@ export default async function QualityPage() {
             const isRawMaterial =
               inspection.subject_type ===
               'raw_material_lot';
+            const isProductLotSample =
+              inspection.subject_type ===
+              'product_lot_quality_sample';
 
             const title = isRawMaterial
               ? inspection.raw_material_lots
@@ -134,7 +143,9 @@ export default async function QualityPage() {
                   </div>
 
                   <div className="text-sm text-gray-500">
-                    {isRawMaterial
+                    {isProductLotSample
+                      ? 'Muestra de producto terminado'
+                      : isRawMaterial
                       ? 'Materia prima'
                       : 'Producto terminado'}
                     {' · '}

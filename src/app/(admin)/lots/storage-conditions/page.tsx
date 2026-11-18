@@ -60,6 +60,8 @@ export default async function ProductStorageConditionsPage() {
         fresh_quantity: quantity,
         raw_frozen_quantity: 0,
         freezing_quantity: 0,
+        quality_sampling_pending_quantity: 0,
+        quality_sampling_reserved_quantity: 0,
         product_name: productName,
       };
     });

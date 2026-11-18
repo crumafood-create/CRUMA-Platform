@@ -4,9 +4,11 @@ import { notFound } from 'next/navigation';
 import {
   createTypedClient,
 } from '@/infrastructure/integrations/supabase/server';
+import { ProductLotQualitySampleDispositionForm } from '@/modules/quality/components/forms/product-lot-quality-sample-disposition-form';
 
 import {
   decideQualityRelease,
+  decideProductLotQualitySampleDisposition,
   decideRawMaterialQualityRelease,
   disposeFinishedProductNonconformance,
 } from '../actions';
@@ -30,6 +32,11 @@ const dispositionLabel: Record<string, string> = {
   rework: 'Retrabajo',
 };
 
+const qualitySampleDestinationLabel: Record<string, string> = {
+  returned_to_lot: 'Devuelta al mismo lote',
+  direct_waste: 'Merma directa de Calidad',
+};
+
 export default async function QualityInspectionPage({
   params,
 }: {
@@ -46,6 +53,7 @@ export default async function QualityInspectionPage({
     .select(`
       id,
       subject_type,
+      product_lot_quality_sample_id,
       status,
       result,
       sampled_quantity,
@@ -90,6 +98,60 @@ export default async function QualityInspectionPage({
 
   if (!inspection) {
     notFound();
+  }
+
+  let qualitySampleLotNumber: string | null = null;
+  let qualitySample: {
+    id: string;
+    product_lot_id: string;
+    quantity: number;
+    purpose: string;
+    status: string;
+    destination: string | null;
+    reason: string | null;
+    decided_at: string | null;
+  } | null = null;
+  let sampleDispositions: {
+    id: string;
+    quantity: number;
+    destination: string;
+    return_authorized: boolean;
+    reason: string;
+    decided_by: string;
+    decided_at: string;
+  }[] = [];
+  if (inspection.product_lot_quality_sample_id) {
+    const { data: sample, error: sampleError } = await supabase
+      .from('product_lot_quality_samples')
+      .select('id, product_lot_id, quantity, purpose, status, destination, reason, decided_at')
+      .eq('id', inspection.product_lot_quality_sample_id)
+      .maybeSingle();
+    if (sampleError) {
+      throw new Error('No fue posible consultar el lote de la muestra.');
+    }
+    if (sample) {
+      qualitySample = sample;
+      const { data: sampleLot, error: sampleLotError } = await supabase
+        .from('product_lots')
+        .select('lot_number')
+        .eq('id', sample.product_lot_id)
+        .maybeSingle();
+      if (sampleLotError) {
+        throw new Error('No fue posible consultar el lote de inventario de la muestra.');
+      }
+      qualitySampleLotNumber = sampleLot?.lot_number ?? null;
+
+      const { data: decisions, error: decisionsError } = await supabase
+        .from('product_lot_quality_sample_dispositions')
+        .select('id, quantity, destination, return_authorized, reason, decided_by, decided_at')
+        .eq('sample_id', sample.id)
+        .order('decided_at')
+        .order('id');
+      if (decisionsError) {
+        throw new Error('No fue posible consultar las decisiones de la muestra.');
+      }
+      sampleDispositions = decisions ?? [];
+    }
   }
 
   const [
@@ -152,6 +214,15 @@ export default async function QualityInspectionPage({
 
   const isRawMaterial =
     inspection.subject_type === 'raw_material_lot';
+  const isProductLotSample =
+    inspection.subject_type === 'product_lot_quality_sample';
+  const disposedSampleQuantity = sampleDispositions.reduce(
+    (total, disposition) => total + disposition.quantity,
+    0,
+  );
+  const samplePendingQuantity = qualitySample
+    ? Math.max(qualitySample.quantity - disposedSampleQuantity, 0)
+    : 0;
 
   const subjectName = isRawMaterial
     ? inspection.raw_material_lots
@@ -161,7 +232,13 @@ export default async function QualityInspectionPage({
         ?.products?.name ??
       'Producto terminado';
 
-  const subjectReference = isRawMaterial
+  const subjectReference = isProductLotSample
+    ? `Lote ${qualitySampleLotNumber ?? '-'} · orden ${
+        inspection.production_outputs
+          ?.production_orders
+          ?.production_number ?? '-'
+      }`
+    : isRawMaterial
     ? `Lote ${
         inspection.raw_material_lots
           ?.lot_number ?? '-'
@@ -185,7 +262,9 @@ export default async function QualityInspectionPage({
           </h1>
 
           <p className="text-gray-500">
-            {isRawMaterial
+            {isProductLotSample
+              ? 'Muestra de producto terminado'
+              : isRawMaterial
               ? 'Materia prima'
               : 'Producto terminado'}
             {' · '}
@@ -299,6 +378,13 @@ export default async function QualityInspectionPage({
         </section>
       )}
 
+      {isProductLotSample && (
+        <section className="rounded-2xl border p-6">
+          <h2 className="text-xl font-semibold">Lote de inventario</h2>
+          <p className="mt-2">{qualitySampleLotNumber ?? '-'}</p>
+        </section>
+      )}
+
       <section className="space-y-3 rounded-2xl border p-6">
         <h2 className="text-xl font-semibold">
           Criterios
@@ -378,7 +464,53 @@ export default async function QualityInspectionPage({
         </section>
       ) : null}
 
-      {decision ? (
+      {isProductLotSample ? (
+        <section className="space-y-4 rounded-2xl border p-6">
+          <h2 className="text-xl font-semibold">Destino de la muestra</h2>
+          <p className="text-sm text-gray-600">
+            La aprobación de la inspección y el destino se registran por separado.
+            Las piezas sin destino siguen apartadas.
+          </p>
+          <p>
+            Muestra de {qualitySample?.quantity ?? inspection.sampled_quantity}
+            {' piezas · Pendientes de destino: '}
+            {samplePendingQuantity}
+          </p>
+
+          {sampleDispositions.map((sampleDisposition) => (
+            <div key={sampleDisposition.id} className="rounded border p-3 text-sm">
+              <strong>
+                {sampleDisposition.quantity} ·{' '}
+                {qualitySampleDestinationLabel[sampleDisposition.destination] ??
+                  sampleDisposition.destination}
+              </strong>
+              <p>{sampleDisposition.reason}</p>
+              <p className="text-gray-500">
+                {new Date(sampleDisposition.decided_at).toLocaleString('es-MX')}
+                {' · Responsable: '}
+                {sampleDisposition.decided_by}
+                {sampleDisposition.return_authorized
+                  ? ' · Retorno autorizado por Calidad'
+                  : ''}
+              </p>
+            </div>
+          ))}
+
+          {qualitySample && samplePendingQuantity > 0 ? (
+            <ProductLotQualitySampleDispositionForm
+              action={decideProductLotQualitySampleDisposition}
+              inspectionId={id}
+              sampleId={qualitySample.id}
+              pendingQuantity={samplePendingQuantity}
+              idempotencyKey={dispositionIdempotencyKey}
+            />
+          ) : (
+            <p className="text-sm text-green-700">
+              Toda la muestra inmediata tiene un destino registrado.
+            </p>
+          )}
+        </section>
+      ) : decision ? (
         <section className="rounded-2xl border p-6">
           <h2 className="text-xl font-semibold">
             Decisión:{' '}

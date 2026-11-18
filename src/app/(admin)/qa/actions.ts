@@ -7,15 +7,21 @@ import { requireTypedAuthorizedAction } from '@/modules/identity/guards/action.g
 import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constants';
 import {
   assertQualityDecision,
+  buildProductLotQualitySampleDispositionRequest,
+  buildProductLotQualitySampleInspectionRequest,
   buildQualityInspectionRequest,
   buildRawMaterialQualityInspectionRequest,
 } from '@/modules/quality/application/quality-control-contract';
 import {
   decideQualityRelease as persistQualityDecision,
+  decideProductLotQualitySampleDisposition as
+    persistProductLotQualitySampleDisposition,
   decideRawMaterialQualityRelease as persistRawMaterialQualityDecision,
+  recordProductLotQualitySampleInspection as persistProductLotQualitySampleInspection,
   recordQualityInspection as persistQualityInspection,
   recordRawMaterialQualityInspection as persistRawMaterialQualityInspection,
 } from '@/modules/quality/application/quality-control-repository';
+import { closeQualityRetentionDay as persistQualityRetentionDailyClose } from '@/modules/quality/application/quality-retention-repository';
 import {
   buildFinishedProductNonconformanceDispositionRequest,
 } from '@/modules/production/application/finished-product-nonconformance-disposition-contract';
@@ -44,6 +50,64 @@ export async function recordQualityInspection(
   revalidatePath('/qa');
   revalidatePath('/production-orders');
   redirect(`/qa/${inspectionId}`);
+}
+
+export async function recordProductLotQualitySampleInspection(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } =
+    await requireTypedAuthorizedAction(
+      PERMISSIONS.QUALITY_INSPECTION_MANAGE,
+    );
+
+  const request =
+    buildProductLotQualitySampleInspectionRequest(formData);
+  const inspectionId =
+    await persistProductLotQualitySampleInspection(
+      supabase,
+      request,
+    );
+
+  revalidatePath('/qa');
+  revalidatePath('/qa/create');
+  revalidatePath('/lots/storage-conditions');
+  revalidatePath('/mobile/picking');
+  redirect(`/qa/${inspectionId}`);
+}
+
+export async function decideProductLotQualitySampleDisposition(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.QUALITY_RELEASE_DECIDE,
+  );
+  const request = buildProductLotQualitySampleDispositionRequest(formData);
+  await persistProductLotQualitySampleDisposition(supabase, request);
+
+  revalidatePath('/qa');
+  revalidatePath(`/qa/${request.qualityInspectionId}`);
+  revalidatePath('/lots');
+  revalidatePath('/lots/storage-conditions');
+  revalidatePath('/mobile/picking');
+  redirect(`/qa/${request.qualityInspectionId}`);
+}
+
+export async function closeQualityRetentionDay(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.QUALITY_RELEASE_DECIDE,
+  );
+  const closeDate = formData.get('close_date')?.toString().trim() ?? '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(closeDate)) {
+    throw new Error('La fecha del cierre diario no es válida.');
+  }
+
+  await persistQualityRetentionDailyClose(supabase, closeDate);
+
+  revalidatePath('/qa/retention');
+  revalidatePath('/qa');
+  redirect(`/qa/retention?closed=${encodeURIComponent(closeDate)}`);
 }
 
 export async function decideQualityRelease(

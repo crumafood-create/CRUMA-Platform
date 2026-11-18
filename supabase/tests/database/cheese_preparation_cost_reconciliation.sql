@@ -11,6 +11,7 @@ SELECT set_config('test.trim_material_id', gen_random_uuid()::text, true);
 SELECT set_config('test.grated_material_id', gen_random_uuid()::text, true);
 SELECT set_config('test.location_id', gen_random_uuid()::text, true);
 SELECT set_config('test.source_lot_id', gen_random_uuid()::text, true);
+SELECT set_config('test.expired_source_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.cut_key', gen_random_uuid()::text, true);
 SELECT set_config('test.grate_key', gen_random_uuid()::text, true);
 SELECT set_config('test.rounding_source_lot_id', gen_random_uuid()::text, true);
@@ -31,25 +32,32 @@ VALUES
   (gen_random_uuid(), 'Piece test', 'pza')
 ON CONFLICT (code) DO UPDATE SET name = excluded.name, is_active = true, deleted_at = null;
 
--- Keep this fixture isolated when it is also run against a development catalog
--- that already contains the canonical Party and traditional materials.
+-- Keep this fixture isolated when run against a catalog that already has the
+-- canonical prepared-material codes.
 UPDATE public.raw_materials
 SET internal_code = 'CHEESE-TEST-EXISTING-' || id::text
-WHERE internal_code IN ('MP-PAL-QUESO-PARTY', 'MP-PAL-QUESO-TRAD');
+WHERE internal_code IN (
+  'MP-PAL-QUESO-PARTY', 'MP-PAL-QUESO-TRAD',
+  'MP-QSO-RECORTE', 'MP-QSO-RALLADO'
+);
 
 INSERT INTO public.raw_materials (id, slug, name, internal_code, unit_of_measure_id, current_stock, average_cost, last_cost)
 VALUES
   (current_setting('test.source_material_id')::uuid, 'cheese-source-' || left(current_setting('test.admin_id'), 8), 'Queso de prueba', 'CHEESE-SOURCE-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0.907, 20, 20),
   (current_setting('test.party_material_id')::uuid, 'cheese-party-' || left(current_setting('test.admin_id'), 8), 'Palitos Party de prueba', 'MP-PAL-QUESO-PARTY', (SELECT id FROM public.units_of_measure WHERE code = 'pza'), 0, 0, 0),
   (current_setting('test.traditional_material_id')::uuid, 'cheese-trad-' || left(current_setting('test.admin_id'), 8), 'Palitos tradicionales de prueba', 'MP-PAL-QUESO-TRAD', (SELECT id FROM public.units_of_measure WHERE code = 'pza'), 0, 0, 0),
-  (current_setting('test.trim_material_id')::uuid, 'cheese-trim-' || left(current_setting('test.admin_id'), 8), 'Recorte de queso de prueba', 'CHEESE-TRIM-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
-  (current_setting('test.grated_material_id')::uuid, 'cheese-grated-' || left(current_setting('test.admin_id'), 8), 'Queso rallado de prueba', 'CHEESE-GRATED-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
+  (current_setting('test.trim_material_id')::uuid, 'cheese-trim-' || left(current_setting('test.admin_id'), 8), 'Recorte de queso de prueba', 'MP-QSO-RECORTE', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
+  (current_setting('test.grated_material_id')::uuid, 'cheese-grated-' || left(current_setting('test.admin_id'), 8), 'Queso rallado de prueba', 'MP-QSO-RALLADO', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
   (current_setting('test.tiny_source_material_id')::uuid, 'cheese-tiny-source-' || left(current_setting('test.admin_id'), 8), 'Queso mínimo de prueba', 'CHEESE-TINY-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0.0003, 20, 20);
 INSERT INTO public.inventory_locations (id, slug, name)
 VALUES (current_setting('test.location_id')::uuid, 'cheese-prep-' || left(current_setting('test.admin_id'), 8), 'Cheese preparation test location');
 INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, quantity, unit_cost, status, inventory_location_id)
 VALUES (current_setting('test.source_lot_id')::uuid, current_setting('test.source_material_id')::uuid,
   'CHEESE-SOURCE-' || left(current_setting('test.admin_id'), 8), 0.907, 20, 'available', current_setting('test.location_id')::uuid);
+INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, expiration_date, quantity, unit_cost, status, inventory_location_id)
+VALUES (current_setting('test.expired_source_lot_id')::uuid, current_setting('test.source_material_id')::uuid,
+  'CHEESE-EXPIRED-SOURCE-' || left(current_setting('test.admin_id'), 8), current_date - 1,
+  0.1000, 20, 'available', current_setting('test.location_id')::uuid);
 INSERT INTO public.inventory_movements (item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)
 VALUES ('raw_material', current_setting('test.source_material_id')::uuid, 'entry', 0.907, 0, 0.907,
   'cheese_preparation_test_seed', current_setting('test.source_lot_id')::uuid, 'Test-only opening balance');
@@ -108,12 +116,33 @@ BEGIN
     RAISE EXCEPTION 'Traditional presentation accepted the Party stick material.';
   EXCEPTION WHEN check_violation THEN NULL;
   END;
+  BEGIN
+    PERFORM public.record_cheese_cut(
+      current_setting('test.source_lot_id')::uuid, 'party',
+      current_setting('test.party_material_id')::uuid, current_setting('test.grated_material_id')::uuid,
+      0.907, 65, 0.650, 0.245, 0.012, gen_random_uuid(), 'Debe rechazar queso rallado como recorte'
+    );
+    RAISE EXCEPTION 'Cheese cut accepted a non-trim material as the trim output.';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    PERFORM public.record_cheese_cut(
+      current_setting('test.expired_source_lot_id')::uuid, 'party',
+      current_setting('test.party_material_id')::uuid, current_setting('test.trim_material_id')::uuid,
+      0.1000, 10, 0.0700, 0.0200, 0.0100, gen_random_uuid(), 'Debe rechazar lote de queso vencido'
+    );
+    RAISE EXCEPTION 'Cheese cut accepted an expired source lot.';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
   IF EXISTS (SELECT 1 FROM public.cheese_preparation_operations WHERE source_lot_id = current_setting('test.source_lot_id')::uuid)
+     OR EXISTS (SELECT 1 FROM public.cheese_preparation_operations WHERE source_lot_id = current_setting('test.expired_source_lot_id')::uuid)
      OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') IS DISTINCT FROM v_cheese_movement_count
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.source_material_id')::uuid) IS DISTINCT FROM v_source_stock
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) IS DISTINCT FROM v_party_stock
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.traditional_material_id')::uuid) IS DISTINCT FROM v_traditional_stock
-     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) IS DISTINCT FROM v_trim_stock THEN
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) IS DISTINCT FROM v_trim_stock
+     OR (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.expired_source_lot_id')::uuid) <> 0.1000
+     OR (SELECT status FROM public.raw_material_lots WHERE id = current_setting('test.expired_source_lot_id')::uuid) <> 'available' THEN
     RAISE EXCEPTION 'Rejected presentation crossings wrote partial operations or movements.';
   END IF;
 END;
@@ -156,6 +185,7 @@ BEGIN
   IF (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_cut.id) <> 3
      OR (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.source_lot_id')::uuid) <> 0
      OR (SELECT status FROM public.raw_material_lots WHERE id = current_setting('test.source_lot_id')::uuid) <> 'depleted'
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = current_setting('test.source_lot_id')::uuid) <> 0
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.source_material_id')::uuid) <> 0
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) <> 65
      OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) <> 0.2000
@@ -172,6 +202,59 @@ $test$;
 SELECT set_config('test.trim_lot_id', (
   SELECT secondary_lot_id::text FROM public.cheese_preparation_operations WHERE id = current_setting('test.cut_id')::uuid
 ), true);
+DO $test$
+DECLARE
+  v_operation_count bigint;
+  v_movement_count bigint;
+  v_trim_stock numeric(14,4);
+  v_target_stock numeric(14,4);
+BEGIN
+  SELECT count(*) INTO v_operation_count FROM public.cheese_preparation_operations;
+  SELECT count(*) INTO v_movement_count FROM public.inventory_movements WHERE reference_type = 'cheese_preparation';
+  SELECT current_stock INTO v_trim_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid;
+  SELECT current_stock INTO v_target_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid;
+  BEGIN
+    PERFORM public.record_cheese_grating(
+      current_setting('test.trim_lot_id')::uuid,
+      current_setting('test.source_material_id')::uuid,
+      0.245, 0.237, 0.008, gen_random_uuid(),
+      'Debe rechazar queso de entrada como salida de rallado'
+    );
+    RAISE EXCEPTION 'Cheese grating accepted a non-grated material.';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  IF (SELECT count(*) FROM public.cheese_preparation_operations) <> v_operation_count
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') <> v_movement_count
+     OR (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 0.245
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> v_trim_stock
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> v_target_stock THEN
+    RAISE EXCEPTION 'Rejected grated-material identity wrote partial operations or changed balances.';
+  END IF;
+
+  UPDATE public.raw_material_lots SET expiration_date = current_date - 1
+  WHERE id = current_setting('test.trim_lot_id')::uuid;
+  BEGIN
+    PERFORM public.record_cheese_grating(
+      current_setting('test.trim_lot_id')::uuid,
+      current_setting('test.grated_material_id')::uuid,
+      0.245, 0.237, 0.008, gen_random_uuid(),
+      'Debe rechazar recorte vencido'
+    );
+    RAISE EXCEPTION 'Cheese grating accepted an expired trim lot.';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  IF (SELECT count(*) FROM public.cheese_preparation_operations) <> v_operation_count
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') <> v_movement_count
+     OR (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 0.245
+     OR (SELECT status FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 'available'
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> v_trim_stock
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> v_target_stock THEN
+    RAISE EXCEPTION 'Rejected expired grating wrote partial operations or changed balances.';
+  END IF;
+  UPDATE public.raw_material_lots SET expiration_date = current_date + 30
+  WHERE id = current_setting('test.trim_lot_id')::uuid;
+END;
+$test$;
 SELECT set_config('test.grate_id', public.record_cheese_grating(
   current_setting('test.trim_lot_id')::uuid,
   current_setting('test.grated_material_id')::uuid,
@@ -205,11 +288,13 @@ BEGIN
   END IF;
   IF (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 0
      OR (SELECT status FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 'depleted'
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 0
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
      OR (SELECT current_stock * average_cost FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
      OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_grate.id) <> 2
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0.237
-     OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 20.0000 THEN
+     OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 20.0000
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_grate.output_lot_id) <> v_grate.output_cost THEN
     RAISE EXCEPTION 'Trim was not fully consumed or grating retry duplicated a movement.';
   END IF;
   v_total_final_cost := v_cut.output_cost + v_grate.output_cost + v_cut.waste_cost + v_grate.waste_cost;
@@ -284,8 +369,9 @@ BEGIN
      OR v_cut.secondary_cost <> 31.6124 OR v_cut.waste_cost <> 1.5484
      OR v_cut.unexplained_cost <> 0
      OR v_cut.source_cost <> v_cut.output_cost + v_cut.secondary_cost + v_cut.waste_cost + v_cut.unexplained_cost
-     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_cut.id) <> 3 THEN
-    RAISE EXCEPTION 'Rounded cut costs did not reconcile or a retry duplicated movements.';
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_cut.id) <> 3
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_cut.output_lot_id) <> v_cut.output_cost THEN
+    RAISE EXCEPTION 'Rounded cut operation cost, inventory value, or retry movements did not reconcile.';
   END IF;
 END;
 $test$;

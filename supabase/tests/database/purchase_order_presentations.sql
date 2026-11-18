@@ -417,6 +417,7 @@ BEGIN
       AND lot_number = 'PRES-SEALED-PACKAGE'
       AND quantity = 25
       AND unit_cost = 24.8
+      AND remaining_value = 620.0000
       AND status = 'quarantine'
   ) THEN
     RAISE EXCEPTION 'accepted sealed package was not received in base units and quarantine';

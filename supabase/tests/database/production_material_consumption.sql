@@ -45,7 +45,11 @@ VALUES
     'Production Consumption User',
     'consumption-user@example.test',
     'client'
-  );
+  )
+ON CONFLICT (id) DO UPDATE
+SET full_name = excluded.full_name,
+    email = excluded.email,
+    role = excluded.role;
 
 INSERT INTO public.user_roles (
   user_id,

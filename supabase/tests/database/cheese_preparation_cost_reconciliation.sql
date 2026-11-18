@@ -45,7 +45,11 @@ BEGIN
      OR has_table_privilege('anon', 'public.cheese_preparation_operations', 'INSERT')
      OR NOT has_table_privilege('authenticated', 'public.cheese_preparation_operations', 'SELECT')
      OR has_table_privilege('authenticated', 'public.cheese_preparation_operations', 'INSERT') THEN
-    RAISE EXCEPTION 'Cheese preparation operation table privileges are too broad or prevent authenticated reads.';
+    RAISE EXCEPTION 'Cheese preparation operation table privileges are invalid (anon SELECT %, anon INSERT %, authenticated SELECT %, authenticated INSERT %).',
+      has_table_privilege('anon', 'public.cheese_preparation_operations', 'SELECT'),
+      has_table_privilege('anon', 'public.cheese_preparation_operations', 'INSERT'),
+      has_table_privilege('authenticated', 'public.cheese_preparation_operations', 'SELECT'),
+      has_table_privilege('authenticated', 'public.cheese_preparation_operations', 'INSERT');
   END IF;
 END;
 $test$;

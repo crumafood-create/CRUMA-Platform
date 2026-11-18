@@ -118,6 +118,10 @@ describe('contrato de control de calidad', () => {
       destination: 'direct_waste',
       returnAuthorized: false,
     });
+    data.set('return_authorized', 'on');
+    expect(() => buildProductLotQualitySampleDispositionRequest(data)).toThrow(
+      'La merma directa no puede incluir autorización de retorno.',
+    );
   });
 
   it.each(['0', '-1', '1.5', 'NaN'])('rechaza tamaño de muestra inválido: %s', (value) => {

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import {
   createTypedClient,
 } from '@/infrastructure/integrations/supabase/server';
+import { ProductLotQualitySampleDispositionForm } from '@/modules/quality/components/forms/product-lot-quality-sample-disposition-form';
 
 import {
   decideQualityRelease,
@@ -496,67 +497,13 @@ export default async function QualityInspectionPage({
           ))}
 
           {qualitySample && samplePendingQuantity > 0 ? (
-            <form
+            <ProductLotQualitySampleDispositionForm
               action={decideProductLotQualitySampleDisposition}
-              className="space-y-3 rounded border p-4"
-            >
-              <input type="hidden" name="quality_inspection_id" value={id} />
-              <input type="hidden" name="quality_sample_id" value={qualitySample.id} />
-              <input
-                type="hidden"
-                name="idempotency_key"
-                value={dispositionIdempotencyKey}
-              />
-
-              <label className="block text-sm">
-                Piezas por decidir (máximo {samplePendingQuantity})
-                <input
-                  name="quantity"
-                  type="number"
-                  min="1"
-                  max={samplePendingQuantity}
-                  step="1"
-                  defaultValue="1"
-                  required
-                  className="mt-1 w-full rounded border px-3 py-2"
-                />
-              </label>
-
-              <label className="block text-sm">
-                Destino
-                <select
-                  name="destination"
-                  required
-                  defaultValue="returned_to_lot"
-                  className="mt-1 w-full rounded border px-3 py-2"
-                >
-                  <option value="returned_to_lot">Devolver al mismo lote</option>
-                  <option value="direct_waste">Merma directa de Calidad</option>
-                </select>
-              </label>
-
-              <label className="flex items-start gap-2 text-sm">
-                <input name="return_authorized" type="checkbox" className="mt-1" />
-                <span>
-                  Calidad autoriza el retorno y verificó que las piezas siguen intactas
-                  y conservaron las condiciones de higiene y conservación.
-                </span>
-              </label>
-
-              <label className="block text-sm">
-                Motivo de la decisión
-                <textarea
-                  name="reason"
-                  required
-                  maxLength={500}
-                  className="mt-1 min-h-20 w-full rounded border px-3 py-2"
-                />
-              </label>
-
-              <button type="submit" className="rounded border px-4 py-2">
-                Registrar destino de estas piezas
-              </button>
-            </form>
+              inspectionId={id}
+              sampleId={qualitySample.id}
+              pendingQuantity={samplePendingQuantity}
+              idempotencyKey={dispositionIdempotencyKey}
+            />
           ) : (
             <p className="text-sm text-green-700">
               Toda la muestra inmediata tiene un destino registrado.

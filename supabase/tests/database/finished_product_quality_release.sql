@@ -1551,6 +1551,221 @@ $quality_sample_disposition$;
 
 RESET ROLE;
 
+-- Daily snapshots must count a safety sample once at month end, even when it
+-- was present in multiple daily closes during the month.
+INSERT INTO public.preparation_types (id, slug, name)
+VALUES ('fe000000-0000-4000-8000-000000000001', 'raw-frozen-retention-test', 'Crudo congelado');
+INSERT INTO public.products (id, slug, internal_code, name, status, preparation_type_id)
+VALUES (
+  'fe000000-0000-4000-8000-000000000010', 'quality-retention-monthly-test',
+  'QA-RET-MONTH-01', 'Quality Retention Monthly Test', 'active',
+  'fe000000-0000-4000-8000-000000000001'
+);
+INSERT INTO public.recipes (id, product_id, name, is_active)
+VALUES (
+  'fe000000-0000-4000-8000-000000000011',
+  'fe000000-0000-4000-8000-000000000010', 'Quality Retention Monthly Recipe', true
+);
+INSERT INTO public.production_orders (
+  id, production_number, recipe_id, production_status, planned_quantity,
+  produced_quantity, completed_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000012', 'QA-RET-MONTH-ORDER',
+  'fe000000-0000-4000-8000-000000000011', 'completed', 48, 48,
+  '2026-10-10 12:00:00-06'
+);
+INSERT INTO public.production_outputs (
+  id, production_order_id, product_id, quantity_produced, quality_status, created_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000013',
+  'fe000000-0000-4000-8000-000000000012',
+  'fe000000-0000-4000-8000-000000000010', 48, 'released', '2026-10-10 12:00:00-06'
+);
+INSERT INTO public.product_lots (
+  id, product_id, lot_number, production_order_id, production_output_id,
+  expiration_date, initial_quantity, quantity, status, inventory_location_id,
+  warehouse_id, location_name, created_by
+) VALUES (
+  'fe000000-0000-4000-8000-000000000014',
+  'fe000000-0000-4000-8000-000000000010', 'QA-RET-MONTH-LOT',
+  'fe000000-0000-4000-8000-000000000012',
+  'fe000000-0000-4000-8000-000000000013', '2026-12-31', 48, 43, 'available',
+  'f3000000-0000-4000-8000-000000000001',
+  'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location',
+  'f1000000-0000-4000-8000-000000000001'
+);
+INSERT INTO public.product_lot_storage_balances (
+  product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity,
+  quality_sampling_pending_quantity, quality_sampling_reserved_quantity
+) VALUES (
+  'fe000000-0000-4000-8000-000000000014', 0, 43, 0, 0, 5
+);
+INSERT INTO public.product_lot_quality_samples (
+  id, product_lot_id, purpose, quantity, status, created_by, created_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000018',
+  'fe000000-0000-4000-8000-000000000014', 'safety_retention', 3,
+  'in_custody', 'f1000000-0000-4000-8000-000000000001', '2026-10-11 12:00:00-06'
+);
+INSERT INTO public.production_orders (
+  id, production_number, recipe_id, production_status, planned_quantity,
+  produced_quantity, completed_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000026', 'QA-RET-OTHER-MONTH-ORDER',
+  'fe000000-0000-4000-8000-000000000011', 'completed', 12, 12,
+  '2026-09-30 12:00:00-06'
+);
+INSERT INTO public.production_outputs (
+  id, production_order_id, product_id, quantity_produced, quality_status, created_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000027',
+  'fe000000-0000-4000-8000-000000000026',
+  'fe000000-0000-4000-8000-000000000010', 12, 'released', '2026-09-30 12:00:00-06'
+);
+INSERT INTO public.product_lots (
+  id, product_id, lot_number, production_order_id, production_output_id,
+  expiration_date, initial_quantity, quantity, status, inventory_location_id,
+  warehouse_id, location_name, created_by
+) VALUES (
+  'fe000000-0000-4000-8000-000000000028',
+  'fe000000-0000-4000-8000-000000000010', 'QA-RET-OTHER-MONTH-LOT',
+  'fe000000-0000-4000-8000-000000000026',
+  'fe000000-0000-4000-8000-000000000027', '2026-12-31', 12, 12, 'available',
+  'f3000000-0000-4000-8000-000000000001',
+  'f2000000-0000-4000-8000-000000000001', 'Finished Goods Location',
+  'f1000000-0000-4000-8000-000000000001'
+);
+INSERT INTO public.product_lot_storage_balances (
+  product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity,
+  quality_sampling_pending_quantity, quality_sampling_reserved_quantity
+) VALUES (
+  'fe000000-0000-4000-8000-000000000028', 0, 10, 0, 0, 2
+);
+INSERT INTO public.product_lot_quality_samples (
+  id, product_lot_id, purpose, quantity, status, created_by, created_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000029',
+  'fe000000-0000-4000-8000-000000000028', 'safety_retention', 2,
+  'in_custody', 'f1000000-0000-4000-8000-000000000001', '2026-10-01 12:00:00-06'
+);
+INSERT INTO public.product_lot_quality_samples (
+  id, product_lot_id, purpose, quantity, status, created_by, decided_by,
+  decided_at, destination, reason, created_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000019',
+  'fe000000-0000-4000-8000-000000000014', 'immediate_inspection', 2,
+  'direct_waste', 'f1000000-0000-4000-8000-000000000001',
+  'f1000000-0000-4000-8000-000000000001', '2026-10-20 15:00:00-06',
+  'direct_waste', 'Destructive monthly retention test', '2026-10-11 12:00:00-06'
+);
+INSERT INTO public.product_lot_quality_sample_dispositions (
+  id, sample_id, quantity, destination, return_authorized, reason,
+  idempotency_key, decided_by, decided_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000020',
+  'fe000000-0000-4000-8000-000000000019', 2, 'direct_waste', false,
+  'Destructive monthly retention test', 'fe000000-0000-4000-8000-000000000021',
+  'f1000000-0000-4000-8000-000000000001', '2026-10-20 15:00:00-06'
+);
+
+SELECT set_config('request.jwt.claim.sub', 'f1000000-0000-4000-8000-000000000001', true);
+SET LOCAL ROLE authenticated;
+
+DO $quality_retention_pending$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.get_quality_retention_monthly_indicator('2026-10-01') AS indicator
+    WHERE indicator.product_id = 'fe000000-0000-4000-8000-000000000010'
+      AND indicator.preparation_type_id = 'fe000000-0000-4000-8000-000000000001'
+      AND indicator.retained_quantity = 0
+      AND indicator.gross_production_quantity = 48
+      AND indicator.retention_percentage IS NULL
+      AND indicator.direct_quality_waste_quantity = 2
+      AND NOT indicator.month_closed
+  ) THEN
+    RAISE EXCEPTION 'monthly indicator did not show pending close, gross production, and separate Quality waste';
+  END IF;
+END;
+$quality_retention_pending$;
+
+RESET ROLE;
+
+INSERT INTO public.product_lot_freezing_operations (
+  id, product_lot_id, requested_quantity, reason, idempotency_key, started_by, started_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000022',
+  'fe000000-0000-4000-8000-000000000014', 48, 'Monthly retention fixture',
+  'fe000000-0000-4000-8000-000000000023',
+  'f1000000-0000-4000-8000-000000000001', '2026-10-10 13:00:00-06'
+);
+INSERT INTO public.product_lot_freezing_decisions (
+  id, operation_id, product_lot_id, quantity, destination, reason,
+  idempotency_key, decided_by, decided_at
+) VALUES (
+  'fe000000-0000-4000-8000-000000000024',
+  'fe000000-0000-4000-8000-000000000022',
+  'fe000000-0000-4000-8000-000000000014', 40, 'raw_frozen',
+  'All accepted pieces confirmed frozen',
+  'fe000000-0000-4000-8000-000000000025',
+  'f1000000-0000-4000-8000-000000000001', '2026-10-10 14:00:00-06'
+);
+
+INSERT INTO public.quality_retention_daily_closes (id, close_date, closed_by, closed_at)
+VALUES
+  ('fe000000-0000-4000-8000-000000000031', '2026-10-30', 'f1000000-0000-4000-8000-000000000001', '2026-10-30 23:00:00-06'),
+  ('fe000000-0000-4000-8000-000000000032', '2026-10-31', 'f1000000-0000-4000-8000-000000000001', '2026-10-31 23:00:00-06');
+INSERT INTO public.quality_retention_daily_close_items (daily_close_id, sample_id, quantity)
+VALUES
+  ('fe000000-0000-4000-8000-000000000031', 'fe000000-0000-4000-8000-000000000018', 3),
+  ('fe000000-0000-4000-8000-000000000032', 'fe000000-0000-4000-8000-000000000018', 3),
+  ('fe000000-0000-4000-8000-000000000031', 'fe000000-0000-4000-8000-000000000029', 2),
+  ('fe000000-0000-4000-8000-000000000032', 'fe000000-0000-4000-8000-000000000029', 2);
+
+SELECT set_config('request.jwt.claim.sub', 'f1000000-0000-4000-8000-000000000001', true);
+SET LOCAL ROLE authenticated;
+
+DO $quality_retention_closing$
+DECLARE
+  v_today uuid;
+  v_today_retry uuid;
+BEGIN
+  v_today := public.close_quality_retention_day(
+    (now() AT TIME ZONE 'America/Mexico_City')::date
+  );
+  v_today_retry := public.close_quality_retention_day(
+    (now() AT TIME ZONE 'America/Mexico_City')::date
+  );
+  IF v_today IS DISTINCT FROM v_today_retry
+    OR (SELECT count(*) FROM public.quality_retention_daily_close_items
+      WHERE daily_close_id = v_today
+        AND sample_id IN (
+          'fe000000-0000-4000-8000-000000000018',
+          'fe000000-0000-4000-8000-000000000029'
+        )) <> 2
+    OR (SELECT count(*) FROM public.quality_retention_daily_closes
+      WHERE close_date = (now() AT TIME ZONE 'America/Mexico_City')::date) <> 1 THEN
+    RAISE EXCEPTION 'daily close retry duplicated its snapshot or missed custodied samples';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.get_quality_retention_monthly_indicator('2026-10-01') AS indicator
+    WHERE indicator.product_id = 'fe000000-0000-4000-8000-000000000010'
+      AND indicator.preparation_type_id = 'fe000000-0000-4000-8000-000000000001'
+      AND indicator.retained_quantity = 3
+      AND indicator.gross_production_quantity = 48
+      AND indicator.retention_percentage = 6.25
+      AND indicator.direct_quality_waste_quantity = 2
+      AND indicator.month_closed
+  ) THEN
+    RAISE EXCEPTION 'monthly retention duplicated daily sample snapshots or misgrouped production/waste';
+  END IF;
+END;
+$quality_retention_closing$;
+
+RESET ROLE;
+
 SELECT set_config('request.jwt.claim.sub', 'f1000000-0000-4000-8000-000000000002', true);
 SET LOCAL ROLE authenticated;
 
@@ -1568,6 +1783,20 @@ BEGIN
       'fd000000-0000-4000-8000-000000000306'
     );
     RAISE EXCEPTION 'non-admin user decided a quality sample disposition';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+
+  BEGIN
+    PERFORM public.close_quality_retention_day('2026-10-31');
+    RAISE EXCEPTION 'non-admin user closed the Quality retention day';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+
+  BEGIN
+    PERFORM * FROM public.get_quality_retention_monthly_indicator('2026-10-01');
+    RAISE EXCEPTION 'non-admin user read the Quality retention indicator';
   EXCEPTION WHEN insufficient_privilege THEN
     NULL;
   END;

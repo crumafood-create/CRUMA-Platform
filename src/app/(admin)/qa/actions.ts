@@ -21,6 +21,7 @@ import {
   recordQualityInspection as persistQualityInspection,
   recordRawMaterialQualityInspection as persistRawMaterialQualityInspection,
 } from '@/modules/quality/application/quality-control-repository';
+import { closeQualityRetentionDay as persistQualityRetentionDailyClose } from '@/modules/quality/application/quality-retention-repository';
 import {
   buildFinishedProductNonconformanceDispositionRequest,
 } from '@/modules/production/application/finished-product-nonconformance-disposition-contract';
@@ -89,6 +90,24 @@ export async function decideProductLotQualitySampleDisposition(
   revalidatePath('/lots/storage-conditions');
   revalidatePath('/mobile/picking');
   redirect(`/qa/${request.qualityInspectionId}`);
+}
+
+export async function closeQualityRetentionDay(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.QUALITY_RELEASE_DECIDE,
+  );
+  const closeDate = formData.get('close_date')?.toString().trim() ?? '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(closeDate)) {
+    throw new Error('La fecha del cierre diario no es válida.');
+  }
+
+  await persistQualityRetentionDailyClose(supabase, closeDate);
+
+  revalidatePath('/qa/retention');
+  revalidatePath('/qa');
+  redirect(`/qa/retention?closed=${encodeURIComponent(closeDate)}`);
 }
 
 export async function decideQualityRelease(

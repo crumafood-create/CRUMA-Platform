@@ -16,6 +16,8 @@ SELECT set_config('test.cut_key', gen_random_uuid()::text, true);
 SELECT set_config('test.grate_key', gen_random_uuid()::text, true);
 SELECT set_config('test.rounding_source_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.rounding_cut_key', gen_random_uuid()::text, true);
+SELECT set_config('test.authorized_tiny_source_lot_id', gen_random_uuid()::text, true);
+SELECT set_config('test.authorized_tiny_cut_key', gen_random_uuid()::text, true);
 SELECT set_config('test.tiny_source_material_id', gen_random_uuid()::text, true);
 SELECT set_config('test.tiny_source_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.tiny_cut_key', gen_random_uuid()::text, true);
@@ -333,12 +335,20 @@ END;
 $test$;
 
 -- PostgreSQL accepts the same smallest weight increment as the form: 0.0001 kg.
+INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, quantity, unit_cost, status, inventory_location_id)
+VALUES (current_setting('test.authorized_tiny_source_lot_id')::uuid, current_setting('test.source_material_id')::uuid,
+  'CHEESE-AUTHORIZED-TINY-' || left(current_setting('test.admin_id'), 8), 0.0003, 20, 'available', current_setting('test.location_id')::uuid);
+UPDATE public.raw_materials SET current_stock = 0.0003
+WHERE id = current_setting('test.source_material_id')::uuid;
+INSERT INTO public.inventory_movements (item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)
+VALUES ('raw_material', current_setting('test.source_material_id')::uuid, 'entry', 0.0003, 0, 0.0003,
+  'cheese_preparation_test_seed', current_setting('test.authorized_tiny_source_lot_id')::uuid, 'Authorized cheddar small-weight test balance');
 SET LOCAL ROLE authenticated;
 SELECT set_config('test.tiny_cut_id', public.record_cheese_cut(
-  current_setting('test.tiny_source_lot_id')::uuid, 'party',
+  current_setting('test.authorized_tiny_source_lot_id')::uuid, 'party',
   current_setting('test.party_material_id')::uuid, current_setting('test.trim_material_id')::uuid,
   0.0003, 1, 0.0001, 0.0001, 0.0001,
-  current_setting('test.tiny_cut_key')::uuid,
+  current_setting('test.authorized_tiny_cut_key')::uuid,
   'Peso mínimo de 0.0001 kg por partida'
 )::text, true);
 RESET ROLE;
@@ -349,7 +359,11 @@ BEGIN
   SELECT * INTO v_cut FROM public.cheese_preparation_operations WHERE id = current_setting('test.tiny_cut_id')::uuid;
   IF v_cut.source_quantity <> 0.0003 OR v_cut.output_weight_kg <> 0.0001
      OR v_cut.secondary_quantity <> 0.0001 OR v_cut.waste_quantity <> 0.0001
-     OR v_cut.unexplained_quantity <> 0 THEN
+     OR v_cut.unexplained_quantity <> 0
+     OR v_cut.source_material_id <> current_setting('test.source_material_id')::uuid
+     OR (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.authorized_tiny_source_lot_id')::uuid) <> 0
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = current_setting('test.authorized_tiny_source_lot_id')::uuid) <> 0
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.source_material_id')::uuid) <> 0 THEN
     RAISE EXCEPTION 'The SQL RPC rejected or changed a valid 0.0001 kg increment.';
   END IF;
 END;

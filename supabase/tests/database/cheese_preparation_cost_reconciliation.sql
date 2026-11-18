@@ -41,7 +41,7 @@ VALUES ('raw_material', current_setting('test.source_material_id')::uuid, 'entry
 
 DO $test$
 BEGIN
-  IF NOT has_table_privilege('anon', 'public.cheese_preparation_operations', 'SELECT')
+  IF has_table_privilege('anon', 'public.cheese_preparation_operations', 'SELECT')
      OR has_table_privilege('anon', 'public.cheese_preparation_operations', 'INSERT')
      OR NOT has_table_privilege('authenticated', 'public.cheese_preparation_operations', 'SELECT')
      OR has_table_privilege('authenticated', 'public.cheese_preparation_operations', 'INSERT') THEN

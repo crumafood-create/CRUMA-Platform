@@ -37,13 +37,14 @@ ON CONFLICT (code) DO UPDATE SET name = excluded.name, is_active = true, deleted
 UPDATE public.raw_materials
 SET internal_code = 'CHEESE-TEST-EXISTING-' || id::text
 WHERE internal_code IN (
+  'MP-QSO-CHED-FUER',
   'MP-PAL-QUESO-PARTY', 'MP-PAL-QUESO-TRAD',
   'MP-QSO-RECORTE', 'MP-QSO-RALLADO'
 );
 
 INSERT INTO public.raw_materials (id, slug, name, internal_code, unit_of_measure_id, current_stock, average_cost, last_cost)
 VALUES
-  (current_setting('test.source_material_id')::uuid, 'cheese-source-' || left(current_setting('test.admin_id'), 8), 'Queso de prueba', 'CHEESE-SOURCE-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0.907, 20, 20),
+  (current_setting('test.source_material_id')::uuid, 'cheese-source-' || left(current_setting('test.admin_id'), 8), 'Queso de prueba con nombre distinto', 'MP-QSO-CHED-FUER', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0.907, 20, 20),
   (current_setting('test.party_material_id')::uuid, 'cheese-party-' || left(current_setting('test.admin_id'), 8), 'Palitos Party de prueba', 'MP-PAL-QUESO-PARTY', (SELECT id FROM public.units_of_measure WHERE code = 'pza'), 0, 0, 0),
   (current_setting('test.traditional_material_id')::uuid, 'cheese-trad-' || left(current_setting('test.admin_id'), 8), 'Palitos tradicionales de prueba', 'MP-PAL-QUESO-TRAD', (SELECT id FROM public.units_of_measure WHERE code = 'pza'), 0, 0, 0),
   (current_setting('test.trim_material_id')::uuid, 'cheese-trim-' || left(current_setting('test.admin_id'), 8), 'Recorte de queso de prueba', 'MP-QSO-RECORTE', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
@@ -92,12 +93,18 @@ DECLARE
   v_traditional_stock numeric(14,4);
   v_trim_stock numeric(14,4);
   v_cheese_movement_count bigint;
+  v_operation_count bigint;
+  v_lot_count bigint;
+  v_movement_count bigint;
 BEGIN
   SELECT current_stock INTO v_source_stock FROM public.raw_materials WHERE id = current_setting('test.source_material_id')::uuid;
   SELECT current_stock INTO v_party_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid;
   SELECT current_stock INTO v_traditional_stock FROM public.raw_materials WHERE id = current_setting('test.traditional_material_id')::uuid;
   SELECT current_stock INTO v_trim_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid;
   SELECT count(*) INTO v_cheese_movement_count FROM public.inventory_movements WHERE reference_type = 'cheese_preparation';
+  SELECT count(*) INTO v_operation_count FROM public.cheese_preparation_operations;
+  SELECT count(*) INTO v_lot_count FROM public.raw_material_lots;
+  SELECT count(*) INTO v_movement_count FROM public.inventory_movements;
   BEGIN
     PERFORM public.record_cheese_cut(
       current_setting('test.source_lot_id')::uuid, 'party',
@@ -105,6 +112,15 @@ BEGIN
       0.907, 65, 0.650, 0.245, 0.012, gen_random_uuid(), 'Debe rechazar Party acreditado como tradicional'
     );
     RAISE EXCEPTION 'Party presentation accepted the traditional stick material.';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    PERFORM public.record_cheese_cut(
+      current_setting('test.tiny_source_lot_id')::uuid, 'party',
+      current_setting('test.party_material_id')::uuid, current_setting('test.trim_material_id')::uuid,
+      0.0003, 1, 0.0002, 0.0001, 0, gen_random_uuid(), 'Debe rechazar materia prima kg que no es queso'
+    );
+    RAISE EXCEPTION 'Cheese cut accepted a kg raw material that is not the authorized cheese.';
   EXCEPTION WHEN check_violation THEN NULL;
   END;
   BEGIN
@@ -136,8 +152,14 @@ BEGIN
   END;
   IF EXISTS (SELECT 1 FROM public.cheese_preparation_operations WHERE source_lot_id = current_setting('test.source_lot_id')::uuid)
      OR EXISTS (SELECT 1 FROM public.cheese_preparation_operations WHERE source_lot_id = current_setting('test.expired_source_lot_id')::uuid)
+     OR EXISTS (SELECT 1 FROM public.cheese_preparation_operations WHERE source_lot_id = current_setting('test.tiny_source_lot_id')::uuid)
      OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') IS DISTINCT FROM v_cheese_movement_count
+     OR (SELECT count(*) FROM public.cheese_preparation_operations) IS DISTINCT FROM v_operation_count
+     OR (SELECT count(*) FROM public.raw_material_lots) IS DISTINCT FROM v_lot_count
+     OR (SELECT count(*) FROM public.inventory_movements) IS DISTINCT FROM v_movement_count
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.source_material_id')::uuid) IS DISTINCT FROM v_source_stock
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.tiny_source_material_id')::uuid) IS DISTINCT FROM 0.0003
+     OR (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.tiny_source_lot_id')::uuid) IS DISTINCT FROM 0.0003
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) IS DISTINCT FROM v_party_stock
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.traditional_material_id')::uuid) IS DISTINCT FROM v_traditional_stock
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) IS DISTINCT FROM v_trim_stock

@@ -144,7 +144,7 @@ BEGIN
   IF (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 0
      OR (SELECT status FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 'depleted'
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
-     OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
+     OR (SELECT current_stock * average_cost FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
      OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_grate.id) <> 2
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0.237
      OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 20.0000 THEN

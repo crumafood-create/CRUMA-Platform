@@ -208,9 +208,14 @@ BEGIN
     GROUP BY lot.product_id, product.preparation_type_id
   ),
   groups AS (
-    SELECT product_id, preparation_type_id FROM gross_production
-    UNION SELECT product_id, preparation_type_id FROM retained_samples
-    UNION SELECT product_id, preparation_type_id FROM quality_waste
+    SELECT gross_production.product_id, gross_production.preparation_type_id
+    FROM gross_production
+    UNION
+    SELECT retained_samples.product_id, retained_samples.preparation_type_id
+    FROM retained_samples
+    UNION
+    SELECT quality_waste.product_id, quality_waste.preparation_type_id
+    FROM quality_waste
   )
   SELECT groups.product_id, product.name, groups.preparation_type_id,
     preparation.name, coalesce(retained_samples.quantity, 0),

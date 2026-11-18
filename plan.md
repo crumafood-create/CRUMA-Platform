@@ -545,10 +545,73 @@ La regresión SQL en `finished_product_quality_release.sql` prepara un producto/
 
 **Recorrido manual de retención en desarrollo — 2026-11-18:** en `/qa/retention`, cerrar el día 2026-11-18 registró 1 muestra de seguridad con 3 piezas. Se repitió la misma acción con la fecha sin cambiar; la interfaz mantuvo una sola fila, el mismo registro y las 3 piezas, confirmando idempotencia. Al consultar noviembre de 2026, ambas filas mostraron `Pendiente de cierre` y `Falta el cierre del último día`: Masa estándar con producción bruta 3 unidades y 0 de merma directa; Tequeños Party Queso Crudos · Crudo con 48 piezas de producción bruta y 1 pieza de merma directa. La merma se muestra separada del saldo de custodia. No se cerró una fecha futura ni se alteraron cierres históricos. La exclusión de muestras de lotes producidos en otro mes quedó verificada por la regresión SQL de CI #4255.
 
-Este recorrido completa la comprobación visual que estaba pendiente en la nota previa. El PR #134 puede pasar a listo para revisión una vez que CI confirme el commit documental con esta evidencia.
+Este recorrido completó la comprobación visual que estaba pendiente en la nota previa. Tras pasar CI #4257, el PR #134 quedó listo para revisión.
 
 ### Cierre del ciclo diario y retención mensual
 
 El recorrido manual y CI #4257 completan este ciclo de la historia #6. CI #4257 pasó para `54542a0f`: `database` reconstruyó la base limpia, aplicó migraciones y pasó `db lint`, regresión SQL y tipos generados; `build` y `storybook` también pasaron. La pantalla `/qa/retention` confirmó cierre diario idempotente (18/11/2026: 1 muestra, 3 piezas) y el indicador de noviembre pendiente hasta el cierre del último día. Mostró la merma por separado: 1 pieza para Tequeños Party Queso Crudos · Crudo y 0 para Masa estándar. La regresión SQL confirmó además que una muestra de lote producido en otro mes no contamina el indicador. La migración de retención está aplicada y registrada únicamente en el proyecto de desarrollo `poglpqvmbrfcvtuspvtx`.
 
-**Estado de la historia #6:** los ciclos aprobados de apartado, inspección inmediata, disposición, cierre diario y consulta mensual están implementados y verificados; el PR #134 queda pendiente de revisión y fusión. No marcar la historia completada en `backlog.md` hasta confirmar la fusión.
+**Estado de la historia #6:** completada. El PR #134 se fusionó en `main` como `c248e1de` después de pasar CI #4258; la historia se marcó completada en `backlog.md`. Los ciclos aprobados de apartado, inspección inmediata, disposición, cierre diario y consulta mensual están implementados y verificados.
+
+## Historia #7: preparación de queso y existencias consumibles
+
+**Estado:** historia activa en `backlog.md`; primer ciclo implementado y validado con CI y recorrido manual en desarrollo. El PR #135 sigue en borrador, pendiente de revisión. **Módulos propietarios:** Production registra las operaciones de preparación y sus rendimientos; Inventory conserva los saldos, lotes y movimientos.
+
+### Reglas acordadas y alcance del primer ciclo
+
+Palitos de queso Party, palitos tradicionales y queso rallado son existencias consumibles distintas, cada una vinculada con los lotes de origen. En los palitos se registra el conteo obtenido y el peso total real; el queso de entrada, el recorte y el rallado se miden en kg. El primer ciclo permite elegir el tamaño de palito (Party o tradicional) y rallar el recorte; el caso de aceptación usa Party. El corte registra su merma separada del recorte aprovechable; el rallado consume el recorte y registra por separado el rallado obtenido y su merma.
+
+### Criterios propuestos para el primer ciclo
+
+- **Dado** un lote con 0.907 kg de queso y el tamaño Party seleccionado, **cuando** el operador registra el corte, **entonces** se descuentan 0.907 kg del lote de origen y quedan 65 palitos con peso conjunto real de 0.650 kg, 0.245 kg de recorte aprovechable y 0.012 kg de merma de corte. Palitos y recorte son existencias distintas, vinculadas al lote de queso.
+- **Dado** el recorte de 0.245 kg del corte anterior, **cuando** el operador lo ralla, **entonces** el recorte queda en cero y se registran 0.237 kg de queso rallado y 0.008 kg de merma de rallado. El rallado queda disponible como existencia separada y conserva la trazabilidad hasta el lote de queso original.
+- **Dado** un registro cuyo peso de salida, recorte y merma no concilia con la entrada, o un reintento/sobreconsumo, **cuando** se guarda la operación, **entonces** la diferencia queda visible sin asignarse automáticamente a merma, el reintento no duplica saldos ni movimientos y el exceso se rechaza sin escrituras parciales.
+
+### Pruebas propuestas para el primer ciclo
+
+- Corte con el caso de 907 g: 650 g en 65 palitos Party, 245 g de recorte, 12 g de merma. Verificar total de 907 g, dos existencias de salida y vínculo al lote de origen.
+- Rallado de los 245 g de recorte: 237 g rallados y 8 g de merma. Verificar saldo de recorte en cero, mermas de corte/rallado separadas y trazabilidad queso de origen → recorte → rallado.
+- Diferencia no explicada: con 902 g entre salidas, recorte y merma de corte, mostrar 5 g para revisión.
+- Reintento idempotente y exceso sobre saldo: no duplicar ni dejar movimientos parciales.
+
+### Plan propuesto
+
+- Registrar una operación de corte sobre un lote de queso y separar palitos del tamaño elegido, recorte aprovechable y merma medida.
+- Registrar el rallado como otra operación que consume recorte y produce queso rallado y merma separados.
+- Mantener cantidades y vínculos de origen consistentes en una sola escritura de inventario por operación.
+- Mostrar el detalle de salidas y diferencias para revisión del jefe de producción.
+- Verificar entradas, salidas, merma, trazabilidad, idempotencia y rechazo por saldo en pruebas automatizadas y SQL sobre una reconstrucción limpia.
+
+Fuera del primer ciclo: consumo desde recetas y órdenes de producción; jamón, chocolate, pizza y rellenos de empanada; congelación del rallado.
+
+### Ciclo posterior propuesto: consumo por receta y orden
+
+La receta debe referenciar el tipo exacto de existencia consumible; la orden debe escalarlo y consumir solo de lotes elegibles de ese tipo, con trazabilidad hasta la operación de preparación y el queso de origen. Pruebas propuestas: una receta Party no puede surtirse con palitos tradicionales ni rallado; una receta tradicional no puede usar palitos Party; una receta de empanada puede consumir queso rallado en kg; el plan y la orden respetan la unidad del ingrediente; se rechaza el saldo insuficiente sin escritura parcial y dos órdenes concurrentes no consumen más que el saldo. Probar también FEFO entre lotes de la misma existencia preparada.
+
+### Brechas y decisión pendiente para el ciclo de consumo
+
+`recipe_items` ya identifica una materia prima concreta o un producto intermedio y guarda una cantidad numérica; la orden escala y consume esa referencia usando sus lotes. El esquema actual no representa la operación que transforma un lote de queso en tres existencias distintas ni conserva el enlace de origen entre esas salidas. Además, el inventario y consumo de materia prima usan una sola unidad base por existencia, mientras que el palito tiene conteo y peso real.
+
+**Unidad acordada para el ciclo posterior:** las recetas/órdenes consumirán palitos Party y tradicionales por pieza, y queso rallado en kg. La receta Party debe seleccionar palito Party; una orden de 50 Party requiere 50 palitos Party aunque haya palitos tradicionales disponibles. Al habilitar ese ciclo, actualizar explícitamente las recetas activas a la unidad y presentación correctas; conservar sin cambios las cantidades y unidades guardadas en órdenes históricas. Las pruebas cubrirán la selección exacta, el faltante Party sin tocar otros saldos, el FEFO por presentación y la preservación histórica.
+
+**Costeo acordado para el primer ciclo:** cada salida recibe el costo por kg del lote consumido multiplicado por su peso real; el costo de la merma se registra por separado en cada operación. El costo por palito es el costo total de su peso real dividido entre las piezas obtenidas; el recorte conserva el costo de su peso hasta el rallado. La regresión monetaria usa costo de origen de $20.0000/kg: los 0.907 kg valen $18.1400, distribuidos entre 0.650 kg de palitos ($13.0000; $0.2000 por palito), 0.237 kg de rallado ($4.7400), merma de corte 0.012 kg ($0.2400) y merma de rallado 0.008 kg ($0.1600). El costo y saldo del recorte de 0.245 kg ($4.9000) quedan en cero al convertirse. El total final concilia exactamente en $18.1400.
+
+**Implementación del primer ciclo:** Production registra corte y rallado como operaciones atómicas; `raw_material_lots` y `raw_materials.current_stock` continúan como fuentes de verdad para los saldos. Cada operación crea lote(s) de salida con el costo unitario según el peso medido y registra movimientos enlazados al registro de preparación. La tabla de operaciones conserva costos de entrada, salidas, merma y cualquier peso/costo sin explicar, para conciliar y rastrear el recorte hasta el rallado. Las llamadas tienen clave idempotente y bloquean el lote y las materias primas afectadas para evitar doble consumo y actualizaciones perdidas.
+
+La pantalla `/cheese-preparation` se enlaza desde Producción. Para operar deben existir en Materias Primas las existencias de palitos Party (pza), palitos tradicionales (pza), recorte de queso para rallar (kg) y queso rallado (kg); el formulario filtra por unidad y por nombre de la preparación, y el servidor vuelve a validar las unidades. No se sembrarán materiales ni inventario automáticamente. El uso de esas existencias en recetas/órdenes sigue fuera de este ciclo.
+
+La regresión SQL `cheese_preparation_cost_reconciliation.sql` comprueba corte Party desde 0.907 kg a $20/kg, costo de $13.0000 para 65 palitos, $4.9000 al recorte y $0.2400 de merma de corte; luego consume el recorte y comprueba $4.7400 para 0.237 kg rallados y $0.1600 de merma de rallado. La conciliación final es $18.1400, con saldo y valor de inventario del recorte en cero. Repite ambos RPC con las mismas claves y confirma que no se duplican operaciones, costos ni movimientos. CI #4263 reconstruyó una base limpia, aplicó `20261126000000_prepare_cheese_sticks_and_grate_trim.sql`, pasó la regresión SQL y `db:types:check` (`DATABASE_TYPES_CURRENT=OK`); `build` y `storybook` también pasaron para `d37681472ad28e0c015b22f1a317d700583a54a2`. `database.generated.ts` contiene el archivo exacto generado por CI. [Ejecución CI #4263](https://github.com/crumafood-create/CRUMA-Platform/actions/runs/44345683553).
+
+**Recorrido manual en Supabase de desarrollo — 2026-11-18:** proyecto `poglpqvmbrfcvtuspvtx`; se aplicó y registró la migración `20261126000000_prepare_cheese_sticks_and_grate_trim.sql`. Se crearon las existencias preparadas con unidades base Party/tradicional en piezas y recorte/rallado en kg. Orden de prueba `PO-20261118-47B8BB`: compra directa de 0.907 kg de queso cheddar fuerte a $130/kg, total $117.91 sin flete. El lote `MP07-MANUAL-QSO-20261118-A` se recibió en cuarentena y se liberó tras una inspección aprobada de 0.1 kg. La inspección registró integridad del empaque; el valor esperado quedó capturado como `Empaque íntegro y cerrad` (error tipográfico aceptado por el usuario para esta prueba), observado `Empaque cerrado`.
+
+El corte Party consumió los 0.907 kg ($117.91) y produjo 65 palitos de 0.650 kg y $84.50 (`CHEESE-CUT-73d64f595fbe42c8ba1e8dd89882b87c`), 0.245 kg de recorte con $31.85 (`CHEESE-TRIM-73d64f595fbe42c8ba1e8dd89882b87c`) y 0.012 kg de merma con $1.56. El rallado consumió el recorte completo y produjo 0.237 kg de queso rallado con $30.81 (`CHEESE-GRATED-afce1ac796234228bb205d9b731bee83`) y 0.008 kg de merma con $1.04. Los costos conciliaron en $117.91. La consulta de Materias Primas mostró: queso de origen 0 kg; palitos Party 65 pzas a $1.30/pza; recorte 0 kg (valor de inventario $0; conserva $130/kg como costo unitario histórico); queso rallado 0.237 kg a $130/kg. La trazabilidad queso de origen → recorte → rallado quedó visible en el historial de preparación.
+
+**Siguiente ciclo de la historia #7:** integrar estas existencias exactas en recetas y órdenes de producción, con consumo en piezas para palitos Party/tradicionales y en kg para queso rallado, selección de lotes por FEFO dentro del tipo de existencia, rechazo por faltante sin tocar otras presentaciones y preservación de las cantidades/unidades de órdenes históricas. El PR #135 permanece en borrador; el ciclo de consumo queda pendiente.
+
+**Verificación local — 2026-11-18:** pasaron las 7 pruebas unitarias focales, ESLint de los archivos del recorrido, `tsc --noEmit` y `git diff --check`. Docker no tenía activo el daemon local; la reconstrucción y regresión SQL se validaron en CI #4263. `database.generated.ts` se recuperó del artefacto exacto generado por CI y el último commit pasó su verificación de tipos.
+
+**Correcciones de invariantes de preparación — 2026-11-18:** en el proyecto Supabase de desarrollo `poglpqvmbrfcvtuspvtx` se confirmó el destino enlazado y el simulacro enumeró únicamente `20261127000000_correct_cheese_preparation_invariants.sql`. Se aplicó esa migración y `migration list` confirmó la versión en remoto. La regresión `cheese_preparation_cost_reconciliation.sql` se ejecutó con `db query --linked`; el script corre en una transacción y termina con `ROLLBACK`.
+
+La regresión verificó que el costo de entrada de 0.907 kg a $129.03/kg (`$117.0302`) concilia con las salidas redondeadas a cuatro decimales: palitos Party `$83.8694`, recorte `$31.6124` y merma de corte `$1.5484`, sin diferencia negativa ni costo sin explicar. También rechazó ambos cruces de presentación (Party acreditado a tradicionales y tradicional acreditado a Party) y comprobó que fallaran sin cambiar existencias, operaciones o movimientos. Aceptó los pesos representables en pasos de 0.0001 kg. Después del rollback, una consulta de solo lectura confirmó que las existencias de desarrollo seguían en Party 65 pzas, tradicionales 0 pzas, recorte 0 kg y rallado 0.237 kg.
+
+La regresión se ajustó para ejecutarse de forma repetible sobre el catálogo y el historial ya existentes en desarrollo: renombra materiales canónicos solo dentro de la transacción y compara conteos de movimientos contra la línea base, sin modificar datos persistentes. El SQL modificado y esta evidencia documental deben pasar CI en el último commit antes de considerar listo el PR #135, que permanece en borrador.

@@ -1,5 +1,8 @@
 BEGIN;
 
+SELECT set_config('test.initial_cheese_movement_count', (
+  SELECT count(*)::text FROM public.inventory_movements WHERE reference_type = 'cheese_preparation'
+), true);
 SELECT set_config('test.admin_id', gen_random_uuid()::text, true);
 SELECT set_config('test.source_material_id', gen_random_uuid()::text, true);
 SELECT set_config('test.party_material_id', gen_random_uuid()::text, true);
@@ -27,6 +30,12 @@ VALUES
   (gen_random_uuid(), 'Kilogram test', 'kg'),
   (gen_random_uuid(), 'Piece test', 'pza')
 ON CONFLICT (code) DO UPDATE SET name = excluded.name, is_active = true, deleted_at = null;
+
+-- Keep this fixture isolated when it is also run against a development catalog
+-- that already contains the canonical Party and traditional materials.
+UPDATE public.raw_materials
+SET internal_code = 'CHEESE-TEST-EXISTING-' || id::text
+WHERE internal_code IN ('MP-PAL-QUESO-PARTY', 'MP-PAL-QUESO-TRAD');
 
 INSERT INTO public.raw_materials (id, slug, name, internal_code, unit_of_measure_id, current_stock, average_cost, last_cost)
 VALUES
@@ -69,7 +78,18 @@ $test$;
 SELECT set_config('request.jwt.claim.sub', current_setting('test.admin_id'), true);
 SET LOCAL ROLE authenticated;
 DO $test$
+DECLARE
+  v_source_stock numeric(14,4);
+  v_party_stock numeric(14,4);
+  v_traditional_stock numeric(14,4);
+  v_trim_stock numeric(14,4);
+  v_cheese_movement_count bigint;
 BEGIN
+  SELECT current_stock INTO v_source_stock FROM public.raw_materials WHERE id = current_setting('test.source_material_id')::uuid;
+  SELECT current_stock INTO v_party_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid;
+  SELECT current_stock INTO v_traditional_stock FROM public.raw_materials WHERE id = current_setting('test.traditional_material_id')::uuid;
+  SELECT current_stock INTO v_trim_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid;
+  SELECT count(*) INTO v_cheese_movement_count FROM public.inventory_movements WHERE reference_type = 'cheese_preparation';
   BEGIN
     PERFORM public.record_cheese_cut(
       current_setting('test.source_lot_id')::uuid, 'party',
@@ -89,7 +109,11 @@ BEGIN
   EXCEPTION WHEN check_violation THEN NULL;
   END;
   IF EXISTS (SELECT 1 FROM public.cheese_preparation_operations WHERE source_lot_id = current_setting('test.source_lot_id')::uuid)
-     OR EXISTS (SELECT 1 FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') THEN
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') IS DISTINCT FROM v_cheese_movement_count
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.source_material_id')::uuid) IS DISTINCT FROM v_source_stock
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) IS DISTINCT FROM v_party_stock
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.traditional_material_id')::uuid) IS DISTINCT FROM v_traditional_stock
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) IS DISTINCT FROM v_trim_stock THEN
     RAISE EXCEPTION 'Rejected presentation crossings wrote partial operations or movements.';
   END IF;
 END;
@@ -194,7 +218,8 @@ BEGIN
   END IF;
   IF (SELECT count(*) FROM public.cheese_preparation_operations WHERE idempotency_key IN
       (current_setting('test.cut_key')::uuid, current_setting('test.grate_key')::uuid)) <> 2
-     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') <> 5 THEN
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation')
+       <> current_setting('test.initial_cheese_movement_count')::bigint + 5 THEN
     RAISE EXCEPTION 'Retry duplicated cheese preparation costs or inventory movements.';
   END IF;
 END;

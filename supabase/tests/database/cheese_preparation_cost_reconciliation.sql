@@ -10,6 +10,11 @@ SELECT set_config('test.location_id', gen_random_uuid()::text, true);
 SELECT set_config('test.source_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.cut_key', gen_random_uuid()::text, true);
 SELECT set_config('test.grate_key', gen_random_uuid()::text, true);
+SELECT set_config('test.rounding_source_lot_id', gen_random_uuid()::text, true);
+SELECT set_config('test.rounding_cut_key', gen_random_uuid()::text, true);
+SELECT set_config('test.tiny_source_material_id', gen_random_uuid()::text, true);
+SELECT set_config('test.tiny_source_lot_id', gen_random_uuid()::text, true);
+SELECT set_config('test.tiny_cut_key', gen_random_uuid()::text, true);
 
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
 VALUES (current_setting('test.admin_id')::uuid, 'authenticated', 'authenticated',
@@ -23,13 +28,14 @@ VALUES
   (gen_random_uuid(), 'Piece test', 'pza')
 ON CONFLICT (code) DO UPDATE SET name = excluded.name, is_active = true, deleted_at = null;
 
-INSERT INTO public.raw_materials (id, slug, name, unit_of_measure_id, current_stock, average_cost, last_cost)
+INSERT INTO public.raw_materials (id, slug, name, internal_code, unit_of_measure_id, current_stock, average_cost, last_cost)
 VALUES
-  (current_setting('test.source_material_id')::uuid, 'cheese-source-' || left(current_setting('test.admin_id'), 8), 'Queso de prueba', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0.907, 20, 20),
-  (current_setting('test.party_material_id')::uuid, 'cheese-party-' || left(current_setting('test.admin_id'), 8), 'Palitos Party de prueba', (SELECT id FROM public.units_of_measure WHERE code = 'pza'), 0, 0, 0),
-  (current_setting('test.traditional_material_id')::uuid, 'cheese-trad-' || left(current_setting('test.admin_id'), 8), 'Palitos tradicionales de prueba', (SELECT id FROM public.units_of_measure WHERE code = 'pza'), 0, 0, 0),
-  (current_setting('test.trim_material_id')::uuid, 'cheese-trim-' || left(current_setting('test.admin_id'), 8), 'Recorte de queso de prueba', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
-  (current_setting('test.grated_material_id')::uuid, 'cheese-grated-' || left(current_setting('test.admin_id'), 8), 'Queso rallado de prueba', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0);
+  (current_setting('test.source_material_id')::uuid, 'cheese-source-' || left(current_setting('test.admin_id'), 8), 'Queso de prueba', 'CHEESE-SOURCE-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0.907, 20, 20),
+  (current_setting('test.party_material_id')::uuid, 'cheese-party-' || left(current_setting('test.admin_id'), 8), 'Palitos Party de prueba', 'MP-PAL-QUESO-PARTY', (SELECT id FROM public.units_of_measure WHERE code = 'pza'), 0, 0, 0),
+  (current_setting('test.traditional_material_id')::uuid, 'cheese-trad-' || left(current_setting('test.admin_id'), 8), 'Palitos tradicionales de prueba', 'MP-PAL-QUESO-TRAD', (SELECT id FROM public.units_of_measure WHERE code = 'pza'), 0, 0, 0),
+  (current_setting('test.trim_material_id')::uuid, 'cheese-trim-' || left(current_setting('test.admin_id'), 8), 'Recorte de queso de prueba', 'CHEESE-TRIM-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
+  (current_setting('test.grated_material_id')::uuid, 'cheese-grated-' || left(current_setting('test.admin_id'), 8), 'Queso rallado de prueba', 'CHEESE-GRATED-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
+  (current_setting('test.tiny_source_material_id')::uuid, 'cheese-tiny-source-' || left(current_setting('test.admin_id'), 8), 'Queso mínimo de prueba', 'CHEESE-TINY-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0.0003, 20, 20);
 INSERT INTO public.inventory_locations (id, slug, name)
 VALUES (current_setting('test.location_id')::uuid, 'cheese-prep-' || left(current_setting('test.admin_id'), 8), 'Cheese preparation test location');
 INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, quantity, unit_cost, status, inventory_location_id)
@@ -38,6 +44,12 @@ VALUES (current_setting('test.source_lot_id')::uuid, current_setting('test.sourc
 INSERT INTO public.inventory_movements (item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)
 VALUES ('raw_material', current_setting('test.source_material_id')::uuid, 'entry', 0.907, 0, 0.907,
   'cheese_preparation_test_seed', current_setting('test.source_lot_id')::uuid, 'Test-only opening balance');
+INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, quantity, unit_cost, status, inventory_location_id)
+VALUES (current_setting('test.tiny_source_lot_id')::uuid, current_setting('test.tiny_source_material_id')::uuid,
+  'CHEESE-TINY-' || left(current_setting('test.admin_id'), 8), 0.0003, 20, 'available', current_setting('test.location_id')::uuid);
+INSERT INTO public.inventory_movements (item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)
+VALUES ('raw_material', current_setting('test.tiny_source_material_id')::uuid, 'entry', 0.0003, 0, 0.0003,
+  'cheese_preparation_test_seed', current_setting('test.tiny_source_lot_id')::uuid, 'Smallest supported weight balance');
 
 DO $test$
 BEGIN
@@ -56,6 +68,32 @@ $test$;
 
 SELECT set_config('request.jwt.claim.sub', current_setting('test.admin_id'), true);
 SET LOCAL ROLE authenticated;
+DO $test$
+BEGIN
+  BEGIN
+    PERFORM public.record_cheese_cut(
+      current_setting('test.source_lot_id')::uuid, 'party',
+      current_setting('test.traditional_material_id')::uuid, current_setting('test.trim_material_id')::uuid,
+      0.907, 65, 0.650, 0.245, 0.012, gen_random_uuid(), 'Debe rechazar Party acreditado como tradicional'
+    );
+    RAISE EXCEPTION 'Party presentation accepted the traditional stick material.';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    PERFORM public.record_cheese_cut(
+      current_setting('test.source_lot_id')::uuid, 'traditional',
+      current_setting('test.party_material_id')::uuid, current_setting('test.trim_material_id')::uuid,
+      0.907, 65, 0.650, 0.245, 0.012, gen_random_uuid(), 'Debe rechazar tradicional acreditado como Party'
+    );
+    RAISE EXCEPTION 'Traditional presentation accepted the Party stick material.';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  IF EXISTS (SELECT 1 FROM public.cheese_preparation_operations WHERE source_lot_id = current_setting('test.source_lot_id')::uuid)
+     OR EXISTS (SELECT 1 FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') THEN
+    RAISE EXCEPTION 'Rejected presentation crossings wrote partial operations or movements.';
+  END IF;
+END;
+$test$;
 SELECT set_config('test.cut_id', public.record_cheese_cut(
   current_setting('test.source_lot_id')::uuid,
   'party',
@@ -158,6 +196,71 @@ BEGIN
       (current_setting('test.cut_key')::uuid, current_setting('test.grate_key')::uuid)) <> 2
      OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation') <> 5 THEN
     RAISE EXCEPTION 'Retry duplicated cheese preparation costs or inventory movements.';
+  END IF;
+END;
+$test$;
+
+-- PostgreSQL accepts the same smallest weight increment as the form: 0.0001 kg.
+SET LOCAL ROLE authenticated;
+SELECT set_config('test.tiny_cut_id', public.record_cheese_cut(
+  current_setting('test.tiny_source_lot_id')::uuid, 'party',
+  current_setting('test.party_material_id')::uuid, current_setting('test.trim_material_id')::uuid,
+  0.0003, 1, 0.0001, 0.0001, 0.0001,
+  current_setting('test.tiny_cut_key')::uuid,
+  'Peso mínimo de 0.0001 kg por partida'
+)::text, true);
+RESET ROLE;
+DO $test$
+DECLARE
+  v_cut public.cheese_preparation_operations%ROWTYPE;
+BEGIN
+  SELECT * INTO v_cut FROM public.cheese_preparation_operations WHERE id = current_setting('test.tiny_cut_id')::uuid;
+  IF v_cut.source_quantity <> 0.0003 OR v_cut.output_weight_kg <> 0.0001
+     OR v_cut.secondary_quantity <> 0.0001 OR v_cut.waste_quantity <> 0.0001
+     OR v_cut.unexplained_quantity <> 0 THEN
+    RAISE EXCEPTION 'The SQL RPC rejected or changed a valid 0.0001 kg increment.';
+  END IF;
+END;
+$test$;
+
+-- At $129.03/kg, individually rounded cut partitions exceed the rounded input by $0.0001.
+INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, quantity, unit_cost, status, inventory_location_id)
+VALUES (current_setting('test.rounding_source_lot_id')::uuid, current_setting('test.source_material_id')::uuid,
+  'CHEESE-ROUNDING-' || left(current_setting('test.admin_id'), 8), 0.907, 129.03, 'available', current_setting('test.location_id')::uuid);
+UPDATE public.raw_materials SET current_stock = 0.907, average_cost = 129.03, last_cost = 129.03
+WHERE id = current_setting('test.source_material_id')::uuid;
+INSERT INTO public.inventory_movements (item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)
+VALUES ('raw_material', current_setting('test.source_material_id')::uuid, 'entry', 0.907, 0, 0.907,
+  'cheese_preparation_test_seed', current_setting('test.rounding_source_lot_id')::uuid, 'Rounding allocation test balance');
+SET LOCAL ROLE authenticated;
+SELECT set_config('test.rounding_cut_id', public.record_cheese_cut(
+  current_setting('test.rounding_source_lot_id')::uuid, 'party',
+  current_setting('test.party_material_id')::uuid, current_setting('test.trim_material_id')::uuid,
+  0.907, 65, 0.650, 0.245, 0.012,
+  current_setting('test.rounding_cut_key')::uuid,
+  'Rounding residual allocation at 129.03 MXN/kg'
+)::text, true);
+SELECT set_config('test.rounding_retry_id', public.record_cheese_cut(
+  current_setting('test.rounding_source_lot_id')::uuid, 'party',
+  current_setting('test.party_material_id')::uuid, current_setting('test.trim_material_id')::uuid,
+  0.907, 65, 0.650, 0.245, 0.012,
+  current_setting('test.rounding_cut_key')::uuid,
+  'Rounding residual allocation at 129.03 MXN/kg'
+)::text, true);
+RESET ROLE;
+
+DO $test$
+DECLARE
+  v_cut public.cheese_preparation_operations%ROWTYPE;
+BEGIN
+  SELECT * INTO v_cut FROM public.cheese_preparation_operations WHERE id = current_setting('test.rounding_cut_id')::uuid;
+  IF current_setting('test.rounding_retry_id')::uuid <> v_cut.id
+     OR v_cut.source_cost <> 117.0302 OR v_cut.output_cost <> 83.8694
+     OR v_cut.secondary_cost <> 31.6124 OR v_cut.waste_cost <> 1.5484
+     OR v_cut.unexplained_cost <> 0
+     OR v_cut.source_cost <> v_cut.output_cost + v_cut.secondary_cost + v_cut.waste_cost + v_cut.unexplained_cost
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_cut.id) <> 3 THEN
+    RAISE EXCEPTION 'Rounded cut costs did not reconcile or a retry duplicated movements.';
   END IF;
 END;
 $test$;

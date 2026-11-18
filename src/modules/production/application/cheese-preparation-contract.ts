@@ -24,21 +24,30 @@ export interface CheeseGratingRequest {
   reason: string;
 }
 
+const KG_UNITS_PER_KG = 10_000;
+
 function text(form: FormData, field: string): string {
   const value = form.get(field)?.toString().trim() ?? '';
   if (!value) throw new Error(`El campo ${field} es obligatorio.`);
   return value;
 }
 
-function decimal(form: FormData, field: string, allowZero = false): number {
-  const value = Number(form.get(field)?.toString());
-  if (!Number.isFinite(value) || value < 0 || (!allowZero && value === 0)) {
-    throw new Error(`El campo ${field} debe ser ${allowZero ? 'no negativo' : 'mayor que cero'}.`);
-  }
-  if (Math.round(value * 10000) !== value * 10000) {
+function decimalUnits(form: FormData, field: string, allowZero = false): number {
+  const raw = form.get(field)?.toString().trim() ?? '';
+  const match = /^(\d+)(?:\.(\d{1,4}))?$/.exec(raw);
+  if (!match) {
     throw new Error(`El campo ${field} admite hasta cuatro decimales.`);
   }
-  return value;
+  const units = Number(match[1]) * KG_UNITS_PER_KG
+    + Number((match[2] ?? '').padEnd(4, '0'));
+  if (!Number.isSafeInteger(units) || units < 0 || (!allowZero && units === 0)) {
+    throw new Error(`El campo ${field} debe ser ${allowZero ? 'no negativo' : 'mayor que cero'}.`);
+  }
+  return units;
+}
+
+function decimal(form: FormData, field: string, allowZero = false): number {
+  return decimalUnits(form, field, allowZero) / KG_UNITS_PER_KG;
 }
 
 function uuid(form: FormData, field: string): string {
@@ -73,7 +82,10 @@ export function buildCheeseCutRequest(form: FormData): CheeseCutRequest {
   if (request.stickMaterialId === request.trimMaterialId) {
     throw new Error('Los palitos y el recorte deben usar existencias distintas.');
   }
-  if (request.stickWeightKg + request.trimWeightKg + request.wasteWeightKg > request.sourceQuantityKg) {
+  if (decimalUnits(form, 'stick_weight_kg')
+    + decimalUnits(form, 'trim_weight_kg', true)
+    + decimalUnits(form, 'waste_weight_kg', true)
+    > decimalUnits(form, 'source_quantity_kg')) {
     throw new Error('Las salidas y la merma exceden el peso de queso retirado.');
   }
   return request;
@@ -89,7 +101,9 @@ export function buildCheeseGratingRequest(form: FormData): CheeseGratingRequest 
     idempotencyKey: uuid(form, 'idempotency_key'),
     reason: text(form, 'reason'),
   };
-  if (request.gratedWeightKg + request.wasteWeightKg > request.sourceQuantityKg) {
+  if (decimalUnits(form, 'grated_weight_kg')
+    + decimalUnits(form, 'waste_weight_kg', true)
+    > decimalUnits(form, 'source_quantity_kg')) {
     throw new Error('El queso rallado y la merma exceden el peso de recorte de entrada.');
   }
   return request;

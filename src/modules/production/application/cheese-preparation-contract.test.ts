@@ -55,6 +55,21 @@ describe('cheese preparation contracts', () => {
       .toThrow('cuatro decimales');
   });
 
+  it('accepts weights in 0.0001 kg increments without binary floating-point sum errors', () => {
+    expect(buildCheeseCutRequest(cutForm({
+      source_quantity_kg: '0.3',
+      stick_weight_kg: '0.1',
+      trim_weight_kg: '0.2',
+      waste_weight_kg: '0',
+    }))).toMatchObject({ sourceQuantityKg: 0.3, stickWeightKg: 0.1, trimWeightKg: 0.2 });
+    expect(buildCheeseCutRequest(cutForm({
+      source_quantity_kg: '0.0003',
+      stick_weight_kg: '0.0001',
+      trim_weight_kg: '0.0001',
+      waste_weight_kg: '0.0001',
+    }))).toMatchObject({ sourceQuantityKg: 0.0003, stickWeightKg: 0.0001, trimWeightKg: 0.0001 });
+  });
+
   it('builds a grating request with separately measured waste', () => {
     const form = new FormData();
     form.set('trim_lot_id', ids.sourceLot);
@@ -81,5 +96,21 @@ describe('cheese preparation contracts', () => {
     form.set('idempotency_key', ids.key);
     form.set('reason', 'Rallado medido');
     expect(() => buildCheeseGratingRequest(form)).toThrow('exceden el peso');
+  });
+
+  it('sums grating weights in exact 0.0001 kg units', () => {
+    const form = new FormData();
+    form.set('trim_lot_id', ids.sourceLot);
+    form.set('grated_material_id', ids.grated);
+    form.set('source_quantity_kg', '0.3');
+    form.set('grated_weight_kg', '0.1');
+    form.set('waste_weight_kg', '0.2');
+    form.set('idempotency_key', ids.key);
+    form.set('reason', 'Suma decimal exacta');
+    expect(buildCheeseGratingRequest(form)).toMatchObject({
+      sourceQuantityKg: 0.3,
+      gratedWeightKg: 0.1,
+      wasteWeightKg: 0.2,
+    });
   });
 });

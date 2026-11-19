@@ -198,6 +198,7 @@ export async function releaseProductionOrder(
   revalidatePath(
     `/production-orders/${transitionedOrderId}`,
   );
+  redirect(`/production-orders/${transitionedOrderId}`);
 }
 
 /**

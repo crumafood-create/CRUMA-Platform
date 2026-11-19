@@ -546,6 +546,8 @@ SELECT public.create_production_order_draft(
   'fb800000-0000-4000-8000-000000000061'
 );
 
+RESET ROLE;
+
 DO $test$
 DECLARE
   historic_order_id uuid;
@@ -605,6 +607,8 @@ BEGIN
   END IF;
 END;
 $test$;
+
+SET LOCAL ROLE authenticated;
 
 SELECT public.transition_production_order_lifecycle(
   (

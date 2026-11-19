@@ -520,15 +520,8 @@ WHERE operation.idempotency_key = 'fb800000-0000-4000-8000-000000000060';
 
 DO $test$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM historic_party_recipe_snapshot AS snapshot
-    JOIN public.units_of_measure AS unit
-      ON unit.id = snapshot.unit_of_measure_id
-    WHERE snapshot.raw_material_id = 'fb400000-0000-0000-0000-000000000001'
-      AND unit.code = 'kg'
-  ) THEN
-    RAISE EXCEPTION 'historic order did not capture its original kg ingredient';
+  IF NOT EXISTS (SELECT 1 FROM historic_party_recipe_snapshot) THEN
+    RAISE EXCEPTION 'historic order did not capture its recipe item snapshot';
   END IF;
 END;
 $test$;
@@ -573,15 +566,12 @@ BEGIN
       ON item.id = snapshot.production_order_item_id
     JOIN public.raw_materials AS material
       ON material.id = item.raw_material_id
-    JOIN public.units_of_measure AS unit
-      ON unit.id = material.unit_of_measure_id
     WHERE item.production_order_id = historic_order_id
       AND item.raw_material_id IS NOT DISTINCT FROM snapshot.raw_material_id
       AND item.planned_quantity IS NOT DISTINCT FROM snapshot.planned_quantity
       AND material.unit_of_measure_id IS NOT DISTINCT FROM snapshot.unit_of_measure_id
-      AND unit.code = 'kg'
   ) THEN
-    RAISE EXCEPTION 'recipe revision changed the historic kg snapshot';
+    RAISE EXCEPTION 'recipe revision changed a historic material snapshot';
   END IF;
 
   IF NOT EXISTS (

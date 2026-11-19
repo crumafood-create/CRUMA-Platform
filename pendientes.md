@@ -55,3 +55,8 @@ Refinar una historia a la vez con [SKILL_story](skills/story/SKILL_story.md), lu
 - **Discos #14, lote común:** falta definir la cantidad de inspección inmediata y si la retención común será exactamente 2 o 3 discos.
 - **Discos #14, lote mensual seleccionado:** 12 discos en paquete comercial cerrado para empaque/duración; falta confirmar si sustituyen la retención común y definir la cantidad de inspección inmediata.
 - **Productos con levadura:** no habilitar hasta confirmar fórmulas y controles por etapa; la retención propuesta de 4 piezas crudas congeladas y 2 cocidas congeladas está pendiente de validar por presentación.
+
+## Hallazgos pendientes del recorrido manual de consumo de queso (#7)
+
+- [ ] **Navegación al liberar una orden:** al pulsar «Liberar Orden» en la orden `OP-31C49AC0A6DB42178B9C2CB61BDE1EA3`, el primer envío redirigió inesperadamente a la edición de ingredientes de la receta (`/recipes/75fce806-320f-424a-ac5c-c38acc960781/ingredients`). Al volver a intentar, se abrió el detalle correcto y la orden quedó en estado **Liberada**. Revisar el destino posterior a la acción y corregir la navegación; no se observó pérdida de la orden.
+- [ ] **Descripción de receta desactualizada:** la descripción de «Receta Tequeños Party Queso» aún dice «El rendimiento aproximado usa 2 kg de masa y 1 kg de Queso cheddar fuerte», aunque el ingrediente activo se cambió a **100 palitos de queso Party** por cada 100 piezas. El detalle de la orden y la pantalla móvil identificaron y consumieron correctamente el material Party, por lo que el texto no cambió la presentación surtida; sigue siendo confuso y debe actualizarse para reflejar la fórmula vigente.

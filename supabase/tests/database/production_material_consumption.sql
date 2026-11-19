@@ -503,6 +503,36 @@ SELECT public.create_production_order_draft(
 
 RESET ROLE;
 
+CREATE TEMP TABLE historic_party_recipe_snapshot
+ON COMMIT DROP
+AS
+SELECT
+  item.id AS production_order_item_id,
+  item.raw_material_id,
+  item.planned_quantity,
+  material.unit_of_measure_id
+FROM public.production_order_items AS item
+JOIN public.production_order_lifecycle_operations AS operation
+  ON operation.production_order_id = item.production_order_id
+JOIN public.raw_materials AS material
+  ON material.id = item.raw_material_id
+WHERE operation.idempotency_key = 'fb800000-0000-4000-8000-000000000060';
+
+DO $test$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM historic_party_recipe_snapshot AS snapshot
+    JOIN public.units_of_measure AS unit
+      ON unit.id = snapshot.unit_of_measure_id
+    WHERE snapshot.raw_material_id = 'fb400000-0000-0000-0000-000000000001'
+      AND unit.code = 'kg'
+  ) THEN
+    RAISE EXCEPTION 'historic order did not capture its original kg ingredient';
+  END IF;
+END;
+$test$;
+
 UPDATE public.recipe_items
 SET raw_material_id = 'fb400000-0000-0000-0000-000000000003',
     quantity = 100.0000
@@ -538,14 +568,17 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1
-    FROM public.production_order_items item
-    JOIN public.raw_materials material
+    FROM historic_party_recipe_snapshot AS snapshot
+    JOIN public.production_order_items AS item
+      ON item.id = snapshot.production_order_item_id
+    JOIN public.raw_materials AS material
       ON material.id = item.raw_material_id
-    JOIN public.units_of_measure unit
+    JOIN public.units_of_measure AS unit
       ON unit.id = material.unit_of_measure_id
     WHERE item.production_order_id = historic_order_id
-      AND item.raw_material_id = 'fb400000-0000-0000-0000-000000000001'
-      AND item.planned_quantity = 0.5000
+      AND item.raw_material_id IS NOT DISTINCT FROM snapshot.raw_material_id
+      AND item.planned_quantity IS NOT DISTINCT FROM snapshot.planned_quantity
+      AND material.unit_of_measure_id IS NOT DISTINCT FROM snapshot.unit_of_measure_id
       AND unit.code = 'kg'
   ) THEN
     RAISE EXCEPTION 'recipe revision changed the historic kg snapshot';

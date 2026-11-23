@@ -6,6 +6,17 @@ import type {
 
 type LocationInsert = PublicTableInsert<'inventory_locations'>;
 type LocationUpdate = PublicTableUpdate<'inventory_locations'>;
+
+const LOCATION_USES = [
+  'raw_material',
+  'prepared_ingredient',
+  'finished_product',
+  'packaging',
+  'chemical',
+] as const;
+const STORAGE_CONDITIONS = ['dry', 'refrigerated', 'frozen'] as const;
+type LocationUse = (typeof LOCATION_USES)[number];
+type StorageCondition = (typeof STORAGE_CONDITIONS)[number];
 type LocationFormSelection = Pick<
   PublicTableRow<'inventory_locations'>,
   | 'id'
@@ -18,6 +29,8 @@ type LocationFormSelection = Pick<
   | 'level'
   | 'position'
   | 'is_active'
+  | 'location_use'
+  | 'storage_condition'
 >;
 
 function requiredText(form: FormData, field: string): string {
@@ -26,6 +39,45 @@ function requiredText(form: FormData, field: string): string {
   if (!value) throw new Error(`El campo ${field} es obligatorio.`);
 
   return value;
+}
+
+function locationClassification(form: FormData): {
+  location_use: LocationUse | null;
+  storage_condition: StorageCondition | null;
+} {
+  const rawUse = form.get('location_use')?.toString().trim() ?? '';
+  const rawCondition = form.get('storage_condition')?.toString().trim() ?? '';
+  const locationUse = rawUse === '' ? null : rawUse;
+  const storageCondition = rawCondition === '' ? null : rawCondition;
+
+  if (locationUse !== null && !LOCATION_USES.includes(locationUse as LocationUse)) {
+    throw new Error('El uso de la ubicación no es válido.');
+  }
+  if (storageCondition !== null && !STORAGE_CONDITIONS.includes(storageCondition as StorageCondition)) {
+    throw new Error('La condición de conservación no es válida.');
+  }
+  if ((locationUse === null) !== (storageCondition === null)) {
+    throw new Error('Selecciona el uso y la condición juntos, o deja la ubicación sin clasificar.');
+  }
+  if (locationUse === null || storageCondition === null) {
+    return { location_use: null, storage_condition: null };
+  }
+
+  const validCombination =
+    (locationUse === 'raw_material' || locationUse === 'prepared_ingredient')
+      ? storageCondition === 'dry' || storageCondition === 'refrigerated'
+      : locationUse === 'finished_product'
+        ? storageCondition === 'refrigerated' || storageCondition === 'frozen'
+        : storageCondition === 'dry';
+
+  if (!validCombination) {
+    throw new Error('El uso de la ubicación no es compatible con la condición seleccionada.');
+  }
+
+  return {
+    location_use: locationUse as LocationUse,
+    storage_condition: storageCondition as StorageCondition,
+  };
 }
 
 function nonNegativeInteger(form: FormData, field: string): number {
@@ -49,6 +101,7 @@ export function buildInventoryLocationInsert(form: FormData): LocationInsert {
     level: nonNegativeInteger(form, 'level'),
     position: nonNegativeInteger(form, 'position'),
     is_active: form.get('is_active') === 'on',
+    ...locationClassification(form),
   };
 }
 
@@ -68,5 +121,7 @@ export function normalizeInventoryLocationFormValues(location: LocationFormSelec
     level: location.level ?? 0,
     position: location.position ?? 0,
     is_active: location.is_active ?? true,
+    location_use: location.location_use ?? null,
+    storage_condition: location.storage_condition ?? null,
   };
 }

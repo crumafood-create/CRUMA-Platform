@@ -21,6 +21,16 @@ interface Material {
   internal_code: string | null;
   unit_of_measure_id: string | null;
   units_of_measure: Unit | Unit[] | null;
+  required_storage_condition: string | null;
+  default_storage_use: string | null;
+  default_inventory_location_id: string | null;
+}
+
+interface InventoryLocation {
+  id: string;
+  name: string;
+  location_use: string | null;
+  storage_condition: string | null;
 }
 
 interface Lot {
@@ -77,10 +87,46 @@ function lotStatusLabel(status: string | undefined): string {
   return status ?? 'Estado no disponible';
 }
 
-function materialOptions(materials: Material[], predicate: (material: Material) => boolean) {
+function conditionLabel(condition: string | null): string {
+  if (condition === 'refrigerated') return 'refrigerado';
+  if (condition === 'dry') return 'seco';
+  if (condition === 'frozen') return 'congelado';
+  return 'sin condición clasificada';
+}
+
+function locationUseLabel(use: string | null): string {
+  if (use === 'raw_material') return 'materias primas';
+  if (use === 'prepared_ingredient') return 'semielaborados';
+  if (use === 'finished_product') return 'productos terminados';
+  if (use === 'packaging') return 'empaque';
+  if (use === 'chemical') return 'químicos';
+  return 'sin uso clasificado';
+}
+
+function materialDestinationLabel(material: Material, locationById: Map<string, InventoryLocation>): string {
+  const location = material.default_inventory_location_id
+    ? locationById.get(material.default_inventory_location_id)
+    : null;
+  if (!material.required_storage_condition || !material.default_storage_use || !location) {
+    return 'Destino sin configurar; resolver en Materias Primas.';
+  }
+  return `${conditionLabel(material.required_storage_condition)} · ${locationUseLabel(material.default_storage_use)} · ${location.name}`;
+}
+
+function lotOriginLabel(lot: Lot, locationById: Map<string, InventoryLocation>): string {
+  const location = lot.inventory_location_id ? locationById.get(lot.inventory_location_id) : null;
+  if (!location) return 'origen sin ubicación clasificada';
+  return `${location.name} · ${locationUseLabel(location.location_use)} · ${conditionLabel(location.storage_condition)}`;
+}
+
+function materialOptions(
+  materials: Material[],
+  locationById: Map<string, InventoryLocation>,
+  predicate: (material: Material) => boolean,
+) {
   return materials.filter(predicate).map((material) => (
     <option key={material.id} value={material.id}>
-      {material.name} · {unitOf(material)?.name ?? 'unidad sin identificar'}
+      {material.name} · {unitOf(material)?.name ?? 'unidad sin identificar'} · destino: {materialDestinationLabel(material, locationById)}
     </option>
   ));
 }
@@ -92,18 +138,24 @@ export default async function CheesePreparationPage({
 }) {
   const params = await searchParams;
   const supabase = await createTypedClient();
-  const [materialsResult, lotsResult] = await Promise.all([
+  const [materialsResult, lotsResult, locationsResult] = await Promise.all([
     supabase.from('raw_materials')
-      .select('id, name, internal_code, unit_of_measure_id, units_of_measure(code, name)')
+      .select('id, name, internal_code, unit_of_measure_id, required_storage_condition, default_storage_use, default_inventory_location_id, units_of_measure(code, name)')
       .eq('is_active', true).is('deleted_at', null).order('name'),
     supabase.from('raw_material_lots')
       .select('id, raw_material_id, lot_number, quantity, unit_cost, expiration_date, inventory_location_id')
       .eq('status', 'available').gt('quantity', 0).order('expiration_date', { ascending: true, nullsFirst: false }),
+    supabase.from('inventory_locations')
+      .select('id, name, location_use, storage_condition')
+      .eq('is_active', true).is('deleted_at', null),
   ]);
   if (materialsResult.error) throw new Error('No fue posible cargar las materias primas.');
   if (lotsResult.error) throw new Error('No fue posible cargar los lotes de materias primas.');
+  if (locationsResult.error) throw new Error('No fue posible consultar las ubicaciones de los lotes.');
   const materials = (materialsResult.data ?? []) as unknown as Material[];
   const lots = (lotsResult.data ?? []) as Lot[];
+  const locations = (locationsResult.data ?? []) as InventoryLocation[];
+  const locationById = new Map(locations.map((location) => [location.id, location]));
   const materialById = new Map(materials.map((material) => [material.id, material]));
   const sourceLots = lots.filter((lot) => {
     const name = normalized(materialById.get(lot.raw_material_id)?.name ?? '');
@@ -171,7 +223,12 @@ export default async function CheesePreparationPage({
       ) : null}
       <aside className="rounded-lg border bg-white p-4 text-sm">
         <h2 className="font-semibold">Antes de empezar</h2>
-        <p className="mt-1">Las existencias usadas como salida deben estar en el catálogo con estas unidades: palitos Party y tradicionales en piezas; recorte y queso rallado en kg; Jamón y Jamón rallado en kg.</p>
+        <p className="mt-1">Las condiciones y destinos se configuran por material en el catálogo. Aquí se muestran como referencia de solo lectura; una salida preparada queda en cuarentena hasta Calidad y conserva su condición aprobada. Queso y jamón rallados se conservan refrigerados. Las preparaciones de ingredientes no se congelan.</p>
+        <ul className="mt-3 space-y-1">
+          {materials.filter((material) => ['MP-PAL-QUESO-PARTY', 'MP-PAL-QUESO-TRAD', 'MP-QSO-RECORTE', 'MP-QSO-RALLADO', 'MP-JAM-RALLADO'].includes(material.internal_code ?? '')).map((material) => (
+            <li key={material.id}><span className="font-medium">{material.name}:</span> {materialDestinationLabel(material, locationById)}</li>
+          ))}
+        </ul>
         {' '}<Link className="font-semibold underline" href="/raw-materials">Abrir Materias Primas</Link>
       </aside>
 
@@ -189,7 +246,7 @@ export default async function CheesePreparationPage({
               <label className="block space-y-1 text-sm font-medium md:col-span-2">Lote de queso · kg
                 <select name="source_lot_id" required className="w-full rounded border p-3">
                   <option value="">Seleccionar lote disponible</option>
-                  {sourceLots.map((lot) => <option key={lot.id} value={lot.id}>{materialById.get(lot.raw_material_id)?.name} · {lot.lot_number} · {Number(lot.quantity).toFixed(4)} kg · ${Number(lot.unit_cost).toFixed(4)}/kg</option>)}
+                  {sourceLots.map((lot) => <option key={lot.id} value={lot.id}>{materialById.get(lot.raw_material_id)?.name} · {lot.lot_number} · {Number(lot.quantity).toFixed(4)} kg · {lotOriginLabel(lot, locationById)} · ${Number(lot.unit_cost).toFixed(4)}/kg</option>)}
                 </select>
               </label>
               <label className="block space-y-1 text-sm font-medium">Presentación de palito
@@ -200,13 +257,13 @@ export default async function CheesePreparationPage({
               <label className="block space-y-1 text-sm font-medium">Existencia de salida · palitos en piezas
                 <select name="stick_material_id" required className="w-full rounded border p-3">
                   <option value="">Seleccionar la materia prima de palitos</option>
-                  {materialOptions(availableMaterials, (material) => ['pza', 'pieza'].includes(unitOf(material)?.code ?? '') && normalized(material.name).includes('palito'))}
+                  {materialOptions(availableMaterials, locationById, (material) => ['pza', 'pieza'].includes(unitOf(material)?.code ?? '') && normalized(material.name).includes('palito'))}
                 </select>
               </label>
               <label className="block space-y-1 text-sm font-medium">Existencia de recorte · kg
                 <select name="trim_material_id" required className="w-full rounded border p-3">
                   <option value="">Seleccionar la materia prima de recorte</option>
-                  {materialOptions(availableMaterials, (material) => isMassUnit(material) && normalized(material.name).includes('recorte'))}
+                  {materialOptions(availableMaterials, locationById, (material) => isMassUnit(material) && normalized(material.name).includes('recorte'))}
                 </select>
               </label>
               <label className="block space-y-1 text-sm font-medium">Peso de queso retirado (kg)
@@ -247,7 +304,7 @@ export default async function CheesePreparationPage({
               <label className="block space-y-1 text-sm font-medium">Existencia de salida · queso rallado en kg
                 <select name="grated_material_id" required className="w-full rounded border p-3">
                   <option value="">Seleccionar la materia prima de queso rallado</option>
-                  {materialOptions(availableMaterials, (material) => isMassUnit(material) && normalized(material.name).includes('queso') && normalized(material.name).includes('rallado'))}
+                  {materialOptions(availableMaterials, locationById, (material) => isMassUnit(material) && normalized(material.name).includes('queso') && normalized(material.name).includes('rallado'))}
                 </select>
               </label>
               <label className="block space-y-1 text-sm font-medium">Peso de recorte retirado (kg)
@@ -271,7 +328,7 @@ export default async function CheesePreparationPage({
       <section className="space-y-5">
         <div>
           <h2 className="text-2xl font-bold">Preparación de jamón</h2>
-          <p className="text-sm text-brand-gray-75">Todo ingrediente preparado queda en cuarentena hasta que Calidad elija almacén seco o refrigerado y registre su caducidad interna. Los ingredientes preparados no se congelan.</p>
+          <p className="text-sm text-brand-gray-75">La condición y el destino habitual del jamón rallado se consultan en la configuración del material y no se eligen durante la preparación. El lote queda en cuarentena hasta Calidad; los ingredientes preparados no se congelan.</p>
         </div>
         <Card>
           <CardContent className="space-y-4 p-6">
@@ -285,11 +342,11 @@ export default async function CheesePreparationPage({
                 <label className="block space-y-1 text-sm font-medium md:col-span-2">Lote de jamón · kg
                   <select name="ham_source_lot_id" required className="w-full rounded border p-3">
                     <option value="">Seleccionar lote disponible</option>
-                    {hamSourceLots.map((lot) => <option key={lot.id} value={lot.id}>{materialById.get(lot.raw_material_id)?.name} · {lot.lot_number} · {Number(lot.quantity).toFixed(4)} kg · ${Number(lot.unit_cost).toFixed(4)}/kg</option>)}
+                    {hamSourceLots.map((lot) => <option key={lot.id} value={lot.id}>{materialById.get(lot.raw_material_id)?.name} · {lot.lot_number} · {Number(lot.quantity).toFixed(4)} kg · {lotOriginLabel(lot, locationById)} · ${Number(lot.unit_cost).toFixed(4)}/kg</option>)}
                   </select>
                 </label>
                 <input type="hidden" name="ham_grated_material_id" value={hamGratedMaterial.id} />
-                <p className="text-sm">Salida: {hamGratedMaterial.name} · {unitOf(hamGratedMaterial)?.name ?? 'kg'}</p>
+                <p className="text-sm">Salida: {hamGratedMaterial.name} · {unitOf(hamGratedMaterial)?.name ?? 'kg'} · destino: {materialDestinationLabel(hamGratedMaterial, locationById)}</p>
                 <label className="block space-y-1 text-sm font-medium">Peso de jamón retirado (kg)
                   <input name="ham_source_quantity_kg" type="number" min="0.0001" step="0.0001" required className="w-full rounded border p-3" />
                 </label>
@@ -334,3 +391,4 @@ export default async function CheesePreparationPage({
     </main>
   );
 }
+

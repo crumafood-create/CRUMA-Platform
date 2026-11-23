@@ -27,12 +27,21 @@ interface UnitOfMeasure {
   code: string;
 }
 
+interface InventoryLocationOption {
+  id: string;
+  slug: string;
+  name: string;
+  location_use: string | null;
+  storage_condition: string | null;
+}
+
 interface RawMaterialFormProps {
   action: (formData: FormData) => Promise<void>;
 
   categories?: SelectOption[];
   families?: SelectOption[];
   unitsOfMeasure?: UnitOfMeasure[];
+  inventoryLocations?: InventoryLocationOption[];
 
   initialValues?: {
     name?: string;
@@ -47,6 +56,9 @@ interface RawMaterialFormProps {
     current_stock?: number;
     minimum_stock?: number;
     average_cost?: number;
+    required_storage_condition?: string;
+    default_storage_use?: string;
+    default_inventory_location_id?: string;
 
     description?: string;
 
@@ -71,6 +83,10 @@ const knownCreationErrors = new Set([
   'La familia de una materia prima requiere una categoría.',
   'La familia no pertenece a la categoría seleccionada.',
   'Familia de materia prima no encontrada.',
+  'Configura juntos el uso y la condición de conservación.',
+  'La condición del ingrediente debe ser seco o refrigerado.',
+  'El uso del destino debe ser materia prima o ingrediente preparado.',
+  'Configura el uso y la condición antes de asignar una ubicación habitual.',
 ]);
 
 function getCreationErrorMessage(error: unknown): string {
@@ -86,6 +102,7 @@ export function RawMaterialForm({
   categories,
   families,
   unitsOfMeasure,
+  inventoryLocations,
   initialValues,
 }: RawMaterialFormProps) {
   const [materialName, setMaterialName] = useState(
@@ -115,6 +132,15 @@ export function RawMaterialForm({
   const [selectedFamily, setSelectedFamily] = useState(
     initialValues?.family_id ?? ''
   );
+  const [selectedStorageCondition, setSelectedStorageCondition] = useState(
+    initialValues?.required_storage_condition ?? '',
+  );
+  const [selectedStorageUse, setSelectedStorageUse] = useState(
+    initialValues?.default_storage_use ?? '',
+  );
+  const [selectedDefaultLocation, setSelectedDefaultLocation] = useState(
+    initialValues?.default_inventory_location_id ?? '',
+  );
   const [error, setError] = useState('');
   const [, startTransition] = useTransition();
 
@@ -141,6 +167,11 @@ export function RawMaterialForm({
     (category) =>
       category.id === selectedCategory
   )?.code_prefix;
+
+  const compatibleInventoryLocations = inventoryLocations?.filter((location) =>
+    location.location_use === selectedStorageUse
+      && location.storage_condition === selectedStorageCondition,
+  ) ?? [];
 
   function handleNameChange(
     e: ChangeEvent<HTMLInputElement>
@@ -438,6 +469,85 @@ export function RawMaterialForm({
           Configuración
         </h2>
 
+        <div className="rounded-lg border p-4 space-y-4">
+          <div>
+            <h3 className="font-semibold">Conservación y destino habitual</h3>
+            <p className="text-sm text-gray-600">
+              Configura una condición y un uso compatibles. El destino aparece cuando una ubicación activa tiene la misma clasificación; no se deduce por su nombre.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="mb-2 block font-medium" htmlFor="required_storage_condition">
+                Condición aprobada
+              </label>
+              <select
+                id="required_storage_condition"
+                name="required_storage_condition"
+                value={selectedStorageCondition}
+                onChange={(event) => {
+                  setSelectedStorageCondition(event.target.value);
+                  setSelectedDefaultLocation('');
+                }}
+                className="w-full rounded-lg border p-3"
+              >
+                <option value="">Pendiente de configurar</option>
+                <option value="dry">Seco</option>
+                <option value="refrigerated">Refrigerado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block font-medium" htmlFor="default_storage_use">
+                Uso de la ubicación
+              </label>
+              <select
+                id="default_storage_use"
+                name="default_storage_use"
+                value={selectedStorageUse}
+                onChange={(event) => {
+                  setSelectedStorageUse(event.target.value);
+                  setSelectedDefaultLocation('');
+                }}
+                className="w-full rounded-lg border p-3"
+              >
+                <option value="">Pendiente de configurar</option>
+                <option value="raw_material">Materia prima</option>
+                <option value="prepared_ingredient">Ingrediente preparado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block font-medium" htmlFor="default_inventory_location_id">
+                Destino habitual
+              </label>
+              <select
+                id="default_inventory_location_id"
+                name="default_inventory_location_id"
+                value={selectedDefaultLocation}
+                onChange={(event) => setSelectedDefaultLocation(event.target.value)}
+                disabled={!selectedStorageCondition || !selectedStorageUse}
+                className="w-full rounded-lg border p-3 disabled:bg-gray-100"
+              >
+                <option value="">Sin destino asignado</option>
+                {compatibleInventoryLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name} · {location.slug}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {selectedStorageCondition && selectedStorageUse && compatibleInventoryLocations.length === 0 && (
+            <p className="text-sm text-amber-700">
+              No hay una ubicación activa compatible. Clasifica primero una ubicación en{' '}
+              <a href="/inventory-locations" className="underline">Ubicaciones</a>.
+            </p>
+          )}
+        </div>
+
         <select
           name="is_active"
           defaultValue={
@@ -461,3 +571,4 @@ export function RawMaterialForm({
     </form>
   );
 }
+

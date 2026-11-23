@@ -16,7 +16,7 @@ export default async function NewRawMaterialPage({
 }) {
   const { returnToPurchaseOrderId } = await searchParams;
   const supabase = await createTypedClient();
-  const { categories, families, unitsOfMeasure } =
+  const { categories, families, unitsOfMeasure, inventoryLocations } =
     await fetchRawMaterialFormCatalog(supabase);
 
   return (
@@ -42,7 +42,9 @@ export default async function NewRawMaterialPage({
         categories={categories}
         families={families}
         unitsOfMeasure={unitsOfMeasure}
+        inventoryLocations={inventoryLocations}
       />
     </main>
   );
 }
+

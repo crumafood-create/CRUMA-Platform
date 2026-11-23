@@ -21,6 +21,9 @@ function materialForm(overrides: Record<string, string> = {}): FormData {
     last_cost: '19',
     description: ' Ingrediente base ',
     is_active: 'true',
+    required_storage_condition: '',
+    default_storage_use: '',
+    default_inventory_location_id: '',
     ...overrides,
   };
 
@@ -44,6 +47,9 @@ describe('contrato tipado de materias primas', () => {
       last_cost: 19,
       description: 'Ingrediente base',
       is_active: true,
+      required_storage_condition: null,
+      default_storage_use: null,
+      default_inventory_location_id: null,
     });
   });
 
@@ -112,6 +118,41 @@ describe('contrato tipado de materias primas', () => {
     ).toBe('2026-08-23T12:00:00.000Z');
   });
 
+  it('guarda la condición y el destino habitual configurados por el administrador', () => {
+    const result = buildRawMaterialUpdate(materialForm({
+      required_storage_condition: 'refrigerated',
+      default_storage_use: 'prepared_ingredient',
+      default_inventory_location_id: 'location-prepared-fridge',
+    }), '2026-08-23T12:00:00.000Z');
+
+    expect(result).toMatchObject({
+      required_storage_condition: 'refrigerated',
+      default_storage_use: 'prepared_ingredient',
+      default_inventory_location_id: 'location-prepared-fridge',
+    });
+  });
+
+  it('permite dejar incompleto solo el destino hasta que el administrador lo asigne', () => {
+    const result = buildRawMaterialUpdate(materialForm({
+      required_storage_condition: 'refrigerated',
+      default_storage_use: 'prepared_ingredient',
+    }), '2026-08-23T12:00:00.000Z');
+
+    expect(result.default_inventory_location_id).toBe(null);
+  });
+
+  it.each([
+    ['refrigerated', ''],
+    ['', 'prepared_ingredient'],
+    ['frozen', 'prepared_ingredient'],
+    ['dry', 'finished_product'],
+  ])('rechaza una política incompleta o no válida: %s / %s', (condition, use) => {
+    expect(() => buildRawMaterialUpdate(materialForm({
+      required_storage_condition: condition,
+      default_storage_use: use,
+    }), '2026-08-23T12:00:00.000Z')).toThrow();
+  });
+
   it('buildRawMaterialUpdate_excludesInventoryOwnedFieldsWhenSubmittedOrOmitted', () => {
     const submitted = buildRawMaterialUpdate(
       materialForm({ current_stock: '91.25', average_cost: '73.5', last_cost: '22' }),
@@ -144,6 +185,9 @@ describe('contrato tipado de materias primas', () => {
       last_cost: 5,
       description: null,
       is_active: true,
+      required_storage_condition: null,
+      default_storage_use: null,
+      default_inventory_location_id: null,
     });
 
     expect(result.internal_code).toBe('');
@@ -152,3 +196,4 @@ describe('contrato tipado de materias primas', () => {
     expect(result.minimum_stock).toBe(2);
   });
 });
+

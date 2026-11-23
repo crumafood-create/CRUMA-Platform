@@ -7,7 +7,7 @@ import {
   fetchRawMaterialFormCatalog,
 } from './raw-material-repository';
 
-type TableName = 'categories' | 'families' | 'units_of_measure';
+type TableName = 'categories' | 'families' | 'units_of_measure' | 'inventory_locations';
 type Result = { data: unknown; error: { message: string } | null };
 type QueryBuilder = Promise<Result> & {
   select: () => QueryBuilder;
@@ -53,19 +53,24 @@ function clientWith(fixtures: Partial<Record<TableName, Result>>) {
 }
 
 describe('repositorio tipado de catálogos para materias primas', () => {
-  it('consulta categorías, familias y unidades en un único contrato', async () => {
+  it('consulta catálogos y ubicaciones activas para configurar materias primas', async () => {
     const { client, calls } = clientWith({
       categories: { data: [{ id: 'category-1', name: 'Harinas', code_prefix: 'MP' }], error: null },
       families: { data: [{ id: 'family-1', name: 'Trigo', category_id: 'category-1' }], error: null },
       units_of_measure: { data: [{ id: 'unit-1', name: 'Gramo', code: 'g' }], error: null },
+      inventory_locations: {
+        data: [{ id: 'location-1', slug: 'RF-01', name: 'Refrigeración semielaborados', location_use: 'prepared_ingredient', storage_condition: 'refrigerated' }],
+        error: null,
+      },
     });
 
     const result = await fetchRawMaterialFormCatalog(client);
 
-    expect(calls).toEqual(['categories', 'families', 'units_of_measure']);
+    expect(calls).toEqual(['categories', 'families', 'units_of_measure', 'inventory_locations']);
     expect(result.categories[0]?.code_prefix).toBe('MP');
     expect(result.families[0]?.category_id).toBe('category-1');
     expect(result.unitsOfMeasure[0]?.code).toBe('g');
+    expect(result.inventoryLocations[0]?.location_use).toBe('prepared_ingredient');
   });
 
   it('normaliza prefijos de categoría nulos para el formulario', async () => {
@@ -155,6 +160,25 @@ describe('repositorio tipado de catálogos para materias primas', () => {
     });
   });
 
+  it('filters destination locations to active and non-deleted records', async () => {
+    const { client, filters } = clientWith({});
+
+    await fetchRawMaterialFormCatalog(client);
+
+    expect(filters).toContainEqual({
+      table: 'inventory_locations',
+      method: 'eq',
+      column: 'is_active',
+      value: true,
+    });
+    expect(filters).toContainEqual({
+      table: 'inventory_locations',
+      method: 'is',
+      column: 'deleted_at',
+      value: null,
+    });
+  });
+
   it.each([null, 'category-1'])(
     'omite consultas cuando la categoría %j no tiene familia',
     async (categoryId) => {
@@ -166,3 +190,4 @@ describe('repositorio tipado de catálogos para materias primas', () => {
     },
   );
 });
+

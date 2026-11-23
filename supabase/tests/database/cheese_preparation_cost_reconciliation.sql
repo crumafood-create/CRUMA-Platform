@@ -232,7 +232,7 @@ BEGIN
      OR v_cut.unexplained_cost <> 0 THEN
     RAISE EXCEPTION 'Cheese cut quantities or costs did not reconcile.';
   END IF;
-  IF (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_cut.id) <> 3
+  IF (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_cut.id) <> 1
      OR (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.source_lot_id')::uuid) <> 0
      OR (SELECT status FROM public.raw_material_lots WHERE id = current_setting('test.source_lot_id')::uuid) <> 'depleted'
      OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = current_setting('test.source_lot_id')::uuid) <> 0
@@ -564,7 +564,7 @@ BEGIN
      OR v_cut.secondary_cost <> 31.6124 OR v_cut.waste_cost <> 1.5484
      OR v_cut.unexplained_cost <> 0
      OR v_cut.source_cost <> v_cut.output_cost + v_cut.secondary_cost + v_cut.waste_cost + v_cut.unexplained_cost
-     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_cut.id) <> 3
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_cut.id) <> 1
      OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_cut.output_lot_id) <> v_cut.output_cost THEN
     RAISE EXCEPTION 'Rounded cut operation cost, inventory value, or retry movements did not reconcile.';
   END IF;

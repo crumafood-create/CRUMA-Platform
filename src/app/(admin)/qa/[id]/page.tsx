@@ -94,7 +94,7 @@ export default async function QualityInspectionPage({
 
   if (error) {
     throw new Error(
-      'No fue posible consultar la inspecciÃ³n.',
+      'No fue posible consultar la inspección.',
     );
   }
 
@@ -226,7 +226,7 @@ export default async function QualityInspectionPage({
       .limit(1)
       .maybeSingle()
     : { data: null, error: null };
-  if (preparationResult.error) throw new Error('No fue posible consultar el origen de preparaciÃ³n.');
+  if (preparationResult.error) throw new Error('No fue posible consultar el origen de preparación.');
   const preparation = preparationResult.data;
   const preparationSourceResult = preparation
     ? await supabase.from('raw_material_lots')
@@ -234,7 +234,7 @@ export default async function QualityInspectionPage({
       .eq('id', preparation.source_lot_id)
       .maybeSingle()
     : { data: null, error: null };
-  if (preparationSourceResult.error) throw new Error('No fue posible consultar el lote usado en la preparaciÃ³n.');
+  if (preparationSourceResult.error) throw new Error('No fue posible consultar el lote usado en la preparación.');
   const parentPreparationResult = preparation?.operation_type === 'grate'
     ? await supabase.from('cheese_preparation_operations')
       .select('source_lot_id')
@@ -255,7 +255,7 @@ export default async function QualityInspectionPage({
       .eq('id', inspection.raw_material_lots.raw_material_id)
       .maybeSingle()
     : { data: null, error: null };
-  if (preparedMaterialResult.error) throw new Error('No fue posible consultar la conservaciÃ³n aprobada del ingrediente.');
+  if (preparedMaterialResult.error) throw new Error('No fue posible consultar la conservación aprobada del ingrediente.');
   const preparedMaterialPolicy = preparedMaterialResult.data;
   const storageLocationsResult = preparation && !decision && preparedMaterialPolicy?.default_inventory_location_id
     ? await supabase.from('inventory_locations')
@@ -267,7 +267,7 @@ export default async function QualityInspectionPage({
       .is('deleted_at', null)
       .order('name')
     : { data: [], error: null };
-  if (storageLocationsResult.error) throw new Error('No fue posible consultar las ubicaciones de almacÃ©n.');
+  if (storageLocationsResult.error) throw new Error('No fue posible consultar las ubicaciones de almacén.');
   const configuredStorageLocation = storageLocationsResult.data?.[0] ?? null;
   const preparedLotStateResult = preparation && decision?.decision === 'release' && rawMaterialLotId
     ? await (supabase as unknown as {
@@ -280,7 +280,7 @@ export default async function QualityInspectionPage({
       };
     }).from('raw_material_lots').select('storage_condition, expiration_date').eq('id', rawMaterialLotId).maybeSingle()
     : { data: null, error: null };
-  if (preparedLotStateResult.error) throw new Error('No fue posible consultar la condiciÃ³n liberada del lote.');
+  if (preparedLotStateResult.error) throw new Error('No fue posible consultar la condición liberada del lote.');
   const disposedSampleQuantity = sampleDispositions.reduce(
     (total, disposition) => total + disposition.quantity,
     0,
@@ -298,7 +298,7 @@ export default async function QualityInspectionPage({
       'Producto terminado';
 
   const subjectReference = isProductLotSample
-    ? `Lote ${qualitySampleLotNumber ?? '-'} Â· orden ${
+    ? `Lote ${qualitySampleLotNumber ?? '-'} · orden ${
         inspection.production_outputs
           ?.production_orders
           ?.production_number ?? '-'
@@ -323,7 +323,7 @@ export default async function QualityInspectionPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold">
-            InspecciÃ³n de calidad
+            Inspección de calidad
           </h1>
 
           <p className="text-gray-500">
@@ -332,9 +332,9 @@ export default async function QualityInspectionPage({
               : isRawMaterial
               ? 'Materia prima'
               : 'Producto terminado'}
-            {' Â· '}
+            {' · '}
             {subjectReference}
-            {' Â· '}
+            {' · '}
             {subjectName}
           </p>
         </div>
@@ -349,22 +349,22 @@ export default async function QualityInspectionPage({
 
       {preparation ? (
         <section className="space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-5">
-          <h2 className="font-bold">Origen de preparaciÃ³n</h2>
+          <h2 className="font-bold">Origen de preparación</h2>
           <p>
-            {preparation.operation_type === 'cut' ? 'Corte de queso' : 'Rallado'} Â·{' '}
+            {preparation.operation_type === 'cut' ? 'Corte de queso' : 'Rallado'} ·{' '}
             {Number(preparation.source_quantity).toFixed(4)} kg de{' '}
-            {preparationSourceResult.data?.raw_materials?.name ?? 'ingrediente'} Â· lote{' '}
-            {preparationSourceResult.data?.lot_number ?? '-'} Â· costo asignado ${Number(preparation.source_cost).toFixed(4)}.
+            {preparationSourceResult.data?.raw_materials?.name ?? 'ingrediente'} · lote{' '}
+            {preparationSourceResult.data?.lot_number ?? '-'} · costo asignado ${Number(preparation.source_cost).toFixed(4)}.
           </p>
           {originalCheeseLotResult.data ? (
-            <p>Origen del recorte: {originalCheeseLotResult.data.raw_materials?.name ?? 'Queso'} Â· lote {originalCheeseLotResult.data.lot_number}.</p>
+            <p>Origen del recorte: {originalCheeseLotResult.data.raw_materials?.name ?? 'Queso'} · lote {originalCheeseLotResult.data.lot_number}.</p>
           ) : null}
           <p>{decision?.decision === 'release'
             ? 'El lote preparado fue liberado y ya forma parte del inventario disponible.'
-            : 'El lote preparado permanece en cuarentena y fuera del inventario disponible hasta su liberaciÃ³n por Calidad.'}</p>
+            : 'El lote preparado permanece en cuarentena y fuera del inventario disponible hasta su liberación por Calidad.'}</p>
           {decision?.decision === 'release' ? (
             <p className="font-semibold text-green-800">
-              Liberado Â· {preparedLotStateResult.data?.storage_condition === 'dry' ? 'AlmacÃ©n seco' : 'AlmacÃ©n refrigerado'} Â· caducidad interna {preparedLotStateResult.data?.expiration_date ?? '-'}.
+              Liberado · {preparedLotStateResult.data?.storage_condition === 'dry' ? 'Almacén seco' : 'Almacén refrigerado'} · caducidad interna {preparedLotStateResult.data?.expiration_date ?? '-'}.
             </p>
           ) : null}
         </section>
@@ -453,13 +453,13 @@ export default async function QualityInspectionPage({
 
             <div>
               <span className="text-gray-500">
-                UbicaciÃ³n
+                Ubicación
               </span>
 
               <strong className="block">
                 {inspection.raw_material_lots
                   ?.inventory_locations?.name ??
-                  'Sin ubicaciÃ³n'}
+                  'Sin ubicación'}
               </strong>
             </div>
           </div>
@@ -521,9 +521,9 @@ export default async function QualityInspectionPage({
               <strong>
                 {defect.defect_type}
               </strong>
-              {' Â· '}
+              {' · '}
               {defect.severity}
-              {' Â· '}
+              {' · '}
               {defect.quantity}
 
               {defect.description ? (
@@ -556,29 +556,29 @@ export default async function QualityInspectionPage({
         <section className="space-y-4 rounded-2xl border p-6">
           <h2 className="text-xl font-semibold">Destino de la muestra</h2>
           <p className="text-sm text-gray-600">
-            La aprobaciÃ³n de la inspecciÃ³n y el destino se registran por separado.
+            La aprobación de la inspección y el destino se registran por separado.
             Las piezas sin destino siguen apartadas.
           </p>
           <p>
             Muestra de {qualitySample?.quantity ?? inspection.sampled_quantity}
-            {' piezas Â· Pendientes de destino: '}
+            {' piezas · Pendientes de destino: '}
             {samplePendingQuantity}
           </p>
 
           {sampleDispositions.map((sampleDisposition) => (
             <div key={sampleDisposition.id} className="rounded border p-3 text-sm">
               <strong>
-                {sampleDisposition.quantity} Â·{' '}
+                {sampleDisposition.quantity} ·{' '}
                 {qualitySampleDestinationLabel[sampleDisposition.destination] ??
                   sampleDisposition.destination}
               </strong>
               <p>{sampleDisposition.reason}</p>
               <p className="text-gray-500">
                 {new Date(sampleDisposition.decided_at).toLocaleString('es-MX')}
-                {' Â· Responsable: '}
+                {' · Responsable: '}
                 {sampleDisposition.decided_by}
                 {sampleDisposition.return_authorized
-                  ? ' Â· Retorno autorizado por Calidad'
+                  ? ' · Retorno autorizado por Calidad'
                   : ''}
               </p>
             </div>
@@ -601,7 +601,7 @@ export default async function QualityInspectionPage({
       ) : decision ? (
         <section className="rounded-2xl border p-6">
           <h2 className="text-xl font-semibold">
-            DecisiÃ³n:{' '}
+            Decisión:{' '}
             {decisionLabel[decision.decision] ??
               decision.decision}
           </h2>
@@ -619,7 +619,7 @@ export default async function QualityInspectionPage({
               }
             >
               <strong>
-                DisposiciÃ³n:{' '}
+                Disposición:{' '}
                 {dispositionLabel[
                   disposition.disposition
                 ] ?? disposition.disposition}
@@ -668,7 +668,7 @@ export default async function QualityInspectionPage({
           {decision.decision === 'release' &&
           !isRawMaterial ? (
             <p className="mt-4 text-sm text-green-700">
-              El producto terminado estÃ¡ disponible
+              El producto terminado está disponible
               en inventario.
             </p>
           ) : null}
@@ -688,14 +688,14 @@ export default async function QualityInspectionPage({
               <h2 className="font-semibold">Liberar ingrediente preparado</h2>
               {preparedMaterialPolicy?.required_storage_condition && preparedMaterialPolicy.default_storage_use && preparedMaterialPolicy.default_inventory_location_id && configuredStorageLocation && storageLocationsResult.data?.length === 1 ? (
                 <>
-                  <p className="text-sm text-gray-600">La condiciÃ³n y el destino los configura el administrador segÃºn la especificaciÃ³n aprobada para este ingrediente. Calidad registra la caducidad interna. Los ingredientes preparados no se congelan.</p>
-                  <p className="text-sm">CondiciÃ³n aprobada: <span className="font-medium">{preparedMaterialPolicy.required_storage_condition === 'refrigerated' ? 'Refrigerado' : 'Seco'}</span></p>
+                  <p className="text-sm text-gray-600">La condición y el destino los configura el administrador según la especificación aprobada para este ingrediente. Calidad registra la caducidad interna. Los ingredientes preparados no se congelan.</p>
+                  <p className="text-sm">Condición aprobada: <span className="font-medium">{preparedMaterialPolicy.required_storage_condition === 'refrigerated' ? 'Refrigerado' : 'Seco'}</span></p>
                   <input type="hidden" name="storage_condition" value={preparedMaterialPolicy.required_storage_condition} />
-                  <p className="text-sm">Destino configurado: <span className="font-medium">{configuredStorageLocation.name}</span> Â· {preparedMaterialPolicy.default_storage_use === 'prepared_ingredient' ? 'semielaborados' : 'materias primas'}</p>
+                  <p className="text-sm">Destino configurado: <span className="font-medium">{configuredStorageLocation.name}</span> · {preparedMaterialPolicy.default_storage_use === 'prepared_ingredient' ? 'semielaborados' : 'materias primas'}</p>
                   <input type="hidden" name="inventory_location_id" value={configuredStorageLocation.id} />
                 </>
               ) : (
-                <p role="alert" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm">No se puede liberar: el administrador debe configurar una condiciÃ³n aprobada y un destino activo compatible para esta materia prima.</p>
+                <p role="alert" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm">No se puede liberar: el administrador debe configurar una condición aprobada y un destino activo compatible para esta materia prima.</p>
               )}
               <label className="block text-sm">Caducidad interna
                 <input name="expiration_date" type="date" required className="mt-1 w-full rounded border px-3 py-2" />
@@ -750,7 +750,7 @@ export default async function QualityInspectionPage({
                 'px-4 py-2'
               }
             >
-              Preparar liberaciÃ³n a inventario
+              Preparar liberación a inventario
             </Link>
           ))}
 
@@ -845,7 +845,7 @@ export default async function QualityInspectionPage({
               />
 
               <label className="block text-sm">
-                Motivo de la disposiciÃ³n
+                Motivo de la disposición
 
                 <textarea
                   name="reason"
@@ -890,4 +890,3 @@ export default async function QualityInspectionPage({
     </main>
   );
 }
-

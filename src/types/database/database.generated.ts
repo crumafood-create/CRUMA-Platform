@@ -7277,6 +7277,7 @@ export type Database = {
           raw_material_id: string
           remaining_value: number
           status: string
+          storage_condition: string | null
           supplier_lot: string | null
           unit_cost: number
           updated_at: string
@@ -7291,6 +7292,7 @@ export type Database = {
           raw_material_id: string
           remaining_value: number
           status?: string
+          storage_condition?: string | null
           supplier_lot?: string | null
           unit_cost?: number
           updated_at?: string
@@ -7305,6 +7307,7 @@ export type Database = {
           raw_material_id?: string
           remaining_value?: number
           status?: string
+          storage_condition?: string | null
           supplier_lot?: string | null
           unit_cost?: number
           updated_at?: string
@@ -9627,6 +9630,28 @@ export type Database = {
         }
         Returns: string
       }
+      record_ham_grating: {
+        Args: {
+          p_grated_material_id: string
+          p_grated_weight_kg: number
+          p_idempotency_key: string
+          p_reason: string
+          p_source_lot_id: string
+          p_source_quantity_kg: number
+          p_waste_weight_kg: number
+        }
+        Returns: string
+      }
+      record_prepared_ingredient_quality_inspection: {
+        Args: {
+          p_criteria: Json
+          p_defects: Json
+          p_lot_id: string
+          p_notes: string
+          p_sampled_quantity: number
+        }
+        Returns: string
+      }
       record_product_lot_quality_sample_inspection: {
         Args: {
           p_criteria: Json
@@ -9676,6 +9701,16 @@ export type Database = {
           p_lot_number: string
           p_reason: string
           p_warehouse_id: string
+        }
+        Returns: string
+      }
+      release_prepared_ingredient_quality_lot: {
+        Args: {
+          p_expiration_date: string
+          p_inspection_id: string
+          p_inventory_location_id: string
+          p_reason: string
+          p_storage_condition: string
         }
         Returns: string
       }

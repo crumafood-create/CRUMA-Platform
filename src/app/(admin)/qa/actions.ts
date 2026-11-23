@@ -20,6 +20,8 @@ import {
   recordProductLotQualitySampleInspection as persistProductLotQualitySampleInspection,
   recordQualityInspection as persistQualityInspection,
   recordRawMaterialQualityInspection as persistRawMaterialQualityInspection,
+  recordPreparedIngredientQualityInspection as persistPreparedIngredientQualityInspection,
+  releasePreparedIngredientQualityLot as persistPreparedIngredientQualityRelease,
 } from '@/modules/quality/application/quality-control-repository';
 import { closeQualityRetentionDay as persistQualityRetentionDailyClose } from '@/modules/quality/application/quality-retention-repository';
 import {
@@ -177,15 +179,58 @@ export async function recordRawMaterialQualityInspection(
       formData,
     );
 
+  const preparedOperation = await supabase
+    .from('cheese_preparation_operations')
+    .select('id')
+    .or(`output_lot_id.eq.${request.rawMaterialLotId},secondary_lot_id.eq.${request.rawMaterialLotId}`)
+    .limit(1)
+    .maybeSingle();
+  if (preparedOperation.error) {
+    throw new Error('No fue posible identificar el origen del lote preparado.');
+  }
+
   const inspectionId =
-    await persistRawMaterialQualityInspection(
-      supabase,
-      request,
-    );
+    preparedOperation.data
+      ? await persistPreparedIngredientQualityInspection(supabase, request)
+      : await persistRawMaterialQualityInspection(supabase, request);
 
   revalidatePath('/qa');
   revalidatePath('/inventory');
   revalidatePath('/purchase-orders');
+  redirect(`/qa/${inspectionId}`);
+}
+
+export async function releasePreparedIngredientQualityLot(
+  inspectionId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.QUALITY_RELEASE_DECIDE,
+  );
+  const storageCondition = formData.get('storage_condition')?.toString() ?? '';
+  if (storageCondition !== 'dry' && storageCondition !== 'refrigerated') {
+    throw new Error('Selecciona almacén seco o refrigerado.');
+  }
+  const locationId = formData.get('inventory_location_id')?.toString().trim() ?? '';
+  const expirationDate = formData.get('expiration_date')?.toString().trim() ?? '';
+  const reason = formData.get('reason')?.toString().trim() ?? '';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(inspectionId)
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(locationId)
+    || !/^\d{4}-\d{2}-\d{2}$/.test(expirationDate)) {
+    throw new Error('Indica una ubicación y fecha de caducidad válidas.');
+  }
+  await persistPreparedIngredientQualityRelease(supabase, {
+    inspectionId,
+    storageCondition,
+    locationId,
+    expirationDate,
+    reason: reason || null,
+  });
+  revalidatePath('/qa');
+  revalidatePath(`/qa/${inspectionId}`);
+  revalidatePath('/ingredient-preparation');
+  revalidatePath('/raw-materials');
+  revalidatePath('/inventory-stock');
   redirect(`/qa/${inspectionId}`);
 }
 

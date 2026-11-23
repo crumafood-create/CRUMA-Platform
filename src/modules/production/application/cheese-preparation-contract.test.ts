@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildCheeseCutRequest, buildCheeseGratingRequest } from './cheese-preparation-contract';
+import { buildCheeseCutRequest, buildCheeseGratingRequest, buildHamGratingRequest } from './cheese-preparation-contract';
 
 const ids = {
   sourceLot: 'd2b850b5-a846-4c43-968e-1bcb680f9d07',
@@ -112,5 +112,33 @@ describe('cheese preparation contracts', () => {
       gratedWeightKg: 0.1,
       wasteWeightKg: 0.2,
     });
+  });
+
+  it('builds a ham grating request with measured waste', () => {
+    const form = new FormData();
+    form.set('ham_source_lot_id', ids.sourceLot);
+    form.set('ham_grated_material_id', ids.grated);
+    form.set('ham_source_quantity_kg', '0.5');
+    form.set('ham_grated_weight_kg', '0.48');
+    form.set('ham_waste_weight_kg', '0.02');
+    form.set('ham_idempotency_key', ids.key);
+    form.set('ham_reason', 'Jamón rallado medido');
+    expect(buildHamGratingRequest(form)).toMatchObject({
+      sourceQuantityKg: 0.5,
+      gratedWeightKg: 0.48,
+      wasteWeightKg: 0.02,
+    });
+  });
+
+  it('rejects ham grating where usable output and waste exceed the weighed input', () => {
+    const form = new FormData();
+    form.set('ham_source_lot_id', ids.sourceLot);
+    form.set('ham_grated_material_id', ids.grated);
+    form.set('ham_source_quantity_kg', '0.5');
+    form.set('ham_grated_weight_kg', '0.48');
+    form.set('ham_waste_weight_kg', '0.0201');
+    form.set('ham_idempotency_key', ids.key);
+    form.set('ham_reason', 'Jamón rallado medido');
+    expect(() => buildHamGratingRequest(form)).toThrow('exceden el peso');
   });
 });

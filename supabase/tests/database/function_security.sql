@@ -51,6 +51,8 @@ DECLARE
     'public.decide_quality_release(uuid,text,text)',
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
+    'public.record_prepared_ingredient_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
+    'public.release_prepared_ingredient_quality_lot(uuid,text,uuid,date,text)',
     'public.consume_production_material_fefo(uuid,text,uuid)',
     'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)',
     'public.guard_recipe_item_output_product()',
@@ -60,7 +62,8 @@ DECLARE
     'public.complete_production_order_with_mass_output(uuid,numeric,uuid)',
     'public.apply_mass_output_quantity_to_product_lot()',
     'public.apply_mass_output_quantity_to_inventory_movement()',
-    'public.link_reused_mass_surplus_to_product_lot()'
+    'public.link_reused_mass_surplus_to_product_lot()',
+    'public.record_ham_grating(uuid,uuid,numeric,numeric,numeric,uuid,text)'
   ];
 BEGIN
   FOREACH signature IN ARRAY hardened_functions LOOP
@@ -141,6 +144,8 @@ DECLARE
     'public.decide_quality_release(uuid,text,text)',
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
+    'public.record_prepared_ingredient_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
+    'public.release_prepared_ingredient_quality_lot(uuid,text,uuid,date,text)',
     'public.recalculate_cart_totals()',
     'public.set_updated_at()',
     'public.sync_order_payment_status()',
@@ -187,11 +192,14 @@ DECLARE
     'public.decide_quality_release(uuid,text,text)',
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
+    'public.record_prepared_ingredient_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
+    'public.release_prepared_ingredient_quality_lot(uuid,text,uuid,date,text)',
     'public.consume_production_material_fefo(uuid,text,uuid)',
     'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)',
     'public.dispose_production_mass_surplus_as_waste(uuid,text)',
     'public.start_production_order_with_mass_surplus_reuse(uuid,uuid[],uuid)',
-    'public.complete_production_order_with_mass_output(uuid,numeric,uuid)'
+    'public.complete_production_order_with_mass_output(uuid,numeric,uuid)',
+    'public.record_ham_grating(uuid,uuid,numeric,numeric,numeric,uuid,text)'
   ];
 BEGIN
   FOREACH signature IN ARRAY all_functions LOOP
@@ -320,6 +328,8 @@ DECLARE
     'public.decide_quality_release(uuid,text,text)',
     'public.record_raw_material_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
     'public.decide_raw_material_quality_release(uuid,text,text)',
+    'public.record_prepared_ingredient_quality_inspection(uuid,numeric,text,jsonb,jsonb)',
+    'public.release_prepared_ingredient_quality_lot(uuid,text,uuid,date,text)',
     'public.consume_production_material_fefo(uuid,text,uuid)',
     'public.complete_production_yield_to_quarantine(uuid,integer,integer,text,uuid)',
     'public.dispose_production_mass_surplus_as_waste(uuid,text)',

@@ -56,7 +56,22 @@ export default async function CreateRawMaterialQualityInspectionPage({
     );
   }
 
-  const options = (lots ?? []).map((lot) => {
+  const lotRows = lots ?? [];
+  const lotIds = lotRows.map((lot) => lot.id);
+  const preparationResult = lotIds.length
+    ? await supabase.from('cheese_preparation_operations')
+      .select('operation_type, output_lot_id, secondary_lot_id')
+      .or(`output_lot_id.in.(${lotIds.join(',')}),secondary_lot_id.in.(${lotIds.join(',')})`)
+    : { data: [], error: null };
+  if (preparationResult.error) {
+    throw new Error('No fue posible identificar los lotes preparados.');
+  }
+  const preparedLotIds = new Set((preparationResult.data ?? []).flatMap((operation) => [
+    operation.output_lot_id,
+    operation.secondary_lot_id,
+  ]).filter((id): id is string => id !== null));
+
+  const options = lotRows.map((lot) => {
     const materialCode =
       lot.raw_materials?.internal_code
         ? ` (${lot.raw_materials.internal_code})`
@@ -82,6 +97,7 @@ export default async function CreateRawMaterialQualityInspectionPage({
         ` · lote ${lot.lot_number}` +
         ` · ${status}` +
         ` · ${location}` +
+        (preparedLotIds.has(lot.id) ? ' · Preparación: requiere condición y caducidad de Calidad' : '') +
         ` · cad. ${expiration}`,
     };
   });
@@ -95,8 +111,7 @@ export default async function CreateRawMaterialQualityInspectionPage({
           </h1>
 
           <p className="text-sm text-gray-500">
-            Inspecciona lotes recibidos en cuarentena
-            o retenidos.
+            Inspecciona materias primas recibidas y lotes preparados en cuarentena o retenidos.
           </p>
         </div>
 

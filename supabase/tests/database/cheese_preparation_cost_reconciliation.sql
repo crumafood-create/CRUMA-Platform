@@ -21,6 +21,10 @@ SELECT set_config('test.authorized_tiny_cut_key', gen_random_uuid()::text, true)
 SELECT set_config('test.tiny_source_material_id', gen_random_uuid()::text, true);
 SELECT set_config('test.tiny_source_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.tiny_cut_key', gen_random_uuid()::text, true);
+SELECT set_config('test.source_location_id', gen_random_uuid()::text, true);
+SELECT set_config('test.dry_location_id', gen_random_uuid()::text, true);
+SELECT set_config('test.raw_fridge_location_id', gen_random_uuid()::text, true);
+SELECT set_config('test.unclassified_location_id', gen_random_uuid()::text, true);
 
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
 VALUES (current_setting('test.admin_id')::uuid, 'authenticated', 'authenticated',
@@ -52,21 +56,43 @@ VALUES
   (current_setting('test.trim_material_id')::uuid, 'cheese-trim-' || left(current_setting('test.admin_id'), 8), 'Recorte de queso de prueba', 'MP-QSO-RECORTE', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
   (current_setting('test.grated_material_id')::uuid, 'cheese-grated-' || left(current_setting('test.admin_id'), 8), 'Queso rallado de prueba', 'MP-QSO-RALLADO', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0, 0, 0),
   (current_setting('test.tiny_source_material_id')::uuid, 'cheese-tiny-source-' || left(current_setting('test.admin_id'), 8), 'Queso mínimo de prueba', 'CHEESE-TINY-TEST', (SELECT id FROM public.units_of_measure WHERE code = 'kg'), 0.0003, 20, 20);
+INSERT INTO public.inventory_locations (id, slug, name, location_use, storage_condition)
+VALUES
+  (current_setting('test.source_location_id')::uuid, 'cheese-source-' || left(current_setting('test.admin_id'), 8), 'Test raw-material refrigerator', 'raw_material', 'refrigerated'),
+  (current_setting('test.location_id')::uuid, 'cheese-prep-' || left(current_setting('test.admin_id'), 8), 'Test prepared-ingredient refrigerator', 'prepared_ingredient', 'refrigerated'),
+  (current_setting('test.dry_location_id')::uuid, 'cheese-dry-' || left(current_setting('test.admin_id'), 8), 'Test dry storage', 'prepared_ingredient', 'dry'),
+  (current_setting('test.raw_fridge_location_id')::uuid, 'cheese-raw-fridge-' || left(current_setting('test.admin_id'), 8), 'Test raw-material refrigerator location', 'raw_material', 'refrigerated');
 INSERT INTO public.inventory_locations (id, slug, name)
-VALUES (current_setting('test.location_id')::uuid, 'cheese-prep-' || left(current_setting('test.admin_id'), 8), 'Cheese preparation test location');
+VALUES (current_setting('test.unclassified_location_id')::uuid,
+  'legacy-location-' || left(current_setting('test.admin_id'), 8), 'Legacy refrigerator that requires explicit classification');
+UPDATE public.raw_materials
+SET required_storage_condition = 'refrigerated',
+    default_storage_use = 'prepared_ingredient',
+    default_inventory_location_id = current_setting('test.location_id')::uuid
+WHERE id IN (
+  current_setting('test.party_material_id')::uuid,
+  current_setting('test.traditional_material_id')::uuid,
+  current_setting('test.trim_material_id')::uuid,
+  current_setting('test.grated_material_id')::uuid
+);
+UPDATE public.raw_materials
+SET required_storage_condition = 'refrigerated',
+    default_storage_use = 'raw_material',
+    default_inventory_location_id = current_setting('test.source_location_id')::uuid
+WHERE id = current_setting('test.source_material_id')::uuid;
 INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, quantity, unit_cost, status, inventory_location_id)
 VALUES (current_setting('test.source_lot_id')::uuid, current_setting('test.source_material_id')::uuid,
-  'CHEESE-SOURCE-' || left(current_setting('test.admin_id'), 8), 0.907, 20, 'available', current_setting('test.location_id')::uuid);
+  'CHEESE-SOURCE-' || left(current_setting('test.admin_id'), 8), 0.907, 20, 'available', current_setting('test.source_location_id')::uuid);
 INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, expiration_date, quantity, unit_cost, status, inventory_location_id)
 VALUES (current_setting('test.expired_source_lot_id')::uuid, current_setting('test.source_material_id')::uuid,
   'CHEESE-EXPIRED-SOURCE-' || left(current_setting('test.admin_id'), 8), current_date - 1,
-  0.1000, 20, 'available', current_setting('test.location_id')::uuid);
+  0.1000, 20, 'available', current_setting('test.source_location_id')::uuid);
 INSERT INTO public.inventory_movements (item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)
 VALUES ('raw_material', current_setting('test.source_material_id')::uuid, 'entry', 0.907, 0, 0.907,
   'cheese_preparation_test_seed', current_setting('test.source_lot_id')::uuid, 'Test-only opening balance');
 INSERT INTO public.raw_material_lots (id, raw_material_id, lot_number, quantity, unit_cost, status, inventory_location_id)
 VALUES (current_setting('test.tiny_source_lot_id')::uuid, current_setting('test.tiny_source_material_id')::uuid,
-  'CHEESE-TINY-' || left(current_setting('test.admin_id'), 8), 0.0003, 20, 'available', current_setting('test.location_id')::uuid);
+  'CHEESE-TINY-' || left(current_setting('test.admin_id'), 8), 0.0003, 20, 'available', current_setting('test.source_location_id')::uuid);
 INSERT INTO public.inventory_movements (item_type, item_id, movement_type, quantity, previous_stock, new_stock, reference_type, reference_id, notes)
 VALUES ('raw_material', current_setting('test.tiny_source_material_id')::uuid, 'entry', 0.0003, 0, 0.0003,
   'cheese_preparation_test_seed', current_setting('test.tiny_source_lot_id')::uuid, 'Smallest supported weight balance');
@@ -211,14 +237,69 @@ BEGIN
      OR (SELECT status FROM public.raw_material_lots WHERE id = current_setting('test.source_lot_id')::uuid) <> 'depleted'
      OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = current_setting('test.source_lot_id')::uuid) <> 0
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.source_material_id')::uuid) <> 0
-     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) <> 65
-     OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) <> 0.2000
-     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0.245
-     OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 20.0000 THEN
-    RAISE EXCEPTION 'Cheese cut balances, output unit cost, or retry movements are incorrect.';
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) <> 0
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0 THEN
+    RAISE EXCEPTION 'Cheese cut must preserve output quantity and value in quarantine without available stock.';
   END IF;
   IF v_cut.source_cost <> v_cut.output_cost + v_cut.secondary_cost + v_cut.waste_cost + v_cut.unexplained_cost THEN
     RAISE EXCEPTION 'Cut cost does not reconcile to its source cost.';
+  END IF;
+END;
+$test$;
+
+-- Quality inspects and releases both prepared outputs; each release posts the
+-- same prepared lot quantity and value exactly once, without a purchase receipt.
+DO $test$
+DECLARE
+  v_output_lot_id uuid;
+BEGIN
+  SELECT output_lot_id INTO v_output_lot_id FROM public.cheese_preparation_operations
+  WHERE id = current_setting('test.cut_id')::uuid;
+  BEGIN
+    UPDATE public.raw_material_lots
+    SET status = 'available', storage_condition = 'refrigerated',
+        inventory_location_id = current_setting('test.location_id')::uuid,
+        expiration_date = current_date + 10
+    WHERE id = v_output_lot_id;
+    RAISE EXCEPTION 'Prepared lot bypassed Quality release.';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  IF (SELECT status FROM public.raw_material_lots WHERE id = v_output_lot_id) <> 'quarantine'
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) <> 0 THEN
+    RAISE EXCEPTION 'Direct availability change bypassed Quality or altered stock.';
+  END IF;
+END;
+$test$;
+SELECT set_config('test.stick_inspection_id', public.record_prepared_ingredient_quality_inspection(
+  (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.cut_id')::uuid),
+  1, 'Party sticks quality', '[{"criterion":"Appearance","passed":true}]'::jsonb, '[]'::jsonb
+)::text, true);
+SELECT set_config('test.stick_release_id', public.release_prepared_ingredient_quality_lot(
+  current_setting('test.stick_inspection_id')::uuid, 'refrigerated',
+  current_setting('test.location_id')::uuid, current_date + 10, 'Release sticks'
+)::text, true);
+SELECT set_config('test.stick_release_retry_id', public.release_prepared_ingredient_quality_lot(
+  current_setting('test.stick_inspection_id')::uuid, 'refrigerated',
+  current_setting('test.location_id')::uuid, current_date + 10, 'Release sticks'
+)::text, true);
+SELECT set_config('test.trim_inspection_id', public.record_prepared_ingredient_quality_inspection(
+  (SELECT secondary_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.cut_id')::uuid),
+  0.001, 'Trim quality', '[{"criterion":"Appearance","passed":true}]'::jsonb, '[]'::jsonb
+)::text, true);
+SELECT set_config('test.trim_release_id', public.release_prepared_ingredient_quality_lot(
+  current_setting('test.trim_inspection_id')::uuid, 'refrigerated',
+  current_setting('test.location_id')::uuid, current_date + 10, 'Release trim'
+)::text, true);
+DO $test$
+BEGIN
+  IF current_setting('test.stick_release_id')::uuid <> current_setting('test.stick_release_retry_id')::uuid
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.party_material_id')::uuid) <> 65
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0.245
+     OR (SELECT status FROM public.raw_material_lots WHERE id = (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.cut_id')::uuid)) <> 'available'
+     OR (SELECT storage_condition FROM public.raw_material_lots WHERE id = (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.cut_id')::uuid)) <> 'refrigerated'
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'prepared_ingredient_quality_release' AND reference_id = current_setting('test.stick_release_id')::uuid) <> 1
+     OR (SELECT count(*) FROM public.quality_release_decisions WHERE inspection_id = current_setting('test.stick_inspection_id')::uuid) <> 1 THEN
+    RAISE EXCEPTION 'Quality did not release prepared sticks and trim exactly once with storage metadata.';
   END IF;
 END;
 $test$;
@@ -316,8 +397,8 @@ BEGIN
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
      OR (SELECT current_stock * average_cost FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
      OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_grate.id) <> 2
-     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0.237
-     OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 20.0000
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0
+     OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0
      OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_grate.output_lot_id) <> v_grate.output_cost THEN
     RAISE EXCEPTION 'Trim was not fully consumed or grating retry duplicated a movement.';
   END IF;
@@ -330,6 +411,84 @@ BEGIN
      OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation')
        <> current_setting('test.initial_cheese_movement_count')::bigint + 5 THEN
     RAISE EXCEPTION 'Retry duplicated cheese preparation costs or inventory movements.';
+  END IF;
+END;
+$test$;
+
+SELECT set_config('test.grated_inspection_id', public.record_prepared_ingredient_quality_inspection(
+  (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.grate_id')::uuid),
+  0.001, 'Grated cheese quality', '[{"criterion":"Appearance","passed":true}]'::jsonb, '[]'::jsonb
+)::text, true);
+DO $test$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.quality_inspections AS inspection
+    WHERE inspection.id = current_setting('test.grated_inspection_id')::uuid
+      AND inspection.status = 'passed'
+      AND inspection.sampled_quantity = 0.001
+      AND inspection.accepted_quantity = 0.001
+      AND inspection.rejected_quantity = 0
+      AND inspection.subject_type = 'raw_material_lot'
+      AND inspection.raw_material_lot_id = (
+        SELECT output_lot_id FROM public.cheese_preparation_operations
+        WHERE id = current_setting('test.grate_id')::uuid
+      )
+  ) THEN
+    RAISE EXCEPTION 'Prepared ingredient inspection did not persist an unambiguous passed result.';
+  END IF;
+END;
+$test$;
+DO $test$
+DECLARE
+  v_location_id uuid;
+  v_rejected boolean;
+  v_output_lot_id uuid := (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.grate_id')::uuid);
+BEGIN
+  IF (SELECT location_use FROM public.inventory_locations
+      WHERE id = current_setting('test.unclassified_location_id')::uuid) IS NOT NULL
+     OR (SELECT storage_condition FROM public.inventory_locations
+         WHERE id = current_setting('test.unclassified_location_id')::uuid) IS NOT NULL THEN
+    RAISE EXCEPTION 'Legacy locations must remain unclassified until an administrator explicitly configures them.';
+  END IF;
+  FOREACH v_location_id IN ARRAY ARRAY[
+    current_setting('test.dry_location_id')::uuid,
+    current_setting('test.raw_fridge_location_id')::uuid
+  ] LOOP
+    v_rejected := false;
+    BEGIN
+      PERFORM public.release_prepared_ingredient_quality_lot(
+        current_setting('test.grated_inspection_id')::uuid,
+        'refrigerated', v_location_id,
+        current_date + 10, 'Storage compatibility regression'
+      );
+    EXCEPTION WHEN check_violation THEN
+      v_rejected := true;
+    END;
+    IF NOT v_rejected THEN
+      RAISE EXCEPTION 'Quality must reject grated cheese at an incompatible location %.', v_location_id;
+    END IF;
+    IF (SELECT status FROM public.raw_material_lots WHERE id = v_output_lot_id) <> 'quarantine'
+       OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0
+       OR EXISTS (SELECT 1 FROM public.quality_release_decisions WHERE raw_material_lot_id = v_output_lot_id)
+       OR EXISTS (SELECT 1 FROM public.inventory_movements WHERE item_type = 'raw_material'
+         AND item_id = current_setting('test.grated_material_id')::uuid
+         AND reference_type = 'prepared_ingredient_quality_release') THEN
+      RAISE EXCEPTION 'Rejected storage target changed lot status, stock, release decisions or movements.';
+    END IF;
+  END LOOP;
+END;
+$test$;
+SELECT set_config('test.grated_release_id', public.release_prepared_ingredient_quality_lot(
+  current_setting('test.grated_inspection_id')::uuid, 'refrigerated',
+  current_setting('test.location_id')::uuid, current_date + 10, 'Release grated cheese'
+)::text, true);
+DO $test$
+BEGIN
+  IF (SELECT status FROM public.raw_material_lots WHERE id = (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.grate_id')::uuid)) <> 'available'
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0.237
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.grate_id')::uuid)) <> (SELECT output_cost FROM public.cheese_preparation_operations WHERE id = current_setting('test.grate_id')::uuid)
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'prepared_ingredient_quality_release' AND reference_id = current_setting('test.grated_release_id')::uuid) <> 1 THEN
+    RAISE EXCEPTION 'Quality did not release the grated cheese with its preparation value exactly once.';
   END IF;
 END;
 $test$;

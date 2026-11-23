@@ -10,6 +10,7 @@ import {
   decideQualityRelease,
   decideProductLotQualitySampleDisposition,
   decideRawMaterialQualityRelease,
+  releasePreparedIngredientQualityLot,
   disposeFinishedProductNonconformance,
 } from '../actions';
 
@@ -216,6 +217,57 @@ export default async function QualityInspectionPage({
     inspection.subject_type === 'raw_material_lot';
   const isProductLotSample =
     inspection.subject_type === 'product_lot_quality_sample';
+  const rawMaterialLotId = isRawMaterial ? inspection.raw_material_lots?.id : null;
+  const preparationResult = rawMaterialLotId
+    ? await supabase.from('cheese_preparation_operations')
+      .select('id, operation_type, source_lot_id, source_quantity, source_cost, output_lot_id, secondary_lot_id, secondary_quantity, reason')
+      .or(`output_lot_id.eq.${rawMaterialLotId},secondary_lot_id.eq.${rawMaterialLotId}`)
+      .limit(1)
+      .maybeSingle()
+    : { data: null, error: null };
+  if (preparationResult.error) throw new Error('No fue posible consultar el origen de preparación.');
+  const preparation = preparationResult.data;
+  const preparationSourceResult = preparation
+    ? await supabase.from('raw_material_lots')
+      .select('lot_number, raw_materials(name)')
+      .eq('id', preparation.source_lot_id)
+      .maybeSingle()
+    : { data: null, error: null };
+  if (preparationSourceResult.error) throw new Error('No fue posible consultar el lote usado en la preparación.');
+  const parentPreparationResult = preparation?.operation_type === 'grate'
+    ? await supabase.from('cheese_preparation_operations')
+      .select('source_lot_id')
+      .eq('output_lot_id', preparation.source_lot_id)
+      .maybeSingle()
+    : { data: null, error: null };
+  if (parentPreparationResult.error) throw new Error('No fue posible consultar el origen del recorte.');
+  const originalCheeseLotResult = parentPreparationResult.data
+    ? await supabase.from('raw_material_lots')
+      .select('lot_number, raw_materials(name)')
+      .eq('id', parentPreparationResult.data.source_lot_id)
+      .maybeSingle()
+    : { data: null, error: null };
+  if (originalCheeseLotResult.error) throw new Error('No fue posible consultar el lote original de queso.');
+  const storageLocationsResult = preparation && !decision
+    ? await supabase.from('inventory_locations')
+      .select('id, name')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+      .order('name')
+    : { data: [], error: null };
+  if (storageLocationsResult.error) throw new Error('No fue posible consultar las ubicaciones de almacén.');
+  const preparedLotStateResult = preparation && decision?.decision === 'release' && rawMaterialLotId
+    ? await (supabase as unknown as {
+      from: (table: 'raw_material_lots') => {
+        select: (columns: string) => {
+          eq: (column: 'id', value: string) => {
+            maybeSingle: () => Promise<{ data: { storage_condition: string | null; expiration_date: string | null } | null; error: { message: string } | null }>;
+          };
+        };
+      };
+    }).from('raw_material_lots').select('storage_condition, expiration_date').eq('id', rawMaterialLotId).maybeSingle()
+    : { data: null, error: null };
+  if (preparedLotStateResult.error) throw new Error('No fue posible consultar la condición liberada del lote.');
   const disposedSampleQuantity = sampleDispositions.reduce(
     (total, disposition) => total + disposition.quantity,
     0,
@@ -281,6 +333,29 @@ export default async function QualityInspectionPage({
           Volver
         </Link>
       </div>
+
+      {preparation ? (
+        <section className="space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-5">
+          <h2 className="font-bold">Origen de preparación</h2>
+          <p>
+            {preparation.operation_type === 'cut' ? 'Corte de queso' : 'Rallado'} ·{' '}
+            {Number(preparation.source_quantity).toFixed(4)} kg de{' '}
+            {preparationSourceResult.data?.raw_materials?.name ?? 'ingrediente'} · lote{' '}
+            {preparationSourceResult.data?.lot_number ?? '-'} · costo asignado ${Number(preparation.source_cost).toFixed(4)}.
+          </p>
+          {originalCheeseLotResult.data ? (
+            <p>Origen del recorte: {originalCheeseLotResult.data.raw_materials?.name ?? 'Queso'} · lote {originalCheeseLotResult.data.lot_number}.</p>
+          ) : null}
+          <p>{decision?.decision === 'release'
+            ? 'El lote preparado fue liberado y ya forma parte del inventario disponible.'
+            : 'El lote preparado permanece en cuarentena y fuera del inventario disponible hasta su liberación por Calidad.'}</p>
+          {decision?.decision === 'release' ? (
+            <p className="font-semibold text-green-800">
+              Liberado · {preparedLotStateResult.data?.storage_condition === 'dry' ? 'Almacén seco' : 'Almacén refrigerado'} · caducidad interna {preparedLotStateResult.data?.expiration_date ?? '-'}.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section
         className={
@@ -592,7 +667,35 @@ export default async function QualityInspectionPage({
             'md:grid-cols-3'
           }
         >
-          {inspection.status === 'passed' &&
+          {inspection.status === 'passed' && preparation ? (
+            <form
+              action={releasePreparedIngredientQualityLot.bind(null, id)}
+              className="space-y-3 rounded border p-4 md:col-span-2"
+            >
+              <h2 className="font-semibold">Liberar ingrediente preparado</h2>
+              <p className="text-sm text-gray-600">Calidad define la conservación y la caducidad interna. Los ingredientes preparados no se congelan.</p>
+              <label className="block text-sm">Tipo de almacén
+                <select name="storage_condition" required defaultValue="" className="mt-1 w-full rounded border px-3 py-2">
+                  <option value="" disabled>Selecciona una condición</option>
+                  <option value="dry">Almacén seco</option>
+                  <option value="refrigerated">Almacén refrigerado</option>
+                </select>
+              </label>
+              <label className="block text-sm">Ubicación
+                <select name="inventory_location_id" required defaultValue="" className="mt-1 w-full rounded border px-3 py-2">
+                  <option value="" disabled>Selecciona una ubicación</option>
+                  {(storageLocationsResult.data ?? []).map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+                </select>
+              </label>
+              <label className="block text-sm">Caducidad interna
+                <input name="expiration_date" type="date" required className="mt-1 w-full rounded border px-3 py-2" />
+              </label>
+              <label className="block text-sm">Observaciones
+                <input name="reason" maxLength={500} className="mt-1 w-full rounded border px-3 py-2" />
+              </label>
+              <button type="submit" className="w-full rounded border px-4 py-2">Liberar a inventario</button>
+            </form>
+          ) : inspection.status === 'passed' &&
           (isRawMaterial ? (
             <form
               action={decideAction.bind(

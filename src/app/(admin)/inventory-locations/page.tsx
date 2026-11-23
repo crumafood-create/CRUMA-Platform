@@ -18,7 +18,9 @@ export default async function InventoryLocationsPage() {
       rack,
       level,
       position,
-      is_active
+      is_active,
+      location_use,
+      storage_condition
     `)
     .is('deleted_at', null)
     .order('zone')
@@ -104,6 +106,14 @@ export default async function InventoryLocationsPage() {
               </th>
 
               <th className="px-5 py-4">
+                Uso
+              </th>
+
+              <th className="px-5 py-4">
+                Conservación
+              </th>
+
+              <th className="px-5 py-4">
                 Estado
               </th>
 
@@ -122,7 +132,7 @@ export default async function InventoryLocationsPage() {
               <tr>
 
                 <td
-                  colSpan={9}
+                  colSpan={11}
                   className="py-12 text-center text-gray-500"
                 >
                   No existen ubicaciones registradas.
@@ -177,6 +187,24 @@ export default async function InventoryLocationsPage() {
 
                 <td className="px-5 py-4">
                   {location.position}
+                </td>
+
+                <td className="px-5 py-4">
+                  {{
+                    raw_material: 'Materia prima',
+                    prepared_ingredient: 'Ingrediente preparado',
+                    finished_product: 'Producto terminado',
+                    packaging: 'Empaque',
+                    chemical: 'Químicos',
+                  }[location.location_use ?? ''] ?? 'Sin clasificar'}
+                </td>
+
+                <td className="px-5 py-4">
+                  {{
+                    dry: 'Seco',
+                    refrigerated: 'Refrigerado',
+                    frozen: 'Congelado',
+                  }[location.storage_condition ?? ''] ?? 'Sin clasificar'}
                 </td>
 
                 <td className="px-5 py-4">

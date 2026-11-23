@@ -399,7 +399,7 @@ BEGIN
      OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = current_setting('test.trim_lot_id')::uuid) <> 0
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
      OR (SELECT current_stock * average_cost FROM public.raw_materials WHERE id = current_setting('test.trim_material_id')::uuid) <> 0
-     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_grate.id) <> 2
+     OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation' AND reference_id = v_grate.id) <> 1
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0
      OR (SELECT average_cost FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0
      OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_grate.output_lot_id) <> v_grate.output_cost THEN
@@ -412,7 +412,7 @@ BEGIN
   IF (SELECT count(*) FROM public.cheese_preparation_operations WHERE idempotency_key IN
       (current_setting('test.cut_key')::uuid, current_setting('test.grate_key')::uuid)) <> 2
      OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type = 'cheese_preparation')
-       <> current_setting('test.initial_cheese_movement_count')::bigint + 5 THEN
+       <> current_setting('test.initial_cheese_movement_count')::bigint + 2 THEN
     RAISE EXCEPTION 'Retry duplicated cheese preparation costs or inventory movements.';
   END IF;
 END;

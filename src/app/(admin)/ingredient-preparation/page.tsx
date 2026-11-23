@@ -159,12 +159,18 @@ export default async function CheesePreparationPage({
   const materialById = new Map(materials.map((material) => [material.id, material]));
   const sourceLots = lots.filter((lot) => {
     const name = normalized(materialById.get(lot.raw_material_id)?.name ?? '');
-    return isMassUnit(materialById.get(lot.raw_material_id) ?? { id: '', name: '', internal_code: null, unit_of_measure_id: null, units_of_measure: null })
+    return isMassUnit(materialById.get(lot.raw_material_id) ?? {
+      id: '', name: '', internal_code: null, unit_of_measure_id: null, units_of_measure: null,
+      required_storage_condition: null, default_storage_use: null, default_inventory_location_id: null,
+    })
       && name.includes('queso') && !name.includes('recorte') && !name.includes('rallado');
   });
   const trimLots = lots.filter((lot) => {
     const name = normalized(materialById.get(lot.raw_material_id)?.name ?? '');
-    return isMassUnit(materialById.get(lot.raw_material_id) ?? { id: '', name: '', internal_code: null, unit_of_measure_id: null, units_of_measure: null })
+    return isMassUnit(materialById.get(lot.raw_material_id) ?? {
+      id: '', name: '', internal_code: null, unit_of_measure_id: null, units_of_measure: null,
+      required_storage_condition: null, default_storage_use: null, default_inventory_location_id: null,
+    })
       && name.includes('recorte') && name.includes('queso');
   });
   const availableMaterials = materials.filter((material) => material.unit_of_measure_id !== null);

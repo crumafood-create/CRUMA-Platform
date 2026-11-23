@@ -2280,10 +2280,12 @@ export type Database = {
           id: string
           is_active: boolean | null
           level: number | null
+          location_use: string | null
           name: string
           position: number | null
           rack: number | null
           slug: string
+          storage_condition: string | null
           updated_at: string | null
           zone: string | null
         }
@@ -2295,10 +2297,12 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           level?: number | null
+          location_use?: string | null
           name: string
           position?: number | null
           rack?: number | null
           slug: string
+          storage_condition?: string | null
           updated_at?: string | null
           zone?: string | null
         }
@@ -2310,10 +2314,12 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           level?: number | null
+          location_use?: string | null
           name?: string
           position?: number | null
           rack?: number | null
           slug?: string
+          storage_condition?: string | null
           updated_at?: string | null
           zone?: string | null
         }
@@ -7349,6 +7355,8 @@ export type Database = {
           category_id: string | null
           created_at: string
           current_stock: number
+          default_inventory_location_id: string | null
+          default_storage_use: string | null
           deleted_at: string | null
           description: string | null
           family_id: string | null
@@ -7360,6 +7368,7 @@ export type Database = {
           name: string
           preferred_supplier_id: string | null
           reorder_quantity: number | null
+          required_storage_condition: string | null
           slug: string
           unit_of_measure_id: string | null
           updated_at: string
@@ -7369,6 +7378,8 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           current_stock?: number
+          default_inventory_location_id?: string | null
+          default_storage_use?: string | null
           deleted_at?: string | null
           description?: string | null
           family_id?: string | null
@@ -7380,6 +7391,7 @@ export type Database = {
           name: string
           preferred_supplier_id?: string | null
           reorder_quantity?: number | null
+          required_storage_condition?: string | null
           slug: string
           unit_of_measure_id?: string | null
           updated_at?: string
@@ -7389,6 +7401,8 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           current_stock?: number
+          default_inventory_location_id?: string | null
+          default_storage_use?: string | null
           deleted_at?: string | null
           description?: string | null
           family_id?: string | null
@@ -7400,6 +7414,7 @@ export type Database = {
           name?: string
           preferred_supplier_id?: string | null
           reorder_quantity?: number | null
+          required_storage_condition?: string | null
           slug?: string
           unit_of_measure_id?: string | null
           updated_at?: string
@@ -7410,6 +7425,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raw_materials_default_inventory_location_fkey"
+            columns: ["default_inventory_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
             referencedColumns: ["id"]
           },
           {

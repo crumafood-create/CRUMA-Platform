@@ -29,6 +29,9 @@ SELECT set_config('test.unclassified_location_id', gen_random_uuid()::text, true
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
 VALUES (current_setting('test.admin_id')::uuid, 'authenticated', 'authenticated',
   'cheese-preparation-' || current_setting('test.admin_id') || '@example.test', now(), now());
+INSERT INTO public.profiles (id, full_name, email, role)
+VALUES (current_setting('test.admin_id')::uuid, 'Cheese preparation test admin',
+  'cheese-preparation-' || current_setting('test.admin_id') || '@example.test', 'admin');
 INSERT INTO public.user_roles (user_id, role)
 VALUES (current_setting('test.admin_id')::uuid, 'admin');
 

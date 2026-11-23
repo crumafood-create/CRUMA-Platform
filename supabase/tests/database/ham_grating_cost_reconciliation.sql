@@ -12,6 +12,9 @@ SELECT set_config('test.ham_grating_key', gen_random_uuid()::text, true);
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
 VALUES (current_setting('test.ham_admin_id')::uuid, 'authenticated', 'authenticated',
   'ham-grating-' || current_setting('test.ham_admin_id') || '@example.test', now(), now());
+INSERT INTO public.profiles (id, full_name, email, role)
+VALUES (current_setting('test.ham_admin_id')::uuid, 'Ham grating test admin',
+  'ham-grating-' || current_setting('test.ham_admin_id') || '@example.test', 'admin');
 INSERT INTO public.user_roles (user_id, role)
 VALUES (current_setting('test.ham_admin_id')::uuid, 'admin');
 

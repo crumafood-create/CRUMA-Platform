@@ -261,13 +261,14 @@ export default async function QualityInspectionPage({
     ? await supabase.from('inventory_locations')
       .select('id, name, location_use, storage_condition')
       .eq('id', preparedMaterialPolicy.default_inventory_location_id)
-      .eq('location_use', preparedMaterialPolicy.default_storage_use)
-      .eq('storage_condition', preparedMaterialPolicy.required_storage_condition)
+      .eq('location_use', preparedMaterialPolicy.default_storage_use!)
+      .eq('storage_condition', preparedMaterialPolicy.required_storage_condition!)
       .eq('is_active', true)
       .is('deleted_at', null)
       .order('name')
     : { data: [], error: null };
   if (storageLocationsResult.error) throw new Error('No fue posible consultar las ubicaciones de almacÃ©n.');
+  const configuredStorageLocation = storageLocationsResult.data?.[0] ?? null;
   const preparedLotStateResult = preparation && decision?.decision === 'release' && rawMaterialLotId
     ? await (supabase as unknown as {
       from: (table: 'raw_material_lots') => {
@@ -685,13 +686,13 @@ export default async function QualityInspectionPage({
               className="space-y-3 rounded border p-4 md:col-span-2"
             >
               <h2 className="font-semibold">Liberar ingrediente preparado</h2>
-              {preparedMaterialPolicy?.required_storage_condition && preparedMaterialPolicy.default_storage_use && preparedMaterialPolicy.default_inventory_location_id && storageLocationsResult.data?.length === 1 ? (
+              {preparedMaterialPolicy?.required_storage_condition && preparedMaterialPolicy.default_storage_use && preparedMaterialPolicy.default_inventory_location_id && configuredStorageLocation && storageLocationsResult.data?.length === 1 ? (
                 <>
                   <p className="text-sm text-gray-600">La condiciÃ³n y el destino los configura el administrador segÃºn la especificaciÃ³n aprobada para este ingrediente. Calidad registra la caducidad interna. Los ingredientes preparados no se congelan.</p>
                   <p className="text-sm">CondiciÃ³n aprobada: <span className="font-medium">{preparedMaterialPolicy.required_storage_condition === 'refrigerated' ? 'Refrigerado' : 'Seco'}</span></p>
                   <input type="hidden" name="storage_condition" value={preparedMaterialPolicy.required_storage_condition} />
-                  <p className="text-sm">Destino configurado: <span className="font-medium">{storageLocationsResult.data[0].name}</span> Â· {preparedMaterialPolicy.default_storage_use === 'prepared_ingredient' ? 'semielaborados' : 'materias primas'}</p>
-                  <input type="hidden" name="inventory_location_id" value={storageLocationsResult.data[0].id} />
+                  <p className="text-sm">Destino configurado: <span className="font-medium">{configuredStorageLocation.name}</span> Â· {preparedMaterialPolicy.default_storage_use === 'prepared_ingredient' ? 'semielaborados' : 'materias primas'}</p>
+                  <input type="hidden" name="inventory_location_id" value={configuredStorageLocation.id} />
                 </>
               ) : (
                 <p role="alert" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm">No se puede liberar: el administrador debe configurar una condiciÃ³n aprobada y un destino activo compatible para esta materia prima.</p>

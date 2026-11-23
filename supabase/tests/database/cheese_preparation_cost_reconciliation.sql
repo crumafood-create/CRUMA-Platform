@@ -252,6 +252,10 @@ $test$;
 
 -- Quality inspects and releases both prepared outputs; each release posts the
 -- same prepared lot quantity and value exactly once, without a purchase receipt.
+INSERT INTO public.profiles (id, full_name, email, role)
+VALUES (auth.uid(), 'Cheese preparation test inspector',
+  'cheese-preparation-inspector-' || auth.uid()::text || '@example.test', 'admin')
+ON CONFLICT (id) DO NOTHING;
 DO $test$
 DECLARE
   v_output_lot_id uuid;

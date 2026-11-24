@@ -22,6 +22,7 @@ import {
   recordRawMaterialQualityInspection as persistRawMaterialQualityInspection,
   recordPreparedIngredientQualityInspection as persistPreparedIngredientQualityInspection,
   releasePreparedIngredientQualityLot as persistPreparedIngredientQualityRelease,
+  retainPreparedIngredientForStorageCorrection as persistPreparedIngredientStorageCorrection,
 } from '@/modules/quality/application/quality-control-repository';
 import { closeQualityRetentionDay as persistQualityRetentionDailyClose } from '@/modules/quality/application/quality-retention-repository';
 import {
@@ -230,6 +231,30 @@ export async function releasePreparedIngredientQualityLot(
   revalidatePath(`/qa/${inspectionId}`);
   revalidatePath('/ingredient-preparation');
   revalidatePath('/raw-materials');
+  revalidatePath('/inventory-stock');
+  redirect(`/qa/${inspectionId}`);
+}
+
+export async function retainPreparedIngredientForStorageCorrection(
+  inspectionId: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.QUALITY_RELEASE_DECIDE,
+  );
+  const reason = formData.get('reason')?.toString().trim() ?? '';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(inspectionId)
+    || !reason || reason.length > 500) {
+    throw new Error('Indica un motivo de retención válido (máximo 500 caracteres).');
+  }
+  await persistPreparedIngredientStorageCorrection(supabase, {
+    inspectionId,
+    reason,
+  });
+  revalidatePath('/qa');
+  revalidatePath(`/qa/${inspectionId}`);
+  revalidatePath('/raw-materials');
+  revalidatePath('/ingredient-preparation');
   revalidatePath('/inventory-stock');
   redirect(`/qa/${inspectionId}`);
 }

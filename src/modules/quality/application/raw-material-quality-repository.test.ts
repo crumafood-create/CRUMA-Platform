@@ -8,6 +8,7 @@ import {
   decideRawMaterialQualityRelease,
   recordPreparedIngredientQualityInspection,
   releasePreparedIngredientQualityLot,
+  retainPreparedIngredientForStorageCorrection,
   recordRawMaterialQualityInspection,
 } from './quality-control-repository';
 
@@ -178,5 +179,27 @@ describe('repositorio de calidad de materia prima', () => {
     ).rejects.toThrow(
       'Raw material inspection cannot be released.',
     );
+  });
+
+  it('retains a prepared lot for an administrator-approved storage correction', async () => {
+    const calls: unknown[] = [];
+    const client = {
+      rpc: async (...args: unknown[]) => {
+        calls.push(args);
+        return { data: 'correction-movement-1', error: null };
+      },
+    } as unknown as TypedSupabaseClient;
+
+    await expect(retainPreparedIngredientForStorageCorrection(client, {
+      inspectionId: 'inspection-1',
+      reason: 'Legacy prepared lot was stored dry',
+    })).resolves.toBe('correction-movement-1');
+    expect(calls).toEqual([[
+      'retain_prepared_ingredient_for_storage_correction',
+      {
+        p_inspection_id: 'inspection-1',
+        p_reason: 'Legacy prepared lot was stored dry',
+      },
+    ]]);
   });
 });

@@ -197,6 +197,25 @@ export async function releasePreparedIngredientQualityLot(
   return data;
 }
 
+export async function retainPreparedIngredientForStorageCorrection(
+  supabase: TypedSupabaseClient,
+  request: { inspectionId: string; reason: string },
+): Promise<string> {
+  const client = supabase as unknown as {
+    rpc: (name: 'retain_prepared_ingredient_for_storage_correction', args: {
+      p_inspection_id: string;
+      p_reason: string;
+    }) => Promise<{ data: string | null; error: { message: string } | null }>;
+  };
+  const { data, error } = await client.rpc(
+    'retain_prepared_ingredient_for_storage_correction',
+    { p_inspection_id: request.inspectionId, p_reason: request.reason },
+  );
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('La retención para corregir el almacenamiento no devolvió un movimiento.');
+  return data;
+}
+
 export async function decideRawMaterialQualityRelease(
   supabase: TypedSupabaseClient,
   inspectionId: string,

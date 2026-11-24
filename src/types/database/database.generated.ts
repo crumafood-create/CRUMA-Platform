@@ -9746,6 +9746,13 @@ export type Database = {
         }
         Returns: string
       }
+      retain_prepared_ingredient_for_storage_correction: {
+        Args: {
+          p_inspection_id: string
+          p_reason: string
+        }
+        Returns: string
+      }
       resolve_product_lot_freezing: {
         Args: {
           p_conservation_verified: boolean

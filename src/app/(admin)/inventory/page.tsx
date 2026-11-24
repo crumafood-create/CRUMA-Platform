@@ -56,6 +56,13 @@ export default async function InventoryPage() {
         >
           Movimientos
         </Link>
+
+        <Link
+          href="/inventory/lot-transfers"
+          className="rounded border px-4 py-2"
+        >
+          Trasladar lotes
+        </Link>
       </div>
 
       <div className="overflow-hidden rounded-2xl border">

@@ -112,10 +112,11 @@ describe('contrato canónico de movimientos de inventario', () => {
     const rows = calculateInventoryBalances([
       { movement_type: 'entry', quantity: 10 },
       { movement_type: 'exit', quantity: 3 },
+      { movement_type: 'transfer', quantity: 7 },
       { movement_type: 'adjustment', quantity: 2 },
       { movement_type: 'entry', quantity: 1 },
     ]);
 
-    expect(rows.map((row) => row.balance)).toEqual([10, 7, 7, 8]);
+    expect(rows.map((row) => row.balance)).toEqual([10, 7, 7, 7, 8]);
   });
 });

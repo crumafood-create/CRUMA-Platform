@@ -27,6 +27,7 @@ export default async function MovementsPage() {
     supabase
       .from('inventory_movements')
       .select('id, product_id, warehouse_id, movement_type, quantity, notes, created_at')
+      .eq('item_type', 'product')
       .order('created_at', { ascending: false }),
   ]);
 

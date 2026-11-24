@@ -909,6 +909,7 @@ DECLARE
   v_lot_id uuid;
   v_quantity integer;
   v_key uuid;
+  v_operation_status text;
 BEGIN
   -- Three confirmed pieces remain apart; the next confirmation of four
   -- crosses the threshold for this lot only and leaves two available.
@@ -946,6 +947,13 @@ BEGIN
   );
   INSERT INTO test_quality_sampling_operations
   VALUES (v_lot_id, 'second', v_operation_id, NULL);
+  SELECT operation.status INTO v_operation_status
+  FROM public.product_lot_freezing_operations AS operation
+  WHERE operation.id = v_operation_id;
+  IF v_operation_status IS DISTINCT FROM 'in_progress' THEN
+    RAISE EXCEPTION 'second partial-freezing start did not create an in-progress operation (%, status %)',
+      v_operation_id, v_operation_status;
+  END IF;
   v_key := 'fd000000-0000-4000-8000-000000000204';
   v_decision_id := public.resolve_product_lot_freezing(
     v_operation_id, 4, 'raw_frozen', false,

@@ -7,6 +7,11 @@ type Option = {
   label: string;
 };
 
+type StorageLocationOption = Option & {
+  locationUse: string | null;
+  storageCondition: string | null;
+};
+
 type InspectionOption = Option & {
   quantity: number;
 };
@@ -14,7 +19,7 @@ type InspectionOption = Option & {
 type Props = {
   inspections: InspectionOption[];
   warehouses: Option[];
-  locations: Option[];
+  locations: StorageLocationOption[];
   initialInspectionId: string;
   idempotencyKey: string;
 };
@@ -126,7 +131,7 @@ export function ProductionLotReleaseForm({
         </label>
 
         <label className="text-sm">
-          Ubicación
+          Destino inicial del lote
 
           <select
             name="inventory_location_id"
@@ -137,7 +142,7 @@ export function ProductionLotReleaseForm({
             }
           >
             <option value="">
-              Selecciona una ubicación
+              Selecciona espera refrigerada o congelación directa
             </option>
 
             {locations.map((location) => (
@@ -164,8 +169,16 @@ export function ProductionLotReleaseForm({
         />
       </label>
 
+      <p className="text-sm text-gray-600">
+        La espera refrigerada queda apartada de reservas y picking. La congelación directa inicia el proceso al liberar. En ambos casos, el producto estará disponible como congelado solo al confirmar que terminó.
+      </p>
+      {!locations.length && <p role="alert" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm">
+        No hay ubicaciones compatibles configuradas. El administrador debe clasificar la espera refrigerada de producto terminado y el congelador en Ubicaciones.
+      </p>}
+
       <button
         type="submit"
+        disabled={!locations.length}
         className="rounded border px-4 py-2"
       >
         Liberar producto a inventario

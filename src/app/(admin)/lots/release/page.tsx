@@ -63,9 +63,11 @@ export default async function ReleaseProductionLotPage({
       .order('name'),
     supabase
       .from('inventory_locations')
-      .select('id, name')
+      .select('id, name, location_use, storage_condition')
       .eq('is_active', true)
       .is('deleted_at', null)
+      .eq('location_use', 'finished_product')
+      .in('storage_condition', ['refrigerated', 'frozen'])
       .order('name'),
   ]);
 
@@ -146,7 +148,9 @@ export default async function ReleaseProductionLotPage({
             (locations ?? []).map(
               (location) => ({
                 id: location.id,
-                label: location.name,
+                label: `${location.name} · ${location.storage_condition === 'refrigerated' ? 'Espera refrigerada' : 'Congelación directa'}`,
+                storageCondition: location.storage_condition,
+                locationUse: location.location_use,
               }),
             )
           }

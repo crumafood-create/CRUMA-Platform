@@ -20,6 +20,7 @@ export default async function RawMaterialsPage({
   const [
     { data: materials, error: materialsError },
     { data: units, error: unitsError },
+    { data: lots, error: lotsError },
   ] = await Promise.all([
     supabase
       .from('raw_materials')
@@ -33,9 +34,14 @@ export default async function RawMaterialsPage({
       .from('units_of_measure')
       .select('id, name, code')
       .eq('is_active', true),
+
+    supabase
+      .from('raw_material_lots')
+      .select('raw_material_id, quantity, inventory_locations(slug)')
+      .gt('quantity', 0),
   ]);
 
-  if (materialsError || unitsError) {
+  if (materialsError || unitsError || lotsError) {
     return (
       <main className="space-y-6">
         <h1 className="text-4xl font-bold">
@@ -58,6 +64,12 @@ export default async function RawMaterialsPage({
       `${unit.code} - ${unit.name}`,
     ])
   );
+  const locationCodesByMaterial = new Map<string, Set<string>>();
+  for (const lot of lots ?? []) {
+    const codes = locationCodesByMaterial.get(lot.raw_material_id) ?? new Set<string>();
+    codes.add(lot.inventory_locations?.slug ?? 'Sin ubicación');
+    locationCodesByMaterial.set(lot.raw_material_id, codes);
+  }
 
   return (
     <main className="space-y-6">
@@ -100,6 +112,7 @@ export default async function RawMaterialsPage({
                 <th className="p-4 text-left">Nombre</th>
                 <th className="p-4 text-left">Unidad</th>
                 <th className="p-4 text-left">Stock</th>
+                <th className="p-4 text-left">Ubicaciones de lotes</th>
                 <th className="p-4 text-left">
                   Costo Promedio
                 </th>
@@ -128,6 +141,18 @@ export default async function RawMaterialsPage({
 
                   <td className="p-4">
                     {material.current_stock ?? 0}
+                  </td>
+
+                  <td className="p-4">
+                    <input
+                      type="text"
+                      readOnly
+                      aria-label={`Ubicaciones de ${material.name}`}
+                      value={[...(locationCodesByMaterial.get(material.id) ?? [])]
+                        .sort()
+                        .join(', ') || '—'}
+                      className="w-48 rounded border bg-gray-50 px-2 py-1 text-sm"
+                    />
                   </td>
 
                   <td className="p-4">

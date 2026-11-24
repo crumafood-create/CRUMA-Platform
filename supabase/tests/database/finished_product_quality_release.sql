@@ -72,6 +72,13 @@ INSERT INTO public.inventory_locations (
   'Finished Goods Location'
 );
 
+INSERT INTO public.inventory_locations (
+  id,slug,name,zone,is_active,location_use,storage_condition
+) VALUES (
+  'a5000000-0000-4000-8000-000000000010','finished-test-freezer','Finished Test Freezer',
+  'FREEZER',true,'finished_product','frozen'
+);
+
 INSERT INTO public.units_of_measure (id, name, code)
 VALUES ('fd000000-0000-4000-8000-000000000001', 'Kilogram', 'FGR-KG');
 
@@ -1800,6 +1807,169 @@ BEGIN
   END;
 END;
 $quality_sample_disposition_authorization$;
+
+RESET ROLE;
+
+-- Finished products can enter either the dedicated refrigerated wait location
+-- or the configured freezer. Neither route is sellable before freeze completion.
+INSERT INTO public.inventory_locations (
+  id,slug,name,zone,is_active,location_use,storage_condition
+) VALUES
+  ('a5000000-0000-4000-8000-000000000001','route-test-freezer','Route Test Freezer','FREEZER',true,'finished_product','frozen'),
+  ('a5000000-0000-4000-8000-000000000002','route-test-incompatible','Route Test Prepared Ingredient','REFRIGERATOR',true,'prepared_ingredient','refrigerated');
+
+INSERT INTO public.production_outputs (id,production_order_id,product_id,quantity_produced,quality_status)
+VALUES
+  ('a1000000-0000-4000-8000-000000000001','f8000000-0000-4000-8000-000000000001','f4000000-0000-4000-8000-000000000001',9,'pending'),
+  ('a1000000-0000-4000-8000-000000000002','f8000000-0000-4000-8000-000000000001','f4000000-0000-4000-8000-000000000001',6,'pending'),
+  ('a1000000-0000-4000-8000-000000000003','f8000000-0000-4000-8000-000000000001','f4000000-0000-4000-8000-000000000001',4,'pending');
+INSERT INTO public.quality_inspections (
+  id,production_order_id,production_output_id,inspector_id,subject_type,status,result,
+  sampled_quantity,accepted_quantity,rejected_quantity
+) VALUES
+  ('a2000000-0000-4000-8000-000000000001','f8000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000001','f1000000-0000-4000-8000-000000000001','production_output','passed','ok',1,1,0),
+  ('a2000000-0000-4000-8000-000000000002','f8000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000002','f1000000-0000-4000-8000-000000000001','production_output','passed','ok',1,1,0),
+  ('a2000000-0000-4000-8000-000000000003','f8000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000003','f1000000-0000-4000-8000-000000000001','production_output','passed','ok',1,1,0);
+
+SELECT set_config('request.jwt.claim.sub','f1000000-0000-4000-8000-000000000001',true);
+SET LOCAL ROLE authenticated;
+
+DO $finished_product_storage_routes$
+DECLARE
+  v_wait_location uuid;
+  v_freezer uuid := 'a5000000-0000-4000-8000-000000000001';
+  v_incompatible uuid := 'a5000000-0000-4000-8000-000000000002';
+  v_wait_lot uuid;
+  v_direct_lot uuid;
+  v_freeze_operation uuid;
+  v_wait_decision uuid;
+  v_retry uuid;
+  v_lot_quantity integer;
+  v_available_before numeric;
+BEGIN
+  SELECT coalesce(sum(available_quantity),0) INTO v_available_before
+  FROM public.inventory_available_to_promise
+  WHERE item_type='product' AND item_id='f4000000-0000-4000-8000-000000000001';
+  SELECT id INTO v_wait_location FROM public.inventory_locations
+  WHERE slug='REF-PT-ESPERA-CONG' AND location_use='finished_product'
+    AND storage_condition='refrigerated' AND zone='REFRIGERADOR';
+  IF v_wait_location IS NULL THEN RAISE EXCEPTION 'dedicated refrigerated wait location was not seeded'; END IF;
+
+  v_wait_lot := public.release_finished_product_quality_to_inventory(
+    'a2000000-0000-4000-8000-000000000001','ROUTE-WAIT-009',CURRENT_DATE+30,
+    'f2000000-0000-4000-8000-000000000001',v_wait_location,
+    'a3000000-0000-4000-8000-000000000001','Waiting for freezer capacity'
+  );
+  v_retry := public.release_finished_product_quality_to_inventory(
+    'a2000000-0000-4000-8000-000000000001','ROUTE-WAIT-009',CURRENT_DATE+30,
+    'f2000000-0000-4000-8000-000000000001',v_wait_location,
+    'a3000000-0000-4000-8000-000000000001','Waiting for freezer capacity'
+  );
+  IF v_wait_lot IS DISTINCT FROM v_retry OR
+     (SELECT refrigerated_wait_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot)<>9 OR
+     (SELECT refrigerated_wait_location_id FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot) IS DISTINCT FROM v_wait_location OR
+     (SELECT quantity FROM public.product_lots WHERE id=v_wait_lot)<>0 OR
+     (SELECT count(*) FROM public.product_lot_refrigerated_wait_decisions WHERE product_lot_id=v_wait_lot)<>0 OR
+     (SELECT count(*) FROM public.inventory_movements WHERE reference_id=v_wait_lot AND movement_type='entry')<>1 OR
+     (SELECT count(*) FROM public.inventory_movements WHERE reference_id=v_wait_lot AND reference_type='finished_product_refrigerated_wait')<>1 THEN
+    RAISE EXCEPTION 'refrigerated wait release did not retain lot balance/location or idempotency';
+  END IF;
+  IF (SELECT coalesce(sum(available_quantity),0) FROM public.inventory_available_to_promise
+      WHERE item_type='product' AND item_id='f4000000-0000-4000-8000-000000000001') IS DISTINCT FROM v_available_before THEN
+    RAISE EXCEPTION 'refrigerated waiting pieces changed available-to-promise';
+  END IF;
+
+  v_wait_decision := public.decide_product_lot_refrigerated_wait(
+    v_wait_lot,5,'freezing',v_freezer,'Freezer capacity available','a3000000-0000-4000-8000-000000000002'
+  );
+  v_retry := public.decide_product_lot_refrigerated_wait(
+    v_wait_lot,5,'freezing',v_freezer,'Freezer capacity available','a3000000-0000-4000-8000-000000000002'
+  );
+  SELECT id INTO v_freeze_operation FROM public.product_lot_freezing_operations
+    WHERE idempotency_key='a3000000-0000-4000-8000-000000000002';
+  IF v_wait_decision IS DISTINCT FROM v_retry OR v_freeze_operation IS NULL OR
+     (SELECT refrigerated_wait_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot)<>4 OR
+     (SELECT freezing_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot)<>5 OR
+     (SELECT freezing_location_id FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot) IS DISTINCT FROM v_freezer OR
+     (SELECT source_location_id FROM public.product_lot_freezing_operations WHERE id=v_freeze_operation) IS DISTINCT FROM v_wait_location OR
+     (SELECT process_location_id FROM public.product_lot_freezing_operations WHERE id=v_freeze_operation) IS DISTINCT FROM v_freezer OR
+     (SELECT count(*) FROM public.inventory_movements WHERE reference_type='product_lot_refrigerated_wait_decision' AND reference_id=v_wait_decision AND movement_type='transfer')<>1 OR
+     (SELECT count(*) FROM public.product_lot_refrigerated_wait_decisions WHERE idempotency_key='a3000000-0000-4000-8000-000000000002')<>1 OR
+     (SELECT coalesce(sum(available_quantity),0) FROM public.inventory_available_to_promise
+      WHERE item_type='product' AND item_id='f4000000-0000-4000-8000-000000000001') IS DISTINCT FROM v_available_before OR
+     EXISTS (SELECT 1 FROM public.inventory_product_lot_storage_pick_suggestions WHERE lot_id=v_wait_lot) THEN
+    RAISE EXCEPTION 'wait-to-freezing decision did not transfer balance once';
+  END IF;
+  PERFORM public.resolve_product_lot_freezing(v_freeze_operation,5,'raw_frozen',false,'Freeze completed','a4000000-0000-4000-8000-000000000001');
+  PERFORM public.resolve_product_lot_freezing(v_freeze_operation,5,'raw_frozen',false,'Freeze completed','a4000000-0000-4000-8000-000000000001');
+  IF (SELECT raw_frozen_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot)<>5 OR
+     (SELECT freezing_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot)<>0 OR
+     (SELECT frozen_location_id FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot) IS DISTINCT FROM v_freezer OR
+     NOT EXISTS (SELECT 1 FROM public.production_lot_traceability WHERE product_lot_id=v_wait_lot AND production_order_consumption_id IS NOT NULL) OR
+     NOT EXISTS (SELECT 1 FROM public.inventory_product_lot_storage_pick_suggestions WHERE lot_id=v_wait_lot AND quantity=5 AND storage_condition='raw_frozen' AND location_name='Route Test Freezer') THEN
+    RAISE EXCEPTION 'completed wait-route freeze did not become pickable at its freezer location';
+  END IF;
+  v_wait_decision := public.decide_product_lot_refrigerated_wait(
+    v_wait_lot,4,'waste',NULL,'Quality authorized discard at day close','a3000000-0000-4000-8000-000000000003'
+  );
+  PERFORM public.decide_product_lot_refrigerated_wait(
+    v_wait_lot,4,'waste',NULL,'Quality authorized discard at day close','a3000000-0000-4000-8000-000000000003'
+  );
+  IF (SELECT refrigerated_wait_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot)<>0 OR
+     (SELECT quality_waste_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_wait_lot)<>4 OR
+     (SELECT count(*) FROM public.product_lot_refrigerated_wait_decisions WHERE idempotency_key='a3000000-0000-4000-8000-000000000003')<>1 OR
+     (SELECT count(*) FROM public.inventory_movements WHERE reference_type='product_lot_refrigerated_wait_decision' AND reference_id=v_wait_decision AND movement_type='adjustment')<>1 THEN
+    RAISE EXCEPTION 'authorized waste from refrigerated waiting stock was duplicated or not traceable';
+  END IF;
+
+  v_direct_lot := public.release_finished_product_quality_to_inventory(
+    'a2000000-0000-4000-8000-000000000002','ROUTE-DIRECT-006',CURRENT_DATE+30,
+    'f2000000-0000-4000-8000-000000000001',v_freezer,
+    'a3000000-0000-4000-8000-000000000004','Direct freezer route'
+  );
+  PERFORM public.release_finished_product_quality_to_inventory(
+    'a2000000-0000-4000-8000-000000000002','ROUTE-DIRECT-006',CURRENT_DATE+30,
+    'f2000000-0000-4000-8000-000000000001',v_freezer,
+    'a3000000-0000-4000-8000-000000000004','Direct freezer route'
+  );
+  SELECT operation.id INTO v_freeze_operation FROM public.product_lot_freezing_operations operation
+  WHERE operation.product_lot_id=v_direct_lot;
+  IF (SELECT freezing_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_direct_lot)<>6 OR
+     (SELECT freezing_location_id FROM public.product_lot_storage_balances WHERE product_lot_id=v_direct_lot) IS DISTINCT FROM v_freezer OR
+     (SELECT count(*) FROM public.product_lot_freezing_operations WHERE product_lot_id=v_direct_lot)<>1 OR
+     (SELECT count(*) FROM public.inventory_movements WHERE reference_id=v_direct_lot AND reference_type='finished_product_direct_freezing')<>1 OR
+     (SELECT quantity FROM public.product_lots WHERE id=v_direct_lot)<>0 OR
+     (SELECT coalesce(sum(available_quantity),0) FROM public.inventory_available_to_promise
+      WHERE item_type='product' AND item_id='f4000000-0000-4000-8000-000000000001') IS DISTINCT FROM v_available_before+5 OR
+     EXISTS (SELECT 1 FROM public.inventory_product_lot_storage_pick_suggestions WHERE lot_id=v_direct_lot) THEN
+    RAISE EXCEPTION 'direct route exposed pieces before freeze completion or duplicated its process';
+  END IF;
+  PERFORM public.resolve_product_lot_freezing(v_freeze_operation,6,'raw_frozen',false,'Direct freezing completed','a4000000-0000-4000-8000-000000000002');
+  PERFORM public.resolve_product_lot_freezing(v_freeze_operation,6,'raw_frozen',false,'Direct freezing completed','a4000000-0000-4000-8000-000000000002');
+  IF (SELECT quantity FROM public.product_lots WHERE id=v_direct_lot)<>6 OR
+     (SELECT raw_frozen_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_direct_lot)<>6 OR
+     (SELECT coalesce(sum(available_quantity),0) FROM public.inventory_available_to_promise
+      WHERE item_type='product' AND item_id='f4000000-0000-4000-8000-000000000001') IS DISTINCT FROM v_available_before+11 OR
+     (SELECT count(*) FROM public.inventory_movements WHERE reference_type='product_lot_freezing_decision' AND reference_id=(SELECT id FROM public.product_lot_freezing_decisions WHERE idempotency_key='a4000000-0000-4000-8000-000000000002'))<>1 THEN
+    RAISE EXCEPTION 'direct-route freeze completion or retry changed balances incorrectly';
+  END IF;
+
+  BEGIN
+    PERFORM public.release_finished_product_quality_to_inventory(
+      'a2000000-0000-4000-8000-000000000003','ROUTE-INVALID-004',CURRENT_DATE+30,
+      'f2000000-0000-4000-8000-000000000001',v_incompatible,
+      'a3000000-0000-4000-8000-000000000005','Invalid prepared-ingredient destination'
+    );
+    RAISE EXCEPTION 'finished product was released to a prepared-ingredient location';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  IF EXISTS (SELECT 1 FROM public.product_lots WHERE production_output_id='a1000000-0000-4000-8000-000000000003') OR
+     NOT EXISTS (SELECT 1 FROM public.production_outputs WHERE id='a1000000-0000-4000-8000-000000000003' AND quality_status='pending') OR
+     EXISTS (SELECT 1 FROM public.quality_release_decisions WHERE production_output_id='a1000000-0000-4000-8000-000000000003') THEN
+    RAISE EXCEPTION 'incompatible destination partially released finished product';
+  END IF;
+END;
+$finished_product_storage_routes$;
 
 RESET ROLE;
 

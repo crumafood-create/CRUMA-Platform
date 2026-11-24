@@ -11,6 +11,8 @@ INSERT INTO public.warehouses (id, code, name)
 VALUES ('fe100000-0000-4000-8000-000000000001', 'STOR-RACE', 'Storage Race Warehouse');
 INSERT INTO public.inventory_locations (id, slug, name)
 VALUES ('fe200000-0000-4000-8000-000000000001', 'storage-race', 'Storage Race Location');
+INSERT INTO public.inventory_locations (id, slug, name, zone, location_use, storage_condition)
+VALUES ('fe200000-0000-4000-8000-000000000002', 'storage-race-freezer', 'Storage Race Freezer', 'FREEZER', 'finished_product', 'frozen');
 INSERT INTO public.preparation_types (id, slug, name)
 VALUES ('fe300000-0000-4000-8000-000000000001', 'storage-race-raw', 'Crudo');
 INSERT INTO public.products (id, preparation_type_id, slug, internal_code, name, status)

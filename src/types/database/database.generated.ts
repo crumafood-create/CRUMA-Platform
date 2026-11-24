@@ -9799,6 +9799,15 @@ export type Database = {
         Args: { p_requisition_id: string }
         Returns: string
       }
+      transfer_raw_material_lot_location: {
+        Args: {
+          p_destination_location_id: string
+          p_idempotency_key: string
+          p_lot_id: string
+          p_reason: string
+        }
+        Returns: string
+      }
       transition_production_order_lifecycle: {
         Args: {
           p_idempotency_key: string

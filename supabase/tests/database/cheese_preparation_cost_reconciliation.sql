@@ -749,6 +749,7 @@ SELECT set_config('test.corrected_lot_release_retry_id', public.release_prepared
   current_setting('test.corrected_lot_inspection_id')::uuid, 'refrigerated',
   current_setting('test.location_id')::uuid, current_date + 10, 'Quality approved the corrected refrigerated lot'
 )::text, true);
+RESET ROLE;
 DO $test$
 BEGIN
   IF current_setting('test.corrected_lot_release_id') <> current_setting('test.corrected_lot_release_retry_id')

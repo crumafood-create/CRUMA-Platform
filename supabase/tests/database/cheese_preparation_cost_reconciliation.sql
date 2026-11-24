@@ -666,12 +666,17 @@ BEGIN
       current_setting('test.grated_inspection_id')::uuid, 'refrigerated',
       current_setting('test.location_id')::uuid, current_date + 10, 'Retry the old release'
     );
-  EXCEPTION WHEN check_violation THEN
+  EXCEPTION WHEN unique_violation THEN
     v_release_rejected := true;
   END;
   IF NOT v_release_rejected
      OR (SELECT status FROM public.raw_material_lots WHERE id = v_lot_id) <> 'hold'
-     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0 THEN
+     OR (SELECT quantity FROM public.raw_material_lots WHERE id = v_lot_id) <> 0.237
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> current_setting('test.grated_output_cost')::numeric
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0
+     OR (SELECT count(*) FROM public.inventory_movements
+         WHERE reference_type = 'prepared_ingredient_quality_release'
+           AND reference_id = current_setting('test.grated_release_id')::uuid) <> 1 THEN
     RAISE EXCEPTION 'The old Quality decision must not release a corrected lot again.';
   END IF;
 

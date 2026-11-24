@@ -737,7 +737,7 @@ BEGIN
          AND movement_type = 'transfer' AND quantity = 0.237
          AND previous_stock = 0 AND new_stock = 0
          AND created_by = current_setting('test.admin_id')::uuid
-         AND notes LIKE '%lote=' || v_lot_id || '; origen=' || current_setting('test.location_id') || '; destino=' || current_setting('test.alt_location_id') || '%')
+         AND notes LIKE '%lote=' || v_lot_id || '; destino=' || current_setting('test.alt_location_id') || '; origen=' || current_setting('test.location_id') || '%')
      OR NOT EXISTS (SELECT 1 FROM public.raw_material_lots
        WHERE id = v_lot_id AND status = 'hold' AND storage_condition = 'refrigerated'
          AND inventory_location_id = current_setting('test.alt_location_id')::uuid

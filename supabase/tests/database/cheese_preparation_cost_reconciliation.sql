@@ -570,7 +570,14 @@ BEGIN
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0.237
      OR EXISTS (SELECT 1 FROM public.inventory_movements
        WHERE reference_type = 'prepared_ingredient_storage_correction' AND reference_id = v_lot_id) THEN
-    RAISE EXCEPTION 'An incompatible destination must be rejected without partial inventory changes.';
+    RAISE EXCEPTION 'Incompatible destination atomicity failed: rejected %, status %, quantity %, value %, available stock %, correction movements %.',
+      v_rejected,
+      (SELECT status FROM public.raw_material_lots WHERE id = v_lot_id),
+      (SELECT quantity FROM public.raw_material_lots WHERE id = v_lot_id),
+      (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id),
+      (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid),
+      (SELECT count(*) FROM public.inventory_movements
+       WHERE reference_type = 'prepared_ingredient_storage_correction' AND reference_id = v_lot_id);
   END IF;
 END;
 $test$;

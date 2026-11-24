@@ -342,8 +342,11 @@ BEGIN
   END IF;
   SELECT * INTO operation FROM public.product_lot_freezing_operations
   WHERE id = p_operation_id FOR UPDATE;
-  IF NOT FOUND OR operation.status <> 'in_progress' THEN
+  IF NOT FOUND THEN
     RAISE no_data_found USING MESSAGE = 'Freezing operation is not pending.';
+  END IF;
+  IF operation.status <> 'in_progress' THEN
+    RAISE check_violation USING MESSAGE = 'Decision exceeds pending freezing quantity.';
   END IF;
   IF p_destination = 'fresh' AND coalesce(p_conservation_verified,false) IS NOT TRUE THEN
     RAISE check_violation USING MESSAGE = 'Returning to fresh requires verified conservation.';

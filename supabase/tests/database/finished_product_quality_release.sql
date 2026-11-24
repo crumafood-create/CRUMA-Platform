@@ -961,6 +961,15 @@ BEGIN
   );
   UPDATE test_quality_sampling_operations SET decision_id = v_decision_id
   WHERE product_lot_id = v_lot_id AND stage = 'second';
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_freezing_decisions AS decision
+    WHERE decision.id = v_decision_id
+      AND decision.idempotency_key = v_key
+      AND decision.operation_id = v_operation_id
+      AND decision.quantity = 4
+  ) THEN
+    RAISE EXCEPTION 'the second partial-freezing decision did not persist its idempotency key';
+  END IF;
   v_retry_id := public.resolve_product_lot_freezing(
     v_operation_id, 4, 'raw_frozen', false,
     'Confirmación parcial de cuatro piezas', v_key

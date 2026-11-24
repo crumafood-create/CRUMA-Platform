@@ -248,12 +248,6 @@ BEGIN
   UPDATE public.product_lots SET quantity = quantity - p_quantity,
     status = CASE WHEN quantity - p_quantity = 0 THEN 'depleted' ELSE status END,
     updated_at = now() WHERE id = p_product_lot_id;
-  INSERT INTO public.inventory_movements (
-    item_type,item_id,product_id,movement_type,quantity,reference_type,
-    reference_id,warehouse_id,created_by,notes
-  ) VALUES ('product',lot.product_id,lot.product_id,'exit',p_quantity,
-    'product_lot_freezing_start',p_idempotency_key,lot.warehouse_id,auth.uid(),btrim(p_reason));
-
   INSERT INTO public.product_lot_freezing_operations (
     product_lot_id, requested_quantity, reason, idempotency_key, started_by,
     source_location_id, process_location_id, started_from
@@ -261,6 +255,11 @@ BEGIN
     p_product_lot_id,p_quantity,btrim(p_reason),p_idempotency_key,auth.uid(),
     lot.inventory_location_id,p_process_location_id,'fresh'
   ) RETURNING id INTO operation_id;
+  INSERT INTO public.inventory_movements (
+    item_type,item_id,product_id,movement_type,quantity,reference_type,
+    reference_id,warehouse_id,created_by,notes
+  ) VALUES ('product',lot.product_id,lot.product_id,'exit',p_quantity,
+    'product_lot_freezing_start',operation_id,lot.warehouse_id,auth.uid(),btrim(p_reason));
   RETURN operation_id;
 END;
 $function$;

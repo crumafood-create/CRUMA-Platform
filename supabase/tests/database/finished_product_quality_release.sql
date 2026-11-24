@@ -1955,7 +1955,7 @@ BEGIN
   IF (SELECT freezing_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_direct_lot)<>6 OR
      (SELECT freezing_location_id FROM public.product_lot_storage_balances WHERE product_lot_id=v_direct_lot) IS DISTINCT FROM v_freezer OR
      (SELECT count(*) FROM public.product_lot_freezing_operations WHERE product_lot_id=v_direct_lot)<>1 OR
-     (SELECT count(*) FROM public.inventory_movements WHERE reference_id=v_direct_lot AND reference_type='finished_product_direct_freezing')<>1 OR
+     (SELECT count(*) FROM public.inventory_movements WHERE reference_id=v_freeze_operation AND reference_type='finished_product_direct_freezing')<>1 OR
      (SELECT quantity FROM public.product_lots WHERE id=v_direct_lot)<>0 OR
      (SELECT coalesce(sum(available_quantity),0) FROM public.inventory_available_to_promise
       WHERE item_type='product' AND item_id='f4000000-0000-4000-8000-000000000001') IS DISTINCT FROM v_available_before+2 OR

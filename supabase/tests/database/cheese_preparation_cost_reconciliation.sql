@@ -706,9 +706,11 @@ SELECT set_config('test.corrected_lot_inspection_id', public.record_prepared_ing
   (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.grate_id')::uuid),
   0.001, 'Quality reinspection after storage correction', '[{"criterion":"Appearance","passed":true}]'::jsonb, '[]'::jsonb
 )::text, true);
+RESET ROLE;
 UPDATE public.quality_inspections
 SET inspected_at = now() + interval '1 minute'
 WHERE id = current_setting('test.corrected_lot_inspection_id')::uuid;
+SET LOCAL ROLE authenticated;
 DO $test$
 DECLARE
   v_rejected boolean := false;

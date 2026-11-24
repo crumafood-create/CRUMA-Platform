@@ -312,15 +312,19 @@ AS $function$
 DECLARE
   operation public.product_lot_freezing_operations%ROWTYPE;
   lot public.product_lots%ROWTYPE;
+  balance public.product_lot_storage_balances%ROWTYPE;
   existing_decision public.product_lot_freezing_decisions%ROWTYPE;
   pending_quantity integer;
+  sampling_total integer;
+  sampling_reserved integer := 0;
+  inventory_quantity integer;
   decision_id uuid;
 BEGIN
   IF NOT public.is_admin(auth.uid()) THEN
     RAISE insufficient_privilege USING MESSAGE = 'Freezing decisions require an administrator.';
   END IF;
   IF p_operation_id IS NULL OR p_quantity IS NULL OR p_quantity <= 0
-     OR p_destination NOT IN ('fresh','raw_frozen','waste')
+     OR p_destination IS NULL OR p_destination NOT IN ('fresh','raw_frozen','waste')
      OR NULLIF(btrim(p_reason),'') IS NULL OR p_idempotency_key IS NULL THEN
     RAISE EXCEPTION 'Freezing decision is invalid.' USING ERRCODE = '22023';
   END IF;
@@ -345,7 +349,11 @@ BEGIN
   IF p_destination = 'fresh' AND coalesce(p_conservation_verified,false) IS NOT TRUE THEN
     RAISE check_violation USING MESSAGE = 'Returning to fresh requires verified conservation.';
   END IF;
+  SELECT * INTO lot FROM public.product_lots WHERE id = operation.product_lot_id;
+  PERFORM 1 FROM public.products WHERE id = lot.product_id FOR UPDATE;
   SELECT * INTO lot FROM public.product_lots WHERE id = operation.product_lot_id FOR UPDATE;
+  SELECT * INTO balance FROM public.product_lot_storage_balances
+  WHERE product_lot_id = lot.id FOR UPDATE;
   SELECT operation.requested_quantity - coalesce(sum(decision.quantity),0)::integer
   INTO pending_quantity FROM public.product_lot_freezing_decisions AS decision
   WHERE decision.operation_id = operation.id;
@@ -354,6 +362,22 @@ BEGIN
   END IF;
   IF p_destination = 'fresh' AND operation.started_from <> 'fresh' THEN
     RAISE check_violation USING MESSAGE = 'Only pieces started from fresh stock may return to fresh.';
+  END IF;
+  IF p_destination = 'raw_frozen'
+     AND balance.quality_sampling_reserved_quantity = 0 THEN
+    sampling_total := balance.quality_sampling_pending_quantity + p_quantity;
+    IF sampling_total >= 5 THEN
+      sampling_reserved := 5;
+      inventory_quantity := sampling_total - 5;
+    ELSE
+      inventory_quantity := 0;
+    END IF;
+  ELSIF p_destination = 'raw_frozen' THEN
+    inventory_quantity := p_quantity;
+  ELSIF p_destination = 'fresh' THEN
+    inventory_quantity := p_quantity;
+  ELSE
+    inventory_quantity := 0;
   END IF;
   INSERT INTO public.product_lot_freezing_decisions (
     operation_id,product_lot_id,quantity,destination,reason,
@@ -364,22 +388,40 @@ BEGIN
   UPDATE public.product_lot_storage_balances AS balance
   SET freezing_quantity = freezing_quantity - p_quantity,
       fresh_quantity = fresh_quantity + CASE WHEN p_destination='fresh' THEN p_quantity ELSE 0 END,
-      raw_frozen_quantity = raw_frozen_quantity + CASE WHEN p_destination='raw_frozen' THEN p_quantity ELSE 0 END,
+      raw_frozen_quantity = raw_frozen_quantity + CASE WHEN p_destination='raw_frozen' THEN inventory_quantity ELSE 0 END,
+      quality_sampling_pending_quantity = CASE
+        WHEN p_destination <> 'raw_frozen'
+          OR balance.quality_sampling_reserved_quantity > 0
+          THEN quality_sampling_pending_quantity
+        WHEN sampling_reserved = 5 THEN 0
+        ELSE quality_sampling_pending_quantity + p_quantity
+      END,
+      quality_sampling_reserved_quantity = quality_sampling_reserved_quantity + sampling_reserved,
       quality_waste_quantity = quality_waste_quantity + CASE WHEN p_destination='waste' THEN p_quantity ELSE 0 END,
       frozen_location_id = CASE WHEN p_destination='raw_frozen' THEN operation.process_location_id ELSE frozen_location_id END,
       updated_at = now()
   WHERE product_lot_id = lot.id AND freezing_quantity >= p_quantity;
   IF NOT FOUND THEN RAISE check_violation USING MESSAGE = 'Decision exceeds pending freezing quantity.'; END IF;
+  IF sampling_reserved = 5 THEN
+    INSERT INTO public.product_lot_quality_samples (
+      product_lot_id, purpose, quantity, status, created_by
+    ) VALUES
+      (lot.id, 'immediate_inspection', 2, 'pending_inspection', auth.uid()),
+      (lot.id, 'safety_retention', 3, 'in_custody', auth.uid());
+  END IF;
   IF p_destination IN ('fresh','raw_frozen') THEN
-    UPDATE public.product_lots SET quantity = quantity + p_quantity,
+    UPDATE public.product_lots SET quantity = quantity + inventory_quantity,
       inventory_location_id = CASE WHEN p_destination='raw_frozen' THEN operation.process_location_id ELSE inventory_location_id END,
       location_name = CASE WHEN p_destination='raw_frozen' THEN (SELECT name FROM public.inventory_locations WHERE id=operation.process_location_id) ELSE location_name END,
-      status = 'available', updated_at = now() WHERE id = lot.id;
-    INSERT INTO public.inventory_movements (
-      item_type,item_id,product_id,movement_type,quantity,reference_type,
-      reference_id,warehouse_id,created_by,notes
-    ) VALUES ('product',lot.product_id,lot.product_id,'entry',p_quantity,
-      'product_lot_freezing_decision',decision_id,lot.warehouse_id,auth.uid(),btrim(p_reason));
+      status = CASE WHEN quantity + inventory_quantity > 0 THEN 'available' ELSE status END,
+      updated_at = now() WHERE id = lot.id;
+    IF inventory_quantity > 0 THEN
+      INSERT INTO public.inventory_movements (
+        item_type,item_id,product_id,movement_type,quantity,reference_type,
+        reference_id,warehouse_id,created_by,notes
+      ) VALUES ('product',lot.product_id,lot.product_id,'entry',inventory_quantity,
+        'product_lot_freezing_decision',decision_id,lot.warehouse_id,auth.uid(),btrim(p_reason));
+    END IF;
   ELSE
     INSERT INTO public.inventory_movements (
       item_type,item_id,product_id,movement_type,quantity,reference_type,

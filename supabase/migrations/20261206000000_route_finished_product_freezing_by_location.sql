@@ -385,22 +385,22 @@ BEGIN
   ) VALUES (operation.id,lot.id,p_quantity,p_destination,btrim(p_reason),
     coalesce(p_conservation_verified,false),p_idempotency_key,auth.uid())
   RETURNING id INTO decision_id;
-  UPDATE public.product_lot_storage_balances AS balance
-  SET freezing_quantity = freezing_quantity - p_quantity,
-      fresh_quantity = fresh_quantity + CASE WHEN p_destination='fresh' THEN p_quantity ELSE 0 END,
-      raw_frozen_quantity = raw_frozen_quantity + CASE WHEN p_destination='raw_frozen' THEN inventory_quantity ELSE 0 END,
+  UPDATE public.product_lot_storage_balances AS storage_balance
+  SET freezing_quantity = storage_balance.freezing_quantity - p_quantity,
+      fresh_quantity = storage_balance.fresh_quantity + CASE WHEN p_destination='fresh' THEN p_quantity ELSE 0 END,
+      raw_frozen_quantity = storage_balance.raw_frozen_quantity + CASE WHEN p_destination='raw_frozen' THEN inventory_quantity ELSE 0 END,
       quality_sampling_pending_quantity = CASE
         WHEN p_destination <> 'raw_frozen'
-          OR balance.quality_sampling_reserved_quantity > 0
-          THEN quality_sampling_pending_quantity
+          OR storage_balance.quality_sampling_reserved_quantity > 0
+          THEN storage_balance.quality_sampling_pending_quantity
         WHEN sampling_reserved = 5 THEN 0
-        ELSE quality_sampling_pending_quantity + p_quantity
+        ELSE storage_balance.quality_sampling_pending_quantity + p_quantity
       END,
-      quality_sampling_reserved_quantity = quality_sampling_reserved_quantity + sampling_reserved,
-      quality_waste_quantity = quality_waste_quantity + CASE WHEN p_destination='waste' THEN p_quantity ELSE 0 END,
-      frozen_location_id = CASE WHEN p_destination='raw_frozen' THEN operation.process_location_id ELSE frozen_location_id END,
+      quality_sampling_reserved_quantity = storage_balance.quality_sampling_reserved_quantity + sampling_reserved,
+      quality_waste_quantity = storage_balance.quality_waste_quantity + CASE WHEN p_destination='waste' THEN p_quantity ELSE 0 END,
+      frozen_location_id = CASE WHEN p_destination='raw_frozen' THEN operation.process_location_id ELSE storage_balance.frozen_location_id END,
       updated_at = now()
-  WHERE product_lot_id = lot.id AND freezing_quantity >= p_quantity;
+  WHERE storage_balance.product_lot_id = lot.id AND storage_balance.freezing_quantity >= p_quantity;
   IF NOT FOUND THEN RAISE check_violation USING MESSAGE = 'Decision exceeds pending freezing quantity.'; END IF;
   IF sampling_reserved = 5 THEN
     INSERT INTO public.product_lot_quality_samples (

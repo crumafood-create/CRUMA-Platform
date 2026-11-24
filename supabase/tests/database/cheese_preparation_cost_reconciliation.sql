@@ -410,6 +410,10 @@ SELECT set_config('test.grate_id', public.record_cheese_grating(
   0.237, 0.008, current_setting('test.grate_key')::uuid,
   '245 g de recorte: 237 g rallados y 8 g de merma'
 )::text, true);
+SELECT set_config('test.grated_output_cost', (
+  SELECT output_cost::text FROM public.cheese_preparation_operations
+  WHERE id = current_setting('test.grate_id')::uuid
+), true);
 SELECT set_config('test.grate_retry_id', public.record_cheese_grating(
   current_setting('test.trim_lot_id')::uuid,
   current_setting('test.grated_material_id')::uuid,
@@ -566,7 +570,7 @@ BEGIN
   IF NOT v_rejected
      OR (SELECT status FROM public.raw_material_lots WHERE id = v_lot_id) <> 'available'
      OR (SELECT quantity FROM public.raw_material_lots WHERE id = v_lot_id) <> 0.237
-     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> 31.6124
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> current_setting('test.grated_output_cost')::numeric
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0.237
      OR EXISTS (SELECT 1 FROM public.inventory_movements
        WHERE reference_type = 'prepared_ingredient_storage_correction' AND reference_id = v_lot_id) THEN
@@ -604,7 +608,7 @@ BEGIN
   IF NOT v_rejected
      OR (SELECT status FROM public.raw_material_lots WHERE id = v_lot_id) <> 'available'
      OR (SELECT quantity FROM public.raw_material_lots WHERE id = v_lot_id) <> 0.237
-     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> 31.6124
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> current_setting('test.grated_output_cost')::numeric
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0.237
      OR EXISTS (SELECT 1 FROM public.inventory_movements
        WHERE reference_type = 'prepared_ingredient_storage_correction' AND reference_id = v_lot_id) THEN
@@ -633,7 +637,7 @@ BEGIN
        WHERE lot.id = v_lot_id AND lot.status = 'hold'
          AND lot.storage_condition = 'refrigerated'
          AND lot.inventory_location_id = current_setting('test.location_id')::uuid
-         AND lot.quantity = 0.237 AND lot.remaining_value = 31.6124
+         AND lot.quantity = 0.237 AND lot.remaining_value = current_setting('test.grated_output_cost')::numeric
      )
      OR NOT EXISTS (
        SELECT 1 FROM public.inventory_locations AS location
@@ -651,7 +655,7 @@ BEGIN
          AND movement.previous_stock = 0.237 AND movement.new_stock = 0
          AND movement.created_by = current_setting('test.admin_id')::uuid
          AND movement.notes LIKE '%condición previa dry%'
-         AND movement.notes LIKE '%valor conservado 31.6124%'
+         AND movement.notes LIKE '%valor conservado ' || current_setting('test.grated_output_cost') || '%'
          AND movement.notes LIKE '%Legacy test lot was released%'
      ) THEN
     RAISE EXCEPTION 'Storage correction must retain the lot, preserve value, remove available stock and be idempotent.';
@@ -683,7 +687,7 @@ BEGIN
   IF NOT v_fefo_rejected
      OR (SELECT status FROM public.raw_material_lots WHERE id = v_lot_id) <> 'hold'
      OR (SELECT quantity FROM public.raw_material_lots WHERE id = v_lot_id) <> 0.237
-     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> 31.6124
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> current_setting('test.grated_output_cost')::numeric
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0
      OR EXISTS (SELECT 1 FROM public.production_order_consumptions
        WHERE production_order_item_id = current_setting('test.fefo_item_id')::uuid)
@@ -717,7 +721,7 @@ BEGIN
   IF NOT v_rejected
      OR (SELECT status FROM public.raw_material_lots WHERE id = v_lot_id) <> 'hold'
      OR (SELECT quantity FROM public.raw_material_lots WHERE id = v_lot_id) <> 0.237
-     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> 31.6124
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = v_lot_id) <> current_setting('test.grated_output_cost')::numeric
      OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.grated_material_id')::uuid) <> 0
      OR EXISTS (SELECT 1 FROM public.quality_release_decisions
        WHERE inspection_id = current_setting('test.corrected_lot_inspection_id')::uuid)
@@ -744,7 +748,8 @@ BEGIN
      OR NOT EXISTS (
       SELECT 1 FROM public.raw_material_lots AS lot
       WHERE lot.id = (SELECT output_lot_id FROM public.cheese_preparation_operations WHERE id = current_setting('test.grate_id')::uuid)
-        AND lot.status = 'available' AND lot.quantity = 0.237 AND lot.remaining_value = 31.6124
+        AND lot.status = 'available' AND lot.quantity = 0.237
+        AND lot.remaining_value = current_setting('test.grated_output_cost')::numeric
         AND lot.storage_condition = 'refrigerated'
         AND lot.inventory_location_id = current_setting('test.location_id')::uuid
     )

@@ -4,6 +4,7 @@ import {
   assertProductionStatus,
   canCancelProductionOrder,
   calculateRequiredQuantity,
+  getPendingIngredientStockStatus,
   sumAvailableStock,
   toProductionOrderState,
 } from './production-order-contract';
@@ -41,6 +42,22 @@ describe('contrato tipado de órdenes de producción', () => {
 
   it('suma stock disponible y normaliza nulos', () => {
     expect(sumAvailableStock([{ quantity: 4 }, { quantity: null }])).toBe(4);
+  });
+
+  it('no marca faltante cuando una orden completada ya consumió todo lo requerido', () => {
+    expect(getPendingIngredientStockStatus(6, 6, 3)).toEqual({
+      pendingQuantity: 0,
+      shortageQuantity: 0,
+      sufficient: true,
+    });
+  });
+
+  it('calcula el faltante sobre lo que queda por consumir en una orden parcial', () => {
+    expect(getPendingIngredientStockStatus(50, 30, 5)).toEqual({
+      pendingQuantity: 20,
+      shortageQuantity: 15,
+      sufficient: false,
+    });
   });
 
   it('valida el estado al construir la vista operativa de una orden', () => {

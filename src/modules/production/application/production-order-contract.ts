@@ -71,6 +71,20 @@ export function calculateRequiredQuantity(
   return quantityPerRecipeYield * plannedQuantity / recipeYieldQuantity;
 }
 
+export function getPendingIngredientStockStatus(
+  requiredQuantity: number,
+  consumedQuantity: number,
+  availableQuantity: number,
+): { pendingQuantity: number; shortageQuantity: number; sufficient: boolean } {
+  const pendingQuantity = Math.max(requiredQuantity - consumedQuantity, 0);
+  const shortageQuantity = Math.max(pendingQuantity - availableQuantity, 0);
+  return {
+    pendingQuantity,
+    shortageQuantity,
+    sufficient: shortageQuantity === 0,
+  };
+}
+
 export function sumAvailableStock(
   lots: readonly StockQuantity[],
 ): number {

@@ -33,14 +33,16 @@ export async function resolveProductLotFreezing(formData: FormData) {
     PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE,
   );
   const client = supabase as unknown as StorageRpc;
-  const destination = formData.get('destination')?.toString() ?? '';
+  const operationId = formData.get('operation_id')?.toString() ?? '';
+  const operationField = (name: string) => formData.get(`${name}_${operationId}`);
+  const destination = operationField('destination')?.toString() ?? '';
   const { error } = await client.rpc('resolve_product_lot_freezing', {
-    p_operation_id: formData.get('operation_id')?.toString() ?? '',
-    p_quantity: Number(formData.get('quantity')),
+    p_operation_id: operationId,
+    p_quantity: Number(operationField('quantity')),
     p_destination: destination,
     p_conservation_verified: destination === 'fresh'
-      && formData.get('conservation_verified') === 'on',
-    p_reason: formData.get('reason')?.toString() ?? '',
+      && operationField('conservation_verified') === 'on',
+    p_reason: operationField('reason')?.toString() ?? '',
     p_idempotency_key: formData.get('idempotency_key')?.toString() ?? '',
   });
   if (error) throw new Error(error.message);

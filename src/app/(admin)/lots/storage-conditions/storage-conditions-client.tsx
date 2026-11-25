@@ -148,15 +148,15 @@ function ResolveFreezingForm({ operation }: { operation: PendingFreezing }) {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No fue posible registrar la decisión.');
     }
-  })} className="mt-3 grid gap-2 sm:grid-cols-2">
+  })} autoComplete="off" data-freezing-operation-id={operation.operation_id} className="mt-3 grid gap-2 sm:grid-cols-2">
     <input type="hidden" name="operation_id" value={operation.operation_id} />
     <input type="hidden" name="idempotency_key" value={key} />
     <label className="text-xs text-gray-600">Piezas por resolver
-      <input name="quantity" type="number" min={1} max={operation.pending_quantity} step={1} required
+      <input name={`quantity_${operation.operation_id}`} type="number" min={1} max={operation.pending_quantity} step={1} required autoComplete="off"
         className="mt-1 w-full rounded border p-2" disabled={pending} />
     </label>
     <label className="text-xs text-gray-600">Destino
-      <select name="destination" value={destination}
+      <select name={`destination_${operation.operation_id}`} value={destination}
         onChange={(event) => setDestination(event.target.value as 'raw_frozen' | 'fresh' | 'waste')}
         className="mt-1 w-full rounded border p-2" disabled={pending}>
         <option value="raw_frozen">Crudo congelado</option>
@@ -168,11 +168,11 @@ function ResolveFreezingForm({ operation }: { operation: PendingFreezing }) {
       Solo se puede devolver a fresco una cantidad que siga pendiente y que no haya llegado a congelarse. Una vez confirmada como cruda congelada, no se puede reclasificar.
     </p>
     {destination === 'fresh' && <label className="flex items-start gap-2 text-sm sm:col-span-2">
-      <input type="checkbox" name="conservation_verified" required className="mt-1" />
+      <input type="checkbox" name={`conservation_verified_${operation.operation_id}`} required className="mt-1" />
       Responsable autorizado verificó que no llegaron a congelarse y que conservaron las condiciones de Calidad.
     </label>}
     <label className="text-xs text-gray-600 sm:col-span-2">Motivo de la decisión
-      <input name="reason" required minLength={3} className="mt-1 w-full rounded border p-2"
+      <input name={`reason_${operation.operation_id}`} required minLength={3} autoComplete="off" className="mt-1 w-full rounded border p-2"
         placeholder={destination === 'fresh' ? 'Verificación de conservación' : destination === 'waste' ? 'Motivo de merma autorizado' : 'Congelación terminada'} disabled={pending} />
     </label>
     <button type="submit" disabled={pending || !key}
@@ -222,7 +222,7 @@ export default function StorageConditionsClient({
         <p className="mt-1 text-sm">Incidencia de cierre: {lot.refrigerated_wait_quantity} piezas siguen refrigeradas y pendientes de congelación en {lot.refrigerated_wait_location_name ?? 'ubicación sin configurar'}.</p>
         <p className="text-sm text-gray-600">La cantidad permanece fuera de reservas y picking hasta registrar su destino.</p>
       </article>)}
-      {pendingOperations.map((operation) => <article key={operation.operation_id} className="rounded-lg border p-4">
+      {pendingOperations.map((operation) => <article key={operation.operation_id} data-freezing-operation-card={operation.operation_id} className="rounded-lg border p-4">
         <div><strong>{operation.product_name} · lote {operation.lot_number}</strong></div>
         <p className="mt-1 text-sm text-gray-600">Quedan {operation.pending_quantity} de {operation.requested_quantity} piezas apartadas. Iniciado: {new Date(operation.started_at).toLocaleString('es-MX')}</p>
         <p className="text-sm">Motivo inicial: {operation.reason}</p>

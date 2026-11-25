@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { createTypedClient } from '@/infrastructure/integrations/supabase/server';
 
 import { ProductionCostForm } from '@/modules/manufacturing/components/forms/production-cost-form';
+import { getPendingIngredientStockStatus } from '@/modules/production/application/production-order-contract';
 
 import {
   releaseProductionOrder,
@@ -20,6 +21,7 @@ type RecipeItem = {
   raw_material_id: string | null;
   product_id: string | null;
   planned_quantity: number;
+  consumed_quantity: number | null;
 };
 
 type RawMaterial = {
@@ -307,12 +309,11 @@ export default async function ProductionOrderPage({
       }
       if (!item.raw_material_id) return false;
 
-      const required = Number(item.planned_quantity);
-
-      const available =
-        stockMap[item.raw_material_id] ?? 0;
-
-      return available >= required;
+      return getPendingIngredientStockStatus(
+        Number(item.planned_quantity),
+        Number(item.consumed_quantity ?? 0),
+        stockMap[item.raw_material_id] ?? 0,
+      ).sufficient;
     });
 
   return (
@@ -418,6 +419,7 @@ export default async function ProductionOrderPage({
                 : undefined;
 
               const required = Number(item.planned_quantity);
+              const consumed = Number(item.consumed_quantity ?? 0);
 
               const available =
                 item.raw_material_id
@@ -426,7 +428,12 @@ export default async function ProductionOrderPage({
                       .filter((lot) => lot.product_id === item.product_id)
                       .reduce((total, lot) => total + lot.quantity, 0);
 
-              const enough = available >= required;
+              const stockStatus = getPendingIngredientStockStatus(
+                required,
+                item.raw_material_id ? consumed : 0,
+                available,
+              );
+              const enough = stockStatus.sufficient;
 
               return (
                 <div
@@ -466,9 +473,17 @@ export default async function ProductionOrderPage({
                       Requerido: {required} {item.product_id ? 'kg' : ''}
                     </div>
 
+                    {item.raw_material_id ? <div>
+                      Consumido: {consumed} · Pendiente: {stockStatus.pendingQuantity}
+                    </div> : null}
+
                     <div>
                       Disponible: {available} {item.product_id ? 'kg' : ''}
                     </div>
+
+                    {!enough ? <div className="font-medium text-red-700">
+                      Faltante para completar: {stockStatus.shortageQuantity} {item.product_id ? 'kg' : ''}
+                    </div> : null}
                   </div>
                 </div>
               );

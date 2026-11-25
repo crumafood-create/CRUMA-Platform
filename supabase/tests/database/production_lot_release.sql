@@ -104,6 +104,7 @@ SELECT public.release_finished_product_quality_to_inventory(
  'Cumple especificación'
 );
 
+RESET ROLE;
 -- This suite isolates downstream FEFO picking from storage-route behavior.
 -- Start its released lots in fresh stock after the dedicated routing tests.
 UPDATE public.product_lots AS lot
@@ -123,7 +124,6 @@ WHERE movement.reference_type = 'finished_product_refrigerated_wait'
     WHERE lot.lot_number IN ('PT-001', 'PT-002')
   );
 
-RESET ROLE;
 INSERT INTO public.customers(id,customer_code,name)
 VALUES ('eb000000-0000-0000-0000-000000000001','LOT-C1','Lot Customer');
 INSERT INTO public.sales_orders(id,order_number,customer_id,status)

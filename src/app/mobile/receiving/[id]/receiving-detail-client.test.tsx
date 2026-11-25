@@ -1,16 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  getReceivingDetail,
-  getReceivingLocations,
-} from './actions';
+import { getReceivingDetail } from './actions';
 import ReceivingDetailClient from './receiving-detail-client';
 
 vi.mock('./actions', () => ({
   confirmReceiving: vi.fn(),
   getReceivingDetail: vi.fn(),
-  getReceivingLocations: vi.fn(),
 }));
 
 vi.mock('@/modules/warehouse/components/mobile-scanner', () => ({
@@ -39,9 +35,9 @@ describe('ReceivingDetailClient', () => {
         base_unit_code: 'kg',
         raw_material: { id: 'material-id', name: 'Harina de trigo' },
         suggested_location: null,
+        storage_configuration_error: 'Asigna un destino habitual compatible en Materias Primas.',
       }],
     });
-    vi.mocked(getReceivingLocations).mockResolvedValue([]);
 
     render(<ReceivingDetailClient purchaseOrderId="partial-order-id" />);
 
@@ -52,5 +48,28 @@ describe('ReceivingDetailClient', () => {
       .toHaveTextContent('25 kg');
     expect(screen.getByText('Esperado').parentElement?.parentElement)
       .toHaveTextContent('50 kg');
+    expect(screen.getByText('Destino automático de almacenamiento')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Asigna un destino habitual compatible');
+    expect(screen.getByRole('button', { name: /Confirmar recepci/ })).toBeDisabled();
+  });
+
+  it('shows the configured destination as read only', async () => {
+    vi.mocked(getReceivingDetail).mockResolvedValue({
+      purchaseOrder: { id: 'order', order_number: 'PO-1', supplier_id: 'supplier', status: 'released' },
+      items: [{
+        id: 'item', purchase_order_id: 'order', raw_material_id: 'material', quantity: 1,
+        received_quantity: 0, unit_cost: 20, presentation_mode: 'base_unit', purchase_quantity: 1,
+        base_quantity_per_presentation: 1, base_unit_code: 'kg',
+        raw_material: { id: 'material', name: 'Queso cheddar fuerte' },
+        suggested_location: { id: 'location', name: 'Refrigeración de materias primas', slug: 'REF-MP-01' },
+        storage_configuration_error: null,
+      }],
+    });
+
+    render(<ReceivingDetailClient purchaseOrderId="order" />);
+
+    expect(await screen.findByText('Refrigeración de materias primas · REF-MP-01')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Confirmar recepci/ })).toBeEnabled();
   });
 });

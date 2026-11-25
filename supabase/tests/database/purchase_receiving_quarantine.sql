@@ -87,18 +87,49 @@ VALUES (
   true
 );
 
+INSERT INTO public.raw_materials(
+  id, slug, internal_code, name, current_stock, average_cost, last_cost, is_active
+)
+VALUES (
+  'f3000000-0000-0000-0000-000000000002',
+  'receiving-unconfigured-material',
+  'REC-M2',
+  'Unconfigured Receiving Material',
+  0, 0, 0, true
+);
+
 INSERT INTO public.inventory_locations(
   id,
   slug,
   name,
+  location_use,
+  storage_condition,
   is_active
 )
 VALUES (
   'f4000000-0000-0000-0000-000000000001',
   'receiving-quarantine',
   'Receiving Quarantine',
+  'raw_material',
+  'refrigerated',
   true
 );
+
+INSERT INTO public.inventory_locations(id, slug, name, location_use, storage_condition, is_active)
+VALUES (
+  'f4000000-0000-0000-0000-000000000002',
+  'receiving-incompatible',
+  'Receiving Incompatible Location',
+  'prepared_ingredient',
+  'refrigerated',
+  true
+);
+
+UPDATE public.raw_materials
+SET required_storage_condition = 'refrigerated',
+    default_storage_use = 'raw_material',
+    default_inventory_location_id = 'f4000000-0000-0000-0000-000000000001'
+WHERE id = 'f3000000-0000-0000-0000-000000000001';
 
 INSERT INTO public.purchase_orders(
   id,
@@ -134,6 +165,16 @@ VALUES (
   12.5,
   125,
   0
+);
+
+INSERT INTO public.purchase_order_items(
+  id, purchase_order_id, raw_material_id, quantity, unit_cost, total, received_quantity
+)
+VALUES (
+  'f6000000-0000-0000-0000-000000000002',
+  'f5000000-0000-0000-0000-000000000001',
+  'f3000000-0000-0000-0000-000000000002',
+  1, 5, 5, 0
 );
 
 -- Un usuario sin privilegios no puede recibir material.
@@ -175,6 +216,59 @@ SELECT set_config(
   'f1000000-0000-0000-0000-000000000001',
   true
 );
+
+-- A caller cannot select an incompatible destination or receive an unconfigured material.
+DO $test$
+BEGIN
+  BEGIN
+    PERFORM public.receive_purchase_order_lot(
+      'f6000000-0000-0000-0000-000000000001', 1, 'BAD-LOCATION', '2099-01-31',
+      'f4000000-0000-0000-0000-000000000002', 'f7000000-0000-0000-0000-000000000020'
+    );
+    RAISE EXCEPTION 'incompatible destination was accepted';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    PERFORM public.receive_purchase_order_lot(
+      'f6000000-0000-0000-0000-000000000002', 1, 'NO-POLICY', '2099-01-31',
+      'f4000000-0000-0000-0000-000000000001', 'f7000000-0000-0000-0000-000000000021'
+    );
+    RAISE EXCEPTION 'unconfigured material was received';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+END;
+$test$;
+
+DO $test$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM public.purchase_receipts
+    WHERE idempotency_key IN (
+      'f7000000-0000-0000-0000-000000000020',
+      'f7000000-0000-0000-0000-000000000021'
+    )
+  ) OR EXISTS (
+    SELECT 1 FROM public.raw_material_lots
+    WHERE lot_number IN ('BAD-LOCATION', 'NO-POLICY')
+  ) OR EXISTS (
+    SELECT 1 FROM public.purchase_receipt_items AS receipt_item
+    JOIN public.raw_material_lots AS lot
+      ON lot.id = receipt_item.raw_material_lot_id
+    WHERE lot.lot_number IN ('BAD-LOCATION', 'NO-POLICY')
+  ) OR EXISTS (
+    SELECT 1 FROM public.purchase_order_items
+    WHERE id = 'f6000000-0000-0000-0000-000000000002'
+      AND received_quantity <> 0
+  ) OR EXISTS (
+    SELECT 1 FROM public.raw_materials
+    WHERE id = 'f3000000-0000-0000-0000-000000000002'
+      AND current_stock <> 0
+  ) THEN
+    RAISE EXCEPTION 'rejected receipt changed receipt, lot, item or stock records';
+  END IF;
+END;
+$test$;
 
 SELECT public.receive_purchase_order_lot(
   'f6000000-0000-0000-0000-000000000001',
@@ -293,6 +387,7 @@ BEGIN
       AND lot.inventory_location_id =
         'f4000000-0000-0000-0000-000000000001'
       AND lot.quantity = 4
+      AND lot.storage_condition = 'refrigerated'
       AND lot.status = 'quarantine'
   ) THEN
     RAISE EXCEPTION

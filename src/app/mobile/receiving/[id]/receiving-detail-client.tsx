@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import {
@@ -12,8 +12,6 @@ import { MobileScanner } from '@/modules/warehouse/components/mobile-scanner';
 import {
   confirmReceiving,
   getReceivingDetail,
-  getReceivingLocations,
-  type InventoryLocation,
   type ReceivingDetail,
 } from './actions';
 
@@ -33,9 +31,6 @@ export default function ReceivingDetailClient({
   const [detail, setDetail] =
     useState<ReceivingDetail | null>(null);
 
-  const [locations, setLocations] =
-    useState<InventoryLocation[]>([]);
-
   const [pageState, setPageState] =
     useState<PageState>('loading');
 
@@ -49,9 +44,6 @@ export default function ReceivingDetailClient({
     useState('');
 
   const [expirationDate, setExpirationDate] =
-    useState('');
-
-  const [locationId, setLocationId] =
     useState('');
 
       const [quantityReceived, setQuantityReceived] =
@@ -74,13 +66,7 @@ export default function ReceivingDetailClient({
 
   async function load() {
     try {
-      const [detailData, locationData] =
-        await Promise.all([
-          getReceivingDetail(
-            purchaseOrderId,
-          ),
-          getReceivingLocations(),
-        ]);
+      const detailData = await getReceivingDetail(purchaseOrderId);
 
       setDetail(detailData);
 
@@ -102,14 +88,12 @@ export default function ReceivingDetailClient({
 
       idempotencyKeyRef.current = null;
 
-      setLocations(locationData);
-
       setPageState('ready');
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Error al cargar recepción.',
+          : 'Error al cargar recepciÃ³n.',
       );
 
       setPageState('error');
@@ -186,10 +170,8 @@ export default function ReceivingDetailClient({
       return;
     }
 
-    if (!locationId) {
-      setError(
-        'Seleccione la ubicación.',
-      );
+    if (!currentItem.suggested_location) {
+      setError(currentItem.storage_configuration_error ?? 'La materia prima no tiene un destino compatible configurado.');
       return;
     }
 
@@ -212,14 +194,13 @@ export default function ReceivingDetailClient({
         lotNumber,
         expirationDate,
         inventoryLocationId:
-          locationId,
+          currentItem.suggested_location.id,
         idempotencyKey,
       });
 
       idempotencyKeyRef.current = null;
       setLotNumber('');
       setExpirationDate('');
-      setLocationId('');
 
       await load();
     } catch (err) {
@@ -239,16 +220,15 @@ export default function ReceivingDetailClient({
     setQuantityReceived('');
     setLotNumber('');
     setExpirationDate('');
-    setLocationId('');
     setError(null);
-    setNotice('Presentación rechazada en esta sesión. La cantidad permanece pendiente y no se registró inventario.');
+    setNotice('PresentaciÃ³n rechazada en esta sesiÃ³n. La cantidad permanece pendiente y no se registrÃ³ inventario.');
   }
 
   if (pageState === 'loading') {
     return (
       <main className="p-6">
         <div className="text-center">
-          Cargando recepción...
+          Cargando recepciÃ³n...
         </div>
       </main>
     );
@@ -281,7 +261,7 @@ export default function ReceivingDetailClient({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold">
-            Recepción
+            RecepciÃ³n
           </h1>
 
           <div className="mt-1 text-sm text-gray-500">
@@ -293,7 +273,7 @@ export default function ReceivingDetailClient({
           href="/mobile/receiving"
           className="rounded-lg border px-4 py-2"
         >
-          ← Volver
+          â† Volver
         </Link>
       </div>
 
@@ -360,7 +340,7 @@ export default function ReceivingDetailClient({
         </div>
       ) : null}
 
-      {/* RECEPCIÓN TERMINADA */}
+      {/* RECEPCIÃ“N TERMINADA */}
 
       {!currentItem && completedItems.length === detail.items.length && (
 
@@ -368,13 +348,13 @@ export default function ReceivingDetailClient({
 
           <div className="text-6xl">
 
-            ✅
+            âœ…
 
           </div>
 
           <div className="mt-4 text-2xl font-bold">
 
-            Recepción completada
+            RecepciÃ³n completada
 
           </div>
 
@@ -390,7 +370,7 @@ export default function ReceivingDetailClient({
 
       {!currentItem && completedItems.length < detail.items.length && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center text-amber-900">
-          Hay presentaciones pendientes que no se aceptaron en esta sesión. No se creó inventario para esas cantidades.
+          Hay presentaciones pendientes que no se aceptaron en esta sesiÃ³n. No se creÃ³ inventario para esas cantidades.
         </div>
       )}
 
@@ -490,7 +470,7 @@ export default function ReceivingDetailClient({
           <div className="mt-8">
 
             <label className="block text-sm font-semibold text-gray-700">
-              Número de lote
+              NÃºmero de lote
             </label>
 
             <input
@@ -546,61 +526,32 @@ export default function ReceivingDetailClient({
 
           </div>
 
-          {/* UBICACIÓN */}
-
-          <div className="mt-8">
-
-            <label className="block text-sm font-semibold text-gray-700">
-              Ubicación
-            </label>
-
-            <select
-              value={locationId}
-              onChange={(event) => {
-                setLocationId(
-                  event.target.value,
-                );
-                resetReceivingAttempt();
-              }}
-
-              className="mt-2 w-full rounded-xl border border-gray-300 p-4"
-            >
-
-              <option value="">
-                Seleccione una ubicación
-              </option>
-
-              {locations.map(
-                (location) => (
-                  <option
-                    key={location.id}
-                    value={location.id}
-                  >
-                    {location.name}
-                    {location.zone
-                      ? ` (${location.zone})`
-                      : ''}
-                  </option>
-                ),
-              )}
-
-            </select>
-
+          {/* UBICACIÃ“N */}          <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div className="text-sm font-semibold text-blue-900">Destino automático de almacenamiento</div>
+            {currentItem.suggested_location ? (
+              <div className="mt-1 text-blue-800">
+                {currentItem.suggested_location.name} · {currentItem.suggested_location.slug}
+              </div>
+            ) : (
+              <div role="alert" className="mt-1 text-red-700">
+                {currentItem.storage_configuration_error}
+              </div>
+            )}
           </div>
 
-          {/* BOTÓN */}
+          {/* BOTÃ“N */}
 
           <button
             type="button"
             onClick={() => {
               void handleConfirm();
             }}
-            disabled={saving}
+            disabled={saving || !currentItem.suggested_location}
             className="mt-10 w-full rounded-xl bg-green-600 px-6 py-4 text-lg font-bold text-white transition hover:bg-green-700 disabled:bg-gray-300"
           >
             {saving
-              ? 'Guardando recepción...'
-              : 'Confirmar recepción'}
+              ? 'Guardando recepciÃ³n...'
+              : 'Confirmar recepciÃ³n'}
           </button>
 
           {currentItem.presentation_mode === 'sealed_package' ? (
@@ -610,7 +561,7 @@ export default function ReceivingDetailClient({
               disabled={saving}
               className="mt-3 w-full rounded-xl border border-red-300 px-6 py-3 font-semibold text-red-700"
             >
-              Rechazar presentación y dejarla pendiente
+              Rechazar presentaciÃ³n y dejarla pendiente
             </button>
           ) : null}
 
@@ -641,17 +592,10 @@ export default function ReceivingDetailClient({
                     Cantidad recibida:{' '}
                     {item.received_quantity}
                   </div>
-
-                  {item.suggested_location && (
-                    <div className="mt-1 text-sm text-gray-500">
-                      Ubicación:{' '}
-                      {item.suggested_location.name}
-                    </div>
-                  )}
                 </div>
 
                 <div className="rounded-full bg-green-600 px-3 py-1 text-sm font-semibold text-white">
-                  ✓ Recibido
+                  âœ“ Recibido
                 </div>
               </div>
             ))}

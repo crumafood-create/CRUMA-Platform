@@ -226,13 +226,21 @@ INSERT INTO public.customers (
   true
 );
 
-INSERT INTO public.inventory_locations (id, slug, name, is_active)
+INSERT INTO public.inventory_locations (id, slug, name, location_use, storage_condition, is_active)
 VALUES (
   '9c000000-0000-0000-0000-000000000001',
   'rls-receiving-location',
   'RLS Receiving Location',
+  'raw_material',
+  'refrigerated',
   true
 );
+
+UPDATE public.raw_materials
+SET required_storage_condition = 'refrigerated',
+    default_storage_use = 'raw_material',
+    default_inventory_location_id = '9c000000-0000-0000-0000-000000000001'
+WHERE id = '95000000-0000-0000-0000-000000000001';
 
 INSERT INTO public.tenants (
   id,

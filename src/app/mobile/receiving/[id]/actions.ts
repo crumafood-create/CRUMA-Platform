@@ -11,8 +11,18 @@ import {
   type PurchaseReceivingInput,
 } from '@/modules/procurement/application/purchase-receiving-contract';
 import { assertPurchaseOrderStatus, type PurchaseOrderStatus } from '@/modules/procurement/application/purchase-order-contract';
+import { resolveRawMaterialReceivingStorage } from '@/modules/inventory/application/raw-material-receiving-storage';
 
-export type InventoryLocation = { id: string; code: string; name: string; zone: string | null };
+type ReceivingStorageLocation = {
+  id: string;
+  name: string;
+  slug: string;
+  location_use: string | null;
+  storage_condition: string | null;
+  is_active: boolean;
+  deleted_at: string | null;
+};
+
 export type ReceivingItem = {
   id: string; purchase_order_id: string; raw_material_id: string;
   quantity: number; received_quantity: number; unit_cost: number;
@@ -21,7 +31,8 @@ export type ReceivingItem = {
   base_quantity_per_presentation: number;
   base_unit_code: string;
   raw_material: { id: string; name: string } | null;
-  suggested_location: { id: string; name: string } | null;
+  suggested_location: { id: string; name: string; slug: string } | null;
+  storage_configuration_error: string | null;
 };
 export type ReceivingDetail = {
   purchaseOrder: { id: string; order_number: string; supplier_id: string; status: PurchaseOrderStatus };
@@ -53,6 +64,10 @@ export async function getReceivingDetail(purchaseOrderId: string): Promise<Recei
                 id: string;
                 name: string;
                 unit_of_measure: { code: string } | null;
+                required_storage_condition: string | null;
+                default_storage_use: string | null;
+                default_inventory_location_id: string | null;
+                default_inventory_location: ReceivingStorageLocation | null;
               } | null;
             }> | null;
             error: { message: string } | null;
@@ -63,17 +78,39 @@ export async function getReceivingDetail(purchaseOrderId: string): Promise<Recei
   };
   const { data: items, error: itemsError } = await receiptReader
     .from('purchase_order_items')
-    .select('id, purchase_order_id, raw_material_id, quantity, received_quantity, unit_cost, presentation_mode, purchase_quantity, base_quantity_per_presentation, raw_material:raw_materials!purchase_order_items_raw_material_id_fkey(id, name, unit_of_measure:units_of_measure!raw_materials_unit_of_measure_id_fkey(code))')
+    .select('id, purchase_order_id, raw_material_id, quantity, received_quantity, unit_cost, presentation_mode, purchase_quantity, base_quantity_per_presentation, raw_material:raw_materials!purchase_order_items_raw_material_id_fkey(id, name, required_storage_condition, default_storage_use, default_inventory_location_id, default_inventory_location:inventory_locations!raw_materials_default_inventory_location_fkey(id, slug, name, location_use, storage_condition, is_active, deleted_at), unit_of_measure:units_of_measure!raw_materials_unit_of_measure_id_fkey(code))')
     .eq('purchase_order_id', purchaseOrderId).order('id');
   if (itemsError) throw new Error('No fue posible cargar los renglones de compra.');
   return {
     purchaseOrder: { ...purchaseOrder, status: assertPurchaseOrderStatus(purchaseOrder.status) },
-    items: (items ?? []).map((item) => ({
-      ...item,
-      raw_material: item.raw_material,
-      base_unit_code: item.raw_material?.unit_of_measure?.code ?? 'unidad base',
-      suggested_location: null,
-    })),
+    items: (items ?? []).map((item) => {
+      const storage = resolveRawMaterialReceivingStorage(
+        item.raw_material ? {
+          requiredStorageCondition: item.raw_material.required_storage_condition,
+          defaultStorageUse: item.raw_material.default_storage_use,
+          defaultInventoryLocationId: item.raw_material.default_inventory_location_id,
+        } : null,
+        item.raw_material?.default_inventory_location ? {
+          id: item.raw_material.default_inventory_location.id,
+          name: item.raw_material.default_inventory_location.name,
+          slug: item.raw_material.default_inventory_location.slug,
+          locationUse: item.raw_material.default_inventory_location.location_use,
+          storageCondition: item.raw_material.default_inventory_location.storage_condition,
+          isActive: item.raw_material.default_inventory_location.is_active,
+          deletedAt: item.raw_material.default_inventory_location.deleted_at,
+        } : null,
+      );
+
+      return {
+        ...item,
+        raw_material: item.raw_material,
+        base_unit_code: item.raw_material?.unit_of_measure?.code ?? 'unidad base',
+        suggested_location: storage.location
+          ? { id: storage.location.id, name: storage.location.name, slug: storage.location.slug }
+          : null,
+        storage_configuration_error: storage.error,
+      };
+    }),
   };
 }
 
@@ -111,6 +148,12 @@ export async function confirmReceiving(
             data: {
               presentation_mode: 'base_unit' | 'sealed_package';
               base_quantity_per_presentation: number;
+              raw_material: {
+                required_storage_condition: string | null;
+                default_storage_use: string | null;
+                default_inventory_location_id: string | null;
+                default_inventory_location: ReceivingStorageLocation | null;
+              } | null;
             } | null;
             error: { message: string } | null;
           }>;
@@ -120,7 +163,7 @@ export async function confirmReceiving(
   };
   const { data: item, error: itemError } = await presentationReader
     .from('purchase_order_items')
-    .select('presentation_mode, base_quantity_per_presentation')
+    .select('presentation_mode, base_quantity_per_presentation, raw_material:raw_materials!purchase_order_items_raw_material_id_fkey(required_storage_condition, default_storage_use, default_inventory_location_id, default_inventory_location:inventory_locations!raw_materials_default_inventory_location_fkey(id, slug, name, location_use, storage_condition, is_active, deleted_at))')
     .eq('id', input.purchaseOrderItemId)
     .maybeSingle();
   if (itemError || !item) throw new Error('No fue posible validar la presentación de compra.');
@@ -129,6 +172,27 @@ export async function confirmReceiving(
     item.presentation_mode,
     item.base_quantity_per_presentation,
   );
+
+  const storage = resolveRawMaterialReceivingStorage(
+    item.raw_material ? {
+      requiredStorageCondition: item.raw_material.required_storage_condition,
+      defaultStorageUse: item.raw_material.default_storage_use,
+      defaultInventoryLocationId: item.raw_material.default_inventory_location_id,
+    } : null,
+    item.raw_material?.default_inventory_location ? {
+      id: item.raw_material.default_inventory_location.id,
+      name: item.raw_material.default_inventory_location.name,
+      slug: item.raw_material.default_inventory_location.slug,
+      locationUse: item.raw_material.default_inventory_location.location_use,
+      storageCondition: item.raw_material.default_inventory_location.storage_condition,
+      isActive: item.raw_material.default_inventory_location.is_active,
+      deletedAt: item.raw_material.default_inventory_location.deleted_at,
+    } : null,
+  );
+  if (!storage.location) throw new Error(storage.error);
+  if (input.inventoryLocationId !== storage.location.id) {
+    throw new Error('La recepción debe usar el destino habitual configurado para esta materia prima.');
+  }
 
   const receivePurchaseOrderLot =
     supabase.rpc.bind(supabase) as unknown as
@@ -147,7 +211,7 @@ export async function confirmReceiving(
         p_expiration_date:
           input.expirationDate,
         p_inventory_location_id:
-          input.inventoryLocationId,
+          storage.location.id,
         p_idempotency_key:
           input.idempotencyKey,
       },
@@ -166,14 +230,6 @@ export async function confirmReceiving(
   revalidatePath(
     `/purchase-orders/${orderId}`,
   );
-}
-
-export async function getReceivingLocations(): Promise<InventoryLocation[]> {
-  const supabase = await createTypedClient();
-  const { data, error } = await supabase.from('inventory_locations')
-    .select('id, name, zone').eq('is_active', true).is('deleted_at', null).order('name');
-  if (error) throw new Error('No fue posible cargar las ubicaciones.');
-  return (data ?? []).map((row) => ({ ...row, code: row.name }));
 }
 
 export async function validateLotNumber(rawMaterialId: string, lotNumber: string): Promise<boolean> {

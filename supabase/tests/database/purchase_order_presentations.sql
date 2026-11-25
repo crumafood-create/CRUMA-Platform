@@ -30,8 +30,18 @@ VALUES
   ('f3000000-0000-0000-0000-000000000002', 'presentation-package', 'PRES-PACK', 'Presentation package material', 'f2500000-0000-0000-0000-000000000001', 0, 0, 0, true),
   ('f3000000-0000-0000-0000-000000000003', 'presentation-repeating', 'PRES-REPEAT', 'Presentation precision material', 'f2500000-0000-0000-0000-000000000001', 0, 0, 0, true);
 
-INSERT INTO public.inventory_locations (id, slug, name, is_active)
-VALUES ('f4000000-0000-0000-0000-000000000001', 'presentation-test-location', 'Presentation Test Location', true);
+INSERT INTO public.inventory_locations (id, slug, name, location_use, storage_condition, is_active)
+VALUES ('f4000000-0000-0000-0000-000000000001', 'presentation-test-location', 'Presentation Test Location', 'raw_material', 'refrigerated', true);
+
+UPDATE public.raw_materials
+SET required_storage_condition = 'refrigerated',
+    default_storage_use = 'raw_material',
+    default_inventory_location_id = 'f4000000-0000-0000-0000-000000000001'
+WHERE id IN (
+  'f3000000-0000-0000-0000-000000000001',
+  'f3000000-0000-0000-0000-000000000002',
+  'f3000000-0000-0000-0000-000000000003'
+);
 
 INSERT INTO public.purchase_orders (
   id, order_number, supplier_id, status, subtotal, total

@@ -74,11 +74,18 @@ function buildStoragePolicyFields(form: FormData): Pick<
   if ((condition === null) !== (use === null)) {
     throw new Error('Configura juntos el uso y la condición de conservación.');
   }
-  if (condition !== null && !['dry', 'refrigerated'].includes(condition)) {
-    throw new Error('La condición del ingrediente debe ser seco o refrigerado.');
-  }
   if (use !== null && !['raw_material', 'prepared_ingredient'].includes(use)) {
     throw new Error('El uso del destino debe ser materia prima o ingrediente preparado.');
+  }
+  const allowedConditions = use === 'raw_material'
+    ? ['dry', 'refrigerated', 'frozen']
+    : ['dry', 'refrigerated'];
+  if (condition !== null && !allowedConditions.includes(condition)) {
+    throw new Error(
+      use === 'raw_material'
+        ? 'La condición de la materia prima debe ser seco, refrigerado o congelado.'
+        : 'La condición del ingrediente preparado debe ser seco o refrigerado.',
+    );
   }
   if (locationId !== null && (condition === null || use === null)) {
     throw new Error('Configura el uso y la condición antes de asignar una ubicación habitual.');

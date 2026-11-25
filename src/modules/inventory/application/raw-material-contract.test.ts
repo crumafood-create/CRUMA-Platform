@@ -141,6 +141,22 @@ describe('contrato tipado de materias primas', () => {
     expect(result.default_inventory_location_id).toBe(null);
   });
 
+  it('permite conservar materia prima comprada congelada, pero no preparación congelada', () => {
+    const result = buildRawMaterialUpdate(materialForm({
+      required_storage_condition: 'frozen',
+      default_storage_use: 'raw_material',
+    }), '2026-08-23T12:00:00.000Z');
+
+    expect(result).toMatchObject({
+      required_storage_condition: 'frozen',
+      default_storage_use: 'raw_material',
+    });
+    expect(() => buildRawMaterialUpdate(materialForm({
+      required_storage_condition: 'frozen',
+      default_storage_use: 'prepared_ingredient',
+    }), '2026-08-23T12:00:00.000Z')).toThrow();
+  });
+
   it.each([
     ['refrigerated', ''],
     ['', 'prepared_ingredient'],

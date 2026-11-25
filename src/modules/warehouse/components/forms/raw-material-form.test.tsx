@@ -109,6 +109,27 @@ describe('RawMaterialForm', () => {
     ]);
   });
 
+  it('offers frozen storage only for purchased raw materials', () => {
+    const rawMaterial = render(
+      <RawMaterialForm
+        action={vi.fn().mockResolvedValue(undefined)}
+        initialValues={{ default_storage_use: 'raw_material' }}
+      />,
+    );
+
+    expect(screen.getByRole('option', { name: 'Congelado' })).toBeInTheDocument();
+    rawMaterial.unmount();
+
+    render(
+      <RawMaterialForm
+        action={vi.fn().mockResolvedValue(undefined)}
+        initialValues={{ default_storage_use: 'prepared_ingredient' }}
+      />,
+    );
+
+    expect(screen.queryByRole('option', { name: 'Congelado' })).not.toBeInTheDocument();
+  });
+
   it('retains inputs and shows a validation error after rejected creation', async () => {
     const action = vi.fn()
       .mockRejectedValueOnce(

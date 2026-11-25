@@ -132,7 +132,6 @@ describe('contrato tipado de ubicaciones de inventario', () => {
   });
 
   it.each([
-    ['raw_material', 'frozen'],
     ['prepared_ingredient', 'frozen'],
     ['finished_product', 'dry'],
     ['packaging', 'refrigerated'],
@@ -142,5 +141,15 @@ describe('contrato tipado de ubicaciones de inventario', () => {
       location_use,
       storage_condition,
     }))).toThrow('El uso de la ubicación no es compatible con la condición seleccionada.');
+  });
+
+  it('permite una ubicación congelada de materias primas', () => {
+    expect(buildInventoryLocationInsert(locationForm({
+      location_use: 'raw_material',
+      storage_condition: 'frozen',
+    }))).toMatchObject({
+      location_use: 'raw_material',
+      storage_condition: 'frozen',
+    });
   });
 });

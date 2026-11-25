@@ -64,11 +64,13 @@ function locationClassification(form: FormData): {
   }
 
   const validCombination =
-    (locationUse === 'raw_material' || locationUse === 'prepared_ingredient')
-      ? storageCondition === 'dry' || storageCondition === 'refrigerated'
-      : locationUse === 'finished_product'
-        ? storageCondition === 'refrigerated' || storageCondition === 'frozen'
-        : storageCondition === 'dry';
+    locationUse === 'raw_material'
+      ? storageCondition === 'dry' || storageCondition === 'refrigerated' || storageCondition === 'frozen'
+      : locationUse === 'prepared_ingredient'
+        ? storageCondition === 'dry' || storageCondition === 'refrigerated'
+        : locationUse === 'finished_product'
+          ? storageCondition === 'refrigerated' || storageCondition === 'frozen'
+          : storageCondition === 'dry';
 
   if (!validCombination) {
     throw new Error('El uso de la ubicación no es compatible con la condición seleccionada.');

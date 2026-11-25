@@ -93,6 +93,27 @@ SET required_storage_condition = 'refrigerated',
     default_storage_use = 'raw_material',
     default_inventory_location_id = current_setting('test.source_location_id')::uuid
 WHERE id = current_setting('test.source_material_id')::uuid;
+
+DO $prepared_ingredients_cannot_be_frozen$
+BEGIN
+  BEGIN
+    UPDATE public.raw_materials
+    SET required_storage_condition = 'frozen'
+    WHERE id = current_setting('test.grated_material_id')::uuid;
+    RAISE EXCEPTION 'prepared ingredient policy accepted frozen storage';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.raw_materials
+    WHERE id = current_setting('test.grated_material_id')::uuid
+      AND required_storage_condition = 'refrigerated'
+      AND default_storage_use = 'prepared_ingredient'
+  ) THEN
+    RAISE EXCEPTION 'rejected frozen prepared-ingredient policy changed its configuration';
+  END IF;
+END;
+$prepared_ingredients_cannot_be_frozen$;
+
 INSERT INTO public.products (id, slug, internal_code, name, status, unit_of_measure_id)
 VALUES (
   current_setting('test.fefo_product_id')::uuid,

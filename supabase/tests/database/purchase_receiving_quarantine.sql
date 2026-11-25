@@ -98,6 +98,13 @@ VALUES (
   0, 0, 0, true
 );
 
+INSERT INTO public.raw_materials(
+  id, slug, internal_code, name, current_stock, average_cost, last_cost, is_active
+) VALUES (
+  'f3000000-0000-0000-0000-000000000003',
+  'receiving-frozen-material', 'REC-M3', 'Frozen Receiving Material', 0, 0, 0, true
+);
+
 INSERT INTO public.inventory_locations(
   id,
   slug,
@@ -125,11 +132,22 @@ VALUES (
   true
 );
 
+INSERT INTO public.inventory_locations(id, slug, name, location_use, storage_condition, is_active)
+VALUES
+  ('f4000000-0000-0000-0000-000000000003','receiving-frozen-raw-material','Frozen Raw Material Storage','raw_material','frozen',true),
+  ('f4000000-0000-0000-0000-000000000004','receiving-dry-raw-material','Dry Raw Material Storage','raw_material','dry',true);
+
 UPDATE public.raw_materials
 SET required_storage_condition = 'refrigerated',
     default_storage_use = 'raw_material',
     default_inventory_location_id = 'f4000000-0000-0000-0000-000000000001'
 WHERE id = 'f3000000-0000-0000-0000-000000000001';
+
+UPDATE public.raw_materials
+SET required_storage_condition = 'frozen',
+    default_storage_use = 'raw_material',
+    default_inventory_location_id = 'f4000000-0000-0000-0000-000000000003'
+WHERE id = 'f3000000-0000-0000-0000-000000000003';
 
 INSERT INTO public.purchase_orders(
   id,
@@ -156,6 +174,12 @@ VALUES (
   'PO-RECEIVING-UNCONFIGURED',
   'f2000000-0000-0000-0000-000000000001',
   'released', 5, 5
+);
+
+INSERT INTO public.purchase_orders(id, order_number, supplier_id, status, subtotal, total)
+VALUES (
+  'f5000000-0000-0000-0000-000000000003',
+  'PO-RECEIVING-FROZEN', 'f2000000-0000-0000-0000-000000000001', 'released', 17, 17
 );
 
 INSERT INTO public.purchase_order_items(
@@ -185,6 +209,14 @@ VALUES (
   'f5000000-0000-0000-0000-000000000002',
   'f3000000-0000-0000-0000-000000000002',
   1, 5, 5, 0
+);
+
+INSERT INTO public.purchase_order_items(
+  id, purchase_order_id, raw_material_id, quantity, unit_cost, total, received_quantity
+) VALUES (
+  'f6000000-0000-0000-0000-000000000003',
+  'f5000000-0000-0000-0000-000000000003',
+  'f3000000-0000-0000-0000-000000000003', 2, 8.5, 17, 0
 );
 
 -- Un usuario sin privilegios no puede recibir material.
@@ -612,5 +644,63 @@ BEGIN
   END IF;
 END;
 $test$;
+
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','f1000000-0000-0000-0000-000000000001',true);
+
+DO $frozen_raw_material_receipt$
+BEGIN
+  BEGIN
+    PERFORM public.receive_purchase_order_lot(
+      'f6000000-0000-0000-0000-000000000003', 2, 'FROZEN-TO-FRIDGE', '2099-03-31',
+      'f4000000-0000-0000-0000-000000000001', 'f7000000-0000-0000-0000-000000000031'
+    );
+    RAISE EXCEPTION 'frozen raw material was received into refrigerated storage';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    PERFORM public.receive_purchase_order_lot(
+      'f6000000-0000-0000-0000-000000000003', 2, 'FROZEN-TO-DRY', '2099-03-31',
+      'f4000000-0000-0000-0000-000000000004', 'f7000000-0000-0000-0000-000000000032'
+    );
+    RAISE EXCEPTION 'frozen raw material was received into dry storage';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  IF EXISTS (
+    SELECT 1 FROM public.purchase_receipts
+    WHERE idempotency_key IN (
+      'f7000000-0000-0000-0000-000000000031',
+      'f7000000-0000-0000-0000-000000000032'
+    )
+  ) OR EXISTS (
+    SELECT 1 FROM public.raw_material_lots
+    WHERE lot_number IN ('FROZEN-TO-FRIDGE','FROZEN-TO-DRY')
+  ) OR (SELECT received_quantity FROM public.purchase_order_items
+        WHERE id='f6000000-0000-0000-0000-000000000003') <> 0 THEN
+    RAISE EXCEPTION 'incompatible frozen receipt left partial records or quantity';
+  END IF;
+
+  PERFORM public.receive_purchase_order_lot(
+    'f6000000-0000-0000-0000-000000000003', 2, 'FROZEN-RAW-LOT-001', '2099-03-31',
+    'f4000000-0000-0000-0000-000000000003', 'f7000000-0000-0000-0000-000000000033'
+  );
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.raw_material_lots
+    WHERE raw_material_id='f3000000-0000-0000-0000-000000000003'
+      AND lot_number='FROZEN-RAW-LOT-001'
+      AND quantity=2 AND remaining_value=17
+      AND status='quarantine' AND storage_condition='frozen'
+      AND inventory_location_id='f4000000-0000-0000-0000-000000000003'
+  ) OR (SELECT received_quantity FROM public.purchase_order_items
+        WHERE id='f6000000-0000-0000-0000-000000000003') <> 2 THEN
+    RAISE EXCEPTION 'compatible frozen raw material receipt did not retain its condition, lot value and quarantine';
+  END IF;
+END;
+$frozen_raw_material_receipt$;
+
+RESET ROLE;
 
 ROLLBACK;

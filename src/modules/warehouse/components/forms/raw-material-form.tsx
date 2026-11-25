@@ -495,6 +495,9 @@ export function RawMaterialForm({
                 <option value="">Pendiente de configurar</option>
                 <option value="dry">Seco</option>
                 <option value="refrigerated">Refrigerado</option>
+                {selectedStorageUse === 'raw_material' && (
+                  <option value="frozen">Congelado</option>
+                )}
               </select>
             </div>
 
@@ -509,6 +512,9 @@ export function RawMaterialForm({
                 onChange={(event) => {
                   setSelectedStorageUse(event.target.value);
                   setSelectedDefaultLocation('');
+                  if (event.target.value !== 'raw_material' && selectedStorageCondition === 'frozen') {
+                    setSelectedStorageCondition('');
+                  }
                 }}
                 className="w-full rounded-lg border p-3"
               >

@@ -10,8 +10,13 @@ INSERT INTO public.user_roles(user_id,role)
 VALUES ('e1000000-0000-0000-0000-000000000001','admin');
 INSERT INTO public.warehouses(id,code,name)
 VALUES ('e2000000-0000-0000-0000-000000000001','LOT-WH','Lot Warehouse');
-INSERT INTO public.inventory_locations(id,slug,name)
-VALUES ('e3000000-0000-0000-0000-000000000001','lot-location','Lot Location');
+INSERT INTO public.inventory_locations(
+ id,slug,name,location_use,storage_condition,is_active
+)
+VALUES (
+ 'e3000000-0000-0000-0000-000000000001','lot-location','Lot Location',
+ 'finished_product','refrigerated',true
+);
 INSERT INTO public.products(id,slug,internal_code,name,status)
 VALUES ('e4000000-0000-0000-0000-000000000001','lot-product','LOT-P1','Lot Product','active');
 INSERT INTO public.recipes(id,product_id,name,is_active)
@@ -98,6 +103,25 @@ SELECT public.release_finished_product_quality_to_inventory(
  'ef100000-0000-0000-0000-000000000002',
  'Cumple especificación'
 );
+
+-- This suite isolates downstream FEFO picking from storage-route behavior.
+-- Start its released lots in fresh stock after the dedicated routing tests.
+UPDATE public.product_lots AS lot
+SET quantity = lot.initial_quantity, status = 'available'
+WHERE lot.lot_number IN ('PT-001', 'PT-002');
+UPDATE public.product_lot_storage_balances AS balance
+SET fresh_quantity = lot.initial_quantity,
+    refrigerated_wait_quantity = 0,
+    refrigerated_wait_location_id = NULL
+FROM public.product_lots AS lot
+WHERE lot.id = balance.product_lot_id
+  AND lot.lot_number IN ('PT-001', 'PT-002');
+DELETE FROM public.inventory_movements AS movement
+WHERE movement.reference_type = 'finished_product_refrigerated_wait'
+  AND movement.reference_id IN (
+    SELECT lot.id FROM public.product_lots AS lot
+    WHERE lot.lot_number IN ('PT-001', 'PT-002')
+  );
 
 RESET ROLE;
 INSERT INTO public.customers(id,customer_code,name)

@@ -148,6 +148,16 @@ VALUES (
   125
 );
 
+INSERT INTO public.purchase_orders(
+  id, order_number, supplier_id, status, subtotal, total
+)
+VALUES (
+  'f5000000-0000-0000-0000-000000000002',
+  'PO-RECEIVING-UNCONFIGURED',
+  'f2000000-0000-0000-0000-000000000001',
+  'released', 5, 5
+);
+
 INSERT INTO public.purchase_order_items(
   id,
   purchase_order_id,
@@ -172,7 +182,7 @@ INSERT INTO public.purchase_order_items(
 )
 VALUES (
   'f6000000-0000-0000-0000-000000000002',
-  'f5000000-0000-0000-0000-000000000001',
+  'f5000000-0000-0000-0000-000000000002',
   'f3000000-0000-0000-0000-000000000002',
   1, 5, 5, 0
 );

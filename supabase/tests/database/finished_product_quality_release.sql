@@ -1325,7 +1325,7 @@ SET LOCAL ROLE authenticated;
 
 DO $test$
 BEGIN
-  IF (SELECT count(*) FROM public.product_lot_storage_balances) <> 1
+  IF (SELECT count(*) FROM public.product_lot_storage_balances) <> 0
     OR (SELECT count(*) FROM public.product_lot_freezing_operations) <> 0
     OR (SELECT count(*) FROM public.product_lot_freezing_decisions) <> 0
     OR (SELECT count(*) FROM public.product_lot_quality_samples) <> 0 THEN

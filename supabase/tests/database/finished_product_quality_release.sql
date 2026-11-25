@@ -538,6 +538,16 @@ BEGIN
     RAISE EXCEPTION 'classified refrigerated finished product was not kept out of available stock';
   END IF;
 
+  IF (SELECT count(*) FROM public.inventory_movements
+      WHERE reference_type = 'finished_product_refrigerated_wait'
+        AND reference_id = (
+          SELECT id FROM public.product_lots
+          WHERE production_output_id = 'fa000000-0000-4000-8000-000000000001'
+        )
+        AND movement_type = 'exit' AND quantity = 12) <> 1 THEN
+    RAISE EXCEPTION 'refrigerated wait did not record its stock reservation exactly once';
+  END IF;
+
   IF (
     SELECT count(*)
     FROM public.production_lot_traceability
@@ -654,6 +664,15 @@ WHERE lot.id = balance.product_lot_id
 UPDATE public.inventory_movements
 SET quantity = 48
 WHERE reference_type = 'production_lot'
+  AND reference_id = (
+    SELECT id FROM public.product_lots
+    WHERE production_output_id = 'fa000000-0000-4000-8000-000000000001'
+  );
+
+-- The later freezing scenario resets this lot to a fresh-stock fixture after
+-- the dedicated release-routing assertions above have completed.
+DELETE FROM public.inventory_movements
+WHERE reference_type = 'finished_product_refrigerated_wait'
   AND reference_id = (
     SELECT id FROM public.product_lots
     WHERE production_output_id = 'fa000000-0000-4000-8000-000000000001'

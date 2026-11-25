@@ -139,11 +139,11 @@ INSERT INTO public.picking_order_items(
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','e1000000-0000-0000-0000-000000000001',true);
-SELECT public.confirm_picking_item(
- 'ee000000-0000-0000-0000-000000000001','PT-001'
+SELECT public.confirm_picking_item_with_condition(
+ 'ee000000-0000-0000-0000-000000000001','PT-001','fresh',3
 );
-SELECT public.confirm_picking_item(
- 'ee000000-0000-0000-0000-000000000001','PT-002'
+SELECT public.confirm_picking_item_with_condition(
+ 'ee000000-0000-0000-0000-000000000001','PT-002','fresh',2
 );
 
 RESET ROLE;

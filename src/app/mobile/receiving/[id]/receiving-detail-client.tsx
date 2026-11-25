@@ -93,7 +93,7 @@ export default function ReceivingDetailClient({
       setError(
         err instanceof Error
           ? err.message
-          : 'Error al cargar recepciÃ³n.',
+          : 'Error al cargar recepción.',
       );
 
       setPageState('error');
@@ -221,14 +221,14 @@ export default function ReceivingDetailClient({
     setLotNumber('');
     setExpirationDate('');
     setError(null);
-    setNotice('PresentaciÃ³n rechazada en esta sesiÃ³n. La cantidad permanece pendiente y no se registrÃ³ inventario.');
+    setNotice('Presentación rechazada en esta sesión. La cantidad permanece pendiente y no se registró inventario.');
   }
 
   if (pageState === 'loading') {
     return (
       <main className="p-6">
         <div className="text-center">
-          Cargando recepciÃ³n...
+          Cargando recepción...
         </div>
       </main>
     );
@@ -261,7 +261,7 @@ export default function ReceivingDetailClient({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold">
-            RecepciÃ³n
+            Recepción
           </h1>
 
           <div className="mt-1 text-sm text-gray-500">
@@ -273,7 +273,7 @@ export default function ReceivingDetailClient({
           href="/mobile/receiving"
           className="rounded-lg border px-4 py-2"
         >
-          â† Volver
+          ← Volver
         </Link>
       </div>
 
@@ -340,7 +340,7 @@ export default function ReceivingDetailClient({
         </div>
       ) : null}
 
-      {/* RECEPCIÃ“N TERMINADA */}
+      {/* RECEPCIÓN TERMINADA */}
 
       {!currentItem && completedItems.length === detail.items.length && (
 
@@ -348,13 +348,13 @@ export default function ReceivingDetailClient({
 
           <div className="text-6xl">
 
-            âœ…
+            ✅
 
           </div>
 
           <div className="mt-4 text-2xl font-bold">
 
-            RecepciÃ³n completada
+            Recepción completada
 
           </div>
 
@@ -370,7 +370,7 @@ export default function ReceivingDetailClient({
 
       {!currentItem && completedItems.length < detail.items.length && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center text-amber-900">
-          Hay presentaciones pendientes que no se aceptaron en esta sesiÃ³n. No se creÃ³ inventario para esas cantidades.
+          Hay presentaciones pendientes que no se aceptaron en esta sesión. No se creó inventario para esas cantidades.
         </div>
       )}
 
@@ -470,7 +470,7 @@ export default function ReceivingDetailClient({
           <div className="mt-8">
 
             <label className="block text-sm font-semibold text-gray-700">
-              NÃºmero de lote
+              Número de lote
             </label>
 
             <input
@@ -539,7 +539,7 @@ export default function ReceivingDetailClient({
             )}
           </div>
 
-          {/* BOTÃ“N */}
+          {/* BOTÓN */}
 
           <button
             type="button"

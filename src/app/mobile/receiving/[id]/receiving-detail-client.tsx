@@ -46,7 +46,7 @@ export default function ReceivingDetailClient({
   const [expirationDate, setExpirationDate] =
     useState('');
 
-      const [quantityReceived, setQuantityReceived] =
+  const [quantityReceived, setQuantityReceived] =
     useState('');
 
   const [deferredItemIds, setDeferredItemIds] =
@@ -526,7 +526,7 @@ export default function ReceivingDetailClient({
 
           </div>
 
-          {/* UBICACIÃ“N */}          <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-4">
             <div className="text-sm font-semibold text-blue-900">Destino automático de almacenamiento</div>
             {currentItem.suggested_location ? (
               <div className="mt-1 text-blue-800">
@@ -550,8 +550,8 @@ export default function ReceivingDetailClient({
             className="mt-10 w-full rounded-xl bg-green-600 px-6 py-4 text-lg font-bold text-white transition hover:bg-green-700 disabled:bg-gray-300"
           >
             {saving
-              ? 'Guardando recepciÃ³n...'
-              : 'Confirmar recepciÃ³n'}
+              ? 'Guardando recepción...'
+              : 'Confirmar recepción'}
           </button>
 
           {currentItem.presentation_mode === 'sealed_package' ? (
@@ -561,7 +561,7 @@ export default function ReceivingDetailClient({
               disabled={saving}
               className="mt-3 w-full rounded-xl border border-red-300 px-6 py-3 font-semibold text-red-700"
             >
-              Rechazar presentaciÃ³n y dejarla pendiente
+              Rechazar presentación y dejarla pendiente
             </button>
           ) : null}
 
@@ -595,7 +595,7 @@ export default function ReceivingDetailClient({
                 </div>
 
                 <div className="rounded-full bg-green-600 px-3 py-1 text-sm font-semibold text-white">
-                  âœ“ Recibido
+                  ✓ Recibido
                 </div>
               </div>
             ))}

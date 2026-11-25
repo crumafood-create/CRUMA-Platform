@@ -377,6 +377,45 @@ SELECT set_config(
   true
 );
 
+DO $mass_release_requires_semielaborado$
+BEGIN
+  BEGIN
+    PERFORM public.release_finished_product_quality_to_inventory(
+      'fb000000-0000-4000-8000-000000000002',
+      'DOUGH-WRONG-FREEZER',
+      '2099-12-31',
+      'f2000000-0000-4000-8000-000000000001',
+      'a5000000-0000-4000-8000-000000000010',
+      'fc000000-0000-4000-8000-000000000009',
+      'Intermediate mass cannot use finished-product freezer storage'
+    );
+    RAISE EXCEPTION 'intermediate mass was released to finished-product storage';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  IF EXISTS (
+    SELECT 1 FROM public.product_lots
+    WHERE production_output_id='fa000000-0000-4000-8000-000000000002'
+  ) OR EXISTS (
+    SELECT 1 FROM public.quality_release_decisions
+    WHERE production_output_id='fa000000-0000-4000-8000-000000000002'
+  ) OR EXISTS (
+    SELECT 1 FROM public.finished_product_quality_release_operations
+    WHERE idempotency_key='fc000000-0000-4000-8000-000000000009'
+  ) OR EXISTS (
+    SELECT 1 FROM public.inventory_movements
+    WHERE item_id='f4000000-0000-4000-8000-000000000002'
+      AND reference_type='production_lot'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.production_outputs
+    WHERE id='fa000000-0000-4000-8000-000000000002'
+      AND quality_status='pending' AND mass_quantity_produced=2.15
+  ) THEN
+    RAISE EXCEPTION 'invalid intermediate-mass destination left partial release records';
+  END IF;
+END;
+$mass_release_requires_semielaborado$;
+
 SELECT public.release_finished_product_quality_to_inventory(
   'fb000000-0000-4000-8000-000000000002',
   'DOUGH-LOT-215',
@@ -2133,5 +2172,103 @@ END;
 $finished_product_storage_routes$;
 
 RESET ROLE;
+
+-- Storage locations cannot be reclassified or disabled while finished goods
+-- or quality samples still occupy their registered physical destination.
+INSERT INTO public.inventory_locations (
+  id, slug, name, zone, location_use, storage_condition, is_active
+) VALUES
+  ('a6000000-0000-4000-8000-000000000001','occupied-available','Occupied Available','FRIDGE','finished_product','refrigerated',true),
+  ('a6000000-0000-4000-8000-000000000002','occupied-wait','Occupied Wait','FRIDGE','finished_product','refrigerated',true),
+  ('a6000000-0000-4000-8000-000000000003','occupied-freezer','Occupied Freezer','FREEZER','finished_product','frozen',true),
+  ('a6000000-0000-4000-8000-000000000004','occupied-custody','Occupied Custody','FREEZER','finished_product','frozen',true);
+
+INSERT INTO public.product_lots (
+  id, product_id, lot_number, expiration_date, initial_quantity,
+  quantity, status, inventory_location_id, warehouse_id, location_name
+) VALUES
+  ('a7000000-0000-4000-8000-000000000001','f4000000-0000-4000-8000-000000000001','OCCUPIED-AVAILABLE',CURRENT_DATE+30,4,4,'available','a6000000-0000-4000-8000-000000000001','f2000000-0000-4000-8000-000000000001','Occupied Available'),
+  ('a7000000-0000-4000-8000-000000000002','f4000000-0000-4000-8000-000000000001','OCCUPIED-WAIT',CURRENT_DATE+30,4,0,'depleted','a6000000-0000-4000-8000-000000000002','f2000000-0000-4000-8000-000000000001','Occupied Wait'),
+  ('a7000000-0000-4000-8000-000000000003','f4000000-0000-4000-8000-000000000001','OCCUPIED-FREEZING',CURRENT_DATE+30,4,0,'depleted','a6000000-0000-4000-8000-000000000003','f2000000-0000-4000-8000-000000000001','Occupied Freezer'),
+  ('a7000000-0000-4000-8000-000000000004','f4000000-0000-4000-8000-000000000001','OCCUPIED-CUSTODY',CURRENT_DATE+30,4,0,'depleted','a6000000-0000-4000-8000-000000000004','f2000000-0000-4000-8000-000000000001','Occupied Custody');
+
+INSERT INTO public.product_lot_storage_balances (
+  product_lot_id, fresh_quantity, refrigerated_wait_quantity,
+  refrigerated_wait_location_id, freezing_quantity, freezing_location_id,
+  quality_sampling_reserved_quantity
+) VALUES
+  ('a7000000-0000-4000-8000-000000000001',4,0,NULL,0,NULL,0),
+  ('a7000000-0000-4000-8000-000000000002',0,4,'a6000000-0000-4000-8000-000000000002',0,NULL,0),
+  ('a7000000-0000-4000-8000-000000000003',0,0,NULL,4,'a6000000-0000-4000-8000-000000000003',0),
+  ('a7000000-0000-4000-8000-000000000004',0,0,NULL,0,NULL,3);
+
+INSERT INTO public.product_lot_quality_samples (
+  product_lot_id, purpose, quantity, status, created_by
+) VALUES (
+  'a7000000-0000-4000-8000-000000000004',
+  'safety_retention', 3, 'in_custody',
+  'f1000000-0000-4000-8000-000000000001'
+);
+
+DO $occupied_product_location_guard$
+BEGIN
+  BEGIN
+    UPDATE public.inventory_locations
+    SET location_use='prepared_ingredient', storage_condition='refrigerated'
+    WHERE id='a6000000-0000-4000-8000-000000000001';
+    RAISE EXCEPTION 'available finished-product location was reclassified';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    UPDATE public.inventory_locations SET is_active=false
+    WHERE id='a6000000-0000-4000-8000-000000000002';
+    RAISE EXCEPTION 'refrigerated-wait location was disabled';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    UPDATE public.inventory_locations
+    SET location_use='prepared_ingredient', storage_condition='refrigerated'
+    WHERE id='a6000000-0000-4000-8000-000000000003';
+    RAISE EXCEPTION 'freezer with product in process was reclassified';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    UPDATE public.inventory_locations SET is_active=false
+    WHERE id='a6000000-0000-4000-8000-000000000003';
+    RAISE EXCEPTION 'occupied freezer was disabled';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  BEGIN
+    UPDATE public.inventory_locations SET is_active=false
+    WHERE id='a6000000-0000-4000-8000-000000000004';
+    RAISE EXCEPTION 'location associated with a quality-custody sample was disabled';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  IF EXISTS (
+    SELECT 1 FROM public.inventory_locations
+    WHERE id IN (
+      'a6000000-0000-4000-8000-000000000001',
+      'a6000000-0000-4000-8000-000000000002',
+      'a6000000-0000-4000-8000-000000000003',
+      'a6000000-0000-4000-8000-000000000004'
+    ) AND (location_use IS DISTINCT FROM 'finished_product'
+      OR is_active IS DISTINCT FROM true OR deleted_at IS NOT NULL)
+  ) THEN
+    RAISE EXCEPTION 'a rejected occupied-location update changed its classification or status';
+  END IF;
+
+  IF (SELECT quantity FROM public.product_lots WHERE id='a7000000-0000-4000-8000-000000000001')<>4
+     OR (SELECT refrigerated_wait_quantity FROM public.product_lot_storage_balances WHERE product_lot_id='a7000000-0000-4000-8000-000000000002')<>4
+     OR (SELECT freezing_quantity FROM public.product_lot_storage_balances WHERE product_lot_id='a7000000-0000-4000-8000-000000000003')<>4
+     OR (SELECT status FROM public.product_lot_quality_samples WHERE product_lot_id='a7000000-0000-4000-8000-000000000004')<>'in_custody' THEN
+    RAISE EXCEPTION 'rejected location updates changed finished-product or custody balances';
+  END IF;
+END;
+$occupied_product_location_guard$;
 
 ROLLBACK;

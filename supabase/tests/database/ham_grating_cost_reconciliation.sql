@@ -8,6 +8,9 @@ SELECT set_config('test.ham_source_location_id', gen_random_uuid()::text, true);
 SELECT set_config('test.ham_source_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.ham_invalid_lot_id', gen_random_uuid()::text, true);
 SELECT set_config('test.ham_grating_key', gen_random_uuid()::text, true);
+SELECT set_config('test.ham_frozen_location_id', gen_random_uuid()::text, true);
+SELECT set_config('test.ham_frozen_lot_id', gen_random_uuid()::text, true);
+SELECT set_config('test.ham_frozen_grating_key', gen_random_uuid()::text, true);
 
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
 VALUES (current_setting('test.ham_admin_id')::uuid, 'authenticated', 'authenticated',
@@ -34,7 +37,9 @@ VALUES
   (current_setting('test.ham_location_id')::uuid,
    'ham-grating-' || left(current_setting('test.ham_admin_id'), 8), 'Ham prepared-ingredient refrigerator', 'prepared_ingredient', 'refrigerated'),
   (current_setting('test.ham_source_location_id')::uuid,
-   'ham-source-' || left(current_setting('test.ham_admin_id'), 8), 'Ham raw-material refrigerator', 'raw_material', 'refrigerated');
+   'ham-source-' || left(current_setting('test.ham_admin_id'), 8), 'Ham raw-material refrigerator', 'raw_material', 'refrigerated'),
+  (current_setting('test.ham_frozen_location_id')::uuid,
+   'ham-frozen-' || left(current_setting('test.ham_admin_id'), 8), 'Ham frozen incoming storage', 'raw_material', 'frozen');
 UPDATE public.raw_materials
 SET required_storage_condition = 'refrigerated',
     default_storage_use = 'raw_material',
@@ -192,5 +197,65 @@ BEGIN
   END IF;
 END;
 $test$;
+
+-- Frozen incoming ham must not be grated until an approved safe-use or
+-- controlled-thawing procedure exists; rejection must leave physical stock,
+-- valuation, operations, output lots and movements unchanged.
+UPDATE public.raw_materials
+SET current_stock = current_stock + 0.1000
+WHERE id = current_setting('test.ham_source_material_id')::uuid;
+INSERT INTO public.raw_material_lots (
+  id, raw_material_id, lot_number, quantity, unit_cost, remaining_value,
+  status, inventory_location_id, storage_condition
+) VALUES (
+  current_setting('test.ham_frozen_lot_id')::uuid,
+  current_setting('test.ham_source_material_id')::uuid,
+  'HAM-FROZEN-' || left(current_setting('test.ham_admin_id'), 8),
+  0.1000, 80, 8, 'available',
+  current_setting('test.ham_frozen_location_id')::uuid, 'frozen'
+);
+INSERT INTO public.inventory_movements (item_type, item_id, movement_type, quantity, previous_stock, new_stock,
+  reference_type, reference_id, notes)
+VALUES ('raw_material', current_setting('test.ham_source_material_id')::uuid, 'entry', 0.1000,
+  (SELECT current_stock - 0.1000 FROM public.raw_materials WHERE id = current_setting('test.ham_source_material_id')::uuid),
+  (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.ham_source_material_id')::uuid),
+  'frozen_preparation_test_seed', current_setting('test.ham_frozen_lot_id')::uuid, 'Frozen incoming ham for grating guard regression');
+SET LOCAL ROLE authenticated;
+DO $frozen_ham_grating_rejected$
+DECLARE
+  v_rejected boolean := false;
+  v_stock numeric;
+  v_operations bigint;
+  v_lots bigint;
+  v_movements bigint;
+BEGIN
+  SELECT current_stock INTO v_stock FROM public.raw_materials
+  WHERE id = current_setting('test.ham_source_material_id')::uuid;
+  SELECT count(*) INTO v_operations FROM public.cheese_preparation_operations;
+  SELECT count(*) INTO v_lots FROM public.raw_material_lots;
+  SELECT count(*) INTO v_movements FROM public.inventory_movements;
+  BEGIN
+    PERFORM public.record_ham_grating(
+      current_setting('test.ham_frozen_lot_id')::uuid,
+      current_setting('test.ham_grated_material_id')::uuid,
+      0.1000, 0.0900, 0.0100,
+      current_setting('test.ham_frozen_grating_key')::uuid,
+      'Reject frozen ham without approved thawing procedure'
+    );
+  EXCEPTION WHEN check_violation THEN
+    v_rejected := true;
+  END;
+  IF NOT v_rejected
+     OR (SELECT quantity FROM public.raw_material_lots WHERE id = current_setting('test.ham_frozen_lot_id')::uuid) <> 0.1000
+     OR (SELECT remaining_value FROM public.raw_material_lots WHERE id = current_setting('test.ham_frozen_lot_id')::uuid) <> 8
+     OR (SELECT current_stock FROM public.raw_materials WHERE id = current_setting('test.ham_source_material_id')::uuid) <> v_stock
+     OR (SELECT count(*) FROM public.cheese_preparation_operations) <> v_operations
+     OR (SELECT count(*) FROM public.raw_material_lots) <> v_lots
+     OR (SELECT count(*) FROM public.inventory_movements) <> v_movements THEN
+    RAISE EXCEPTION 'Frozen ham grating must reject without changing the lot, stock, operations, outputs or movements.';
+  END IF;
+END;
+$frozen_ham_grating_rejected$;
+RESET ROLE;
 
 ROLLBACK;

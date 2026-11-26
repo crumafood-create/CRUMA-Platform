@@ -30,7 +30,7 @@ export default async function EditRawMaterialPage({
     notFound();
   }
 
-  const { categories, families, unitsOfMeasure } =
+  const { categories, families, unitsOfMeasure, inventoryLocations } =
     await fetchRawMaterialFormCatalog(supabase);
 
   return (
@@ -44,6 +44,7 @@ export default async function EditRawMaterialPage({
         categories={categories}
         families={families}
         unitsOfMeasure={unitsOfMeasure}
+        inventoryLocations={inventoryLocations}
         action={updateRawMaterial.bind(null, material.id)}
       />
 
@@ -58,3 +59,4 @@ export default async function EditRawMaterialPage({
     </main>
   );
 }
+

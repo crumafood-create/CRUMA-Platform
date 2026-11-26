@@ -18,6 +18,8 @@ function locationForm(overrides: Record<string, string> = {}): FormData {
     level: '3',
     position: '4',
     is_active: 'on',
+    location_use: 'prepared_ingredient',
+    storage_condition: 'refrigerated',
     ...overrides,
   };
 
@@ -38,6 +40,8 @@ describe('contrato tipado de ubicaciones de inventario', () => {
       level: 3,
       position: 4,
       is_active: true,
+      location_use: 'prepared_ingredient',
+      storage_condition: 'refrigerated',
     });
   });
 
@@ -100,11 +104,52 @@ describe('contrato tipado de ubicaciones de inventario', () => {
       level: null,
       position: null,
       is_active: null,
+      location_use: null,
+      storage_condition: null,
     });
 
     expect(location.zone).toBe('');
     expect(location.aisle).toBe(0);
     expect(location.description).toBe(null);
     expect(location.is_active).toBe(true);
+    expect(location.location_use).toBe(null);
+    expect(location.storage_condition).toBe(null);
+  });
+
+  it('deja las ubicaciones sin clasificar solo cuando ambos campos están vacíos', () => {
+    const location = buildInventoryLocationInsert(locationForm({
+      location_use: '',
+      storage_condition: '',
+    }));
+
+    expect(location.location_use).toBe(null);
+    expect(location.storage_condition).toBe(null);
+  });
+
+  it('rechaza una clasificación incompleta', () => {
+    expect(() => buildInventoryLocationInsert(locationForm({ storage_condition: '' })))
+      .toThrow('Selecciona el uso y la condición juntos, o deja la ubicación sin clasificar.');
+  });
+
+  it.each([
+    ['prepared_ingredient', 'frozen'],
+    ['finished_product', 'dry'],
+    ['packaging', 'refrigerated'],
+    ['chemical', 'frozen'],
+  ])('rechaza uso y conservación incompatibles: %s / %s', (location_use, storage_condition) => {
+    expect(() => buildInventoryLocationInsert(locationForm({
+      location_use,
+      storage_condition,
+    }))).toThrow('El uso de la ubicación no es compatible con la condición seleccionada.');
+  });
+
+  it('permite una ubicación congelada de materias primas', () => {
+    expect(buildInventoryLocationInsert(locationForm({
+      location_use: 'raw_material',
+      storage_condition: 'frozen',
+    }))).toMatchObject({
+      location_use: 'raw_material',
+      storage_condition: 'frozen',
+    });
   });
 });

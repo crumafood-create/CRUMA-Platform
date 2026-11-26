@@ -24,6 +24,16 @@ export interface CheeseGratingRequest {
   reason: string;
 }
 
+export interface HamGratingRequest {
+  sourceLotId: string;
+  gratedMaterialId: string;
+  sourceQuantityKg: number;
+  gratedWeightKg: number;
+  wasteWeightKg: number;
+  idempotencyKey: string;
+  reason: string;
+}
+
 const KG_UNITS_PER_KG = 10_000;
 
 function text(form: FormData, field: string): string {
@@ -105,6 +115,24 @@ export function buildCheeseGratingRequest(form: FormData): CheeseGratingRequest 
     + decimalUnits(form, 'waste_weight_kg', true)
     > decimalUnits(form, 'source_quantity_kg')) {
     throw new Error('El queso rallado y la merma exceden el peso de recorte de entrada.');
+  }
+  return request;
+}
+
+export function buildHamGratingRequest(form: FormData): HamGratingRequest {
+  const request: HamGratingRequest = {
+    sourceLotId: uuid(form, 'ham_source_lot_id'),
+    gratedMaterialId: uuid(form, 'ham_grated_material_id'),
+    sourceQuantityKg: decimal(form, 'ham_source_quantity_kg'),
+    gratedWeightKg: decimal(form, 'ham_grated_weight_kg'),
+    wasteWeightKg: decimal(form, 'ham_waste_weight_kg', true),
+    idempotencyKey: uuid(form, 'ham_idempotency_key'),
+    reason: text(form, 'ham_reason'),
+  };
+  if (decimalUnits(form, 'ham_grated_weight_kg')
+    + decimalUnits(form, 'ham_waste_weight_kg', true)
+    > decimalUnits(form, 'ham_source_quantity_kg')) {
+    throw new Error('El jamón rallado y la merma exceden el peso de entrada.');
   }
   return request;
 }

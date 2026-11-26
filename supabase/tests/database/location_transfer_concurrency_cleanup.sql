@@ -1,0 +1,16 @@
+DELETE FROM public.inventory_movements
+WHERE reference_type = 'raw_material_lot_location_transfer'
+  AND reference_id IN (
+    'ed500000-0000-4000-8000-000000000001',
+    'ed500000-0000-4000-8000-000000000002'
+  );
+DELETE FROM public.raw_material_lots WHERE id = 'ed400000-0000-4000-8000-000000000001';
+DELETE FROM public.raw_materials WHERE id = 'ed300000-0000-4000-8000-000000000001';
+DELETE FROM public.units_of_measure WHERE id = 'ed200000-0000-4000-8000-000000000001';
+DELETE FROM public.inventory_locations WHERE id IN (
+  'ed100000-0000-4000-8000-000000000001',
+  'ed100000-0000-4000-8000-000000000002'
+);
+DELETE FROM public.user_roles WHERE user_id = 'ed000000-0000-4000-8000-000000000001';
+DELETE FROM public.profiles WHERE id = 'ed000000-0000-4000-8000-000000000001';
+DELETE FROM auth.users WHERE id = 'ed000000-0000-4000-8000-000000000001';

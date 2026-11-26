@@ -2280,10 +2280,12 @@ export type Database = {
           id: string
           is_active: boolean | null
           level: number | null
+          location_use: string | null
           name: string
           position: number | null
           rack: number | null
           slug: string
+          storage_condition: string | null
           updated_at: string | null
           zone: string | null
         }
@@ -2295,10 +2297,12 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           level?: number | null
+          location_use?: string | null
           name: string
           position?: number | null
           rack?: number | null
           slug: string
+          storage_condition?: string | null
           updated_at?: string | null
           zone?: string | null
         }
@@ -2310,10 +2314,12 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           level?: number | null
+          location_use?: string | null
           name?: string
           position?: number | null
           rack?: number | null
           slug?: string
+          storage_condition?: string | null
           updated_at?: string | null
           zone?: string | null
         }
@@ -4328,39 +4334,55 @@ export type Database = {
           destination: string
           id: string
           idempotency_key: string
+          process_location_id: string | null
           product_lot_id: string
           reason: string
           requested_quantity: number
           resolved_at: string | null
+          source_location_id: string | null
           started_at: string
           started_by: string
+          started_from: string
           status: string
         }
         Insert: {
           destination?: string
           id?: string
           idempotency_key: string
+          process_location_id?: string | null
           product_lot_id: string
           reason: string
           requested_quantity: number
           resolved_at?: string | null
+          source_location_id?: string | null
           started_at?: string
           started_by: string
+          started_from?: string
           status?: string
         }
         Update: {
           destination?: string
           id?: string
           idempotency_key?: string
+          process_location_id?: string | null
           product_lot_id?: string
           reason?: string
           requested_quantity?: number
           resolved_at?: string | null
+          source_location_id?: string | null
           started_at?: string
           started_by?: string
+          started_from?: string
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_lot_freezing_operations_process_location_id_fkey"
+            columns: ["process_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_lot_freezing_operations_product_lot_id_fkey"
             columns: ["product_lot_id"]
@@ -4387,6 +4409,13 @@ export type Database = {
             columns: ["product_lot_id"]
             isOneToOne: false
             referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_freezing_operations_source_location_id_fkey"
+            columns: ["source_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
             referencedColumns: ["id"]
           },
           {
@@ -4579,35 +4608,160 @@ export type Database = {
           },
         ]
       }
+      product_lot_refrigerated_wait_decisions: {
+        Row: {
+          decided_at: string
+          decided_by: string
+          destination: string
+          id: string
+          idempotency_key: string
+          process_location_id: string | null
+          product_lot_id: string
+          quantity: number
+          reason: string
+          source_location_id: string
+        }
+        Insert: {
+          decided_at?: string
+          decided_by: string
+          destination: string
+          id?: string
+          idempotency_key: string
+          process_location_id?: string | null
+          product_lot_id: string
+          quantity: number
+          reason: string
+          source_location_id: string
+        }
+        Update: {
+          decided_at?: string
+          decided_by?: string
+          destination?: string
+          id?: string
+          idempotency_key?: string
+          process_location_id?: string | null
+          product_lot_id?: string
+          quantity?: number
+          reason?: string
+          source_location_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_refrigerated_wait_decision_process_location_id_fkey"
+            columns: ["process_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_refrigerated_wait_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_refrigerated_wait_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_refrigerated_wait_decisions_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_refrigerated_wait_decisions_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_refrigerated_wait_decisions_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_refrigerated_wait_decisions_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_refrigerated_wait_decisions_source_location_id_fkey"
+            columns: ["source_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_lot_storage_balances: {
         Row: {
+          freezing_location_id: string | null
           freezing_quantity: number
           fresh_quantity: number
+          frozen_location_id: string | null
           product_lot_id: string
           quality_sampling_pending_quantity: number
           quality_sampling_reserved_quantity: number
+          quality_waste_quantity: number
           raw_frozen_quantity: number
+          refrigerated_wait_location_id: string | null
+          refrigerated_wait_quantity: number
           updated_at: string
         }
         Insert: {
+          freezing_location_id?: string | null
           freezing_quantity?: number
           fresh_quantity?: number
+          frozen_location_id?: string | null
           product_lot_id: string
           quality_sampling_pending_quantity?: number
           quality_sampling_reserved_quantity?: number
+          quality_waste_quantity?: number
           raw_frozen_quantity?: number
+          refrigerated_wait_location_id?: string | null
+          refrigerated_wait_quantity?: number
           updated_at?: string
         }
         Update: {
+          freezing_location_id?: string | null
           freezing_quantity?: number
           fresh_quantity?: number
+          frozen_location_id?: string | null
           product_lot_id?: string
           quality_sampling_pending_quantity?: number
           quality_sampling_reserved_quantity?: number
+          quality_waste_quantity?: number
           raw_frozen_quantity?: number
+          refrigerated_wait_location_id?: string | null
+          refrigerated_wait_quantity?: number
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_lot_storage_balances_freezing_location_id_fkey"
+            columns: ["freezing_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_storage_balances_frozen_location_id_fkey"
+            columns: ["frozen_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_lot_storage_balances_product_lot_id_fkey"
             columns: ["product_lot_id"]
@@ -4634,6 +4788,13 @@ export type Database = {
             columns: ["product_lot_id"]
             isOneToOne: true
             referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_storage_balances_refrigerated_wait_location_id_fkey"
+            columns: ["refrigerated_wait_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -7277,6 +7438,7 @@ export type Database = {
           raw_material_id: string
           remaining_value: number
           status: string
+          storage_condition: string | null
           supplier_lot: string | null
           unit_cost: number
           updated_at: string
@@ -7291,6 +7453,7 @@ export type Database = {
           raw_material_id: string
           remaining_value: number
           status?: string
+          storage_condition?: string | null
           supplier_lot?: string | null
           unit_cost?: number
           updated_at?: string
@@ -7305,6 +7468,7 @@ export type Database = {
           raw_material_id?: string
           remaining_value?: number
           status?: string
+          storage_condition?: string | null
           supplier_lot?: string | null
           unit_cost?: number
           updated_at?: string
@@ -7346,6 +7510,8 @@ export type Database = {
           category_id: string | null
           created_at: string
           current_stock: number
+          default_inventory_location_id: string | null
+          default_storage_use: string | null
           deleted_at: string | null
           description: string | null
           family_id: string | null
@@ -7357,6 +7523,7 @@ export type Database = {
           name: string
           preferred_supplier_id: string | null
           reorder_quantity: number | null
+          required_storage_condition: string | null
           slug: string
           unit_of_measure_id: string | null
           updated_at: string
@@ -7366,6 +7533,8 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           current_stock?: number
+          default_inventory_location_id?: string | null
+          default_storage_use?: string | null
           deleted_at?: string | null
           description?: string | null
           family_id?: string | null
@@ -7377,6 +7546,7 @@ export type Database = {
           name: string
           preferred_supplier_id?: string | null
           reorder_quantity?: number | null
+          required_storage_condition?: string | null
           slug: string
           unit_of_measure_id?: string | null
           updated_at?: string
@@ -7386,6 +7556,8 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           current_stock?: number
+          default_inventory_location_id?: string | null
+          default_storage_use?: string | null
           deleted_at?: string | null
           description?: string | null
           family_id?: string | null
@@ -7397,6 +7569,7 @@ export type Database = {
           name?: string
           preferred_supplier_id?: string | null
           reorder_quantity?: number | null
+          required_storage_condition?: string | null
           slug?: string
           unit_of_measure_id?: string | null
           updated_at?: string
@@ -7407,6 +7580,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raw_materials_default_inventory_location_fkey"
+            columns: ["default_inventory_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
             referencedColumns: ["id"]
           },
           {
@@ -9481,6 +9661,17 @@ export type Database = {
         }
         Returns: string
       }
+      decide_product_lot_refrigerated_wait: {
+        Args: {
+          p_destination: string
+          p_idempotency_key: string
+          p_process_location_id: string
+          p_product_lot_id: string
+          p_quantity: number
+          p_reason: string
+        }
+        Returns: string
+      }
       decide_quality_release: {
         Args: { p_decision: string; p_inspection_id: string; p_reason: string }
         Returns: string
@@ -9523,21 +9714,27 @@ export type Database = {
           reason: string
           requested_quantity: number
           started_at: string
+          started_from: string
         }[]
       }
       get_product_lot_storage_balances: {
         Args: { p_product_id: string }
         Returns: {
           expiration_date: string
+          freezing_location_name: string
           freezing_quantity: number
           fresh_quantity: number
+          frozen_location_name: string
           location_name: string
           lot_number: string
           lot_quantity: number
           product_lot_id: string
           quality_sampling_pending_quantity: number
           quality_sampling_reserved_quantity: number
+          quality_waste_quantity: number
           raw_frozen_quantity: number
+          refrigerated_wait_location_name: string
+          refrigerated_wait_quantity: number
         }[]
       }
       get_product_lot_storage_pick_suggestion: {
@@ -9627,6 +9824,28 @@ export type Database = {
         }
         Returns: string
       }
+      record_ham_grating: {
+        Args: {
+          p_grated_material_id: string
+          p_grated_weight_kg: number
+          p_idempotency_key: string
+          p_reason: string
+          p_source_lot_id: string
+          p_source_quantity_kg: number
+          p_waste_weight_kg: number
+        }
+        Returns: string
+      }
+      record_prepared_ingredient_quality_inspection: {
+        Args: {
+          p_criteria: Json
+          p_defects: Json
+          p_lot_id: string
+          p_notes: string
+          p_sampled_quantity: number
+        }
+        Returns: string
+      }
       record_product_lot_quality_sample_inspection: {
         Args: {
           p_criteria: Json
@@ -9679,6 +9898,16 @@ export type Database = {
         }
         Returns: string
       }
+      release_prepared_ingredient_quality_lot: {
+        Args: {
+          p_expiration_date: string
+          p_inspection_id: string
+          p_inventory_location_id: string
+          p_reason: string
+          p_storage_condition: string
+        }
+        Returns: string
+      }
       release_production_output_to_inventory: {
         Args: {
           p_expiration_date: string
@@ -9700,6 +9929,10 @@ export type Database = {
         }
         Returns: string
       }
+      retain_prepared_ingredient_for_storage_correction: {
+        Args: { p_inspection_id: string; p_reason: string }
+        Returns: string
+      }
       settle_production_cost: {
         Args: {
           p_idempotency_key: string
@@ -9709,15 +9942,26 @@ export type Database = {
         }
         Returns: string
       }
-      start_product_lot_freezing: {
-        Args: {
-          p_idempotency_key: string
-          p_product_lot_id: string
-          p_quantity: number
-          p_reason: string
-        }
-        Returns: string
-      }
+      start_product_lot_freezing:
+        | {
+            Args: {
+              p_idempotency_key: string
+              p_product_lot_id: string
+              p_quantity: number
+              p_reason: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_idempotency_key: string
+              p_process_location_id: string
+              p_product_lot_id: string
+              p_quantity: number
+              p_reason: string
+            }
+            Returns: string
+          }
       start_production_order_with_mass_lot_reservations: {
         Args: {
           p_idempotency_key: string
@@ -9736,6 +9980,15 @@ export type Database = {
       }
       submit_purchase_requisition: {
         Args: { p_requisition_id: string }
+        Returns: string
+      }
+      transfer_raw_material_lot_location: {
+        Args: {
+          p_destination_location_id: string
+          p_idempotency_key: string
+          p_lot_id: string
+          p_reason: string
+        }
         Returns: string
       }
       transition_production_order_lifecycle: {

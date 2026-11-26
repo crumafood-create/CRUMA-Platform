@@ -6,17 +6,22 @@ import type {
 type CategorySelection = Pick<PublicTableRow<'categories'>, 'id' | 'name' | 'code_prefix'>;
 type FamilySelection = Pick<PublicTableRow<'families'>, 'id' | 'name' | 'category_id'>;
 type UnitSelection = Pick<PublicTableRow<'units_of_measure'>, 'id' | 'name' | 'code'>;
+type StorageLocationSelection = Pick<
+  PublicTableRow<'inventory_locations'>,
+  'id' | 'slug' | 'name' | 'location_use' | 'storage_condition'
+>;
 
 export type RawMaterialFormCatalog = {
   categories: Array<Omit<CategorySelection, 'code_prefix'> & { code_prefix: string }>;
   families: FamilySelection[];
   unitsOfMeasure: UnitSelection[];
+  inventoryLocations: StorageLocationSelection[];
 };
 
 export async function fetchRawMaterialFormCatalog(
   supabase: TypedSupabaseClient,
 ): Promise<RawMaterialFormCatalog> {
-  const [categories, families, units] = await Promise.all([
+  const [categories, families, units, inventoryLocations] = await Promise.all([
     supabase
       .from('categories')
       .select('id, name, code_prefix')
@@ -33,9 +38,15 @@ export async function fetchRawMaterialFormCatalog(
       .eq('is_active', true)
       .is('deleted_at', null)
       .order('name'),
+    supabase
+      .from('inventory_locations')
+      .select('id, slug, name, location_use, storage_condition')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+      .order('name'),
   ]);
 
-  for (const result of [categories, families, units]) {
+  for (const result of [categories, families, units, inventoryLocations]) {
     if (result.error) throw new Error(result.error.message);
   }
 
@@ -46,6 +57,7 @@ export async function fetchRawMaterialFormCatalog(
     })),
     families: families.data ?? [],
     unitsOfMeasure: units.data ?? [],
+    inventoryLocations: inventoryLocations.data ?? [],
   };
 }
 
@@ -75,3 +87,4 @@ export async function assertRawMaterialFamilyBelongsToCategory(
     throw new Error('La familia no pertenece a la categoría seleccionada.');
   }
 }
+

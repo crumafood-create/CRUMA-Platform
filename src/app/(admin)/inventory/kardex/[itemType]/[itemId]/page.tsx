@@ -178,6 +178,8 @@ export default async function KardexPage({
                       : movement.movement_type ===
                         'exit'
                       ? 'Salida'
+                      : movement.movement_type === 'transfer'
+                      ? 'Traslado'
                       : 'Ajuste'}
                   </td>
 

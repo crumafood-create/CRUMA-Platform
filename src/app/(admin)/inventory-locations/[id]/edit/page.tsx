@@ -35,7 +35,9 @@ export default async function EditInventoryLocationPage({
       rack,
       level,
       position,
-      is_active
+      is_active,
+      location_use,
+      storage_condition
     `)
     .eq('id', id)
     .is('deleted_at', null)

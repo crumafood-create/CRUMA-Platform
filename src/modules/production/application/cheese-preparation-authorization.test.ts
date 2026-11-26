@@ -2,12 +2,13 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-const ACTIONS = '../../../app/(admin)/cheese-preparation/actions.ts';
+const ACTIONS = '../../../app/(admin)/ingredient-preparation/actions.ts';
 
-describe('autorización de preparación de queso', () => {
+describe('autorización de preparación de ingredientes', () => {
   it.each([
     ['recordCheeseCutAction', 'recordCheeseCut('],
     ['recordCheeseGratingAction', 'recordCheeseGrating('],
+    ['recordHamGratingAction', 'recordHamGrating('],
   ])('%s protege la escritura antes de invocar el repositorio', (actionName, repositoryCall) => {
     const source = readFileSync(new URL(ACTIONS, import.meta.url), 'utf8');
     const start = source.indexOf(`export async function ${actionName}`);

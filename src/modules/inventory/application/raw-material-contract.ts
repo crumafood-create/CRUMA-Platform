@@ -17,6 +17,9 @@ type RawMaterialCatalogFields = Pick<
   | 'minimum_stock'
   | 'description'
   | 'is_active'
+  | 'required_storage_condition'
+  | 'default_storage_use'
+  | 'default_inventory_location_id'
 >;
 
 type RawMaterialFormSelection = Pick<
@@ -33,6 +36,9 @@ type RawMaterialFormSelection = Pick<
   | 'last_cost'
   | 'description'
   | 'is_active'
+  | 'required_storage_condition'
+  | 'default_storage_use'
+  | 'default_inventory_location_id'
 >;
 
 function requiredText(form: FormData, field: string): string {
@@ -57,6 +63,41 @@ function nonNegativeNumber(form: FormData, field: string): number {
   return quantity;
 }
 
+function buildStoragePolicyFields(form: FormData): Pick<
+  RawMaterialCatalogFields,
+  'required_storage_condition' | 'default_storage_use' | 'default_inventory_location_id'
+> {
+  const condition = optionalText(form, 'required_storage_condition');
+  const use = optionalText(form, 'default_storage_use');
+  const locationId = optionalText(form, 'default_inventory_location_id');
+
+  if ((condition === null) !== (use === null)) {
+    throw new Error('Configura juntos el uso y la condición de conservación.');
+  }
+  if (use !== null && !['raw_material', 'prepared_ingredient'].includes(use)) {
+    throw new Error('El uso del destino debe ser materia prima o ingrediente preparado.');
+  }
+  const allowedConditions = use === 'raw_material'
+    ? ['dry', 'refrigerated', 'frozen']
+    : ['dry', 'refrigerated'];
+  if (condition !== null && !allowedConditions.includes(condition)) {
+    throw new Error(
+      use === 'raw_material'
+        ? 'La condición de la materia prima debe ser seco, refrigerado o congelado.'
+        : 'La condición del ingrediente preparado debe ser seco o refrigerado.',
+    );
+  }
+  if (locationId !== null && (condition === null || use === null)) {
+    throw new Error('Configura el uso y la condición antes de asignar una ubicación habitual.');
+  }
+
+  return {
+    required_storage_condition: condition,
+    default_storage_use: use,
+    default_inventory_location_id: locationId,
+  };
+}
+
 function buildRawMaterialCatalogFields(form: FormData): RawMaterialCatalogFields {
   const categoryId = optionalText(form, 'category_id');
   const familyId = optionalText(form, 'family_id');
@@ -75,6 +116,7 @@ function buildRawMaterialCatalogFields(form: FormData): RawMaterialCatalogFields
     minimum_stock: nonNegativeNumber(form, 'minimum_stock'),
     description: optionalText(form, 'description'),
     is_active: form.get('is_active') === 'true',
+    ...buildStoragePolicyFields(form),
   };
 }
 
@@ -115,5 +157,9 @@ export function normalizeRawMaterialFormValues(material: RawMaterialFormSelectio
     last_cost: material.last_cost,
     description: material.description ?? '',
     is_active: material.is_active,
+    required_storage_condition: material.required_storage_condition ?? '',
+    default_storage_use: material.default_storage_use ?? '',
+    default_inventory_location_id: material.default_inventory_location_id ?? '',
   };
 }
+

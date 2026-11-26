@@ -8,10 +8,12 @@ import { PERMISSIONS } from '@/modules/identity/permissions/permissions.constant
 import {
   buildCheeseCutRequest,
   buildCheeseGratingRequest,
+  buildHamGratingRequest,
 } from '@/modules/production/application/cheese-preparation-contract';
 import {
   recordCheeseCut,
   recordCheeseGrating,
+  recordHamGrating,
 } from '@/modules/production/application/cheese-preparation-repository';
 
 export async function recordCheeseCutAction(formData: FormData) {
@@ -19,10 +21,10 @@ export async function recordCheeseCutAction(formData: FormData) {
     PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE,
   );
   await recordCheeseCut(supabase, buildCheeseCutRequest(formData));
-  revalidatePath('/cheese-preparation');
+  revalidatePath('/ingredient-preparation');
   revalidatePath('/raw-materials');
   revalidatePath('/inventory-stock');
-  redirect('/cheese-preparation?cut=recorded');
+  redirect('/ingredient-preparation?cut=recorded');
 }
 
 export async function recordCheeseGratingAction(formData: FormData) {
@@ -30,8 +32,19 @@ export async function recordCheeseGratingAction(formData: FormData) {
     PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE,
   );
   await recordCheeseGrating(supabase, buildCheeseGratingRequest(formData));
-  revalidatePath('/cheese-preparation');
+  revalidatePath('/ingredient-preparation');
   revalidatePath('/raw-materials');
   revalidatePath('/inventory-stock');
-  redirect('/cheese-preparation?grate=recorded');
+  redirect('/ingredient-preparation?grate=recorded');
+}
+
+export async function recordHamGratingAction(formData: FormData) {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE,
+  );
+  await recordHamGrating(supabase, buildHamGratingRequest(formData));
+  revalidatePath('/ingredient-preparation');
+  revalidatePath('/raw-materials');
+  revalidatePath('/inventory-stock');
+  redirect('/ingredient-preparation?ham=recorded');
 }

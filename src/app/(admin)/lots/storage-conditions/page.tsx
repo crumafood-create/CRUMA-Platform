@@ -30,6 +30,14 @@ export default async function ProductStorageConditionsPage() {
       ? product.preparation_types[0] : product.preparation_types;
     return [product.id, { name: product.name, isRaw: preparation?.name.trim().toLocaleLowerCase('es-MX') === 'crudo' }];
   }));
+  const freezerLocationsResult = await supabase.from('inventory_locations')
+    .select('id, name')
+    .eq('location_use', 'finished_product')
+    .eq('storage_condition', 'frozen')
+    .eq('is_active', true)
+    .is('deleted_at', null)
+    .order('name');
+  if (freezerLocationsResult.error) throw new Error('No fue posible consultar el congelador configurado.');
 
   const balances = await Promise.all(productIds.map(async (productId) => {
     const result = await client.rpc('get_product_lot_storage_balances', {
@@ -60,6 +68,11 @@ export default async function ProductStorageConditionsPage() {
         fresh_quantity: quantity,
         raw_frozen_quantity: 0,
         freezing_quantity: 0,
+        refrigerated_wait_quantity: 0,
+        quality_waste_quantity: 0,
+        refrigerated_wait_location_name: null,
+        freezing_location_name: null,
+        frozen_location_name: null,
         quality_sampling_pending_quantity: 0,
         quality_sampling_reserved_quantity: 0,
         product_name: productName,
@@ -81,6 +94,7 @@ export default async function ProductStorageConditionsPage() {
       <StorageConditionsClient
         lots={balances.flat()}
         pending={pendingResult.data as PendingFreezing[] ?? []}
+        freezerLocations={freezerLocationsResult.data ?? []}
       />
     </main>
   );

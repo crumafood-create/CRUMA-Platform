@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import {
@@ -12,8 +12,6 @@ import { MobileScanner } from '@/modules/warehouse/components/mobile-scanner';
 import {
   confirmReceiving,
   getReceivingDetail,
-  getReceivingLocations,
-  type InventoryLocation,
   type ReceivingDetail,
 } from './actions';
 
@@ -33,9 +31,6 @@ export default function ReceivingDetailClient({
   const [detail, setDetail] =
     useState<ReceivingDetail | null>(null);
 
-  const [locations, setLocations] =
-    useState<InventoryLocation[]>([]);
-
   const [pageState, setPageState] =
     useState<PageState>('loading');
 
@@ -51,10 +46,7 @@ export default function ReceivingDetailClient({
   const [expirationDate, setExpirationDate] =
     useState('');
 
-  const [locationId, setLocationId] =
-    useState('');
-
-      const [quantityReceived, setQuantityReceived] =
+  const [quantityReceived, setQuantityReceived] =
     useState('');
 
   const [deferredItemIds, setDeferredItemIds] =
@@ -74,13 +66,7 @@ export default function ReceivingDetailClient({
 
   async function load() {
     try {
-      const [detailData, locationData] =
-        await Promise.all([
-          getReceivingDetail(
-            purchaseOrderId,
-          ),
-          getReceivingLocations(),
-        ]);
+      const detailData = await getReceivingDetail(purchaseOrderId);
 
       setDetail(detailData);
 
@@ -101,8 +87,6 @@ export default function ReceivingDetailClient({
       );
 
       idempotencyKeyRef.current = null;
-
-      setLocations(locationData);
 
       setPageState('ready');
     } catch (err) {
@@ -186,10 +170,8 @@ export default function ReceivingDetailClient({
       return;
     }
 
-    if (!locationId) {
-      setError(
-        'Seleccione la ubicación.',
-      );
+    if (!currentItem.suggested_location) {
+      setError(currentItem.storage_configuration_error ?? 'La materia prima no tiene un destino compatible configurado.');
       return;
     }
 
@@ -212,14 +194,13 @@ export default function ReceivingDetailClient({
         lotNumber,
         expirationDate,
         inventoryLocationId:
-          locationId,
+          currentItem.suggested_location.id,
         idempotencyKey,
       });
 
       idempotencyKeyRef.current = null;
       setLotNumber('');
       setExpirationDate('');
-      setLocationId('');
 
       await load();
     } catch (err) {
@@ -239,7 +220,6 @@ export default function ReceivingDetailClient({
     setQuantityReceived('');
     setLotNumber('');
     setExpirationDate('');
-    setLocationId('');
     setError(null);
     setNotice('Presentación rechazada en esta sesión. La cantidad permanece pendiente y no se registró inventario.');
   }
@@ -546,46 +526,17 @@ export default function ReceivingDetailClient({
 
           </div>
 
-          {/* UBICACIÓN */}
-
-          <div className="mt-8">
-
-            <label className="block text-sm font-semibold text-gray-700">
-              Ubicación
-            </label>
-
-            <select
-              value={locationId}
-              onChange={(event) => {
-                setLocationId(
-                  event.target.value,
-                );
-                resetReceivingAttempt();
-              }}
-
-              className="mt-2 w-full rounded-xl border border-gray-300 p-4"
-            >
-
-              <option value="">
-                Seleccione una ubicación
-              </option>
-
-              {locations.map(
-                (location) => (
-                  <option
-                    key={location.id}
-                    value={location.id}
-                  >
-                    {location.name}
-                    {location.zone
-                      ? ` (${location.zone})`
-                      : ''}
-                  </option>
-                ),
-              )}
-
-            </select>
-
+          <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div className="text-sm font-semibold text-blue-900">Destino automático de almacenamiento</div>
+            {currentItem.suggested_location ? (
+              <div className="mt-1 text-blue-800">
+                {currentItem.suggested_location.name} · {currentItem.suggested_location.slug}
+              </div>
+            ) : (
+              <div role="alert" className="mt-1 text-red-700">
+                {currentItem.storage_configuration_error}
+              </div>
+            )}
           </div>
 
           {/* BOTÓN */}
@@ -595,7 +546,7 @@ export default function ReceivingDetailClient({
             onClick={() => {
               void handleConfirm();
             }}
-            disabled={saving}
+            disabled={saving || !currentItem.suggested_location}
             className="mt-10 w-full rounded-xl bg-green-600 px-6 py-4 text-lg font-bold text-white transition hover:bg-green-700 disabled:bg-gray-300"
           >
             {saving
@@ -641,13 +592,6 @@ export default function ReceivingDetailClient({
                     Cantidad recibida:{' '}
                     {item.received_quantity}
                   </div>
-
-                  {item.suggested_location && (
-                    <div className="mt-1 text-sm text-gray-500">
-                      Ubicación:{' '}
-                      {item.suggested_location.name}
-                    </div>
-                  )}
                 </div>
 
                 <div className="rounded-full bg-green-600 px-3 py-1 text-sm font-semibold text-white">

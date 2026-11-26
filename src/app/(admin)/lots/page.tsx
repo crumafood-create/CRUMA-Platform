@@ -14,7 +14,7 @@ export default async function ProductionLotsPage() {
   const { data: lots, error } = await supabase.from('product_lots').select(`
     id, lot_number, initial_quantity, quantity, status, expiration_date,
     production_order_id, products(name), warehouses(name),
-    inventory_locations(name)
+    inventory_locations(name), production_outputs(mass_quantity_produced)
   `).order('created_at', { ascending: false });
   if (error) throw new Error('No fue posible consultar los lotes producidos.');
 
@@ -29,22 +29,26 @@ export default async function ProductionLotsPage() {
         </div>
       </div>
       <section className="space-y-3 rounded-2xl border p-6">
-        {lots?.length ? lots.map((lot) => (
-          <article key={lot.id} className="flex flex-wrap items-center justify-between gap-3 rounded border p-4">
-            <div><strong>{lot.lot_number}</strong>
-              <div className="text-sm text-gray-500">{lot.products?.name ?? '-'}</div></div>
-            <div className="text-sm">
-              <div>{lot.quantity} de {lot.initial_quantity} unidades</div>
-              <div>Caduca: {lot.expiration_date ?? '-'}</div>
-            </div>
-            <div className="text-sm">{statusLabel[lot.status] ?? lot.status}<br />
-              {lot.warehouses?.name ?? '-'} · {lot.inventory_locations?.name ?? '-'}</div>
-            {lot.production_order_id ? <Link
-              href={`/lots/production/${lot.production_order_id}`}
-              className="rounded border px-3 py-2 text-sm"
-            >Trazabilidad</Link> : null}
-          </article>
-        )) : <p className="text-gray-500">No hay lotes producidos.</p>}
+        {lots?.length ? lots.map((lot) => {
+          const isMassOutput = lot.production_outputs?.mass_quantity_produced != null;
+
+          return (
+            <article key={lot.id} className="flex flex-wrap items-center justify-between gap-3 rounded border p-4">
+              <div><strong>{lot.lot_number}</strong>
+                <div className="text-sm text-gray-500">{lot.products?.name ?? '-'}</div></div>
+              <div className="text-sm">
+                <div>{lot.quantity} de {lot.initial_quantity} {isMassOutput ? 'kg' : 'unidades'}</div>
+                <div>Caduca: {lot.expiration_date ?? '-'}</div>
+              </div>
+              <div className="text-sm">{statusLabel[lot.status] ?? lot.status}<br />
+                {lot.warehouses?.name ?? '-'} · {lot.inventory_locations?.name ?? '-'}</div>
+              {lot.production_order_id ? <Link
+                href={`/lots/production/${lot.production_order_id}`}
+                className="rounded border px-3 py-2 text-sm"
+              >Trazabilidad</Link> : null}
+            </article>
+          );
+        }) : <p className="text-gray-500">No hay lotes producidos.</p>}
       </section>
     </main>
   );

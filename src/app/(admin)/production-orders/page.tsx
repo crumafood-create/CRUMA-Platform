@@ -61,7 +61,7 @@ export default async function ProductionOrdersPage({
           <p className="mt-1 text-sm text-brand-gray-75">Órdenes atrasadas primero y avance visible por corrida.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/cheese-preparation"><Button variant="outline">Preparación de queso</Button></Link>
+          <Link href="/ingredient-preparation"><Button variant="outline">Preparación de ingredientes</Button></Link>
           <Link href="/production-orders/new"><Button>Nueva orden</Button></Link>
         </div>
       </header>

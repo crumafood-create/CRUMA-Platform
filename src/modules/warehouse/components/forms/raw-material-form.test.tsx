@@ -64,6 +64,72 @@ describe('RawMaterialForm', () => {
     expect(container.querySelector('input[name="minimum_stock"]')).not.toHaveAttribute('readonly');
   });
 
+  it('offers only locations compatible with the ingredient storage policy', () => {
+    const { container } = render(
+      <RawMaterialForm
+        action={vi.fn().mockResolvedValue(undefined)}
+        initialValues={{
+          required_storage_condition: 'refrigerated',
+          default_storage_use: 'prepared_ingredient',
+          default_inventory_location_id: 'prepared-fridge',
+        }}
+        inventoryLocations={[
+          {
+            id: 'raw-fridge',
+            slug: 'RF-MP',
+            name: 'Refrigeración de materias primas',
+            location_use: 'raw_material',
+            storage_condition: 'refrigerated',
+          },
+          {
+            id: 'prepared-fridge',
+            slug: 'RF-SEMI',
+            name: 'Refrigeración de semielaborados',
+            location_use: 'prepared_ingredient',
+            storage_condition: 'refrigerated',
+          },
+          {
+            id: 'dry-storage',
+            slug: 'SECOS',
+            name: 'Almacén de secos',
+            location_use: 'prepared_ingredient',
+            storage_condition: 'dry',
+          },
+        ]}
+      />,
+    );
+    const destination = container.querySelector<HTMLSelectElement>(
+      'select[name="default_inventory_location_id"]',
+    )!;
+
+    expect(destination).toHaveValue('prepared-fridge');
+    expect(Array.from(destination.options).map((option) => option.value)).toEqual([
+      '',
+      'prepared-fridge',
+    ]);
+  });
+
+  it('offers frozen storage only for purchased raw materials', () => {
+    const rawMaterial = render(
+      <RawMaterialForm
+        action={vi.fn().mockResolvedValue(undefined)}
+        initialValues={{ default_storage_use: 'raw_material' }}
+      />,
+    );
+
+    expect(screen.getByRole('option', { name: 'Congelado' })).toBeInTheDocument();
+    rawMaterial.unmount();
+
+    render(
+      <RawMaterialForm
+        action={vi.fn().mockResolvedValue(undefined)}
+        initialValues={{ default_storage_use: 'prepared_ingredient' }}
+      />,
+    );
+
+    expect(screen.queryByRole('option', { name: 'Congelado' })).not.toBeInTheDocument();
+  });
+
   it('retains inputs and shows a validation error after rejected creation', async () => {
     const action = vi.fn()
       .mockRejectedValueOnce(
@@ -131,3 +197,4 @@ describe('RawMaterialForm', () => {
     expect(alert).not.toHaveTextContent(internalMessage);
   });
 });
+

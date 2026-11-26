@@ -91,13 +91,25 @@ VALUES (
 INSERT INTO public.inventory_locations (
   id,
   slug,
-  name
+  name,
+  location_use,
+  storage_condition,
+  is_active
 )
 VALUES (
   'fa400000-0000-0000-0000-000000000001',
   'raw-quality-location',
-  'Raw Quality Location'
+  'Raw Quality Location',
+  'raw_material',
+  'refrigerated',
+  true
 );
+
+UPDATE public.raw_materials
+SET required_storage_condition = 'refrigerated',
+    default_storage_use = 'raw_material',
+    default_inventory_location_id = 'fa400000-0000-0000-0000-000000000001'
+WHERE id = 'fa300000-0000-0000-0000-000000000001';
 
 INSERT INTO public.purchase_orders (
   id,

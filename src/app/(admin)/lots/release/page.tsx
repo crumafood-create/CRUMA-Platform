@@ -40,6 +40,7 @@ export default async function ReleaseProductionLotPage({
         production_outputs!inner (
           id,
           quantity_produced,
+          mass_quantity_produced,
           quality_status,
           products (
             name
@@ -63,9 +64,11 @@ export default async function ReleaseProductionLotPage({
       .order('name'),
     supabase
       .from('inventory_locations')
-      .select('id, name')
+      .select('id, name, location_use, storage_condition')
       .eq('is_active', true)
       .is('deleted_at', null)
+      .in('location_use', ['finished_product', 'prepared_ingredient'])
+      .in('storage_condition', ['refrigerated', 'frozen'])
       .order('name'),
   ]);
 
@@ -83,8 +86,10 @@ export default async function ReleaseProductionLotPage({
 
         return {
           id: inspection.id,
-          quantity:
-            output.quantity_produced,
+          quantity: output.mass_quantity_produced
+            ?? output.quantity_produced,
+          isIntermediateMass:
+            output.mass_quantity_produced !== null,
           label:
             `${
               output.production_orders
@@ -146,7 +151,10 @@ export default async function ReleaseProductionLotPage({
             (locations ?? []).map(
               (location) => ({
                 id: location.id,
-                label: location.name,
+                name: location.name,
+                label: `${location.name} · ${location.storage_condition === 'refrigerated' ? 'Espera refrigerada' : 'Congelación directa'}`,
+                storageCondition: location.storage_condition,
+                locationUse: location.location_use,
               }),
             )
           }

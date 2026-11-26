@@ -15,6 +15,8 @@ type InventoryLocationFormProps = {
     level: number | null;
     position: number | null;
     is_active: boolean;
+    location_use: string | null;
+    storage_condition: string | null;
   };
 };
 
@@ -104,6 +106,51 @@ export default function InventoryLocationForm({
           />
         </div>
 
+      </div>
+
+      <div className="rounded-2xl border bg-white p-6 space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold">Uso y conservación</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Clasifica explícitamente la ubicación. Los registros existentes permanecen sin clasificar hasta que el administrador los configure.
+          </p>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-2" htmlFor="location_use">
+              Uso de la ubicación
+            </label>
+            <select
+              id="location_use"
+              name="location_use"
+              defaultValue={location?.location_use ?? ''}
+              className="w-full rounded-lg border px-4 py-3"
+            >
+              <option value="">Sin clasificar</option>
+              <option value="raw_material">Materia prima</option>
+              <option value="prepared_ingredient">Semielaborado / ingrediente preparado</option>
+              <option value="finished_product">Producto terminado</option>
+              <option value="packaging">Empaque</option>
+              <option value="chemical">Químicos</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2" htmlFor="storage_condition">
+              Condición de conservación
+            </label>
+            <select
+              id="storage_condition"
+              name="storage_condition"
+              defaultValue={location?.storage_condition ?? ''}
+              className="w-full rounded-lg border px-4 py-3"
+            >
+              <option value="">Sin clasificar</option>
+              <option value="dry">Seco</option>
+              <option value="refrigerated">Refrigerado</option>
+              <option value="frozen">Congelado</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* ===================================================== */}

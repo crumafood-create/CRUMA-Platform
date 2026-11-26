@@ -26,7 +26,24 @@ describe('confirmReceiving', () => {
       select: () => query,
       eq: () => query,
       maybeSingle: async () => ({
-        data: { presentation_mode: 'base_unit', base_quantity_per_presentation: 1 },
+        data: {
+          presentation_mode: 'base_unit',
+          base_quantity_per_presentation: 1,
+          raw_material: {
+            required_storage_condition: 'refrigerated',
+            default_storage_use: 'raw_material',
+            default_inventory_location_id: '22222222-2222-4222-8222-222222222222',
+            default_inventory_location: {
+              id: '22222222-2222-4222-8222-222222222222',
+              name: 'Refrigeración de materias primas',
+              slug: 'REF-MP-01',
+              location_use: 'raw_material',
+              storage_condition: 'refrigerated',
+              is_active: true,
+              deleted_at: null,
+            },
+          },
+        },
         error: null,
       }),
     };
@@ -61,7 +78,24 @@ describe('confirmReceiving', () => {
       select: () => query,
       eq: () => query,
       maybeSingle: async () => ({
-        data: { presentation_mode: 'sealed_package', base_quantity_per_presentation: 25 },
+        data: {
+          presentation_mode: 'sealed_package',
+          base_quantity_per_presentation: 25,
+          raw_material: {
+            required_storage_condition: 'refrigerated',
+            default_storage_use: 'raw_material',
+            default_inventory_location_id: '22222222-2222-4222-8222-222222222222',
+            default_inventory_location: {
+              id: '22222222-2222-4222-8222-222222222222',
+              name: 'Refrigeración de materias primas',
+              slug: 'REF-MP-01',
+              location_use: 'raw_material',
+              storage_condition: 'refrigerated',
+              is_active: true,
+              deleted_at: null,
+            },
+          },
+        },
         error: null,
       }),
     };
@@ -75,6 +109,18 @@ describe('confirmReceiving', () => {
       inventoryLocationId: '22222222-2222-4222-8222-222222222222',
       idempotencyKey: '33333333-3333-4333-8333-333333333333',
     })).rejects.toThrow('Solo se pueden aceptar presentaciones cerradas completas.');
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it('rejects an input location that differs from the configured destination', async () => {
+    await expect(confirmReceiving({
+      purchaseOrderItemId: '11111111-1111-4111-8111-111111111111',
+      quantityReceived: 5,
+      lotNumber: 'LOT-001',
+      expirationDate: '2026-10-31',
+      inventoryLocationId: '44444444-4444-4444-8444-444444444444',
+      idempotencyKey: '33333333-3333-4333-8333-333333333333',
+    })).rejects.toThrow('La recepción debe usar el destino habitual configurado');
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

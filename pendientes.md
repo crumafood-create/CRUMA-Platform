@@ -16,6 +16,16 @@ Decisiones acordadas: solo CRUMAFOOD y una planta, sin sucursales ni franquicias
 2. [x] Como administrador autorizado, quiero registrar materias primas con datos válidos para utilizarlas en mis recetas. **Completada:** alta y edición del catálogo, unidad base obligatoria/protegida y alta desde compras están integradas; ver las historias cerradas en `backlog.md` y su evidencia en `plan.md`.
 La historia de productos (#1) está completada e integrada; ver el historial de entregas en `backlog.md`.
 
+### **#9.** Control y consumo de bolsas y separadores — pendiente de refinamiento técnico
+
+**Como administrador, quiero controlar los materiales de empaque por presentación y registrar su consumo al empacar pedidos, para conocer las existencias y explicar las diferencias entre cantidades estimadas y reales.**
+
+- Las bolsas y los separadores actuales se compran por kg, incluido el tubo, y el peso de cada rollo varía. Registrar peso bruto, peso del tubo, importe pagado y una muestra contada y pesada para estimar las unidades aprovechables. Distribuir el importe completo entre esas unidades. Cada tamaño de bolsa conserva su propia existencia; las futuras compras de bolsas individuales se registran por piezas.
+- Al confirmar el empaque: un paquete de 12 discos #14 consume 1 bolsa y 3 hojas dobles (12 separadores); un paquete de 12 discos #9 consume 1 bolsa y 1.5 hojas dobles (12 separadores). Otras presentaciones consumen una bolsa del tamaño configurado y separadores según su regla aprobada.
+- El consumo queda vinculado al pedido y es idempotente. Si la estimación llega a cero pero queda material físico, el operador registra el conteo y el administrador autoriza la corrección antes de continuar usando ese rollo. Guardar saldo estimado anterior, conteo, diferencia, motivo, solicitante, autorizador y fecha.
+- Registrar roturas y descartes como merma de empaque, separada de diferencias de estimación. Al agotarse físicamente el rollo, conciliar cantidad y valor restantes según la política de valoración que se acuerde durante el refinamiento.
+- No se asigna prioridad hasta completar el refinamiento técnico y confirmar la valoración al agotamiento del rollo.
+
 ## Entregas relacionadas completadas
 
 - [x] **MP-01.** Comprar presentaciones comerciales y convertirlas a unidad base. PR #126, CI y recorrido manual en Supabase de desarrollo aprobados; evidencia en `plan.md`.

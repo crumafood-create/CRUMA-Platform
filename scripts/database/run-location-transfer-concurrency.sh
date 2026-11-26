@@ -83,6 +83,29 @@ if ! grep -Fq 'Source and destination must be distinct active locations compatib
   cat "$output_b" >&2
   exit 1
 fi
+run_sql <<'SQL'
+DO $assert_policy_first$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.inventory_locations
+    WHERE id = 'ed100000-0000-4000-8000-000000000002'
+      AND location_use = 'prepared_ingredient'
+      AND storage_condition = 'refrigerated' AND is_active
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.raw_material_lots
+    WHERE id = 'ed400000-0000-4000-8000-000000000001'
+      AND inventory_location_id = 'ed100000-0000-4000-8000-000000000001'
+      AND status = 'available' AND quantity = 0.5000 AND remaining_value = 10
+  ) OR EXISTS (
+    SELECT 1 FROM public.inventory_movements
+    WHERE reference_type = 'raw_material_lot_location_transfer'
+      AND reference_id = 'ed500000-0000-4000-8000-000000000001'
+  ) THEN
+    RAISE EXCEPTION 'A transfer that waited for reclassification did not reject atomically against the committed location policy.';
+  END IF;
+END;
+$assert_policy_first$;
+SQL
 docker exec "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
   -c "UPDATE public.inventory_locations SET location_use='raw_material' WHERE id='ed100000-0000-4000-8000-000000000002';"
 

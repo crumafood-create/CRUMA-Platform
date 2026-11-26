@@ -1,11 +1,12 @@
 DO $test$
 BEGIN
   -- The incompatible classification committed first. The transfer waited,
-  -- re-read it, and left the lot and movement history untouched.
+  -- re-read it, and left the lot and movement history untouched. The runner
+  -- then restored the destination policy for the second concurrency order.
   IF NOT EXISTS (
     SELECT 1 FROM public.inventory_locations
     WHERE id = 'ed100000-0000-4000-8000-000000000002'
-      AND location_use = 'prepared_ingredient'
+      AND location_use = 'raw_material'
       AND storage_condition = 'refrigerated' AND is_active
   ) OR NOT EXISTS (
     SELECT 1 FROM public.raw_material_lots

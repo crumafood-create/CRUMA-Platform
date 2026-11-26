@@ -20,32 +20,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-wait_for_lock() {
-  local application_name="$1"
-  local poll_sql
-  poll_sql="DO \$wait\$
-DECLARE
-  attempt integer;
-  lock_seen boolean := false;
-BEGIN
-  FOR attempt IN 1..100 LOOP
-    PERFORM pg_stat_clear_snapshot();
-    SELECT EXISTS (
-      SELECT 1 FROM pg_stat_activity
-      WHERE application_name = '$application_name'
-        AND state = 'active' AND wait_event_type = 'Lock'
-    ) INTO lock_seen;
-    EXIT WHEN lock_seen;
-    PERFORM pg_sleep(0.1);
-  END LOOP;
-  IF NOT lock_seen THEN
-    RAISE EXCEPTION 'Timed out waiting for lock from %.', '$application_name';
-  END IF;
-END;
-\$wait\$;"
-  docker exec "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$poll_sql" >/dev/null 2>&1
-}
-
 wait_for_sleep() {
   local application_name="$1"
   local poll_sql
@@ -72,15 +46,8 @@ END;
   docker exec "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$poll_sql" >/dev/null 2>&1
 }
 
-expect_wait_then_reject() {
-  local label="$1" application_name="$2" blocker_pid="$3" contender_pid="$4" expected_error="$5"
-  if ! wait_for_lock "$application_name"; then
-    echo "$label no esperó el bloqueo de la clasificación de almacenamiento." >&2
-    cat "$output_b" >&2
-    wait "$blocker_pid" || true
-    wait "$contender_pid" || true
-    exit 1
-  fi
+expect_concurrent_reject() {
+  local label="$1" _application_name="$2" blocker_pid="$3" contender_pid="$4" expected_error="$5"
   wait "$blocker_pid"
   if wait "$contender_pid"; then
     echo "$label aceptó una clasificación incompatible." >&2
@@ -93,7 +60,6 @@ expect_wait_then_reject() {
     exit 1
   fi
 }
-
 run_sql < supabase/tests/database/storage_writer_races_cleanup.sql
 run_sql < supabase/tests/database/storage_writer_races_setup.sql
 
@@ -111,7 +77,7 @@ fi
 action="SET request.jwt.claim.sub='fd000000-0000-4000-8000-000000000001'; SELECT public.start_product_lot_freezing('fd800000-0000-4000-8000-000000000001',10,'Freeze policy race','fdc00000-0000-4000-8000-000000000001','fd200000-0000-4000-8000-000000000002');"
 docker exec -e PGAPPNAME=storage-writer-freeze-policy-first-b "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$action" > "$output_b" 2>&1 &
 pid_b=$!
-expect_wait_then_reject 'Inicio de congelación con reclasificación previa' storage-writer-freeze-policy-first-b "$pid_a" "$pid_b" 'Configure an active finished-product freezer location.'
+expect_concurrent_reject 'Inicio de congelación con reclasificación previa' storage-writer-freeze-policy-first-b "$pid_a" "$pid_b" 'Configure an active finished-product freezer location.'
 run_sql <<'SQL'
 DO $assert_freeze_policy_first$
 BEGIN
@@ -140,7 +106,7 @@ fi
 action="UPDATE public.inventory_locations SET location_use='prepared_ingredient',storage_condition='refrigerated' WHERE id='fd200000-0000-4000-8000-000000000003';"
 docker exec -e PGAPPNAME=storage-writer-freeze-operation-first-b "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$action" > "$output_b" 2>&1 &
 pid_b=$!
-expect_wait_then_reject 'Reclasificación durante inicio de congelación' storage-writer-freeze-operation-first-b "$pid_a" "$pid_b" 'Resolve available, waiting, freezing, frozen, or quality-custody product quantities before changing this location.'
+expect_concurrent_reject 'Reclasificación durante inicio de congelación' storage-writer-freeze-operation-first-b "$pid_a" "$pid_b" 'Resolve available, waiting, freezing, frozen, or quality-custody product quantities before changing this location.'
 run_sql <<'SQL'
 DO $assert_freeze_operation_first$
 BEGIN
@@ -169,7 +135,7 @@ fi
 action="SET request.jwt.claim.sub='fd000000-0000-4000-8000-000000000001'; SELECT public.decide_product_lot_refrigerated_wait('fd800000-0000-4000-8000-000000000003',10,'freezing','fd200000-0000-4000-8000-000000000004','Wait policy race','fdc00000-0000-4000-8000-000000000003');"
 docker exec -e PGAPPNAME=storage-writer-wait-policy-first-b "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$action" > "$output_b" 2>&1 &
 pid_b=$!
-expect_wait_then_reject 'Salida de espera con reclasificación previa' storage-writer-wait-policy-first-b "$pid_a" "$pid_b" 'Freezing destination is not a configured finished-product freezer.'
+expect_concurrent_reject 'Salida de espera con reclasificación previa' storage-writer-wait-policy-first-b "$pid_a" "$pid_b" 'Freezing destination is not a configured finished-product freezer.'
 run_sql <<'SQL'
 DO $assert_wait_policy_first$
 BEGIN
@@ -198,7 +164,7 @@ fi
 action="UPDATE public.inventory_locations SET location_use='prepared_ingredient',storage_condition='refrigerated' WHERE id='fd200000-0000-4000-8000-000000000005';"
 docker exec -e PGAPPNAME=storage-writer-wait-operation-first-b "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$action" > "$output_b" 2>&1 &
 pid_b=$!
-expect_wait_then_reject 'Reclasificación durante salida de espera refrigerada' storage-writer-wait-operation-first-b "$pid_a" "$pid_b" 'Resolve available, waiting, freezing, frozen, or quality-custody product quantities before changing this location.'
+expect_concurrent_reject 'Reclasificación durante salida de espera refrigerada' storage-writer-wait-operation-first-b "$pid_a" "$pid_b" 'Resolve available, waiting, freezing, frozen, or quality-custody product quantities before changing this location.'
 run_sql <<'SQL'
 DO $assert_wait_operation_first$
 BEGIN
@@ -227,7 +193,7 @@ fi
 action="UPDATE public.inventory_locations SET location_use='prepared_ingredient' WHERE id='fd200000-0000-4000-8000-000000000006';"
 docker exec -e PGAPPNAME=storage-writer-default-policy-first-b "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$action" > "$output_b" 2>&1 &
 pid_b=$!
-expect_wait_then_reject 'Reclasificación concurrente con destino habitual asignado' storage-writer-default-policy-first-b "$pid_a" "$pid_b" 'Location classification conflicts with an assigned material destination.'
+expect_concurrent_reject 'Reclasificación concurrente con destino habitual asignado' storage-writer-default-policy-first-b "$pid_a" "$pid_b" 'Location classification conflicts with an assigned material destination.'
 run_sql <<'SQL'
 DO $assert_default_policy_first$
 BEGIN
@@ -253,7 +219,7 @@ fi
 action="UPDATE public.raw_materials SET required_storage_condition='refrigerated',default_storage_use='raw_material',default_inventory_location_id='fd200000-0000-4000-8000-000000000007' WHERE id='fda00000-0000-4000-8000-000000000002';"
 docker exec -e PGAPPNAME=storage-writer-default-location-first-b "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$action" > "$output_b" 2>&1 &
 pid_b=$!
-expect_wait_then_reject 'Asignación de destino concurrente con reclasificación previa' storage-writer-default-location-first-b "$pid_a" "$pid_b" 'The default destination is missing, inactive, or incompatible with the material.'
+expect_concurrent_reject 'Asignación de destino concurrente con reclasificación previa' storage-writer-default-location-first-b "$pid_a" "$pid_b" 'The default destination is missing, inactive, or incompatible with the material.'
 run_sql <<'SQL'
 DO $assert_default_location_first$
 BEGIN

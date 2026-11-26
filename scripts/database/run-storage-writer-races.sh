@@ -71,7 +71,7 @@ run_sql < supabase/tests/database/storage_writer_races_setup.sql
 
 # Freezing start waits for a location-policy edit and rejects the newly
 # incompatible freezer without creating an operation, movement, or balance.
-block="BEGIN; UPDATE public.inventory_locations SET location_use='prepared_ingredient',storage_condition='refrigerated' WHERE id='fd200000-0000-4000-8000-000000000002'; SELECT pg_sleep(2); COMMIT;"
+block="BEGIN; UPDATE public.inventory_locations SET location_use='prepared_ingredient',storage_condition='refrigerated' WHERE id='fd200000-0000-4000-8000-000000000002'; SELECT pg_sleep(8); COMMIT;"
 docker exec -e PGAPPNAME=storage-writer-freeze-policy-first-a "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$block" > "$output_a" 2>&1 &
 pid_a=$!
 if ! wait_for_sleep storage-writer-freeze-policy-first-a; then
@@ -100,7 +100,7 @@ SQL
 
 # A successful freezing start holds a share lock. A concurrent location edit
 # waits, sees the new freezing balance, and rejects without changing the policy.
-action="BEGIN; SET LOCAL request.jwt.claim.sub='fd000000-0000-4000-8000-000000000001'; SELECT public.start_product_lot_freezing('fd800000-0000-4000-8000-000000000002',10,'Freeze operation first','fdc00000-0000-4000-8000-000000000002','fd200000-0000-4000-8000-000000000003'); SELECT pg_sleep(2); COMMIT;"
+action="BEGIN; SET LOCAL request.jwt.claim.sub='fd000000-0000-4000-8000-000000000001'; SELECT public.start_product_lot_freezing('fd800000-0000-4000-8000-000000000002',10,'Freeze operation first','fdc00000-0000-4000-8000-000000000002','fd200000-0000-4000-8000-000000000003'); SELECT pg_sleep(8); COMMIT;"
 docker exec -e PGAPPNAME=storage-writer-freeze-operation-first-a "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$action" > "$output_a" 2>&1 &
 pid_a=$!
 if ! wait_for_sleep storage-writer-freeze-operation-first-a; then
@@ -129,7 +129,7 @@ SQL
 
 # Resolving refrigerated waiting stock observes a policy change committed
 # first and leaves the waiting balance and history untouched.
-block="BEGIN; UPDATE public.inventory_locations SET location_use='prepared_ingredient',storage_condition='refrigerated' WHERE id='fd200000-0000-4000-8000-000000000004'; SELECT pg_sleep(2); COMMIT;"
+block="BEGIN; UPDATE public.inventory_locations SET location_use='prepared_ingredient',storage_condition='refrigerated' WHERE id='fd200000-0000-4000-8000-000000000004'; SELECT pg_sleep(8); COMMIT;"
 docker exec -e PGAPPNAME=storage-writer-wait-policy-first-a "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$block" > "$output_a" 2>&1 &
 pid_a=$!
 if ! wait_for_sleep storage-writer-wait-policy-first-a; then
@@ -158,7 +158,7 @@ SQL
 
 # A wait-to-freezing decision locks its freezer until balance and operation are
 # recorded; the subsequent incompatible location edit must reject.
-action="BEGIN; SET LOCAL request.jwt.claim.sub='fd000000-0000-4000-8000-000000000001'; SELECT public.decide_product_lot_refrigerated_wait('fd800000-0000-4000-8000-000000000004',10,'freezing','fd200000-0000-4000-8000-000000000005','Wait operation first','fdc00000-0000-4000-8000-000000000004'); SELECT pg_sleep(2); COMMIT;"
+action="BEGIN; SET LOCAL request.jwt.claim.sub='fd000000-0000-4000-8000-000000000001'; SELECT public.decide_product_lot_refrigerated_wait('fd800000-0000-4000-8000-000000000004',10,'freezing','fd200000-0000-4000-8000-000000000005','Wait operation first','fdc00000-0000-4000-8000-000000000004'); SELECT pg_sleep(8); COMMIT;"
 docker exec -e PGAPPNAME=storage-writer-wait-operation-first-a "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$action" > "$output_a" 2>&1 &
 pid_a=$!
 if ! wait_for_sleep storage-writer-wait-operation-first-a; then
@@ -187,7 +187,7 @@ SQL
 
 # Configuring the habitual material destination holds the location policy row;
 # a later incompatible reclassification waits and rejects.
-block="BEGIN; UPDATE public.raw_materials SET required_storage_condition='refrigerated',default_storage_use='raw_material',default_inventory_location_id='fd200000-0000-4000-8000-000000000006' WHERE id='fda00000-0000-4000-8000-000000000001'; SELECT pg_sleep(2); COMMIT;"
+block="BEGIN; UPDATE public.raw_materials SET required_storage_condition='refrigerated',default_storage_use='raw_material',default_inventory_location_id='fd200000-0000-4000-8000-000000000006' WHERE id='fda00000-0000-4000-8000-000000000001'; SELECT pg_sleep(8); COMMIT;"
 docker exec -e PGAPPNAME=storage-writer-default-policy-first-a "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$block" > "$output_a" 2>&1 &
 pid_a=$!
 if ! wait_for_sleep storage-writer-default-policy-first-a; then
@@ -213,7 +213,7 @@ SQL
 
 # A location edit committed first makes the destination assignment wait and
 # reject; the material must remain unconfigured rather than point incompatibly.
-block="BEGIN; UPDATE public.inventory_locations SET location_use='prepared_ingredient' WHERE id='fd200000-0000-4000-8000-000000000007'; SELECT pg_sleep(2); COMMIT;"
+block="BEGIN; UPDATE public.inventory_locations SET location_use='prepared_ingredient' WHERE id='fd200000-0000-4000-8000-000000000007'; SELECT pg_sleep(8); COMMIT;"
 docker exec -e PGAPPNAME=storage-writer-default-location-first-a "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$block" > "$output_a" 2>&1 &
 pid_a=$!
 if ! wait_for_sleep storage-writer-default-location-first-a; then

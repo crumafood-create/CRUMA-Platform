@@ -22,21 +22,35 @@ trap cleanup EXIT
 
 wait_for_lock() {
   local application_name="$1"
-  for attempt in {1..100}; do
-    if docker exec "$database_container" psql -U postgres -d postgres -Atc \
-      "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE application_name = '$application_name' AND state = 'active' AND wait_event_type = 'Lock')" | grep -qx t; then
-      return 0
-    fi
-    sleep 0.1
-  done
-  return 1
+  local poll_sql
+  poll_sql="DO \$wait\$
+DECLARE
+  attempt integer;
+  lock_seen boolean := false;
+BEGIN
+  FOR attempt IN 1..100 LOOP
+    PERFORM pg_stat_clear_snapshot();
+    SELECT EXISTS (
+      SELECT 1 FROM pg_stat_activity
+      WHERE application_name = '$application_name'
+        AND state = 'active' AND wait_event_type = 'Lock'
+    ) INTO lock_seen;
+    EXIT WHEN lock_seen;
+    PERFORM pg_sleep(0.1);
+  END LOOP;
+  IF NOT lock_seen THEN
+    RAISE EXCEPTION 'Timed out waiting for lock from %.', '$application_name';
+  END IF;
+END;
+\$wait\$;"
+  docker exec "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$poll_sql" >/dev/null 2>&1
 }
 
 wait_for_sleep() {
   local application_name="$1"
   for attempt in {1..100}; do
     if docker exec "$database_container" psql -U postgres -d postgres -Atc \
-      "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE application_name = '$application_name' AND state = 'active' AND query LIKE '%pg_sleep(2)%')" | grep -qx t; then
+      "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE application_name = '$application_name' AND state = 'active' AND query LIKE '%pg_sleep(8)%')" | grep -qx t; then
       return 0
     fi
     sleep 0.1

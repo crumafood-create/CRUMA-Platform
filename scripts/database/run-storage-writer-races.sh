@@ -46,8 +46,51 @@ END;
   docker exec "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$poll_sql" >/dev/null
 }
 
+wait_for_blocking() {
+  local blocker_application_name="$1" contender_application_name="$2"
+  local poll_sql
+  poll_sql="DO \$wait\$
+DECLARE
+  attempt integer;
+  blocked_by_expected_session boolean := false;
+BEGIN
+  FOR attempt IN 1..100 LOOP
+    PERFORM pg_stat_clear_snapshot();
+    SELECT EXISTS (
+      SELECT 1
+      FROM pg_stat_activity AS contender
+      JOIN pg_stat_activity AS blocker
+        ON blocker.application_name = '$blocker_application_name'
+      WHERE contender.application_name = '$contender_application_name'
+        AND contender.state = 'active'
+        AND blocker.state = 'active'
+        AND blocker.query LIKE '%pg_sleep(8)%'
+        AND blocker.pid = ANY(pg_blocking_pids(contender.pid))
+    ) INTO blocked_by_expected_session;
+    EXIT WHEN blocked_by_expected_session;
+    PERFORM pg_sleep(0.1);
+  END LOOP;
+  IF NOT blocked_by_expected_session THEN
+    RAISE EXCEPTION 'Session % was never blocked by expected session %.',
+      '$contender_application_name', '$blocker_application_name';
+  END IF;
+END;
+\$wait\$;"
+  docker exec "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$poll_sql" >/dev/null
+}
+
 expect_concurrent_reject() {
-  local label="$1" _application_name="$2" blocker_pid="$3" contender_pid="$4" expected_error="$5"
+  local label="$1" contender_application_name="$2"
+  local blocker_pid="$3" contender_pid="$4" expected_error="$5"
+  local blocker_application_name="${contender_application_name%-b}-a"
+  if ! wait_for_blocking "$blocker_application_name" "$contender_application_name"; then
+    echo "$label did not prove that the contender waited on the expected session." >&2
+    cat "$output_a" >&2
+    cat "$output_b" >&2
+    wait "$blocker_pid" || true
+    wait "$contender_pid" || true
+    exit 1
+  fi
   if ! wait "$blocker_pid"; then
     echo "$label blocker session failed:" >&2
     cat "$output_a" >&2

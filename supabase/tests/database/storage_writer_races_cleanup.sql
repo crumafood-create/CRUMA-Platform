@@ -29,6 +29,9 @@ WHERE reference_type IN (
 DELETE FROM public.inventory_movements
 WHERE reference_type = 'product_lot_freezing_start'
   AND item_id = 'fd400000-0000-4000-8000-000000000001';
+DELETE FROM public.inventory_movements
+WHERE reference_type = 'storage_writer_seed'
+  AND item_id = 'fd400000-0000-4000-8000-000000000001';
 DELETE FROM public.product_lot_storage_balances
 WHERE product_lot_id IN (
   'fd800000-0000-4000-8000-000000000001', 'fd800000-0000-4000-8000-000000000002',

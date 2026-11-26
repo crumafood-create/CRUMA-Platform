@@ -55,6 +55,15 @@ INSERT INTO public.product_lot_storage_balances (
   ('fd800000-0000-4000-8000-000000000002', 10, 0, NULL, 0, NULL),
   ('fd800000-0000-4000-8000-000000000003', 0, 10, 'fd200000-0000-4000-8000-000000000001', 0, NULL),
   ('fd800000-0000-4000-8000-000000000004', 0, 10, 'fd200000-0000-4000-8000-000000000001', 0, NULL);
+INSERT INTO public.inventory_movements (
+  item_type, item_id, product_id, movement_type, quantity,
+  previous_stock, new_stock, reference_type, reference_id, created_by, notes
+) VALUES (
+  'product', 'fd400000-0000-4000-8000-000000000001',
+  'fd400000-0000-4000-8000-000000000001', 'entry', 40,
+  0, 40, 'storage_writer_seed', 'fd600000-0000-4000-8000-000000000001',
+  'fd000000-0000-4000-8000-000000000001', 'Seed available product quantity for concurrent freezing tests'
+);
 
 INSERT INTO public.units_of_measure (id, name, code)
 VALUES ('fd900000-0000-4000-8000-000000000001', 'Storage race kg', 'fd-storage-race-kg');

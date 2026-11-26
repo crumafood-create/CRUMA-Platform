@@ -43,12 +43,16 @@ BEGIN
   END IF;
 END;
 \$wait\$;"
-  docker exec "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$poll_sql" >/dev/null 2>&1
+  docker exec "$database_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "$poll_sql" >/dev/null
 }
 
 expect_concurrent_reject() {
   local label="$1" _application_name="$2" blocker_pid="$3" contender_pid="$4" expected_error="$5"
-  wait "$blocker_pid"
+  if ! wait "$blocker_pid"; then
+    echo "$label blocker session failed:" >&2
+    cat "$output_a" >&2
+    exit 1
+  fi
   if wait "$contender_pid"; then
     echo "$label aceptó una clasificación incompatible." >&2
     cat "$output_b" >&2

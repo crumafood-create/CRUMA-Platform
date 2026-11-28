@@ -59,6 +59,20 @@ export type ProductLotQualitySampleDispositionRequest = {
   idempotencyKey: string;
 };
 
+export type UnderThresholdFrozenLotQualityDecisionRequest = {
+  productLotId: string;
+  inspectedQuantity: number;
+  acceptedQuantity: number;
+  rejectedQuantity: number;
+  destructiveQuantity: number;
+  processVerified: boolean;
+  conservationVerified: boolean;
+  conservationEvidence: string;
+  witnessSampleExceptionReason: string;
+  reason: string;
+  idempotencyKey: string;
+};
+
 function value(formData: FormData, key: string): string {
   return formData.get(key)?.toString().trim() ?? '';
 }
@@ -198,6 +212,56 @@ export function buildProductLotQualitySampleDispositionRequest(
     quantity,
     destination: destination as ProductLotQualitySampleDispositionDestination,
     returnAuthorized,
+    reason,
+    idempotencyKey,
+  };
+}
+
+export function buildUnderThresholdFrozenLotQualityDecisionRequest(
+  formData: FormData,
+): UnderThresholdFrozenLotQualityDecisionRequest {
+  const productLotId = value(formData, 'product_lot_id');
+  const idempotencyKey = value(formData, 'idempotency_key');
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(productLotId) || !uuidPattern.test(idempotencyKey)) {
+    throw new Error('El lote y la clave de decisión no son válidos.');
+  }
+  const inspectedQuantity = positiveInteger(value(formData, 'inspected_quantity'), 'La cantidad inspeccionada debe ser entera.');
+  const acceptedQuantity = Number(value(formData, 'accepted_quantity'));
+  const rejectedQuantity = Number(value(formData, 'rejected_quantity'));
+  const destructiveQuantity = Number(value(formData, 'destructive_quantity'));
+  if (![acceptedQuantity, rejectedQuantity, destructiveQuantity].every((quantity) => Number.isInteger(quantity) && quantity >= 0)
+    || acceptedQuantity + rejectedQuantity + destructiveQuantity !== inspectedQuantity) {
+    throw new Error('Aceptadas, rechazadas y pruebas destructivas deben sumar la cantidad inspeccionada.');
+  }
+  const processVerified = formData.get('process_verified') === 'on';
+  const conservationVerified = formData.get('conservation_verified') === 'on';
+  const conservationEvidence = value(formData, 'conservation_evidence');
+  if (!conservationEvidence) {
+    throw new Error('Registra la evidencia de conservación revisada; la ausencia de registros no confirma conservación.');
+  }
+  const hasPositiveConservationRecord = /^folio=\S+;\s*fecha\/hora=[^;]+;\s*lectura=[^;]+;\s*especificacion=[^;]+$/i.test(conservationEvidence);
+  if (acceptedQuantity > 0 && (!processVerified || !conservationVerified || !hasPositiveConservationRecord)) {
+    throw new Error('Para liberar piezas, verifica el proceso y la conservación.');
+  }
+  if (formData.get('witness_sample_exception') !== 'on') {
+    throw new Error('Calidad debe autorizar explícitamente la excepción de muestra testigo.');
+  }
+  const witnessSampleExceptionReason = value(formData, 'witness_sample_exception_reason');
+  const reason = value(formData, 'reason');
+  if (!witnessSampleExceptionReason || !reason || witnessSampleExceptionReason.length > 500 || reason.length > 500) {
+    throw new Error('Registra el motivo de la excepción y la decisión de Calidad.');
+  }
+  return {
+    productLotId,
+    inspectedQuantity,
+    acceptedQuantity,
+    rejectedQuantity,
+    destructiveQuantity,
+    processVerified,
+    conservationVerified,
+    conservationEvidence,
+    witnessSampleExceptionReason,
     reason,
     idempotencyKey,
   };

@@ -5,8 +5,31 @@ import type {
   QualityInspectionRequest,
   ProductLotQualitySampleInspectionRequest,
   ProductLotQualitySampleDispositionRequest,
+  UnderThresholdFrozenLotQualityDecisionRequest,
   RawMaterialQualityInspectionRequest,
 } from './quality-control-contract';
+
+export async function decideUnderThresholdFrozenLotQuality(
+  supabase: TypedSupabaseClient,
+  request: UnderThresholdFrozenLotQualityDecisionRequest,
+): Promise<string> {
+  const { data, error } = await supabase.rpc('decide_under_threshold_frozen_lot_quality', {
+    p_product_lot_id: request.productLotId,
+    p_inspected_quantity: request.inspectedQuantity,
+    p_accepted_quantity: request.acceptedQuantity,
+    p_rejected_quantity: request.rejectedQuantity,
+    p_destructive_quantity: request.destructiveQuantity,
+    p_process_verified: request.processVerified,
+    p_conservation_verified: request.conservationVerified,
+    p_conservation_evidence: request.conservationEvidence,
+    p_witness_sample_exception_reason: request.witnessSampleExceptionReason,
+    p_reason: request.reason,
+    p_idempotency_key: request.idempotencyKey,
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('La decisión de Calidad no devolvió un identificador.');
+  return data;
+}
 
 export async function recordProductLotQualitySampleInspection(
   supabase: TypedSupabaseClient,

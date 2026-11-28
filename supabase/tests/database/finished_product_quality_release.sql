@@ -1035,6 +1035,36 @@ VALUES
   ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 4, 'production_lot', 'fa000000-0000-4000-8000-000000000051', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality sampling under-threshold fixture A'),
   ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 1, 'production_lot', 'fa000000-0000-4000-8000-000000000061', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality sampling under-threshold fixture B');
 
+INSERT INTO public.production_outputs (
+  id, production_order_id, product_id, quantity_produced, quality_status
+) VALUES
+  ('fa000000-0000-4000-8000-000000000070', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 9, 'released'),
+  ('fa000000-0000-4000-8000-000000000080', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 11, 'released'),
+  ('fa000000-0000-4000-8000-000000000090', 'f8000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 4, 'released');
+
+INSERT INTO public.product_lots (
+  id, product_id, lot_number, production_order_id, production_output_id,
+  expiration_date, initial_quantity, quantity, status
+) VALUES
+  ('fa000000-0000-4000-8000-000000000071', 'f4000000-0000-4000-8000-000000000001', 'PT-QA-EXCEPTION-2-3', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000070', '2090-01-01', 9, 9, 'available'),
+  ('fa000000-0000-4000-8000-000000000081', 'f4000000-0000-4000-8000-000000000001', 'PT-QA-EXCEPTION-2-7', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000080', '2090-01-01', 11, 11, 'available'),
+  ('fa000000-0000-4000-8000-000000000091', 'f4000000-0000-4000-8000-000000000001', 'PT-QA-EXCEPTION-DISPOSITION', 'f8000000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000090', '2090-01-01', 4, 4, 'available');
+
+INSERT INTO public.product_lot_storage_balances (
+  product_lot_id, fresh_quantity, raw_frozen_quantity, freezing_quantity
+) VALUES
+  ('fa000000-0000-4000-8000-000000000071', 9, 0, 0),
+  ('fa000000-0000-4000-8000-000000000081', 11, 0, 0),
+  ('fa000000-0000-4000-8000-000000000091', 4, 0, 0);
+
+INSERT INTO public.inventory_movements (
+  item_type, item_id, product_id, movement_type, quantity,
+  reference_type, reference_id, warehouse_id, created_by, notes
+) VALUES
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 9, 'production_lot', 'fa000000-0000-4000-8000-000000000071', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality exception 2+3 fixture'),
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 11, 'production_lot', 'fa000000-0000-4000-8000-000000000081', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality exception 2+7 fixture'),
+  ('product', 'f4000000-0000-4000-8000-000000000001', 'f4000000-0000-4000-8000-000000000001', 'entry', 4, 'production_lot', 'fa000000-0000-4000-8000-000000000091', 'f2000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'Quality disposition fixture');
+
 CREATE TEMP TABLE test_quality_sampling_operations (
   product_lot_id uuid NOT NULL,
   stage text NOT NULL,
@@ -1237,6 +1267,163 @@ BEGIN
   END IF;
 END;
 $sampling_threshold$;
+
+DO $under_threshold_quality_disposition$
+DECLARE
+  v_lot_id uuid;
+  v_operation_id uuid;
+  v_decision_id uuid;
+  v_retry_id uuid;
+  v_key uuid;
+  v_step integer;
+BEGIN
+  -- Two pieces are explicitly released by Quality. Three later arrivals stay
+  -- held; the lot count is cumulative, but the earlier two are not re-held.
+  v_lot_id := 'fa000000-0000-4000-8000-000000000071';
+  v_operation_id := public.start_product_lot_freezing(v_lot_id, 2,
+    'Congelación inicial de dos', 'fd000000-0000-4000-8000-000000000301',
+    'a5000000-0000-4000-8000-000000000010');
+  PERFORM public.resolve_product_lot_freezing(v_operation_id, 2, 'raw_frozen', false,
+    'Dos piezas congeladas', 'fd000000-0000-4000-8000-000000000302');
+  BEGIN
+    PERFORM public.decide_under_threshold_frozen_lot_quality(
+      v_lot_id, 2, 2, 0, 0, false, true, 'folio=QA-1; fecha/hora=10:15; lectura=4 C; especificacion=2-5 C', 'Excepción sin testigo',
+      'Liberación excepcional de dos', 'fd000000-0000-4000-8000-000000000303');
+    RAISE EXCEPTION 'accepted pieces were released without process verification';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  BEGIN
+    PERFORM public.decide_under_threshold_frozen_lot_quality(
+      v_lot_id, 2, 2, 0, 0, true, true, 'No hay registros disponibles', 'Excepción sin testigo',
+      'Liberación sin registro positivo de conservación', 'fd000000-0000-4000-8000-000000000315');
+    RAISE EXCEPTION 'accepted pieces were released without conservation-record evidence';
+  EXCEPTION WHEN check_violation THEN
+    IF SQLERRM NOT LIKE '%positive conservation-record evidence%' THEN RAISE; END IF;
+  END;
+  IF (SELECT quality_sampling_pending_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_lot_id) <> 2
+    OR (SELECT quantity FROM public.product_lots WHERE id=v_lot_id) <> 7 THEN
+    RAISE EXCEPTION 'rejected quality attempt left partial balance or lot changes';
+  END IF;
+  v_key := 'fd000000-0000-4000-8000-000000000304';
+  v_decision_id := public.decide_under_threshold_frozen_lot_quality(
+    v_lot_id, 2, 2, 0, 0, true, true,
+    'folio=QA-4; fecha/hora=10:15; lectura=4 C; especificacion=2-5 C',
+    'Jefe de Calidad autorizó excepción; no hubo muestra testigo',
+    'Inspección no destructiva del 100%; proceso y conservación conformes', v_key);
+  v_retry_id := public.decide_under_threshold_frozen_lot_quality(
+    v_lot_id, 2, 2, 0, 0, true, true,
+    'folio=QA-4; fecha/hora=10:15; lectura=4 C; especificacion=2-5 C',
+    'Jefe de Calidad autorizó excepción; no hubo muestra testigo',
+    'Inspección no destructiva del 100%; proceso y conservación conformes', v_key);
+  IF v_retry_id IS DISTINCT FROM v_decision_id
+    OR (SELECT count(*) FROM public.product_lot_small_quantity_quality_decisions WHERE product_lot_id=v_lot_id) <> 1
+    OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type='product_lot_small_quantity_quality_decision' AND reference_id=v_decision_id) <> 1
+    OR NOT EXISTS (
+      SELECT 1 FROM public.product_lot_small_quantity_quality_decisions AS decision
+      WHERE decision.id=v_decision_id AND decision.decided_by=auth.uid()
+        AND decision.decided_at IS NOT NULL
+        AND decision.witness_sample_status='sin muestra testigo por excepción autorizada'
+    ) THEN
+    RAISE EXCEPTION 'Quality exception retry duplicated its decision or stock movement';
+  END IF;
+
+  v_operation_id := public.start_product_lot_freezing(v_lot_id, 3,
+    'Tres piezas posteriores a la excepción', 'fd000000-0000-4000-8000-000000000305',
+    'a5000000-0000-4000-8000-000000000010');
+  PERFORM public.resolve_product_lot_freezing(v_operation_id, 3, 'raw_frozen', false,
+    'Confirmación posterior de tres', 'fd000000-0000-4000-8000-000000000306');
+  IF NOT EXISTS (
+    SELECT 1 FROM public.get_product_lot_storage_balances('f4000000-0000-4000-8000-000000000001') AS balance
+    WHERE balance.product_lot_id=v_lot_id AND balance.cumulative_frozen_quantity=5
+      AND balance.raw_frozen_quantity=2 AND balance.quality_sampling_pending_quantity=3
+      AND balance.quality_sampling_reserved_quantity=0 AND balance.sampling_plan_remaining_quantity=2
+      AND balance.quality_decision_history->0->>'witness_sample_status' = 'sin muestra testigo por excepción autorizada'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.inventory_product_lot_storage_pick_suggestions AS suggestion
+    WHERE suggestion.lot_id=v_lot_id AND suggestion.storage_condition='raw_frozen'
+      AND suggestion.quantity=2
+  ) OR EXISTS (
+    SELECT 1 FROM public.product_lot_quality_samples WHERE product_lot_id=v_lot_id
+  ) THEN
+    RAISE EXCEPTION '2+3 after an exception changed prior availability or failed to show the remaining sample plan';
+  END IF;
+
+  -- Two more one-piece confirmations complete the standard 2+3 sample from
+  -- the new pending pieces; the prior two remain available and are not debited.
+  FOR v_step IN 1..2 LOOP
+    v_operation_id := public.start_product_lot_freezing(v_lot_id, 1,
+      'Confirmación pequeña ' || v_step, gen_random_uuid(),
+      'a5000000-0000-4000-8000-000000000010');
+    PERFORM public.resolve_product_lot_freezing(v_operation_id, 1, 'raw_frozen', false,
+      'Pieza adicional ' || v_step, gen_random_uuid());
+  END LOOP;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id=v_lot_id AND balance.raw_frozen_quantity=2
+      AND balance.quality_sampling_pending_quantity=0
+      AND balance.quality_sampling_reserved_quantity=5
+  ) OR (SELECT count(*) FROM public.product_lot_quality_samples WHERE product_lot_id=v_lot_id) <> 2
+    OR EXISTS (
+      SELECT 1 FROM public.get_product_lot_storage_balances('f4000000-0000-4000-8000-000000000001') AS balance
+      WHERE balance.product_lot_id=v_lot_id AND balance.sampling_plan_remaining_quantity<>0
+    ) THEN
+    RAISE EXCEPTION 'small sequential confirmations did not accumulate to the standard sample plan without re-debiting prior released pieces';
+  END IF;
+
+  -- 2 released + 7 new: reserve five from the new seven, expose only the
+  -- other two, and preserve the earlier two.
+  v_lot_id := 'fa000000-0000-4000-8000-000000000081';
+  v_operation_id := public.start_product_lot_freezing(v_lot_id, 2,
+    'Congelación inicial de dos', 'fd000000-0000-4000-8000-000000000307',
+    'a5000000-0000-4000-8000-000000000010');
+  PERFORM public.resolve_product_lot_freezing(v_operation_id, 2, 'raw_frozen', false,
+    'Dos piezas congeladas', 'fd000000-0000-4000-8000-000000000308');
+  PERFORM public.decide_under_threshold_frozen_lot_quality(
+    v_lot_id, 2, 2, 0, 0, true, true, 'folio=QA-9; fecha/hora=10:15; lectura=4 C; especificacion=2-5 C', 'Excepción autorizada sin testigo',
+    'Inspección completa y conforme', 'fd000000-0000-4000-8000-000000000309');
+  v_operation_id := public.start_product_lot_freezing(v_lot_id, 7,
+    'Siete piezas posteriores', 'fd000000-0000-4000-8000-000000000310',
+    'a5000000-0000-4000-8000-000000000010');
+  PERFORM public.resolve_product_lot_freezing(v_operation_id, 7, 'raw_frozen', false,
+    'Confirmación posterior de siete', 'fd000000-0000-4000-8000-000000000311');
+  IF NOT EXISTS (
+    SELECT 1 FROM public.product_lot_storage_balances AS balance
+    WHERE balance.product_lot_id=v_lot_id AND balance.raw_frozen_quantity=4
+      AND balance.quality_sampling_reserved_quantity=5
+      AND balance.quality_sampling_pending_quantity=0
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.inventory_product_lot_storage_pick_suggestions AS suggestion
+    WHERE suggestion.lot_id=v_lot_id AND suggestion.storage_condition='raw_frozen' AND suggestion.quantity=4
+  ) OR (SELECT quantity FROM public.product_lots WHERE id=v_lot_id) <> 6 THEN
+    RAISE EXCEPTION '2+7 did not reserve five new pieces and expose two new pieces alongside the prior two';
+  END IF;
+
+  -- Rejects remain in custody and destructive tests are separately recorded
+  -- as Quality waste; neither can enter picking.
+  v_lot_id := 'fa000000-0000-4000-8000-000000000091';
+  v_operation_id := public.start_product_lot_freezing(v_lot_id, 4,
+    'Congelar lote para disposición', 'fd000000-0000-4000-8000-000000000312',
+    'a5000000-0000-4000-8000-000000000010');
+  PERFORM public.resolve_product_lot_freezing(v_operation_id, 4, 'raw_frozen', false,
+    'Cuatro piezas congeladas', 'fd000000-0000-4000-8000-000000000313');
+  v_key := 'fd000000-0000-4000-8000-000000000314';
+  v_decision_id := public.decide_under_threshold_frozen_lot_quality(
+    v_lot_id, 4, 1, 2, 1, true, true, 'folio=QA-14; fecha/hora=10:15; lectura=4 C; especificacion=2-5 C', 'No hubo testigo por excepción autorizada',
+    'Una conforme, dos rechazadas y una prueba destructiva', v_key);
+  PERFORM public.decide_under_threshold_frozen_lot_quality(
+    v_lot_id, 4, 1, 2, 1, true, true, 'folio=QA-14; fecha/hora=10:15; lectura=4 C; especificacion=2-5 C', 'No hubo testigo por excepción autorizada',
+    'Una conforme, dos rechazadas y una prueba destructiva', v_key);
+  IF (SELECT raw_frozen_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_lot_id) <> 1
+    OR (SELECT quality_rejected_pending_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_lot_id) <> 2
+    OR (SELECT quality_waste_quantity FROM public.product_lot_storage_balances WHERE product_lot_id=v_lot_id) <> 1
+    OR (SELECT count(*) FROM public.inventory_product_lot_storage_pick_suggestions WHERE lot_id=v_lot_id AND storage_condition='raw_frozen') <> 1
+    OR (SELECT count(*) FROM public.inventory_movements WHERE reference_type='product_lot_small_quantity_quality_decision' AND reference_id=v_decision_id) <> 1
+    OR (SELECT witness_sample_status FROM public.product_lot_small_quantity_quality_decisions WHERE id=v_decision_id)
+      <> 'sin muestra testigo por excepción autorizada' THEN
+    RAISE EXCEPTION 'Quality disposition made rejects available, merged destructive loss, or duplicated movement';
+  END IF;
+END;
+$under_threshold_quality_disposition$;
 
 DO $test$
 DECLARE

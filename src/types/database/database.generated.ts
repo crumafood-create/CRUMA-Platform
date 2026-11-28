@@ -4704,6 +4704,103 @@ export type Database = {
           },
         ]
       }
+      product_lot_small_quantity_quality_decisions: {
+        Row: {
+          accepted_quantity: number
+          conservation_evidence: string
+          conservation_verified: boolean
+          decided_at: string
+          decided_by: string
+          destructive_quantity: number
+          id: string
+          idempotency_key: string
+          inspected_quantity: number
+          process_verified: boolean
+          product_lot_id: string
+          reason: string
+          rejected_quantity: number
+          witness_sample_exception_reason: string
+          witness_sample_status: string
+        }
+        Insert: {
+          accepted_quantity?: number
+          conservation_evidence: string
+          conservation_verified: boolean
+          decided_at?: string
+          decided_by: string
+          destructive_quantity?: number
+          id?: string
+          idempotency_key: string
+          inspected_quantity: number
+          process_verified: boolean
+          product_lot_id: string
+          reason: string
+          rejected_quantity?: number
+          witness_sample_exception_reason: string
+          witness_sample_status?: string
+        }
+        Update: {
+          accepted_quantity?: number
+          conservation_evidence?: string
+          conservation_verified?: boolean
+          decided_at?: string
+          decided_by?: string
+          destructive_quantity?: number
+          id?: string
+          idempotency_key?: string
+          inspected_quantity?: number
+          process_verified?: boolean
+          product_lot_id?: string
+          reason?: string
+          rejected_quantity?: number
+          witness_sample_exception_reason?: string
+          witness_sample_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lot_small_quantity_quality_decision_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_small_quantity_quality_decision_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lot_storage_pick_suggestions"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "product_lot_small_quantity_quality_decision_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_product_lots_fefo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_small_quantity_quality_decision_product_lot_id_fkey"
+            columns: ["product_lot_id"]
+            isOneToOne: false
+            referencedRelation: "product_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lot_small_quantity_quality_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "dashboard_top_customers"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "product_lot_small_quantity_quality_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_lot_storage_balances: {
         Row: {
           freezing_location_id: string | null
@@ -4711,6 +4808,7 @@ export type Database = {
           fresh_quantity: number
           frozen_location_id: string | null
           product_lot_id: string
+          quality_rejected_pending_quantity: number
           quality_sampling_pending_quantity: number
           quality_sampling_reserved_quantity: number
           quality_waste_quantity: number
@@ -4725,6 +4823,7 @@ export type Database = {
           fresh_quantity?: number
           frozen_location_id?: string | null
           product_lot_id: string
+          quality_rejected_pending_quantity?: number
           quality_sampling_pending_quantity?: number
           quality_sampling_reserved_quantity?: number
           quality_waste_quantity?: number
@@ -4739,6 +4838,7 @@ export type Database = {
           fresh_quantity?: number
           frozen_location_id?: string | null
           product_lot_id?: string
+          quality_rejected_pending_quantity?: number
           quality_sampling_pending_quantity?: number
           quality_sampling_reserved_quantity?: number
           quality_waste_quantity?: number
@@ -9680,6 +9780,22 @@ export type Database = {
         Args: { p_decision: string; p_inspection_id: string; p_reason: string }
         Returns: string
       }
+      decide_under_threshold_frozen_lot_quality: {
+        Args: {
+          p_accepted_quantity: number
+          p_conservation_evidence: string
+          p_conservation_verified: boolean
+          p_destructive_quantity: number
+          p_idempotency_key: string
+          p_inspected_quantity: number
+          p_process_verified: boolean
+          p_product_lot_id: string
+          p_reason: string
+          p_rejected_quantity: number
+          p_witness_sample_exception_reason: string
+        }
+        Returns: string
+      }
       decrease_product_lot_quantity: {
         Args: { p_lot_id: string; p_quantity: number }
         Returns: undefined
@@ -9720,6 +9836,7 @@ export type Database = {
       get_product_lot_storage_balances: {
         Args: { p_product_id: string }
         Returns: {
+          cumulative_frozen_quantity: number
           expiration_date: string
           freezing_location_name: string
           freezing_quantity: number
@@ -9729,12 +9846,15 @@ export type Database = {
           lot_number: string
           lot_quantity: number
           product_lot_id: string
+          quality_decision_history: Json
+          quality_rejected_pending_quantity: number
           quality_sampling_pending_quantity: number
           quality_sampling_reserved_quantity: number
           quality_waste_quantity: number
           raw_frozen_quantity: number
           refrigerated_wait_location_name: string
           refrigerated_wait_quantity: number
+          sampling_plan_remaining_quantity: number
         }[]
       }
       get_product_lot_storage_pick_suggestion: {

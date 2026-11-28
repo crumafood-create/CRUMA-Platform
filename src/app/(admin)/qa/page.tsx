@@ -96,6 +96,12 @@ export default async function QualityPage() {
           >
             Inspeccionar materia prima
           </Link>
+          <Link
+            href="/lots/storage-conditions"
+            className="rounded border px-4 py-2"
+          >
+            Resolver congelados pendientes de Calidad
+          </Link>
         </div>
       </div>
 

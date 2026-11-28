@@ -5,6 +5,7 @@ import {
   buildQualityInspectionRequest,
   buildProductLotQualitySampleDispositionRequest,
   buildProductLotQualitySampleInspectionRequest,
+  buildUnderThresholdFrozenLotQualityDecisionRequest,
 } from './quality-control-contract';
 
 function validForm(): FormData {
@@ -20,6 +21,62 @@ function validForm(): FormData {
 }
 
 describe('contrato de control de calidad', () => {
+  it('valida inspección completa, distribución de cantidades y excepción testigo', () => {
+    const data = new FormData();
+    data.set('product_lot_id', 'fa000000-0000-4000-8000-000000000071');
+    data.set('idempotency_key', 'fd000000-0000-4000-8000-000000000304');
+    data.set('inspected_quantity', '2');
+    data.set('accepted_quantity', '2');
+    data.set('rejected_quantity', '0');
+    data.set('destructive_quantity', '0');
+    data.set('process_verified', 'on');
+    data.set('conservation_verified', 'on');
+    data.set('conservation_evidence', 'folio=QA-27; fecha/hora=27/11 10:15; lectura=4 C; especificacion=2-5 C');
+    data.set('witness_sample_exception', 'on');
+    data.set('witness_sample_exception_reason', 'Responsable autorizado: revisión no destructiva');
+    data.set('reason', 'Ambas piezas conformes');
+
+    expect(buildUnderThresholdFrozenLotQualityDecisionRequest(data)).toMatchObject({
+      inspectedQuantity: 2,
+      acceptedQuantity: 2,
+      rejectedQuantity: 0,
+      destructiveQuantity: 0,
+      processVerified: true,
+      conservationVerified: true,
+      conservationEvidence: 'folio=QA-27; fecha/hora=27/11 10:15; lectura=4 C; especificacion=2-5 C',
+      witnessSampleExceptionReason: 'Responsable autorizado: revisión no destructiva',
+    });
+  });
+
+  it('rechaza una liberación sin ambos controles, excepción explícita o suma exacta', () => {
+    const data = new FormData();
+    data.set('product_lot_id', 'fa000000-0000-4000-8000-000000000071');
+    data.set('idempotency_key', 'fd000000-0000-4000-8000-000000000304');
+    data.set('inspected_quantity', '2');
+    data.set('accepted_quantity', '2');
+    data.set('rejected_quantity', '0');
+    data.set('destructive_quantity', '0');
+    data.set('witness_sample_exception', 'on');
+    data.set('witness_sample_exception_reason', 'Responsable autorizado');
+    data.set('reason', 'Conforme');
+    data.set('conservation_evidence', 'folio=QA-27; fecha/hora=27/11 10:15; lectura=4 C; especificacion=2-5 C');
+    expect(() => buildUnderThresholdFrozenLotQualityDecisionRequest(data)).toThrow('proceso y la conservación');
+
+    data.set('process_verified', 'on');
+    data.set('conservation_verified', 'on');
+    data.set('conservation_evidence', '');
+    expect(() => buildUnderThresholdFrozenLotQualityDecisionRequest(data)).toThrow();
+    data.set('conservation_evidence', 'No hay registros disponibles');
+    expect(() => buildUnderThresholdFrozenLotQualityDecisionRequest(data)).toThrow();
+    data.set('conservation_evidence', 'folio=QA-27; fecha/hora=27/11 10:15; lectura=4 C; especificacion=2-5 C');
+    data.delete('witness_sample_exception');
+    expect(() => buildUnderThresholdFrozenLotQualityDecisionRequest(data)).toThrow('excepción de muestra testigo');
+
+    data.set('witness_sample_exception', 'on');
+    data.set('accepted_quantity', '1');
+    expect(() => buildUnderThresholdFrozenLotQualityDecisionRequest(data)).toThrow('deben sumar');
+  });
+
   it('normaliza una inspección con criterios y defectos opcionales', () => {
     expect(buildQualityInspectionRequest(validForm())).toEqual({
       productionOutputId: 'output-1',

@@ -11,11 +11,14 @@ import {
   buildProductLotQualitySampleInspectionRequest,
   buildQualityInspectionRequest,
   buildRawMaterialQualityInspectionRequest,
+  buildUnderThresholdFrozenLotQualityDecisionRequest,
 } from '@/modules/quality/application/quality-control-contract';
 import {
   decideQualityRelease as persistQualityDecision,
   decideProductLotQualitySampleDisposition as
     persistProductLotQualitySampleDisposition,
+  decideUnderThresholdFrozenLotQuality as
+    persistUnderThresholdFrozenLotQualityDecision,
   decideRawMaterialQualityRelease as persistRawMaterialQualityDecision,
   recordProductLotQualitySampleInspection as persistProductLotQualitySampleInspection,
   recordQualityInspection as persistQualityInspection,
@@ -32,6 +35,20 @@ import {
   disposeFinishedProductNonconformance as
     persistFinishedProductNonconformanceDisposition,
 } from '@/modules/production/application/finished-product-nonconformance-disposition-repository';
+
+export async function decideUnderThresholdFrozenLotQuality(
+  formData: FormData,
+): Promise<void> {
+  const { supabase } = await requireTypedAuthorizedAction(
+    PERMISSIONS.QUALITY_RELEASE_DECIDE,
+  );
+  const request = buildUnderThresholdFrozenLotQualityDecisionRequest(formData);
+  await persistUnderThresholdFrozenLotQualityDecision(supabase, request);
+  revalidatePath('/lots/storage-conditions');
+  revalidatePath('/lots');
+  revalidatePath('/qa');
+  revalidatePath('/mobile/picking');
+}
 
 export async function recordQualityInspection(
   formData: FormData,

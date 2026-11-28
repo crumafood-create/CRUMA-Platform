@@ -68,6 +68,15 @@ Arquitectura revisada: [ARCHITECTURE.md](ARCHITECTURE.md), [Business Core](docs/
     - **Tercer ciclo implementado:** rutas de liberación a espera refrigerada dedicada o congelación directa; inicio desde espera, saldo en proceso, confirmación, apartado de muestras 2+3, incidencia visible al cierre y merma autorizada. CI #4323 pasó en base limpia para `8be1046e`. Pendiente aplicar la migración en desarrollo y verificar el recorrido manual antes de cerrar #8.
   - **Fuera de alcance:** control y consumo de bolsas y separadores, registrado como historia #9 pendiente en `pendientes.md`.
 
+- [ ] **#10.** Como responsable de Calidad, quiero inspeccionar y decidir la disposición de lotes congelados menores de cinco piezas, para liberar las conformes sin perder trazabilidad de merma ni excepciones de muestreo.
+  - **Prioridad:** P1.
+  - **Motivo:** los lotes congelados con menos de cinco piezas quedan fuera de disponibilidad y no existe una decisión de Calidad que permita disponerlos sin simular la muestra estándar.
+  - **Módulo propietario:** Quality registra inspección, autorización y disposición; Inventory mantiene cantidades, custodia, disponibilidad y movimientos; Production conserva el lote de salida.
+  - **Criterios aprobados:** (1) Calidad inspecciona el 100% del apartado mediante controles no destructivos y verifica proceso/armado y conservación; solo las conformes con ambos controles aprobados vuelven a inventario, y las rechazadas siguen retenidas. (2) Las piezas usadas en controles destructivos se registran por separado como merma de Calidad; una decisión idempotente conserva las cantidades y el valor y no duplica movimientos. (3) Si falta muestra testigo, Calidad registra la excepción explícita, motivo, responsable y fecha bajo la etiqueta “sin muestra testigo por excepción autorizada”; no se contabiliza como retención ni reduce automáticamente el plan 2+3. (4) Las excepciones no reinician el conteo acumulado del lote: tras liberar 2 y recibir 3 piezas nuevas, las 3 quedan apartadas y se muestra que faltan 2 para completar el plan; las 2 anteriores conservan su decisión. Una nueva excepción requiere una nueva decisión explícita y el historial/faltante visibles.
+  - **Pruebas aprobadas:** lotes menores de cinco con aceptación/rechazo/merma, verificación obligatoria de proceso y conservación al liberar, rechazo sin cambios parciales, idempotencia; escenarios 2+3, 2+7 y múltiples confirmaciones pequeñas; UI con acumulado, faltante e historial de excepción.
+  - **Plan:** `plan.md`, sección “Disposición de Calidad de congelados bajo umbral”.
+  - **Fuera de alcance:** cambiar el plan 2+3 de lotes que alcanzan el umbral, liberar automáticamente una excepción o resolver de forma final cantidades rechazadas sin una decisión de disposición posterior.
+
 
 ## Historias completadas
 
